@@ -1,0 +1,90 @@
+using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Features.Auth.Commands;
+using BT.Domain.Contracts.Interfaces.Common;
+using BT.Domain.Entities;
+using BT.Domain.Events;
+using BT.Infrastructure.Logging;
+using BT.SharedKernel.Dtos.Auth;
+using BT.SharedKernel.Dtos.Common;
+using MediatR;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
+using OtpNet;
+
+namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
+
+internal sealed class InitiateTotpSetupCommandHandler(
+    IEncryptionService encryptionService,
+    UserManager<AppUser> userManager,
+    IUnitOfWork unitOfWork,
+    ILogger<InitiateTotpSetupCommandHandler> logger) : IRequestHandler<InitiateTotpSetupCommand, AppResponse<TwoFactorSetupInfo>>
+{
+    private const string TotpIssuer = "LlanCore.BaseTemplate.API";
+
+    public async Task<AppResponse<TwoFactorSetupInfo>> Handle(InitiateTotpSetupCommand command, CancellationToken cancellationToken)
+    {
+        var userId = command.UserId;
+
+        try
+        {
+            var user = await userManager.FindByIdAsync(userId).ConfigureAwait(false);
+            if (user == null)
+            {
+                return AppResponse.Failure<TwoFactorSetupInfo>("User not found.");
+            }
+
+            await unitOfWork.TempTotpSecretRepository.DeleteUserTempSecretsAsync(userId, cancellationToken).ConfigureAwait(false);
+
+            var plainSecret = GenerateSecret();
+            var encryptedSecret = encryptionService.Encrypt(plainSecret);
+
+            var tempSecret = new TempTotpSecret
+            {
+                Id = Guid.CreateVersion7(),
+                UserId = userId,
+                EncryptedSecret = encryptedSecret,
+                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30),
+                CreatedAt = DateTimeOffset.UtcNow,
+                CreatedBy = userId
+            };
+
+            await unitOfWork.TempTotpSecretRepository.CreateAsync(tempSecret, cancellationToken).ConfigureAwait(false);
+            await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+
+            var qrUri = GenerateQrCodeUri(user.Email!, plainSecret);
+
+            return AppResponse.Success("Scan this QR code", new TwoFactorSetupInfo
+            {
+                QrCodeUri = qrUri,
+                ManualEntryKey = plainSecret
+            });
+        }
+        catch (Exception ex)
+        {
+            ServiceLogDefinitions.LogTotpSetupInitiationError(logger, userId, ex);
+            throw;
+        }
+    }
+
+    private static string GenerateSecret()
+    {
+        var key = KeyGeneration.GenerateRandomKey(20);
+        return Base32Encoding.ToString(key);
+    }
+
+    private static string GenerateQrCodeUri(string email, string secret)
+    {
+        return $"otpauth://totp/{Uri.EscapeDataString(TotpIssuer)}:" +
+            $"{Uri.EscapeDataString(email)}?" +
+            $"secret={secret}&" +
+            $"issuer={Uri.EscapeDataString(TotpIssuer)}&" +
+            "algorithm=SHA1&" +
+            "digits=6&" +
+            "period=30";
+    }
+}
+
+
+
+    
+

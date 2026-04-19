@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation">
+      <VersionOverride>12.1.1</VersionOverride>
+    </PackageReference>
+    <PackageReference Include="MediatR">
+      <VersionOverride>14.1.0</VersionOverride>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.6">
+      <VersionOverride>10.0.5</VersionOverride>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\BT.SharedKernel\BT.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\Domain\BT.Domain\BT.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Contracts\Implementations\Services\" />
+  </ItemGroup>
+
+  
+
+</Project>
