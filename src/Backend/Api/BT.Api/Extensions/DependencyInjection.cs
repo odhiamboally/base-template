@@ -47,11 +47,9 @@ internal static class DependencyInjection
             config.ApiVersionReader = new UrlSegmentApiVersionReader();
         });
 
-        ConfigureAuthentication(services, configuration);
         ConfigureHttpResilience(services, configuration);
         ConfigureDataProtection(services, configuration);
         ConfigureCustomRateLimiting(services);
-        ConfigureOutBoxMessagingWithGlobalRetry(services, configuration);
 
         services.AddValidatorsFromAssembly(assembly);
 

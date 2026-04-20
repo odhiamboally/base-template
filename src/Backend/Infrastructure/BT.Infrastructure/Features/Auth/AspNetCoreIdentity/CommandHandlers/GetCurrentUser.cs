@@ -53,8 +53,8 @@ internal sealed class GetCurrentUser(
             return AppResponse.Success("CurrentUser", new CurrentUserResponse(
                 userId,
                 appUser.EmployeeId ?? Guid.Empty,
-                appUser.MemberId ?? Guid.Empty,
-                appUser.IdNumber ?? string.Empty,
+                appUser.CustomerId ?? Guid.Empty,
+                appUser.NationalId ?? string.Empty,
                 appUser.UserName ?? string.Empty,
                 appUser.Email ?? string.Empty,
                 appUser.FirstName ?? string.Empty,

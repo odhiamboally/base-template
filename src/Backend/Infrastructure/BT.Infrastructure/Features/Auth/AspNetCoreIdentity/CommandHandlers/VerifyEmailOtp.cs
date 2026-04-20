@@ -98,10 +98,10 @@ internal sealed class VerifyEmailOtp(
 
         var appUser = new AppUserResponse(
             user.Id, user.UserName ?? "", user.FirstName, user.LastName,
-            $"{user.FirstName} {user.LastName}".Trim(), user.PhoneNumber, user.IdNumber,
+            $"{user.FirstName} {user.LastName}".Trim(), user.PhoneNumber, user.NationalId,
             user.Email ?? "", user.Gender.ToDisplayString(), user.ProfilePictureUrl,
             user.IsActive, twoFactor, user.RequirePasswordChange, user.CreatedAt,
-            user.LastLoginAt, [.. roles], user.TenantId, user.EmployeeId, user.MemberId);
+            user.LastLoginAt, [.. roles], user.TenantId, user.EmployeeId, user.CustomerId);
 
         var claimsResp = claims.Select(c => new UserClaimsResponse
         {
