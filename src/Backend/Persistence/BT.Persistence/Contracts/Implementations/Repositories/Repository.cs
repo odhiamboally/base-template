@@ -1,8 +1,7 @@
-﻿using BT.Domain.Contracts.Interfaces.Common;
+using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Contracts.Interfaces.Repositories;
 using BT.Domain.Contracts.Specifications;
 
-using BT.Persistence.DataContext;
 using BT.Persistence.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -13,9 +12,9 @@ using System.Text;
 
 namespace BT.Persistence.Contracts.Implementations.Repositories;
 
-public class Repository<T>(DBContext context) : IRepository<T> where T : class
+public class Repository<T>(DbContext context) : IRepository<T> where T : class
 {
-    private readonly DBContext _context = context;
+    private readonly DbContext _context = context;
 
     public async Task<T> CreateAsync(T entity, CancellationToken ct = default)
     {

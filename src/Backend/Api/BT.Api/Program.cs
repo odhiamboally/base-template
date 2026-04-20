@@ -3,8 +3,12 @@ using Azure.Identity;
 using BT.Api.Extensions;
 using BT.Api.Utilities;
 using BT.Application.Extensions;
+using BT.Infrastructure.Banking.Extensions;
 using BT.Infrastructure.Extensions;
+using BT.Infrastructure.HR.Extensions;
+using BT.Infrastructure.IAM.Extensions;
 using BT.Persistence.Extensions;
+using BT.Persistence.Shared.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
@@ -66,9 +70,13 @@ try
     });
 
     // ── Services ─────────────────────────────────────────────────────────────
-    builder.Services.AddApiServices(builder.Configuration);         
-    builder.Services.AddApplicationServices(builder.Configuration);         
-    builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);             
+    builder.Services.AddApiServices(builder.Configuration);
+    builder.Services.AddApplicationServices(builder.Configuration);
+    builder.Services.AddSharedInfrastructure(builder.Configuration, builder.Environment);
+    builder.Services.AddIamModule(builder.Configuration, builder.Environment);
+    builder.Services.AddHrModule(builder.Configuration);
+    builder.Services.AddBankingModule(builder.Configuration);
+    builder.Services.AddSharedPersistence(builder.Configuration);
     builder.Services.AddPersistenceServices(builder.Configuration);
 
     builder.Services.AddControllers()

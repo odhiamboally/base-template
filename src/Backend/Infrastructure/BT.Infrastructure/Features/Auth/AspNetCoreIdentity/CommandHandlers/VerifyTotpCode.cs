@@ -112,7 +112,7 @@ internal sealed class VerifyTotpCode(
                 user.LastName,
                 $"{user.FirstName} {user.LastName}".Trim(),
                 user.PhoneNumber,
-                user.IdNumber,
+                user.NationalId,
                 user.Email ?? string.Empty,
                 user.Gender.MapToString(),
                 user.ProfilePictureUrl,
@@ -124,7 +124,7 @@ internal sealed class VerifyTotpCode(
                 [.. roles],
                 user.TenantId,
                 user.EmployeeId,
-                user.MemberId
+                user.CustomerId
             );
 
             var claimsResponse = userClaims.Select(c => new UserClaimsResponse

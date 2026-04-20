@@ -25,7 +25,7 @@ public static class AppUserMapping
             user.LastName,
             $"{user.FirstName} {user.LastName}",
             user.PhoneNumber,
-            user.IdNumber,
+            user.NationalId,
             user.Gender.ToString(),
             user.ProfilePictureUrl,
             user.IsActive,
@@ -36,7 +36,7 @@ public static class AppUserMapping
             roles?.ToList() ?? [],
             user.TenantId,
             user.EmployeeId,
-            user.MemberId
+            user.CustomerId
         );
     }
 
@@ -52,7 +52,7 @@ public static class AppUserMapping
             user.LastName,
             user.FirstName + " " + user.LastName,
             user.PhoneNumber,
-            user.IdNumber,
+            user.NationalId,
             user.Gender.ToString(),
             user.ProfilePictureUrl,
             user.IsActive,
@@ -63,7 +63,7 @@ public static class AppUserMapping
             new List<string>(), // Roles are usually handled via UserManager after the initial query
             user.TenantId,
             user.EmployeeId,
-            user.MemberId
+            user.CustomerId
         );
 
     /// <summary>

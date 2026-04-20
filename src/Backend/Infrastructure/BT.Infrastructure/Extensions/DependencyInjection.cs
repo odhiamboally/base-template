@@ -49,7 +49,7 @@ namespace BT.Infrastructure.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static IServiceCollection AddSharedInfrastructure(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         try
         {
@@ -58,12 +58,10 @@ public static class DependencyInjection
             services.AddSingleton(JsonSerializerOptionsFactory.Create());
             services.Configure<ObservabilitySettings>(configuration.GetSection(ObservabilitySettings.SectionName));
             services.Configure<AuthProviderSettings>(configuration.GetSection(AuthProviderSettings.SectionName));
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Login>());
 
             var cacheSettings = configuration.GetSection("CacheSettings").Get<CacheSettings>() 
                 ?? throw new InvalidOperationException("CacheSettings not found.");
 
-            ConfigureAuthentication(services, configuration);
             services.Configure<SessionSettings>(configuration.GetSection("SecuritySettings:SessionSettings"));
             ConfigureDistributedCache(services, configuration, cacheSettings);
             ConfigureMailKitlWithSmtp(services, configuration);
@@ -99,8 +97,6 @@ public static class DependencyInjection
             throw new InvalidOperationException($"Unsupported AuthProvider: {authProviderSettings.Provider}");
         }
 
-        services.AddScoped<IJwtService, JwtService>();
-        services.AddScoped<IClaimsService, ClaimsService>();
         services.AddScoped<IEmailService, FluentMailService>();
         services.AddScoped<IEmailComposer, EmailComposer>();
         services.AddScoped<ISmsComposer, SmsComposer>();
@@ -111,7 +107,7 @@ public static class DependencyInjection
         return services;
     }
 
-    private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
+    internal static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         try
         {
@@ -168,7 +164,7 @@ public static class DependencyInjection
         }
     }
 
-    private static void ConfigureIdentityOptions(IdentityOptions options)
+    internal static void ConfigureIdentityOptions(IdentityOptions options)
     {
         options.ClaimsIdentity.UserNameClaimType = "Username";
 
@@ -203,7 +199,7 @@ public static class DependencyInjection
         options.Tokens.ChangeEmailTokenProvider = TokenOptions.DefaultEmailProvider;
     }
 
-    private static void ConfigureJwtBearer(JwtBearerOptions options, JwtSettings jwtSettings)
+    internal static void ConfigureJwtBearer(JwtBearerOptions options, JwtSettings jwtSettings)
     {
         options.SaveToken = true;
         options.RequireHttpsMetadata = false;
