@@ -8,7 +8,7 @@ namespace BT.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
-public class BaseController : ControllerBase
+internal class BaseController : ControllerBase
 {
     public BaseController()
     {
