@@ -94,7 +94,7 @@ internal sealed class Login(
                 user.LastName ?? string.Empty,
                 $"{user.FirstName ?? string.Empty} {user.LastName ?? string.Empty}".Trim(),
                 user.PhoneNumber,
-                user.IdNumber,
+                user.NationalId,
                 user.Email ?? string.Empty,
                 user.Gender.MapToString(),
                 user.ProfilePictureUrl,
@@ -106,7 +106,7 @@ internal sealed class Login(
                 [],
                 user.TenantId,
                 user.EmployeeId,
-                user.MemberId
+                user.CustomerId
 
 
             );

@@ -32,6 +32,6 @@ internal sealed class LinkCustomerToExistingUser(UserManager<AppUser> userManage
         await userManager.UpdateAsync(user).ConfigureAwait(false);
         await userManager.AddToRoleAsync(user, Roles.Customer.ToDisplayString()).ConfigureAwait(false);
 
-        return AppResponse.Success("Customer account linked to user.", );
+        return AppResponse.Success<CustomerResponse>("Customer account linked to user.", default!);
     }
 }
