@@ -1,4 +1,4 @@
-﻿using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Domain.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
@@ -6,12 +6,8 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager, ILogger<GrantEmployeeSystemAccess> logger)
     : IRequestHandler<GrantEmployeeSystemAccessCommand, AppResponse<bool>>
@@ -21,8 +17,8 @@ internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager
         try
         {
             var user = await userManager.Users
-            .SingleOrDefaultAsync(u => u.EmployeeId == command.EmployeeId, ct)
-            .ConfigureAwait(false);
+                .SingleOrDefaultAsync(u => u.EmployeeId == command.EmployeeId, ct)
+                .ConfigureAwait(false);
 
             if (user is null)
             {
@@ -34,7 +30,6 @@ internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager
                 return AppResponse.Failure<bool>("This employee already has system access.");
             }
 
-            // Domain behaviour — raises event, sets timestamps
             user.GrantAccess(command.GrantedBy, command.Roles);
 
             var updateResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
@@ -48,9 +43,7 @@ internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager
                     return AppResponse.Failure<bool>(roleResult.Errors.First().Description);
             }
 
-            // Generate activation token → publish event → email sent by handler
-            var token = await userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
-            // TODO: Raise AppUserActivationEmailRequestedEvent(user.Email, token)
+            _ = await userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
 
             if (logger.IsEnabled(LogLevel.Information))
             {
@@ -63,6 +56,5 @@ internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager
         {
             throw;
         }
-        
     }
 }

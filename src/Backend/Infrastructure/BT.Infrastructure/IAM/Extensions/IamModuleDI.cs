@@ -3,7 +3,7 @@ using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Contracts.Implementations.Services;
 using BT.Application.Contracts.Interfaces.Services;
 using BT.Infrastructure.Extensions;
-using BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
+using BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 using BT.Persistence.IAM.DataContext;
 using BT.Persistence.IAM.Extensions;
 using MediatR;

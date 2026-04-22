@@ -1,17 +1,13 @@
-﻿using BT.Application.Extensions;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Extensions;
+using BT.Application.Features.IAM.Commands;
 using BT.Domain.Entities;
 using BT.Domain.Enums;
 using BT.SharedKernel.Dtos.Client;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class LinkCustomerToExistingUser(UserManager<AppUser> userManager)
     : IRequestHandler<LinkCustomerToExistingUserCommand, AppResponse<CustomerResponse>>
@@ -26,7 +22,6 @@ internal sealed class LinkCustomerToExistingUser(UserManager<AppUser> userManage
         if (user.CustomerId.HasValue)
             return AppResponse.Failure<CustomerResponse>("User is already linked to a customer record.");
 
-        // Domain behaviour — raises CustomerLinkedToUserEvent
         user.LinkToCustomer(command.CustomerId);
 
         await userManager.UpdateAsync(user).ConfigureAwait(false);

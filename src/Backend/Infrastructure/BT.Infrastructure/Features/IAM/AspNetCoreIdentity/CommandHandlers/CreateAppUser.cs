@@ -1,4 +1,4 @@
-﻿using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Application.Mappings;
 using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Entities;
@@ -11,19 +11,14 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class CreateAppUser(
-    UserManager<AppUser> userManager, 
+    UserManager<AppUser> userManager,
     IHrUnitOfWork hrUnitOfWork,
     IIamUnitOfWork iamUnitOfWork,
     ILogger<CreateAppUser> logger) : IRequestHandler<CreateAppUserCommand, AppResponse<AppUserResponse>>
- 
 {
     public async Task<AppResponse<AppUserResponse>> Handle(CreateAppUserCommand command, CancellationToken ct)
     {
@@ -32,7 +27,6 @@ internal sealed class CreateAppUser(
 
         try
         {
-            // ── 1. Employee-linked path ────────────────────────────────────────
             Employee? employee = null;
 
             if (req.EmployeeId.HasValue)
@@ -62,18 +56,17 @@ internal sealed class CreateAppUser(
 
             if (emailOrUsernameExists)
                 return AppResponse.Failure<AppUserResponse>("An account with this username or email already exists.");
-                    
+
             var appUser = employee is not null
                 ? AppUser.Create(
-                    Guid.Empty, // TODO: resolve from current tenant context 
+                    Guid.Empty,
                     employee.Id,
                     req.Username,
                     employee.FirstName,
                     employee.LastName,
                     employee.Email,
                     employee.PhoneNumber,
-                    createdBy: "System") // TODO: resolve from current user claims
-
+                    createdBy: "System")
                 : AppUser.Create(
                     Guid.Empty,
                     employeeId: null,
@@ -112,7 +105,6 @@ internal sealed class CreateAppUser(
                     if (!roleResult.Succeeded)
                         throw new InvalidOperationException(
                             string.Join(", ", roleResult.Errors.Select(e => e.Description)));
-
                 }
 
                 var profile = new AppUserProfile
@@ -128,17 +120,11 @@ internal sealed class CreateAppUser(
                     .ConfigureAwait(false);
 
                 return true;
-
             }).ConfigureAwait(false);
 
             appUser.RaiseAppUserCreatedEvent();
 
-            var confirmationToken = await userManager
-                .GenerateEmailConfirmationTokenAsync(appUser)
-                .ConfigureAwait(false);
-
-            // TODO: Publish AppUserEmailConfirmationRequestedEvent
-            // or call IEmailService.SendEmailConfirmationAsync(appUser.Email, token)
+            _ = await userManager.GenerateEmailConfirmationTokenAsync(appUser).ConfigureAwait(false);
 
             ServiceLogDefinitions.LogAppUserCreated(logger, appUser.Id, appUser.Email ?? string.Empty);
 

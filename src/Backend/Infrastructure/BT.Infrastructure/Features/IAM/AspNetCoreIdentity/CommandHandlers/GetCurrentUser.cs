@@ -1,5 +1,5 @@
 using BT.Application.Extensions;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Application.Mappings;
 using BT.Domain.Entities;
 using BT.Infrastructure.Logging;
@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class GetCurrentUser(
     IHttpContextAccessor httpContextAccessor,

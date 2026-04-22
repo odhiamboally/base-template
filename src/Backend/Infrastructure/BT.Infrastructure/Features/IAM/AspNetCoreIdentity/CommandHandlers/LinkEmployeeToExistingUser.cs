@@ -1,6 +1,6 @@
-﻿using BT.Application.Extensions;
+using BT.Application.Extensions;
 using BT.Application.Mappings;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Entities;
 using BT.Domain.Enums;
@@ -9,19 +9,14 @@ using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
-internal sealed class LinkEmployeeToExistingUser(IHrUnitOfWork hrUnitOfWork, UserManager<AppUser> userManager) 
+internal sealed class LinkEmployeeToExistingUser(IHrUnitOfWork hrUnitOfWork, UserManager<AppUser> userManager)
     : IRequestHandler<LinkEmployeeToExistingUserCommand, AppResponse<EmployeeResponse>>
 {
     public async Task<AppResponse<EmployeeResponse>> Handle(LinkEmployeeToExistingUserCommand command, CancellationToken ct)
     {
-        // Find existing AppUser by NationalId
         var existingUser = await userManager.Users
             .AsNoTracking()
             .SingleOrDefaultAsync(u => u.NationalId == command.NationalId, ct)
@@ -37,11 +32,10 @@ internal sealed class LinkEmployeeToExistingUser(IHrUnitOfWork hrUnitOfWork, Use
             return AppResponse.Failure<EmployeeResponse>("This user already has an employee record linked.");
         }
 
-        // Create Employee record
         var employee = Employee.Create(
             command.EmployeeDetails.EmployeeNumber,
             command.EmployeeDetails.Email,
-            existingUser.FirstName,  // Use AppUser's verified name
+            existingUser.FirstName,
             existingUser.LastName,
             command.NationalId,
             command.EmployeeDetails.PhoneNumber,
@@ -53,7 +47,6 @@ internal sealed class LinkEmployeeToExistingUser(IHrUnitOfWork hrUnitOfWork, Use
         {
             await hrUnitOfWork.EmployeeRepository.CreateAsync(employee, ct).ConfigureAwait(false);
 
-            // Link AppUser to Employee (behaviour method raises domain event)
             existingUser.LinkToEmployee(employee.Id);
 
             await userManager.UpdateAsync(existingUser).ConfigureAwait(false);

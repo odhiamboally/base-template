@@ -1,5 +1,5 @@
 using BT.Application.Contracts.Interfaces.Common;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Application.Utilities;
 using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Entities;
@@ -12,8 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class ResetPassword(
     UserManager<AppUser> userManager,
@@ -36,7 +35,6 @@ internal sealed class ResetPassword(
                 return AppResponse.Failure<bool>("Invalid reset request");
             }
 
-            // Check OTP verification flag, not Identity token
             var verifiedKey = CacheKeys.PasswordResetVerified(user.Id);
             var isVerified = await cacheService.GetAsync<bool?>(verifiedKey, ct).ConfigureAwait(false);
 
@@ -54,14 +52,13 @@ internal sealed class ResetPassword(
                 return AppResponse.Failure<bool>("New password must be different from your current password");
             }
 
-            // 3. Remove the password directly (no token needed)
             var removeResult = await userManager.RemovePasswordAsync(user).ConfigureAwait(false);
             if (!removeResult.Succeeded)
             {
                 var errors = string.Join(", ", removeResult.Errors.Select(e => e.Description));
-                ServiceLogDefinitions.LogErrorUpdatingClaim(logger, user.Id, 
+                ServiceLogDefinitions.LogErrorUpdatingClaim(logger, user.Id,
                     new InvalidOperationException($"Failed to remove old password: {errors}"));
-                    
+
                 return AppResponse.Failure<bool>("Password reset failed");
             }
 
@@ -73,7 +70,6 @@ internal sealed class ResetPassword(
                 return AppResponse.Failure<bool>("Password reset failed. Please ensure your password meets all requirements.");
             }
 
-            // 4. Update security fields
             user.ResetFailedLoginAttempts();
             user.PasswordLastChanged = DateTimeOffset.UtcNow;
             user.RequirePasswordChange = false;
@@ -81,7 +77,6 @@ internal sealed class ResetPassword(
 
             await userManager.UpdateAsync(user).ConfigureAwait(false);
 
-            // Revoke all sessions
             await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
                 var refreshTokens = await iamUnitOfWork.TokenRepository.GetActiveTokensByUserIdAsync(user.Id).ConfigureAwait(false);
@@ -94,7 +89,6 @@ internal sealed class ResetPassword(
 
             }).ConfigureAwait(false);
 
-            // Clean up cache - use the new keys
             await cacheService.RemoveAsync(verifiedKey, ct).ConfigureAwait(false);
             await cacheService.RemoveAsync(CacheKeys.PasswordResetOtp(user.Id), ct).ConfigureAwait(false);
             await cacheService.RemoveAsync(CacheKeys.PasswordResetRateLimit(user.Id), ct).ConfigureAwait(false);

@@ -1,4 +1,4 @@
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Domain.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
@@ -7,8 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class VerifyPassword(
     UserManager<AppUser> userManager,

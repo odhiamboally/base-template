@@ -1,5 +1,5 @@
 using BT.Application.Contracts.Interfaces.Common;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Entities;
 using BT.Domain.Events;
@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using OtpNet;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class InitiateTotpSetupCommandHandler(
     IEncryptionService encryptionService,
@@ -83,8 +83,3 @@ internal sealed class InitiateTotpSetupCommandHandler(
             "period=30";
     }
 }
-
-
-
-    
-

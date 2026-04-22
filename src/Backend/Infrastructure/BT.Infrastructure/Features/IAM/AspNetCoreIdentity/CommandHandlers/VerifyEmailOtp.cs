@@ -1,7 +1,7 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Extensions;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Application.Utilities;
 using BT.Domain.Entities;
 using BT.Infrastructure.Logging;
@@ -10,13 +10,10 @@ using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class VerifyEmailOtp(
     UserManager<AppUser> userManager,
@@ -35,7 +32,7 @@ internal sealed class VerifyEmailOtp(
         var attemptKey = CacheKeys.EmailOtpAttempts(user.Id);
         var attempts = await cache.GetAsync<int?>(attemptKey, ct).ConfigureAwait(false) ?? 0;
         if (attempts >= 3)
-            return AppResponse.Failure<VerifyEmailOtpResponse>("Too many attempts. Request a new code."); attempts--;
+            return AppResponse.Failure<VerifyEmailOtpResponse>("Too many attempts. Request a new code.");
 
         var otpKey = CacheKeys.EmailOtp(user.Id);
         var storedHash = await cache.GetAsync<string>(otpKey, ct).ConfigureAwait(false);
@@ -78,7 +75,6 @@ internal sealed class VerifyEmailOtp(
 
         if (!string.Equals(req.Purpose, "Login", StringComparison.OrdinalIgnoreCase))
         {
-            // future purposes
             return AppResponse.Success("Code verified",
                 new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, true, DateTimeOffset.UtcNow, null!, []));
         }
@@ -117,13 +113,12 @@ internal sealed class VerifyEmailOtp(
 
         return AppResponse.Success("Email OTP verified", new VerifyEmailOtpResponse(
             token,
-            refreshToken ?? "", 
-            user.Id, 
-            true, 
-            expiry, 
-            appUser, 
+            refreshToken ?? "",
+            user.Id,
+            true,
+            expiry,
+            appUser,
             claimsResp));
-
     }
 
     private static string HashCode(string userId, string code, string purpose)

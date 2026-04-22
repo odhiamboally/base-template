@@ -1,6 +1,6 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Contracts.Interfaces.Services;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Application.Utilities;
 using BT.Domain.Entities;
 using BT.Domain.Enums;
@@ -11,14 +11,11 @@ using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class SendEmailOtp(
     UserManager<AppUser> userManager,
@@ -40,7 +37,6 @@ internal sealed class SendEmailOtp(
         if (!user.IsActive || user.IsDeleted)
             return AppResponse.Failure<SendEmailOtpResponse>("Account is disabled");
 
-        // Only require confirmed email for Login, not for EmailConfirmation or PasswordReset
         var requiresConfirmed = !string.Equals(request.Purpose, OtpPurpose.EmailConfirmation.ToString(), StringComparison.OrdinalIgnoreCase);
         if (requiresConfirmed && !await userManager.IsEmailConfirmedAsync(user).ConfigureAwait(false))
             return AppResponse.Failure<SendEmailOtpResponse>("Email not confirmed");
@@ -58,7 +54,6 @@ internal sealed class SendEmailOtp(
 
         var expiresAt = DateTimeOffset.UtcNow.Add(OtpLifetime);
 
-        // Publish to outbox - MassTransit will deliver reliably
         await publisher.Publish(new EmailOtpRequestedEvent(
             user.Id,
             user.Email!,
@@ -69,10 +64,10 @@ internal sealed class SendEmailOtp(
 
         ServiceLogDefinitions.LogEmailOtpSent(logger, user.Id, request.Purpose);
         return AppResponse.Success(
-            "Code sent", 
+            "Code sent",
             new SendEmailOtpResponse(
-                user.Id, 
-                DateTimeOffset.UtcNow.Add(OtpLifetime), 
+                user.Id,
+                DateTimeOffset.UtcNow.Add(OtpLifetime),
                 (int)Cooldown.TotalSeconds));
     }
 

@@ -1,7 +1,7 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Extensions;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Entities;
@@ -19,8 +19,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Authentication;
 using System.Security.Claims;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class Login(
     UserManager<AppUser> userManager,
@@ -107,10 +106,7 @@ internal sealed class Login(
                 [],
                 user.TenantId,
                 user.EmployeeId,
-                user.CustomerId
-
-
-            );
+                user.CustomerId);
 
             if (signInResult.RequiresTwoFactor || twoFactorEnabled)
             {

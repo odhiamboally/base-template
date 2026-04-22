@@ -1,4 +1,4 @@
-﻿using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Domain.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
@@ -6,14 +6,10 @@ using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
-
-internal sealed class GetOtpStatus(UserManager<AppUser> userManager, ILogger<GetOtpStatus> logger) 
+internal sealed class GetOtpStatus(UserManager<AppUser> userManager, ILogger<GetOtpStatus> logger)
     : IRequestHandler<GetOtpStatusCommand, AppResponse<OtpStatusResponse>>
 {
     public async Task<AppResponse<OtpStatusResponse>> Handle(GetOtpStatusCommand command, CancellationToken cancellationToken)

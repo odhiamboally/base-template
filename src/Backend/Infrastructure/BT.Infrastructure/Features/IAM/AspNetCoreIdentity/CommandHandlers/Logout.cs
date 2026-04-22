@@ -1,4 +1,4 @@
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Domain.Events;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
@@ -8,8 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class Logout(
     SignInManager<Domain.Entities.AppUser> signInManager,

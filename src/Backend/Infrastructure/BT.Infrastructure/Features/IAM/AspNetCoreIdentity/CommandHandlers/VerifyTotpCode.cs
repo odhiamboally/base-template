@@ -1,7 +1,7 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Extensions;
-using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Contracts.Interfaces.Common;
@@ -14,8 +14,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using OtpNet;
 
-namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
-
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class VerifyTotpCode(
     UserManager<AppUser> userManager,
@@ -42,7 +41,6 @@ internal sealed class VerifyTotpCode(
 
             bool isValidCode;
 
-            // Check for temp secret (setup flow) first
             var tempSecret = await iamUnitOfWork.TempTotpSecretRepository
                 .GetValidTempSecretByUserIdAsync(user.Id)
                 .ConfigureAwait(false);
@@ -74,7 +72,6 @@ internal sealed class VerifyTotpCode(
             }
             else
             {
-                // Normal login flow - verify against stored secret with lockout
                 isValidCode = await VerifyUserTotpAsync(user.Id, request.Code, cancellationToken).ConfigureAwait(false);
             }
 
@@ -84,7 +81,6 @@ internal sealed class VerifyTotpCode(
                 return AppResponse.Failure<VerifyOtpResponse>("Invalid verification code. Please try again.");
             }
 
-            // Success - issue tokens
             var userClaims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
             if (userClaims.Count == 0)
             {
@@ -204,6 +200,4 @@ internal sealed class VerifyTotpCode(
             return false;
         }
     }
-
-    
 }

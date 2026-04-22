@@ -43,7 +43,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Twilio;
-using BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
+using BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 namespace BT.Infrastructure.Extensions;
 
