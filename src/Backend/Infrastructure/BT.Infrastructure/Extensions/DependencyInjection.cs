@@ -457,7 +457,7 @@ public static class DependencyInjection
 
                 s.UseSqlServer(sq =>
                 {
-                    sq.ConnectionString = "Data Source=quartz.db";
+                    sq.ConnectionString = connectionString;
                 });
 
             });

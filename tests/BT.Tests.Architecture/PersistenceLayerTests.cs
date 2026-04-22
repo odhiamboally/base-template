@@ -1,9 +1,6 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using NetArchTest.Rules;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace BT.Tests.Architecture;
 
@@ -34,8 +31,6 @@ public sealed class PersistenceLayerTests
     [Fact]
     public void EntityConfigurations_Should_Be_Internal()
     {
-        // Configurations are persistence implementation details.
-        // They must never be referenced from Application or Domain.
         var result = Types.InAssembly(AssemblyReferences.Persistence)
             .That()
             .ImplementInterface(typeof(IEntityTypeConfiguration<>))
@@ -65,26 +60,10 @@ public sealed class PersistenceLayerTests
                 result.FailingTypes?.Select(t => t.Name) ?? []));
     }
 
-    // ── DBContext ─────────────────────────────────────────────────────────────
+    // ── DbContexts ────────────────────────────────────────────────────────────
 
     [Fact]
-    public void DBContext_Should_Reside_In_DataContext_Namespace()
-    {
-        var result = Types.InAssembly(AssemblyReferences.Persistence)
-            .That()
-            .Inherit(typeof(DbContext))
-            .Should()
-            .ResideInNamespace("BT.Persistence.DataContext")
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "DbContext subclasses must live in BT.Persistence.DataContext. " +
-                     "Failing types: {0}", string.Join(", ",
-                result.FailingTypes?.Select(t => t.Name) ?? []));
-    }
-
-    [Fact]
-    public void Only_One_DbContext_Should_Exist()
+    public void DbContexts_Should_Reside_In_Known_DataContext_Namespaces()
     {
         var dbContextTypes = Types.InAssembly(AssemblyReferences.Persistence)
             .That()
@@ -92,8 +71,42 @@ public sealed class PersistenceLayerTests
             .GetTypes()
             .ToList();
 
-        dbContextTypes.Should().HaveCount(1,
-            because: "A single-tenant application should have exactly one DbContext. " +
-                     "Found: {0}", string.Join(", ", dbContextTypes.Select(t => t.Name)));
+        dbContextTypes.Should().NotBeEmpty("Persistence must define EF Core DbContext types.");
+
+        var allowedNamespaces = new[]
+        {
+            "BT.Persistence.Banking.DataContext",
+            "BT.Persistence.HR.DataContext",
+            "BT.Persistence.IAM.DataContext",
+            "BT.Persistence.Shared.DataContext",
+            "BT.Persistence.DataContext"
+        };
+
+        var misplacedTypes = dbContextTypes
+            .Where(t => t.Namespace is null || !allowedNamespaces.Contains(t.Namespace))
+            .Select(t => t.FullName)
+            .ToList();
+
+        misplacedTypes.Should().BeEmpty(
+            because: "DbContext subclasses must live in one of the bounded-context DataContext namespaces. Found: {0}",
+            string.Join(", ", misplacedTypes));
+    }
+
+    [Fact]
+    public void Required_Bounded_Context_DbContexts_Should_Exist()
+    {
+        var dbContextTypeNames = Types.InAssembly(AssemblyReferences.Persistence)
+            .That()
+            .Inherit(typeof(DbContext))
+            .GetTypes()
+            .Select(t => t.Name)
+            .ToList();
+
+        dbContextTypeNames.Should().Contain([
+            "SharedDbContext",
+            "IamDbContext",
+            "HrDbContext",
+            "BankingDbContext"
+        ], because: "the modular monolith requires one DbContext per bounded context.");
     }
 }

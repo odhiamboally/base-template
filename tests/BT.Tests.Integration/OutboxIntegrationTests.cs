@@ -1,6 +1,6 @@
 ﻿using BT.Domain.Enums;
 using BT.Domain.Events;
-using BT.Persistence.DataContext;
+using BT.Persistence.Shared.DataContext;
 using MassTransit;
 using MassTransit.EntityFrameworkCoreIntegration;
 using MassTransit.Testing;
@@ -26,10 +26,10 @@ public class OutboxIntegrationTests
         await connection.OpenAsync();
 
         await using var provider = new ServiceCollection()
-            .AddDbContext<DBContext>(o => o.UseSqlite(connection))
+            .AddDbContext<SharedDbContext>(o => o.UseSqlite(connection))
             .AddMassTransitTestHarness(x =>
             {
-                x.AddEntityFrameworkOutbox<DBContext>(o =>
+                x.AddEntityFrameworkOutbox<SharedDbContext>(o =>
                 {
                     o.UseSqlite();
                     o.UseBusOutbox();
@@ -43,7 +43,7 @@ public class OutboxIntegrationTests
             .BuildServiceProvider(true);
 
         using var scope = provider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<DBContext>();
+        var db = scope.ServiceProvider.GetRequiredService<SharedDbContext>();
 
         await db.Database.EnsureCreatedAsync();
 
@@ -69,10 +69,10 @@ public class OutboxIntegrationTests
         await connection.OpenAsync();
 
         await using var provider = new ServiceCollection()
-            .AddDbContext<DBContext>(o => o.UseSqlite(connection))
+            .AddDbContext<SharedDbContext>(o => o.UseSqlite(connection))
             .AddMassTransitTestHarness(x =>
             {
-                x.AddEntityFrameworkOutbox<DBContext>(o =>
+                x.AddEntityFrameworkOutbox<SharedDbContext>(o =>
                 {
                     o.UseSqlite();
                     o.UseBusOutbox();
@@ -81,14 +81,14 @@ public class OutboxIntegrationTests
 
                 x.AddConfigureEndpointsCallback((context, name, cfg) =>
                 {
-                    cfg.UseEntityFrameworkOutbox<DBContext>(context);
+                    cfg.UseEntityFrameworkOutbox<SharedDbContext>(context);
                 });
             })
             .BuildServiceProvider(true);
 
         using var scope = provider.CreateScope();
         var harness = scope.ServiceProvider.GetRequiredService<ITestHarness>();
-        var db = scope.ServiceProvider.GetRequiredService<DBContext>();
+        var db = scope.ServiceProvider.GetRequiredService<SharedDbContext>();
 
         await db.Database.EnsureCreatedAsync();
         await harness.Start();
@@ -121,11 +121,11 @@ public class OutboxIntegrationTests
         await connection.OpenAsync().ConfigureAwait(true);
 
         await using var provider = new ServiceCollection()
-            .AddDbContext<DBContext>(options =>
+            .AddDbContext<SharedDbContext>(options =>
                 options.UseSqlite(connection))
             .AddMassTransit(x =>
             {
-                x.AddEntityFrameworkOutbox<DBContext>(o =>
+                x.AddEntityFrameworkOutbox<SharedDbContext>(o =>
                 {
                     o.UseSqlite();
                     o.UseBusOutbox();
@@ -140,7 +140,7 @@ public class OutboxIntegrationTests
 
         using var scope = provider.CreateScope();
 
-        var db = scope.ServiceProvider.GetRequiredService<DBContext>();
+        var db = scope.ServiceProvider.GetRequiredService<SharedDbContext>();
         var bus = scope.ServiceProvider.GetRequiredService<IBus>();
 
         await db.Database.EnsureCreatedAsync();

@@ -4,7 +4,7 @@ using BT.Application.Exceptions;
 using BT.Domain.Exceptions;
 using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Messaging.Consumers;
-using BT.Persistence.DataContext;
+using BT.Persistence.Shared.DataContext;
 using FluentValidation;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -258,7 +258,7 @@ internal static class DependencyInjection
         services.AddMassTransit(x =>
         {
             // 1. Add the EF Outbox
-            x.AddEntityFrameworkOutbox<DBContext>(o =>
+            x.AddEntityFrameworkOutbox<SharedDbContext>(o =>
             {
                 o.UseSqlServer(); 
                 o.UseBusOutbox(); // Integrates with the IPublishEndpoint
@@ -296,7 +296,7 @@ internal static class DependencyInjection
         services.AddMassTransit(x =>
         {
             // EF Outbox
-            x.AddEntityFrameworkOutbox<DBContext>(o =>
+            x.AddEntityFrameworkOutbox<SharedDbContext>(o =>
             {
                 o.UseSqlServer();
                 o.UseBusOutbox();

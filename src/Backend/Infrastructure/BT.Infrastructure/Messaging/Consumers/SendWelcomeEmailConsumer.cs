@@ -101,7 +101,7 @@ public sealed class SendWelcomeEmailConsumer(
             };
 
             await sharedUnitOfWork.FailedMessageRepository.CreateAsync(failedMessage, context.CancellationToken).ConfigureAwait(false);
-            await bankingUnitOfWork.CompleteAsync(context.CancellationToken).ConfigureAwait(false);
+            await sharedUnitOfWork.CompleteAsync(context.CancellationToken).ConfigureAwait(false);
             return;
         }
         catch (Exception ex)

@@ -21,7 +21,6 @@ namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
 internal sealed class CreateAppUser(
     UserManager<AppUser> userManager, 
     IHrUnitOfWork hrUnitOfWork,
-    ISharedUnitOfWork sharedUnitOfWork,
     IIamUnitOfWork iamUnitOfWork,
     ILogger<CreateAppUser> logger) : IRequestHandler<CreateAppUserCommand, AppResponse<AppUserResponse>>
  
@@ -102,7 +101,7 @@ internal sealed class CreateAppUser(
 
             createdUser = appUser;
 
-            await sharedUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+            await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
                 if (req.Roles?.Count > 0)
                 {
@@ -127,8 +126,6 @@ internal sealed class CreateAppUser(
                 await iamUnitOfWork.AppUserProfileRepository
                     .CreateOrUpdateAsync(appUser.Id, profile, ct)
                     .ConfigureAwait(false);
-
-                await sharedUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
 
                 return true;
 

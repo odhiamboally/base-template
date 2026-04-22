@@ -7,7 +7,6 @@ using BT.Infrastructure.Banking.Extensions;
 using BT.Infrastructure.Extensions;
 using BT.Infrastructure.HR.Extensions;
 using BT.Infrastructure.IAM.Extensions;
-using BT.Persistence.Extensions;
 using BT.Persistence.Shared.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -77,7 +76,6 @@ try
     builder.Services.AddHrModule(builder.Configuration);
     builder.Services.AddBankingModule(builder.Configuration);
     builder.Services.AddSharedPersistence(builder.Configuration);
-    builder.Services.AddPersistenceServices(builder.Configuration);
 
     builder.Services.AddControllers()
             .AddJsonOptions(options =>

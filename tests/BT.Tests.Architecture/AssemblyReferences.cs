@@ -1,8 +1,8 @@
-﻿using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Entities;
 using BT.Persistence.DataContext;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Validation.Validators.Lookups;
+using System.IO;
 using System.Reflection;
 
 namespace BT.Tests.Architecture;
@@ -20,7 +20,11 @@ namespace BT.Tests.Architecture;
 internal static class AssemblyReferences
 {
     internal static readonly Assembly Domain = typeof(BaseEntity).Assembly;
-    internal static readonly Assembly Application = typeof(ITransactionalUnitOfWork).Assembly;  // public interface
+    internal static readonly Assembly Application = Assembly.LoadFrom(
+        Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..",
+            "src", "Backend", "Application", "BT.Application", "bin", "Debug", "net10.0", "BT.Application.dll")));
     internal static readonly Assembly Persistence = typeof(DBContext).Assembly;
     internal static readonly Assembly SharedKernel = typeof(LookupResponse).Assembly;
     internal static readonly Assembly SharedKernelValidation = typeof(GetLookupRequestValidator).Assembly;
