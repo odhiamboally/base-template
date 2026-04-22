@@ -1,5 +1,5 @@
-﻿using Asp.Versioning;
-using BT.Application.Features.Customers.CommandHandlers;
+using Asp.Versioning;
+using BT.Application.Features.Banking.Customers.CommandHandlers;
 using BT.SharedKernel.Dtos.Client;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;

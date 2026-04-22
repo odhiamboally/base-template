@@ -1,4 +1,4 @@
-﻿using BT.Application.Features.Auth.Commands;
+using BT.Application.Features.IAM.Commands;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using BT.UI.Rcl.Contracts.Interfaces.Auth;
@@ -28,7 +28,7 @@ internal sealed class AuthService(ISender sender, ITokenStorage storage) : IAuth
 
         if (response.Successful)
         {
-            await storage.SaveAsync(response.Data?.Token, response.Data?.RefreshToken).ConfigureAwait(false); 
+            await storage.SaveAsync(response.Data?.Token, response.Data?.RefreshToken).ConfigureAwait(false);
         }
 
         return response;
