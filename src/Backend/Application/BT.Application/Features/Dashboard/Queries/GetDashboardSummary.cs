@@ -25,7 +25,7 @@ public record GetDashboardSummaryQuery(string UserId, string? RoleScope = null) 
 }
 
 
-internal sealed class GetDashboardSummaryQueryHandler(IUnitOfWork _unitOfWork, ILogger<GetDashboardSummaryQueryHandler> _logger)
+internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankingUow, ILogger<GetDashboardSummaryQueryHandler> _logger)
     : IRequestHandler<GetDashboardSummaryQuery, AppResponse<DashboardSummaryResponse>>
 {
     // Standard capacity per RM — configurable via IAM settings in a future iteration
@@ -38,7 +38,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IUnitOfWork _unitOfWork, I
         {
             var now = DateTimeOffset.UtcNow;
 
-            var rows = await _unitOfWork.CustomerRepository
+            var rows = await _bankingUow.CustomerRepository
                 .FindAll()
                 .Select(c => new Row(
                     c.Status,

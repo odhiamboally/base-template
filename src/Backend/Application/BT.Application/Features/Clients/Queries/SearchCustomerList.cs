@@ -38,7 +38,7 @@ public record SearchCustomerListQuery(CustomerSearchRequest SearchRequest, strin
     public bool BypassCache => false;  // explicit; see XML doc above
 }
 
-internal sealed class SearchCustomerListQueryHandler(IUnitOfWork _unitOfWork, ILogger<SearchCustomerListQueryHandler> _logger)
+internal sealed class SearchCustomerListQueryHandler(IBankingUnitOfWork _bankingUow, ILogger<SearchCustomerListQueryHandler> _logger)
     : IRequestHandler<SearchCustomerListQuery, AppResponse<PagedResponse<CustomerResponse, Guid>>>
 {
     public async Task<AppResponse<PagedResponse<CustomerResponse, Guid>>> Handle(SearchCustomerListQuery query, CancellationToken ct)
@@ -70,8 +70,8 @@ internal sealed class SearchCustomerListQueryHandler(IUnitOfWork _unitOfWork, IL
 
             );
 
-            var totalCount = await _unitOfWork.CustomerRepository.CountAsync(spec, ct).ConfigureAwait(false);
-            var customerEntities = await _unitOfWork.CustomerRepository.SearchAsync(spec, ct).ConfigureAwait(false);
+            var totalCount = await _bankingUow.CustomerRepository.CountAsync(spec, ct).ConfigureAwait(false);
+            var customerEntities = await _bankingUow.CustomerRepository.SearchAsync(spec, ct).ConfigureAwait(false);
 
             bool hasNextPage = customerEntities.Count > pageSize;
             if (hasNextPage)

@@ -24,14 +24,14 @@ public record GetEmployeesQuery(string UserId) : IRequest<AppResponse<List<Emplo
 }
 
 
-internal sealed class GetEmployeesQueryHandler(IUnitOfWork _unitOfWork, ILogger<GetEmployeesQueryHandler> _logger)
+internal sealed class GetEmployeesQueryHandler(IHrUnitOfWork _hrUow, ILogger<GetEmployeesQueryHandler> _logger)
     : IRequestHandler<GetEmployeesQuery, AppResponse<List<EmployeeResponse>>>
 {
     public async Task<AppResponse<List<EmployeeResponse>>> Handle(GetEmployeesQuery query, CancellationToken ct)
     {
         try
         {
-            var staff = await _unitOfWork.EmployeeRepository.FindAll().ToListAsync(cancellationToken: ct).ConfigureAwait(false);
+            var staff = await _hrUow.EmployeeRepository.FindAll().ToListAsync(cancellationToken: ct).ConfigureAwait(false);
             var mapped = staff.Select(s => s.ToEmployeeResponse()).ToList();
             return AppResponse.Success($"Success", mapped);
         }

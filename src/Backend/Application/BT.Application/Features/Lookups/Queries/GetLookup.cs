@@ -24,7 +24,7 @@ public sealed record GetLookupQuery(GetLookupRequest GetLookupRequest, string Us
     public bool IsVersioned => true;
 }
 
-internal sealed class GetLookupQueryHandler(IUnitOfWork _unitOfWork, ILogger<GetLookupQueryHandler> _logger) 
+internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUow, ILogger<GetLookupQueryHandler> _logger) 
     : IRequestHandler<GetLookupQuery, AppResponse<IReadOnlyList<LookupResponse>>>
 {
     public async Task<AppResponse<IReadOnlyList<LookupResponse>>> Handle(GetLookupQuery query, CancellationToken cancellationToken)
@@ -53,7 +53,7 @@ internal sealed class GetLookupQueryHandler(IUnitOfWork _unitOfWork, ILogger<Get
                 }
             }
 
-            var lookups = await _unitOfWork.LookupRepository
+            var lookups = await _sharedUow.LookupRepository
                 .GetLookupsByTypeAsync(enumValue, cancellationToken)
                 .ConfigureAwait(false);
 

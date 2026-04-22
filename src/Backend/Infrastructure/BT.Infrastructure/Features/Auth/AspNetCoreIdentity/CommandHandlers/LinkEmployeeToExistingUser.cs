@@ -17,7 +17,7 @@ using System.Text;
 namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class LinkEmployeeToExistingUser(
-    IUnitOfWork unitOfWork,
+    IHrUnitOfWork unitOfWork,
     UserManager<AppUser> userManager,
     ILogger<LinkEmployeeToExistingUser> logger) : IRequestHandler<LinkEmployeeToExistingUserCommand, AppResponse<EmployeeResponse>>
 {

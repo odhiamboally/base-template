@@ -33,7 +33,7 @@ public record GetClientByIdQuery(Guid Id) : IRequest<AppResponse<CustomerRespons
 }
 
 internal sealed class GetClientByIdQueryHandler(
-    IUnitOfWork _unitOfWork,
+    IBankingUnitOfWork _bankingUow,
     ILogger<GetClientByIdQueryHandler> _logger)
     : IRequestHandler<GetClientByIdQuery, AppResponse<CustomerResponse>>
 {
@@ -41,7 +41,7 @@ internal sealed class GetClientByIdQueryHandler(
     {
         try
         {
-            var customer = await _unitOfWork.CustomerRepository.FindByIdAsync(query.Id, ct).ConfigureAwait(false);
+            var customer = await _bankingUow.CustomerRepository.FindByIdAsync(query.Id, ct).ConfigureAwait(false);
 
             if (customer is null)
                 return AppResponse.Failure<CustomerResponse>($"Customer with ID {query.Id} was not found.");

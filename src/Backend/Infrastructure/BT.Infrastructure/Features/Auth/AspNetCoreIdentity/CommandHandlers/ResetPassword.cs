@@ -16,7 +16,7 @@ namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
 
 internal sealed class ResetPassword(
     UserManager<AppUser> userManager,
-    IUnitOfWork unitOfWork,
+    IIamUnitOfWork unitOfWork,
     ICacheService cacheService,
     IHttpContextAccessor httpContextAccessor,
     IPublisher publisher,

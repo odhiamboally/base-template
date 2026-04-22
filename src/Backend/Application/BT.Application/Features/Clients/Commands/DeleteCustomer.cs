@@ -24,20 +24,20 @@ public record DeleteClientCommand(Guid ClientId, string UserId) : IRequest<AppRe
         
 }
 
-internal sealed class DeleteClientCommandHandler(IUnitOfWork _unitOfWork, ILogger<DeleteClientCommandHandler> _logger)
+internal sealed class DeleteClientCommandHandler(IBankingUnitOfWork _bankingUow, ILogger<DeleteClientCommandHandler> _logger)
     : IRequestHandler<DeleteClientCommand, AppResponse<bool>>
 {
     public async Task<AppResponse<bool>> Handle(DeleteClientCommand command, CancellationToken ct)
     {
         try
         {
-            var customer = await _unitOfWork.CustomerRepository.FindByIdAsync(command.ClientId, ct).ConfigureAwait(false);
+            var customer = await _bankingUow.CustomerRepository.FindByIdAsync(command.ClientId, ct).ConfigureAwait(false);
             if (customer is null)
                 return AppResponse.Failure<bool>($"Customer {command.ClientId} not found.");
 
-            await _unitOfWork.CustomerRepository.SoftDeleteAsync(command.ClientId, ct).ConfigureAwait(false);
+            await _bankingUow.CustomerRepository.SoftDeleteAsync(command.ClientId, ct).ConfigureAwait(false);
 
-            var saved = await _unitOfWork.CompleteAsync(ct).ConfigureAwait(false) > 0;
+            var saved = await _bankingUow.CompleteAsync(ct).ConfigureAwait(false) > 0;
             if (!saved)
                 return AppResponse.Failure<bool>("Failed to delete customer.");
             return AppResponse.Success(true);

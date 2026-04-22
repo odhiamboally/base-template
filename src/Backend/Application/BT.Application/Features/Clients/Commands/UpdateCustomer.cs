@@ -33,7 +33,10 @@ public record UpdateCustomerCommand(Guid Id, UpdateCustomerRequest UpdateCustome
         
 }
 
-internal sealed class UpdateCustomerCommandHandler(IUnitOfWork _unitOfWork, ILogger<UpdateCustomerCommandHandler> _logger) 
+internal sealed class UpdateCustomerCommandHandler(
+    IBankingUnitOfWork _bankingUow,
+    IHrUnitOfWork _hrUow,
+    ILogger<UpdateCustomerCommandHandler> _logger) 
     : IRequestHandler<UpdateCustomerCommand, AppResponse<CustomerResponse>>
 {
     
@@ -42,12 +45,12 @@ internal sealed class UpdateCustomerCommandHandler(IUnitOfWork _unitOfWork, ILog
         try
         {
             var req = command.UpdateCustomerRequest;
-            var customer = await _unitOfWork.CustomerRepository.FindByIdAsync(req.Id, ct).ConfigureAwait(false);
+            var customer = await _bankingUow.CustomerRepository.FindByIdAsync(req.Id, ct).ConfigureAwait(false);
             if (customer is null)
                 return AppResponse.Failure<CustomerResponse>($"Customer {req.Id} not found.");
                     
             // Verify new RM if it changed
-            var rm = await _unitOfWork.EmployeeRepository
+            var rm = await _hrUow.EmployeeRepository
                 .FindByIdAsync(req.RelationshipManagerId, ct)
                 .ConfigureAwait(false);
 
@@ -103,8 +106,8 @@ internal sealed class UpdateCustomerCommandHandler(IUnitOfWork _unitOfWork, ILog
 
             customer.AssignRelationshipManager(req.RelationshipManagerId);
 
-            await _unitOfWork.CustomerRepository.UpdateAsync(customer).ConfigureAwait(false);
-            await _unitOfWork.CompleteAsync(ct).ConfigureAwait(false);
+            await _bankingUow.CustomerRepository.UpdateAsync(customer).ConfigureAwait(false);
+            await _bankingUow.CompleteAsync(ct).ConfigureAwait(false);
 
             LogDefinitions.LogCustomerUpdated(_logger, customer.ClientNumber);
 

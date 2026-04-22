@@ -16,7 +16,7 @@ namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
 internal sealed class InitiateTotpSetupCommandHandler(
     IEncryptionService encryptionService,
     UserManager<AppUser> userManager,
-    IUnitOfWork unitOfWork,
+    IIamUnitOfWork unitOfWork,
     ILogger<InitiateTotpSetupCommandHandler> logger) : IRequestHandler<InitiateTotpSetupCommand, AppResponse<TwoFactorSetupInfo>>
 {
     private const string TotpIssuer = "LlanCore.BaseTemplate.API";

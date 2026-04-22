@@ -19,7 +19,7 @@ internal sealed record CreateEmployeeCommand(CreateEmployeeRequest Request) : IR
     public IReadOnlyList<string> GroupVersionKeysToInvalidate => [];
 }
 
-internal sealed class CreateEmployee(IUnitOfWork unitOfWork, ILogger<CreateEmployee> logger) 
+internal sealed class CreateEmployee(IHrUnitOfWork unitOfWork, ILogger<CreateEmployee> logger) 
     : IRequestHandler<CreateEmployeeCommand, AppResponse<EmployeeResponse>>
 {
     public async Task<AppResponse<EmployeeResponse>> Handle(CreateEmployeeCommand command, CancellationToken cancellationToken)

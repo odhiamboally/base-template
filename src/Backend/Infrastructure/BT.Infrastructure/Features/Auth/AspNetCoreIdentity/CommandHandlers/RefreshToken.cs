@@ -17,7 +17,7 @@ namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
 
 internal sealed class RefreshToken(
     UserManager<AppUser> userManager,
-    IUnitOfWork unitOfWork,
+    IIamUnitOfWork unitOfWork,
     IJwtService jwtService,
     IClaimsService claimsService,
     IHttpContextAccessor httpContextAccessor,

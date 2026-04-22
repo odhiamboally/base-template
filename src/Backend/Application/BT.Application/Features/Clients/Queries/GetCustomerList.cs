@@ -46,7 +46,7 @@ public record GetCustomerListQuery(CustomerListRequest ClientListRequest, string
     public bool IsVersioned => true;
 }
 
-internal sealed class GetCustomerListQueryHandler(IUnitOfWork _unitOfWork, ILogger<GetCustomerListQueryHandler> _logger) 
+internal sealed class GetCustomerListQueryHandler(IBankingUnitOfWork _bankingUow, ILogger<GetCustomerListQueryHandler> _logger) 
     : IRequestHandler<GetCustomerListQuery, AppResponse<PagedResponse<CustomerResponse, Guid>>>
 {
     public async Task<AppResponse<PagedResponse<CustomerResponse, Guid>>> Handle(GetCustomerListQuery query, CancellationToken ct)
@@ -57,8 +57,8 @@ internal sealed class GetCustomerListQueryHandler(IUnitOfWork _unitOfWork, ILogg
 
             var pageSize = Math.Clamp(req.PageSize, 1, 50);
 
-            var totalCount = await _unitOfWork.CustomerRepository.CountAsync(ct).ConfigureAwait(false);
-            var customerEntities = await _unitOfWork.CustomerRepository
+            var totalCount = await _bankingUow.CustomerRepository.CountAsync(ct).ConfigureAwait(false);
+            var customerEntities = await _bankingUow.CustomerRepository
                 .FindAll()
                 .Include(c => c.RelationshipManager)
                 .Where(c => req.Cursor == null || req.Cursor == Guid.Empty || c.Id > req.Cursor)

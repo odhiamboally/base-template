@@ -23,7 +23,7 @@ internal sealed class VerifyTotpCode(
     IJwtService jwtService,
     ICacheService cache,
     IEncryptionService encryptionService,
-    IUnitOfWork unitOfWork,
+    IIamUnitOfWork unitOfWork,
     ILogger<VerifyTotpCode> logger) : IRequestHandler<VerifyOtpCommand, AppResponse<VerifyOtpResponse>>
 {
     public async Task<AppResponse<VerifyOtpResponse>> Handle(VerifyOtpCommand command, CancellationToken cancellationToken)

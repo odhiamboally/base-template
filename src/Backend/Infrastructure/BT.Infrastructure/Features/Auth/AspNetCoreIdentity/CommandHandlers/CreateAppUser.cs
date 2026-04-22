@@ -17,7 +17,7 @@ using System.Text;
 namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
 
 
-internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWork unitOfWork, ILogger<CreateAppUser> logger)
+internal sealed class CreateAppUser(UserManager<AppUser> userManager, IIamUnitOfWork iamUow, IHrUnitOfWork hrUow, ILogger<CreateAppUser> logger)
  : IRequestHandler<CreateAppUserCommand, AppResponse<AppUserResponse>>
 {
     public async Task<AppResponse<AppUserResponse>> Handle(CreateAppUserCommand command, CancellationToken ct)
@@ -32,7 +32,7 @@ internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWor
 
             if (req.EmployeeId.HasValue)
             {
-                employee = await unitOfWork.EmployeeRepository
+                employee = await hrUow.EmployeeRepository
                     .FindByCondition(e => e.Id == req.EmployeeId.Value)
                     .AsNoTracking()
                     .SingleOrDefaultAsync(ct)
@@ -96,7 +96,7 @@ internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWor
 
             createdUser = appUser;
 
-            await unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+            await iamUow.ExecuteInTransactionWithRetryAsync(async () =>
             {
                 if (req.Roles?.Count > 0)
                 {
@@ -118,11 +118,11 @@ internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWor
                     CreatedBy = "System"
                 };
 
-                await unitOfWork.AppUserProfileRepository
+                await iamUow.AppUserProfileRepository
                     .CreateOrUpdateAsync(appUser.Id, profile, ct)
                     .ConfigureAwait(false);
 
-                await unitOfWork.CompleteAsync(ct).ConfigureAwait(false);
+                await iamUow.CompleteAsync(ct).ConfigureAwait(false);
 
                 return true;
 

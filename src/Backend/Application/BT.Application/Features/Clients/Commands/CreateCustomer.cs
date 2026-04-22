@@ -38,7 +38,7 @@ public record CreateCustomerCommand(CreateCustomerRequest CreateCustomerRequest,
 }
     
 internal sealed class CreateCustomerCommandHandler(
-    IUnitOfWork _unitOfWork,
+    IBankingUnitOfWork _bankingUow,
     ICustomerNumberGenerator _clientNumberGenerator,
     ILogger<CreateCustomerCommandHandler> _logger
     
@@ -113,9 +113,9 @@ internal sealed class CreateCustomerCommandHandler(
                 string.Empty // ToDo: Should get currentuser
             );
 
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            await _bankingUow.ExecuteInTransactionAsync(async () =>
             {
-                await _unitOfWork.CustomerRepository.CreateAsync(client, ct).ConfigureAwait(false);
+                await _bankingUow.CustomerRepository.CreateAsync(client, ct).ConfigureAwait(false);
                 return true;
             }, ct).ConfigureAwait(false);
 
