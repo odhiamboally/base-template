@@ -4,6 +4,7 @@ using BT.Application.Extensions;
 using BT.Application.Features.Auth.Commands;
 using BT.Application.Utilities;
 using BT.Domain.Entities;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -49,7 +50,7 @@ internal sealed class VerifyEmailOtp(
         if (!isValid)
         {
             await cache.SetAsync(attemptKey, attempts + 1, TimeSpan.FromMinutes(10), ct).ConfigureAwait(false);
-            logger.LogWarning("Invalid email OTP for user {UserId}", user.Id);
+            ServiceLogDefinitions.LogInvalidEmailOtp(logger, user.Id);
             return AppResponse.Failure<VerifyEmailOtpResponse>("Invalid code");
         }
 
@@ -62,7 +63,7 @@ internal sealed class VerifyEmailOtp(
             {
                 user.EmailConfirmed = true;
                 await userManager.UpdateAsync(user).ConfigureAwait(false);
-                logger.LogInformation("Email confirmed via OTP for user {UserId}", user.Id);
+                ServiceLogDefinitions.LogEmailConfirmedViaOtp(logger, user.Id);
             }
             return AppResponse.Success("Email confirmed",
                 new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, true, DateTimeOffset.UtcNow, null!, []));

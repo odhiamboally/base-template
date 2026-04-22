@@ -14,7 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.Application.Features.Clients.Commands;
+namespace BT.Application.Features.Customers.CommandHandlers;
 
 
 /// <summary>
@@ -33,7 +33,10 @@ public record UpdateCustomerCommand(Guid Id, UpdateCustomerRequest UpdateCustome
         
 }
 
-internal sealed class UpdateCustomerCommandHandler(IUnitOfWork _unitOfWork, ILogger<UpdateCustomerCommandHandler> _logger) 
+internal sealed class UpdateCustomerCommandHandler(
+    IBankingUnitOfWork _bankingUnitOfWork, 
+    IHrUnitOfWork _hrUnitOfWork, 
+    ILogger<UpdateCustomerCommandHandler> _logger)
     : IRequestHandler<UpdateCustomerCommand, AppResponse<CustomerResponse>>
 {
     
@@ -42,12 +45,12 @@ internal sealed class UpdateCustomerCommandHandler(IUnitOfWork _unitOfWork, ILog
         try
         {
             var req = command.UpdateCustomerRequest;
-            var customer = await _unitOfWork.CustomerRepository.FindByIdAsync(req.Id, ct).ConfigureAwait(false);
+            var customer = await _bankingUnitOfWork.CustomerRepository.FindByIdAsync(req.Id, ct).ConfigureAwait(false);
             if (customer is null)
                 return AppResponse.Failure<CustomerResponse>($"Customer {req.Id} not found.");
                     
             // Verify new RM if it changed
-            var rm = await _unitOfWork.EmployeeRepository
+            var rm = await _hrUnitOfWork.EmployeeRepository
                 .FindByIdAsync(req.RelationshipManagerId, ct)
                 .ConfigureAwait(false);
 
@@ -103,8 +106,8 @@ internal sealed class UpdateCustomerCommandHandler(IUnitOfWork _unitOfWork, ILog
 
             customer.AssignRelationshipManager(req.RelationshipManagerId);
 
-            await _unitOfWork.CustomerRepository.UpdateAsync(customer).ConfigureAwait(false);
-            await _unitOfWork.CompleteAsync(ct).ConfigureAwait(false);
+            await _bankingUnitOfWork.CustomerRepository.UpdateAsync(customer).ConfigureAwait(false);
+            await _bankingUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
 
             LogDefinitions.LogCustomerUpdated(_logger, customer.ClientNumber);
 

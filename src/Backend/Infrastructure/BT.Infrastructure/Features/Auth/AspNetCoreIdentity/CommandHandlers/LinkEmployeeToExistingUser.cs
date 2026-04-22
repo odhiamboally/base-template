@@ -16,10 +16,8 @@ using System.Text;
 
 namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
 
-internal sealed class LinkEmployeeToExistingUser(
-    IUnitOfWork unitOfWork,
-    UserManager<AppUser> userManager,
-    ILogger<LinkEmployeeToExistingUser> logger) : IRequestHandler<LinkEmployeeToExistingUserCommand, AppResponse<EmployeeResponse>>
+internal sealed class LinkEmployeeToExistingUser(IHrUnitOfWork hrUnitOfWork, UserManager<AppUser> userManager) 
+    : IRequestHandler<LinkEmployeeToExistingUserCommand, AppResponse<EmployeeResponse>>
 {
     public async Task<AppResponse<EmployeeResponse>> Handle(LinkEmployeeToExistingUserCommand command, CancellationToken ct)
     {
@@ -51,9 +49,9 @@ internal sealed class LinkEmployeeToExistingUser(
             command.EmployeeDetails.ManagerId ?? Guid.Empty,
             command.CreatedBy);
 
-        await unitOfWork.ExecuteInTransactionAsync(async () =>
+        await hrUnitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            await unitOfWork.EmployeeRepository.CreateAsync(employee, ct).ConfigureAwait(false);
+            await hrUnitOfWork.EmployeeRepository.CreateAsync(employee, ct).ConfigureAwait(false);
 
             // Link AppUser to Employee (behaviour method raises domain event)
             existingUser.LinkToEmployee(employee.Id);
@@ -61,7 +59,7 @@ internal sealed class LinkEmployeeToExistingUser(
             await userManager.UpdateAsync(existingUser).ConfigureAwait(false);
             await userManager.AddToRoleAsync(existingUser, Roles.Employee.ToDisplayString()).ConfigureAwait(false);
 
-            await unitOfWork.CompleteAsync(ct).ConfigureAwait(false);
+            await hrUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
             return true;
 
         }, ct).ConfigureAwait(false);

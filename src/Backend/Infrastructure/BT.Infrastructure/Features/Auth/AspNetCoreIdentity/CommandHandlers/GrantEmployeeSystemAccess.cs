@@ -1,5 +1,6 @@
 ﻿using BT.Application.Features.Auth.Commands;
 using BT.Domain.Entities;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -51,11 +52,12 @@ internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager
             var token = await userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
             // TODO: Raise AppUserActivationEmailRequestedEvent(user.Email, token)
 
-            logger.LogInformation(
-                "System access granted to employee {EmployeeId} by {GrantedBy}",
-                command.EmployeeId, command.GrantedBy);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                ServiceLogDefinitions.LogEmployeeSystemAccessGranted(logger, command.EmployeeId.ToString(), command.GrantedBy);
+            }
 
-            return AppResponse.Success<bool>("System access granted. Activation email sent.", true);
+            return AppResponse.Success("System access granted. Activation email sent.", true);
         }
         catch (Exception)
         {

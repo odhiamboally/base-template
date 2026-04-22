@@ -20,7 +20,10 @@ using BT.Domain.Entities;
 namespace BT.Infrastructure.Contracts.Implementations.Services;
 
 
-internal sealed class EmailComposer(ICacheService _cache, IUnitOfWork _unitOfWork, ILogger<EmailComposer> _logger) : IEmailComposer
+internal sealed class EmailComposer(
+    ICacheService _cache, 
+    ISharedUnitOfWork _sharedUnitOfWork, 
+    ILogger<EmailComposer> _logger) : IEmailComposer
 {
     public bool CanHandle(Type eventType, EmailTemplateType template) =>
         _templateToEventMap.TryGetValue(template, out var mapped) && mapped == eventType;
@@ -104,7 +107,7 @@ internal sealed class EmailComposer(ICacheService _cache, IUnitOfWork _unitOfWor
                 .GetAsync<EmailTemplate>(templateKey)
                 .ConfigureAwait(false);
 
-            var template = cachedTemplate ?? await _unitOfWork.EmailTemplateRepository
+            var template = cachedTemplate ?? await _sharedUnitOfWork.EmailTemplateRepository
                 .FindByCondition(t => t.Name == emailTemplate.ToDisplayString())
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
@@ -156,7 +159,7 @@ internal sealed class EmailComposer(ICacheService _cache, IUnitOfWork _unitOfWor
         var cached = await _cache.GetAsync<EmailTemplate>(key).ConfigureAwait(false);
         if (cached is not null) return cached;
 
-        var template = await _unitOfWork.EmailTemplateRepository
+        var template = await _sharedUnitOfWork.EmailTemplateRepository
             .FindByCondition(t => t.Name == emailTemplate.ToDisplayString())
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);

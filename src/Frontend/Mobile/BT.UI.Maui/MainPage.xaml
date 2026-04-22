@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:BT.UI.Maui"
              xmlns:components="clr-namespace:BT.UI.Maui.Components"
-             x:Class="BT.UI.Maui.MainPage">
+             x:Class="BT.UI.Maui.MainPage"
+             x:ClassModifier="internal">
 
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>

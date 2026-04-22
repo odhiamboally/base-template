@@ -3,6 +3,7 @@ using BT.Application.Mappings;
 using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Entities;
 using BT.Domain.Enums;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using FluentEmail.Core;
@@ -17,8 +18,13 @@ using System.Text;
 namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.CommandHandlers;
 
 
-internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWork unitOfWork, ILogger<CreateAppUser> logger)
- : IRequestHandler<CreateAppUserCommand, AppResponse<AppUserResponse>>
+internal sealed class CreateAppUser(
+    UserManager<AppUser> userManager, 
+    IHrUnitOfWork hrUnitOfWork,
+    ISharedUnitOfWork sharedUnitOfWork,
+    IIamUnitOfWork iamUnitOfWork,
+    ILogger<CreateAppUser> logger) : IRequestHandler<CreateAppUserCommand, AppResponse<AppUserResponse>>
+ 
 {
     public async Task<AppResponse<AppUserResponse>> Handle(CreateAppUserCommand command, CancellationToken ct)
     {
@@ -32,7 +38,7 @@ internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWor
 
             if (req.EmployeeId.HasValue)
             {
-                employee = await unitOfWork.EmployeeRepository
+                employee = await hrUnitOfWork.EmployeeRepository
                     .FindByCondition(e => e.Id == req.EmployeeId.Value)
                     .AsNoTracking()
                     .SingleOrDefaultAsync(ct)
@@ -90,13 +96,13 @@ internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWor
             if (!identityResult.Succeeded)
             {
                 var error = identityResult.Errors.First().Description;
-                logger.LogWarning("AppUser creation failed for {Email}: {Error}", req.Email, error);
+                ServiceLogDefinitions.LogAppUserCreationWarning(logger, req.Email, error);
                 return AppResponse.Failure<AppUserResponse>(error);
             }
 
             createdUser = appUser;
 
-            await unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+            await sharedUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
                 if (req.Roles?.Count > 0)
                 {
@@ -118,11 +124,11 @@ internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWor
                     CreatedBy = "System"
                 };
 
-                await unitOfWork.AppUserProfileRepository
+                await iamUnitOfWork.AppUserProfileRepository
                     .CreateOrUpdateAsync(appUser.Id, profile, ct)
                     .ConfigureAwait(false);
 
-                await unitOfWork.CompleteAsync(ct).ConfigureAwait(false);
+                await sharedUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
 
                 return true;
 
@@ -137,26 +143,24 @@ internal sealed class CreateAppUser(UserManager<AppUser> userManager, IUnitOfWor
             // TODO: Publish AppUserEmailConfirmationRequestedEvent
             // or call IEmailService.SendEmailConfirmationAsync(appUser.Email, token)
 
-            logger.LogInformation("AppUser {UserId} created successfully for {Email}", appUser.Id, appUser.Email);
+            ServiceLogDefinitions.LogAppUserCreated(logger, appUser.Id, appUser.Email ?? string.Empty);
 
             return AppResponse.Success("User created successfully.", appUser.ToAppUserResponse());
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "AppUser creation failed for {Email}. Attempting Identity rollback.", req.Email);
+            ServiceLogDefinitions.LogAppUserCreationFailed(logger, req.Email, ex);
 
             if (createdUser is not null)
             {
                 try
                 {
                     await userManager.DeleteAsync(createdUser).ConfigureAwait(false);
-                    logger.LogInformation("Identity rollback succeeded for {Email}", req.Email);
+                    ServiceLogDefinitions.LogIdentityRollbackSucceeded(logger, req.Email);
                 }
-                catch (Exception cleanupEx)
+                catch (Exception)
                 {
-                    logger.LogCritical(cleanupEx,
-                        "MANUAL CLEANUP REQUIRED — orphaned Identity user {UserId} for {Email}",
-                        createdUser.Id, req.Email);
+                    ServiceLogDefinitions.LogIdentityRollbackCritical(logger, createdUser.Id, req.Email);
                 }
             }
 

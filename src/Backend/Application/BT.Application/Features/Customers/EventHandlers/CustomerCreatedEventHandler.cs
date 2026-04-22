@@ -8,7 +8,7 @@ using BT.SharedKernel.Enums;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace BT.Application.Features.Clients.EventHandlers; 
+namespace BT.Application.Features.Customers.EventHandlers; 
 
 public class CustomerCreatedEventHandler(
     IIntegrationEventPublisher integrationEventPublisher,

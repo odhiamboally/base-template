@@ -1,5 +1,6 @@
 ﻿using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.IntegrationEvents;
+using BT.Application.Utilities;
 using BT.Domain.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -28,12 +29,12 @@ internal sealed class AppUserCreatedEventHandler(IIntegrationEventPublisher inte
 
             await integrationEventPublisher.PublishAsync(integrationEvent, cancellationToken).ConfigureAwait(false);
 
-            logger.LogInformation("AppUserCreatedIntegrationEvent published for {UserId}", evt.UserId);
+            LogDefinitions.LogAppUserCreatedIntegrationPublished(logger, evt.UserId);
                 
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to publish integration event for AppUser {UserId}", evt?.UserId);
+            LogDefinitions.LogAppUserCreatedIntegrationPublishFailed(logger, evt?.UserId ?? string.Empty, ex);
             throw;
         }
     }

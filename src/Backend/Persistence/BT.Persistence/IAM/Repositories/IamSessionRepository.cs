@@ -44,7 +44,7 @@ internal sealed class IamSessionRepository : Repository<AppUserSession>, ISessio
             .Where(s => s.CreatedAt < retentionLimit)
             .ToListAsync().ConfigureAwait(false);
 
-        if (!oldSessions.Any())
+        if (oldSessions.Count == 0)
             return false;
 
         _iamContext.AppUserSessions.RemoveRange(oldSessions);

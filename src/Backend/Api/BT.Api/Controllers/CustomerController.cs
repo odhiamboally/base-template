@@ -1,5 +1,5 @@
 ﻿using Asp.Versioning;
-using BT.Application.Features.Clients.Commands;
+using BT.Application.Features.Customers.CommandHandlers;
 using BT.SharedKernel.Dtos.Client;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -12,9 +12,9 @@ namespace BT.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
-internal class CustomerController(ISender sender) : BaseController
+internal sealed class CustomerController(ISender sender) : BaseController
 {
-    [HttpPost("create")]
+    [HttpPost("customer")]
     public async Task<ActionResult<AppResponse<CustomerResponse>>> Create(CreateCustomerRequest request)
     {
         ArgumentNullException.ThrowIfNull(request, nameof(request));

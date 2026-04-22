@@ -24,6 +24,8 @@ public class PagedResponse<T, TCursor>
 
     public PagedResponse(Collection<T> items, int totalRecords, int pageNumber, int pageSize, bool isFirstPage, TCursor? nextCursor)
     {
+        ArgumentNullException.ThrowIfNull(items, nameof(items));
+
         Items = items;
         TotalRecords = totalRecords;
         CurrentPage = pageNumber;

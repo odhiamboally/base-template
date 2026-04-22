@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Text;
 using BT.Application.Extensions;
 
-namespace BT.Application.Features.Dashboard.Queries;
+namespace BT.Application.Features.Dashboard.QueryHandlers;
 
 public record GetDashboardSummaryQuery(string UserId, string? RoleScope = null) : IRequest<AppResponse<DashboardSummaryResponse>>, ICachableRequest
     
@@ -25,7 +25,7 @@ public record GetDashboardSummaryQuery(string UserId, string? RoleScope = null) 
 }
 
 
-internal sealed class GetDashboardSummaryQueryHandler(IUnitOfWork _unitOfWork, ILogger<GetDashboardSummaryQueryHandler> _logger)
+internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankingUnitOfWork, ILogger<GetDashboardSummaryQueryHandler> _logger)
     : IRequestHandler<GetDashboardSummaryQuery, AppResponse<DashboardSummaryResponse>>
 {
     // Standard capacity per RM — configurable via IAM settings in a future iteration
@@ -38,7 +38,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IUnitOfWork _unitOfWork, I
         {
             var now = DateTimeOffset.UtcNow;
 
-            var rows = await _unitOfWork.CustomerRepository
+            var rows = await _bankingUnitOfWork.CustomerRepository
                 .FindAll()
                 .Select(c => new Row(
                     c.Status,

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text;
 using System.Globalization;
+using BT.Infrastructure.Logging;
 
 namespace BT.Infrastructure.Contracts.Implementations.Services; 
 
@@ -26,19 +27,18 @@ internal sealed class ClaimsService(
             var result = await _userManager.AddClaimAsync(user, claim).ConfigureAwait(false);
             if (result.Succeeded)
             {
-                _logger.LogInformation("Added claim - {ClaimType}:{ClaimValue} to user {UserId}", claim.Type, claim.Value, user.Id);
+                ServiceLogDefinitions.LogClaimAdded(_logger, claim.Type, claim.Value, user.Id);
 
                 return true;
             }
 
-            _logger.LogWarning("Failed to add claim {ClaimType}:{ClaimValue} to user {UserId}: {Errors}",
-                claim.Type, claim.Value, user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
+            ServiceLogDefinitions.LogFailedToAddClaim(_logger, claim.Type, claim.Value, user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
 
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error adding claim to user {UserId}", user.Id);
+            ServiceLogDefinitions.LogErrorAddingClaim(_logger, user.Id, ex);
             throw;
         }
     }
@@ -135,20 +135,18 @@ internal sealed class ClaimsService(
             var result = await _userManager.RemoveClaimAsync(user, claim).ConfigureAwait(false);
             if (result.Succeeded)
             {
-                _logger.LogInformation("Removed claim {ClaimType}:{ClaimValue} from user {UserId}",
-                    claim.Type, claim.Value, user.Id);
+                ServiceLogDefinitions.LogClaimRemoved(_logger, claim.Type, claim.Value, user.Id);
 
                 return true;
             }
 
-            _logger.LogWarning("Failed to remove claim {ClaimType}:{ClaimValue} from user {UserId}: {Errors}",
-                claim.Type, claim.Value, user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
+            ServiceLogDefinitions.LogFailedToRemoveClaim(_logger, claim.Type, claim.Value, user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
 
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing claim from user {UserId}", user.Id);
+            ServiceLogDefinitions.LogErrorRemovingClaim(_logger, user.Id, ex);
             throw;
         }
     }
@@ -161,7 +159,7 @@ internal sealed class ClaimsService(
             var removeResult = await _userManager.RemoveClaimAsync(user, existingClaim).ConfigureAwait(false);
             if (!removeResult.Succeeded)
             {
-                _logger.LogWarning("Failed to remove existing claim for user {UserId}", user.Id);
+                ServiceLogDefinitions.LogFailedToRemoveExistingClaim(_logger, user.Id);
 
                 return false;
             }
@@ -172,20 +170,18 @@ internal sealed class ClaimsService(
                 // Try to rollback by adding the old claim back
                 await _userManager.AddClaimAsync(user, existingClaim).ConfigureAwait(false);
 
-                _logger.LogWarning("Failed to add new claim for user {UserId}, rolled back", user.Id);
+                ServiceLogDefinitions.LogFailedToAddNewClaimRolledBack(_logger, user.Id);
 
                 return false;
             }
 
-            _logger.LogInformation("Updated claim for " +
-                "user {UserId}: {OldClaim} -> {NewClaim}",
-                user.Id, $"{existingClaim.Type}:{existingClaim.Value}", $"{newClaim.Type}:{newClaim.Value}");
+            ServiceLogDefinitions.LogUpdatedClaim(_logger, user.Id, $"{existingClaim.Type}:{existingClaim.Value}", $"{newClaim.Type}:{newClaim.Value}");
 
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating claim for user {UserId}", user.Id);
+            ServiceLogDefinitions.LogErrorUpdatingClaim(_logger, user.Id, ex);
             throw;
         }
     }

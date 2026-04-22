@@ -16,11 +16,11 @@ namespace BT.Infrastructure.IAM.Extensions;
 
 public static class IamModuleDI
 {
-    public static IServiceCollection AddIamModule(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        IWebHostEnvironment environment)
+    public static IServiceCollection AddIamModule(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
+
         services.AddIamPersistence(configuration);
 
         services.AddIdentity<AppUser, IdentityRole>(DependencyInjection.ConfigureIdentityOptions)

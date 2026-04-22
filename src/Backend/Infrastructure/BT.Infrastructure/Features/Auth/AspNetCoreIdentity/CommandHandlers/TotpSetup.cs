@@ -16,7 +16,7 @@ namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
 internal sealed class InitiateTotpSetupCommandHandler(
     IEncryptionService encryptionService,
     UserManager<AppUser> userManager,
-    IUnitOfWork unitOfWork,
+    IIamUnitOfWork iamUnitOfWork,
     ILogger<InitiateTotpSetupCommandHandler> logger) : IRequestHandler<InitiateTotpSetupCommand, AppResponse<TwoFactorSetupInfo>>
 {
     private const string TotpIssuer = "LlanCore.BaseTemplate.API";
@@ -33,7 +33,7 @@ internal sealed class InitiateTotpSetupCommandHandler(
                 return AppResponse.Failure<TwoFactorSetupInfo>("User not found.");
             }
 
-            await unitOfWork.TempTotpSecretRepository.DeleteUserTempSecretsAsync(userId, cancellationToken).ConfigureAwait(false);
+            await iamUnitOfWork.TempTotpSecretRepository.DeleteUserTempSecretsAsync(userId, cancellationToken).ConfigureAwait(false);
 
             var plainSecret = GenerateSecret();
             var encryptedSecret = encryptionService.Encrypt(plainSecret);
@@ -48,8 +48,8 @@ internal sealed class InitiateTotpSetupCommandHandler(
                 CreatedBy = userId
             };
 
-            await unitOfWork.TempTotpSecretRepository.CreateAsync(tempSecret, cancellationToken).ConfigureAwait(false);
-            await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+            await iamUnitOfWork.TempTotpSecretRepository.CreateAsync(tempSecret, cancellationToken).ConfigureAwait(false);
+            await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
             var qrUri = GenerateQrCodeUri(user.Email!, plainSecret);
 

@@ -3,6 +3,7 @@ using BT.Application.Features.Auth.Commands;
 using BT.Application.Mappings;
 using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Entities;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -17,7 +18,7 @@ namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
 
 internal sealed class RefreshToken(
     UserManager<AppUser> userManager,
-    IUnitOfWork unitOfWork,
+    IIamUnitOfWork iamUnitOfWork,
     IJwtService jwtService,
     IClaimsService claimsService,
     IHttpContextAccessor httpContextAccessor,
@@ -32,93 +33,92 @@ internal sealed class RefreshToken(
             var principal = jwtService.GetPrincipalFromToken(request.AccessToken, false);
             if (principal == null)
             {
-                logger.LogWarning("Invalid access token format provided for refresh");
+                SecurityLogDefinitions.LogSecurityEvent(logger, "InvalidAccessTokenFormat", string.Empty, "Invalid access token format provided for refresh");
                 return AppResponse.Failure<RefreshTokenResponse>("Invalid access token format");
             }
 
             var userId = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
             if (string.IsNullOrWhiteSpace(userId))
             {
-                logger.LogWarning("No user ID found in access token");
+                SecurityLogDefinitions.LogSecurityEvent(logger, "InvalidAccessTokenFormat", string.Empty, "No user ID found in access token");
                 return AppResponse.Failure<RefreshTokenResponse>("Invalid token: No user ID found");
             }
 
             var user = await userManager.FindByIdAsync(userId).ConfigureAwait(false);
             if (user == null)
             {
-                logger.LogWarning("User not found for refresh token: {UserId}", userId);
+                SecurityLogDefinitions.LogSecurityEvent(logger, "UserNotFoundForRefresh", userId, "User not found for refresh token");
                 return AppResponse.Failure<RefreshTokenResponse>("User not found");
             }
 
             if (!user.IsActive || user.IsDeleted)
             {
-                logger.LogWarning("Refresh token attempt for inactive user: {UserId}", userId);
+                SecurityLogDefinitions.LogSecurityEvent(logger, "InactiveUserRefreshAttempt", userId, "Refresh token attempt for inactive user");
                 return AppResponse.Failure<RefreshTokenResponse>("User account is not active");
             }
 
-            var storedRefreshToken = await unitOfWork.TokenRepository.GetRefreshTokenAsync(request.RefreshToken, userId).ConfigureAwait(false);
+            var storedRefreshToken = await iamUnitOfWork.TokenRepository.GetRefreshTokenAsync(request.RefreshToken, userId).ConfigureAwait(false);
             if (storedRefreshToken == null)
             {
-                logger.LogWarning("Refresh token not found for user: {UserId}", userId);
+                SecurityLogDefinitions.LogSecurityEvent(logger, "RefreshTokenNotFound", userId, "Refresh token not found for user");
                 return AppResponse.Failure<RefreshTokenResponse>("Invalid refresh token");
             }
 
             if (storedRefreshToken.ExpiresAt <= DateTimeOffset.UtcNow)
             {
-                logger.LogWarning("Expired refresh token used for user: {UserId}", userId);
-                await unitOfWork.TokenRepository.RevokeRefreshTokenAsync(storedRefreshToken, "Token expired").ConfigureAwait(false);
+                SecurityLogDefinitions.LogSecurityEvent(logger, "ExpiredRefreshToken", userId, "Expired refresh token used");
+                await iamUnitOfWork.TokenRepository.RevokeRefreshTokenAsync(storedRefreshToken, "Token expired").ConfigureAwait(false);
                 return AppResponse.Failure<RefreshTokenResponse>("Refresh token has expired");
             }
 
             if (storedRefreshToken.IsRevoked)
             {
-                logger.LogWarning("Revoked refresh token used for user: {UserId}", userId);
+                SecurityLogDefinitions.LogSecurityEvent(logger, "RevokedRefreshToken", userId, "Revoked refresh token used");
                 return AppResponse.Failure<RefreshTokenResponse>("Refresh token has been revoked");
             }
 
             if (storedRefreshToken.IsUsed)
             {
-                logger.LogWarning("Already used refresh token attempted for user: {UserId}", userId);
-                await unitOfWork.TokenRepository.RevokeAllUserTokensAsync(userId, "Token reuse detected").ConfigureAwait(false);
+                SecurityLogDefinitions.LogSecurityEvent(logger, "TokenReuseDetected", userId, "Already used refresh token attempted");
+                await iamUnitOfWork.TokenRepository.RevokeAllUserTokensAsync(userId, "Token reuse detected").ConfigureAwait(false);
                 return AppResponse.Failure<RefreshTokenResponse>("Refresh token has already been used");
             }
 
             if (storedRefreshToken.AppUserId != userId)
             {
-                logger.LogWarning("Refresh token user mismatch. Token UserId: {TokenUserId}, Request UserId: {RequestUserId}",
-                    storedRefreshToken.AppUserId, userId);
+                SecurityLogDefinitions.LogSecurityEvent(logger, "RefreshTokenUserMismatch", userId, $"Token UserId: {storedRefreshToken.AppUserId}, Request UserId: {userId}");
                 return AppResponse.Failure<RefreshTokenResponse>("Token mismatch");
             }
 
             var userClaims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
-            if (!userClaims.Any())
+            if (userClaims.Count == 0)
             {
-                logger.LogError("Failed to get user claims during token refresh for user: {UserId}", userId);
+                ServiceLogDefinitions.LogFailedToGetUserClaims(logger, userId);
                 return AppResponse.Failure<RefreshTokenResponse>("Could not retrieve user claims");
             }
 
             var newAccessTokenResponse = await jwtService.CreateTokenAsync(userClaims).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(newAccessTokenResponse))
             {
-                logger.LogError("Failed to generate new access token for user: {UserId}", userId);
+                ServiceLogDefinitions.LogFailedToGenerateAccessToken(logger, userId);
                 return AppResponse.Failure<RefreshTokenResponse>("Could not generate new access token");
             }
 
             var newRefreshTokenResponse = jwtService.CreateRefreshToken();
             if (string.IsNullOrWhiteSpace(newRefreshTokenResponse))
             {
-                logger.LogError("Failed to generate new refresh token for user: {UserId}", userId);
+                ServiceLogDefinitions.LogFailedToGenerateRefreshToken(logger, userId);
                 return AppResponse.Failure<RefreshTokenResponse>("Could not generate new refresh token");
             }
 
             var tokenExpiry = jwtService.GetTokenExpiry(newAccessTokenResponse);
             if (tokenExpiry == default)
             {
-                logger.LogError("Failed to get token expiry for user: {UserId}", userId);
+                ServiceLogDefinitions.LogFailedToGetTokenExpiry(logger, userId);
                 return AppResponse.Failure<RefreshTokenResponse>("Could not determine token expiry");
             }
 
-            await unitOfWork.TokenRepository.MarkTokenAsUsedAsync(storedRefreshToken).ConfigureAwait(false);
+            await iamUnitOfWork.TokenRepository.MarkTokenAsUsedAsync(storedRefreshToken).ConfigureAwait(false);
 
             var newRefreshTokenEntity = new Domain.Entities.RefreshToken
             {
@@ -130,8 +130,8 @@ internal sealed class RefreshToken(
                 CreatedByIp = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString(),
             };
 
-            await unitOfWork.TokenRepository.AddRefreshTokenAsync(newRefreshTokenEntity).ConfigureAwait(false);
-            await unitOfWork.TokenRepository.CleanupExpiredTokensAsync(userId).ConfigureAwait(false);
+            await iamUnitOfWork.TokenRepository.AddRefreshTokenAsync(newRefreshTokenEntity).ConfigureAwait(false);
+            await iamUnitOfWork.TokenRepository.CleanupExpiredTokensAsync(userId).ConfigureAwait(false);
 
             user.UpdatedAt = DateTimeOffset.UtcNow;
             await userManager.UpdateAsync(user).ConfigureAwait(false);
@@ -163,7 +163,7 @@ internal sealed class RefreshToken(
 
             );
 
-            logger.LogInformation("Token refreshed successfully for user: {UserId}", userId);
+            ServiceLogDefinitions.LogTokenRefreshed(logger, userId);
 
             return AppResponse.Success("Token refreshed successfully", new RefreshTokenResponse(
                 newAccessTokenResponse,
@@ -176,10 +176,7 @@ internal sealed class RefreshToken(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex,
-                "Error refreshing token. AccessTokenLength: {AccessTokenLength}, HasRefreshToken: {HasRefreshToken}",
-                request.AccessToken?.Length ?? 0,
-                !string.IsNullOrWhiteSpace(request.RefreshToken));
+            ServiceLogDefinitions.LogTokenRefreshError(logger, ex, request.AccessToken?.Length ?? 0, !string.IsNullOrWhiteSpace(request.RefreshToken));
 
             return AppResponse.Failure<RefreshTokenResponse>("Unable to refresh token. Please sign in again.");
         }

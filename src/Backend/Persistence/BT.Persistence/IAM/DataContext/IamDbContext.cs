@@ -25,27 +25,27 @@ public class IamDbContext(
     public IReadOnlyList<IDomainEvent>? GetCollectedDomainEvents() => _collectedDomainEvents?.AsReadOnly();
     public void ClearCollectedDomainEvents() => _collectedDomainEvents?.Clear();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        ArgumentNullException.ThrowIfNull(modelBuilder);
-        base.OnModelCreating(modelBuilder);
+        ArgumentNullException.ThrowIfNull(builder);
+        base.OnModelCreating(builder);
 
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        foreach (var entityType in builder.Model.GetEntityTypes())
         {
             if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
-                modelBuilder.Entity(entityType.ClrType)
+                builder.Entity(entityType.ClrType)
                     .HasQueryFilter(DbContextHelper.CreateSoftDeleteFilter(entityType.ClrType));
 
             if (typeof(ICursorPaginable).IsAssignableFrom(entityType.ClrType))
             {
-                modelBuilder.Entity(entityType.ClrType).HasKey(nameof(ICursorPaginable.Id));
-                modelBuilder.Entity(entityType.ClrType)
+                builder.Entity(entityType.ClrType).HasKey(nameof(ICursorPaginable.Id));
+                builder.Entity(entityType.ClrType)
                     .HasIndex(nameof(ICursorPaginable.CreatedAt), nameof(ICursorPaginable.Id))
                     .HasDatabaseName($"IX_{entityType.GetTableName()}_CreatedAt_Id");
             }
         }
 
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(IamDbContext).Assembly);
+        builder.ApplyConfigurationsFromAssembly(typeof(IamDbContext).Assembly);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

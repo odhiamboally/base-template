@@ -37,7 +37,7 @@ internal class BaseController : ControllerBase
             problemDetails.Detail = response.Message;
 
             // Add additional context if available
-            if (response.Errors?.Any() == true)
+            if (response.Errors != null && response.Errors.Count > 0)
             {
                 // Since Errors is a List<string>, group all errors under "general"
                 problemDetails.Extensions["errors"] = new Dictionary<string, string[]>

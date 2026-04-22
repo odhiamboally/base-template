@@ -2,7 +2,7 @@
 
 namespace BT.UI.Maui;
 
-public static class MauiProgram
+internal static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {

@@ -2,6 +2,7 @@ using BT.Application.Extensions;
 using BT.Application.Features.Auth.Commands;
 using BT.Application.Mappings;
 using BT.Domain.Entities;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -69,7 +70,7 @@ internal sealed class GetCurrentUser(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving current user");
+            ServiceLogDefinitions.LogGetCurrentUserError(logger, ex);
             throw;
         }
     }

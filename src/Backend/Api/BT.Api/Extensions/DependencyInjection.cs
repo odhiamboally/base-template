@@ -56,44 +56,6 @@ internal static class DependencyInjection
         return services;
     }
 
-    private static void ConfigureHttpResilience(IServiceCollection services, IConfiguration configuration)
-    {
-        var resilienceSettings = configuration.GetSection(ResilienceSettings.SectionName).Get<ResilienceSettings>() ?? new ResilienceSettings();
-        if (!resilienceSettings.Enabled)
-        {
-            return;
-        }
-
-        services.ConfigureHttpClientDefaults(http =>
-        {
-            http.AddStandardResilienceHandler();
-        });
-        
-    }
-
-    private static void ConfigureDataProtection(IServiceCollection services, IConfiguration configuration)
-    {
-        var dataProtection = services.AddDataProtection()
-            .SetApplicationName("LlanCore.BaseTemplate.API");
-
-        var keysPath = configuration["DataProtection:KeysPath"];
-        if (!string.IsNullOrWhiteSpace(keysPath))
-        {
-            var directoryInfo = new DirectoryInfo(keysPath);
-            if (!directoryInfo.Exists)
-            {
-                directoryInfo.Create();
-            }
-
-            dataProtection.PersistKeysToFileSystem(directoryInfo);
-        }
-
-        if (OperatingSystem.IsWindows())
-        {
-            dataProtection.ProtectKeysWithDpapi();
-        }
-    }
-
     private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         try
@@ -152,6 +114,44 @@ internal static class DependencyInjection
         catch (Exception)
         {
             throw;
+        }
+    }
+
+    private static void ConfigureHttpResilience(IServiceCollection services, IConfiguration configuration)
+    {
+        var resilienceSettings = configuration.GetSection(ResilienceSettings.SectionName).Get<ResilienceSettings>() ?? new ResilienceSettings();
+        if (!resilienceSettings.Enabled)
+        {
+            return;
+        }
+
+        services.ConfigureHttpClientDefaults(http =>
+        {
+            http.AddStandardResilienceHandler();
+        });
+        
+    }
+
+    private static void ConfigureDataProtection(IServiceCollection services, IConfiguration configuration)
+    {
+        var dataProtection = services.AddDataProtection()
+            .SetApplicationName("LlanCore.BaseTemplate.API");
+
+        var keysPath = configuration["DataProtection:KeysPath"];
+        if (!string.IsNullOrWhiteSpace(keysPath))
+        {
+            var directoryInfo = new DirectoryInfo(keysPath);
+            if (!directoryInfo.Exists)
+            {
+                directoryInfo.Create();
+            }
+
+            dataProtection.PersistKeysToFileSystem(directoryInfo);
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            dataProtection.ProtectKeysWithDpapi();
         }
     }
 
@@ -499,7 +499,7 @@ internal static class DependencyInjection
                     context.Response.ContentType = "application/json";
 
                     var expirationTime = context.Exception is SecurityTokenExpiredException expiredException
-                        ? expiredException.Expires.ToString("yyyy-MM-ddTHH:mm:ss")
+                        ? expiredException.Expires.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)
                         : string.Empty;
 
                     var errorMessage = new
@@ -507,7 +507,7 @@ internal static class DependencyInjection
                         context.Response.StatusCode,
                         Message = "Token has expired.",
                         ExpirationTime = expirationTime,
-                        CurrentTime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        CurrentTime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture),
                         Error = context.Exception.Message
                     };
 

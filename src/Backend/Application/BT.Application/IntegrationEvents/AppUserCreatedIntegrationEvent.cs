@@ -5,7 +5,7 @@ using System.Text;
 
 namespace BT.Application.IntegrationEvents;
 
-internal record AppUserCreatedIntegrationEvent(
+internal sealed record AppUserCreatedIntegrationEvent(
     string UserId,
     Guid TenantId,
     Guid? EmployeeId,

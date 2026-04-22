@@ -15,11 +15,11 @@ using System.Text;
 namespace BT.Infrastructure.Contracts.Implementations.Services;
 
 internal sealed class SessionService(
-    IUnitOfWork unitOfWork,
+    IIamUnitOfWork iamUnitOfWork,
     ILogger<SessionService> logger,
     IOptions<SessionSettings> sessionSettings) : ISessionService
 {
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IIamUnitOfWork _unitOfWork = iamUnitOfWork;
     private readonly ILogger<SessionService> _logger = logger;
     private readonly SessionSettings _sessionSettings = sessionSettings.Value;
 

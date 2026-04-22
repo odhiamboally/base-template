@@ -20,7 +20,7 @@ namespace BT.Tests.Architecture;
 internal static class AssemblyReferences
 {
     internal static readonly Assembly Domain = typeof(BaseEntity).Assembly;
-    internal static readonly Assembly Application = typeof(IUnitOfWork).Assembly;  // public interface
+    internal static readonly Assembly Application = typeof(ITransactionalUnitOfWork).Assembly;  // public interface
     internal static readonly Assembly Persistence = typeof(DBContext).Assembly;
     internal static readonly Assembly SharedKernel = typeof(LookupResponse).Assembly;
     internal static readonly Assembly SharedKernelValidation = typeof(GetLookupRequestValidator).Assembly;

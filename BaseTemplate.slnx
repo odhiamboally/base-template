@@ -1,4 +1,8 @@
 <Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
     <File Path="Global.json" />
@@ -6,24 +10,51 @@
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Backend/">
-    <Project Path="src/Backend/Api/BT.Api/BT.Api.csproj" />
-    <Project Path="src/Backend/Application/BT.Application/BT.Application.csproj" />
-    <Project Path="src/Backend/Domain/BT.Domain/BT.Domain.csproj" />
-    <Project Path="src/Backend/Infrastructure/BT.Infrastructure/BT.Infrastructure.csproj" />
-    <Project Path="src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj" />
+    <Project Path="src/Backend/Api/BT.Api/BT.Api.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="src/Backend/Application/BT.Application/BT.Application.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="src/Backend/Domain/BT.Domain/BT.Domain.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="src/Backend/Infrastructure/BT.Infrastructure/BT.Infrastructure.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
   </Folder>
   <Folder Name="/src/Frontend/">
-    <Project Path="src/Frontend/Mobile/BT.UI.Maui/BT.UI.Maui.csproj" Id="f3ec1ec9-b940-4621-be50-59c07a007130" />
-    <Project Path="src/Frontend/Shared/BT.UI.Rcl/BT.UI.Rcl.csproj" Id="32a3c1a0-9ef0-4187-b4df-2082c2f14338" />
-    <Project Path="src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj" Id="00663238-a0f3-4c06-bd1e-b0bf695cfbfc" />
+    <Project Path="src/Frontend/Mobile/BT.UI.Maui/BT.UI.Maui.csproj" Id="f3ec1ec9-b940-4621-be50-59c07a007130">
+      <Platform Solution="*|x64" Project="x64" />
+      <Deploy Solution="*|x64" />
+    </Project>
+    <Project Path="src/Frontend/Shared/BT.UI.Rcl/BT.UI.Rcl.csproj" Id="32a3c1a0-9ef0-4187-b4df-2082c2f14338">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj" Id="00663238-a0f3-4c06-bd1e-b0bf695cfbfc">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
   </Folder>
   <Folder Name="/src/Shared/">
-    <Project Path="src/Shared/BT.SharedKernel.Validation/BT.SharedKernel.Validation.csproj" Id="08b042a8-2325-4e41-a642-74934c83a421" />
-    <Project Path="src/Shared/BT.SharedKernel/BT.SharedKernel.csproj" Id="b64c5e5b-24f7-425a-bc18-5211e0f47141" />
+    <Project Path="src/Shared/BT.SharedKernel.Validation/BT.SharedKernel.Validation.csproj" Id="08b042a8-2325-4e41-a642-74934c83a421">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="src/Shared/BT.SharedKernel/BT.SharedKernel.csproj" Id="b64c5e5b-24f7-425a-bc18-5211e0f47141">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj" Id="afbfcfb9-8957-4dd9-aa96-2c10799e8e61" />
-    <Project Path="tests/BT.Tests.Integration/BT.Tests.Integration.csproj" Id="bad2c475-9b7c-4e03-9ae4-3d63ebf9c412" />
-    <Project Path="tests/BT.Tests.Unit/BT.Tests.Unit.csproj" Id="a30b295a-0844-4960-a11c-438974c76c54" />
+    <Project Path="tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj" Id="afbfcfb9-8957-4dd9-aa96-2c10799e8e61">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="tests/BT.Tests.Integration/BT.Tests.Integration.csproj" Id="bad2c475-9b7c-4e03-9ae4-3d63ebf9c412">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="tests/BT.Tests.Unit/BT.Tests.Unit.csproj" Id="a30b295a-0844-4960-a11c-438974c76c54">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
   </Folder>
 </Solution>

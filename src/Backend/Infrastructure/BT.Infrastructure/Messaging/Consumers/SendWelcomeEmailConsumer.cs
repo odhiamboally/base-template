@@ -15,8 +15,11 @@ using System.Text.Json;
 
 namespace BT.Infrastructure.Messaging.Consumers;
 
-public sealed class SendWelcomeEmailConsumer(IServiceManager serviceManager, IUnitOfWork unitOfWork, ILogger<SendWelcomeEmailConsumer> logger) 
-    : IConsumer<SendWelcomeEmailRequest>
+public sealed class SendWelcomeEmailConsumer(
+    IServiceManager serviceManager, 
+    IBankingUnitOfWork bankingUnitOfWork,
+    ISharedUnitOfWork sharedUnitOfWork,
+    ILogger<SendWelcomeEmailConsumer> logger) : IConsumer<SendWelcomeEmailRequest>
 {
     public async Task Consume(ConsumeContext<SendWelcomeEmailRequest> context)
     {
@@ -35,7 +38,7 @@ public sealed class SendWelcomeEmailConsumer(IServiceManager serviceManager, IUn
 
         try
         {
-            var customer = await unitOfWork.CustomerRepository.FindByIdAsync(request.ClientId).ConfigureAwait(false);
+            var customer = await bankingUnitOfWork.CustomerRepository.FindByIdAsync(request.ClientId).ConfigureAwait(false);
             if (customer == null)
             {
                 return;
@@ -52,7 +55,7 @@ public sealed class SendWelcomeEmailConsumer(IServiceManager serviceManager, IUn
                 _ => EmailTemplateType.StandardWelcome
             };
 
-            var dbEmailTemplate = await unitOfWork.EmailTemplateRepository
+            var dbEmailTemplate = await sharedUnitOfWork.EmailTemplateRepository
                 .FindByCondition(t => t.Name == emailTemplate.ToTemplateName())
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
@@ -94,11 +97,11 @@ public sealed class SendWelcomeEmailConsumer(IServiceManager serviceManager, IUn
                 RetryCount = retryCount + 1,
                 FailedAt = DateTimeOffset.UtcNow,
                 Status = FailedMessageStatus.Permanent,
-                CreatedBy = nameof(SendWelcomeEmailConsumer)
+                CreatedBy = nameof(SendWelcomeEmailConsumer) 
             };
 
-            await unitOfWork.FailedMessageRepository.CreateAsync(failedMessage, context.CancellationToken).ConfigureAwait(false);
-            await unitOfWork.CompleteAsync(context.CancellationToken).ConfigureAwait(false);
+            await sharedUnitOfWork.FailedMessageRepository.CreateAsync(failedMessage, context.CancellationToken).ConfigureAwait(false);
+            await bankingUnitOfWork.CompleteAsync(context.CancellationToken).ConfigureAwait(false);
             return;
         }
         catch (Exception ex)

@@ -1,14 +1,15 @@
 ﻿namespace BT.UI.Maui;
 
-public partial class App : Application
+internal sealed partial class App : Application
 {
     public App()
     {
         InitializeComponent();
     }
 
-    protected override Window CreateWindow(IActivationState? activationState)
-    {
-        return new Window(new MainPage()) { Title = "BT.UI.Maui" };
-    }
+    //protected override Window CreateWindow(IActivationState? activationState)
+    //    => new Window(new MainPage()) { Title = "BT.UI.Maui" };
+
+    protected override Window CreateWindow(IActivationState? _)
+        => new Window(new MainPage());
 }

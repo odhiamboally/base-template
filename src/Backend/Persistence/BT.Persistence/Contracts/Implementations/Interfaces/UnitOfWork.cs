@@ -32,7 +32,7 @@ public class UnitOfWork(
     ILogger<UnitOfWork> logger
 
 
-) : IUnitOfWork
+) : IIamUnitOfWork, IHrUnitOfWork, IBankingUnitOfWork, ISharedUnitOfWork
 {
     public IUserRepository UserRepository { get; private set; } = userRepository;
     public ICustomerRepository CustomerRepository { get; private set; } = customerRepository;
@@ -111,7 +111,7 @@ public class UnitOfWork(
 
                     return result;
                 }
-                catch (DbUpdateConcurrencyException ex) when (attempt < maxRetries)
+                catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
                 {
                     await transaction.RollbackAsync().ConfigureAwait(false);
 
@@ -162,7 +162,7 @@ public class UnitOfWork(
             {
                 foreach (var appEvent in appEvents)
                 {
-                    await _publishEndpoint.Publish(appEvent, ct);
+                    await _publishEndpoint.Publish(appEvent, ct).ConfigureAwait(false);
                 }
             }
 

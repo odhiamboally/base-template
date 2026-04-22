@@ -46,4 +46,142 @@ internal static partial class ServiceLogDefinitions
 
     [LoggerMessage(EventId = 3420, Level = LogLevel.Error, Message = "Error verifying TOTP code with plain text secret")]
     public static partial void LogTotpPlainTextCodeVerificationError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3421, Level = LogLevel.Information, Message = "Added claim - {ClaimType}:{ClaimValue} to user {UserId}")]
+    public static partial void LogClaimAdded(ILogger logger, string claimType, string claimValue, string userId);
+
+    [LoggerMessage(EventId = 3422, Level = LogLevel.Warning, Message = "Failed to add claim {ClaimType}:{ClaimValue} to user {UserId}: {Errors}")]
+    public static partial void LogFailedToAddClaim(ILogger logger, string claimType, string claimValue, string userId, string errors);
+
+    [LoggerMessage(EventId = 3423, Level = LogLevel.Error, Message = "Error adding claim to user {UserId}")]
+    public static partial void LogErrorAddingClaim(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 3424, Level = LogLevel.Information, Message = "Removed claim {ClaimType}:{ClaimValue} from user {UserId}")]
+    public static partial void LogClaimRemoved(ILogger logger, string claimType, string claimValue, string userId);
+
+    [LoggerMessage(EventId = 3425, Level = LogLevel.Warning, Message = "Failed to remove claim {ClaimType}:{ClaimValue} from user {UserId}: {Errors}")]
+    public static partial void LogFailedToRemoveClaim(ILogger logger, string claimType, string claimValue, string userId, string errors);
+
+    [LoggerMessage(EventId = 3426, Level = LogLevel.Error, Message = "Error removing claim from user {UserId}")]
+    public static partial void LogErrorRemovingClaim(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 3427, Level = LogLevel.Warning, Message = "Failed to remove existing claim for user {UserId}")]
+    public static partial void LogFailedToRemoveExistingClaim(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3428, Level = LogLevel.Warning, Message = "Failed to add new claim for user {UserId}, rolled back")]
+    public static partial void LogFailedToAddNewClaimRolledBack(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3429, Level = LogLevel.Information, Message = "Updated claim for user {UserId}: {OldClaim} -> {NewClaim}")]
+    public static partial void LogUpdatedClaim(ILogger logger, string userId, string oldClaim, string newClaim);
+
+    [LoggerMessage(EventId = 3430, Level = LogLevel.Error, Message = "Error updating claim for user {UserId}")]
+    public static partial void LogErrorUpdatingClaim(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 3431, Level = LogLevel.Information, Message = "Email OTP sent to user {UserId} for {Purpose}")]
+    public static partial void LogEmailOtpSent(ILogger logger, string userId, string purpose);
+
+    [LoggerMessage(EventId = 3432, Level = LogLevel.Error, Message = "Error generating refresh token for user {UserId}")]
+    public static partial void LogFailedToGenerateRefreshToken(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3433, Level = LogLevel.Warning, Message = "Token is null or empty")]
+    public static partial void LogInvalidToken(ILogger logger);
+
+    [LoggerMessage(EventId = 3434, Level = LogLevel.Warning, Message = "JWT Security Key is not configured")]
+    public static partial void LogJwtSecurityKeyNotConfigured(ILogger logger);
+
+    [LoggerMessage(EventId = 3435, Level = LogLevel.Warning, Message = "Invalid JWT algorithm or token type")]
+    public static partial void LogInvalidJwtAlgorithm(ILogger logger);
+
+    [LoggerMessage(EventId = 3436, Level = LogLevel.Error, Message = "Security token exception while parsing expired token")]
+    public static partial void LogSecurityTokenException(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3437, Level = LogLevel.Error, Message = "Error parsing expired token")]
+    public static partial void LogErrorParsingExpiredToken(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3438, Level = LogLevel.Error, Message = "Token has expired")]
+    public static partial void LogTokenExpired(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3439, Level = LogLevel.Error, Message = "Invalid token")]
+    public static partial void LogInvalidTokenWithException(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3440, Level = LogLevel.Error, Message = "Unexpected error during token validation")]
+    public static partial void LogUnexpectedTokenValidationError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3463, Level = LogLevel.Error, Message = "Failed to generate access token for user: {UserId}")]
+    public static partial void LogFailedToGenerateAccessToken(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3464, Level = LogLevel.Error, Message = "Failed to get token expiry for user: {UserId}")]
+    public static partial void LogFailedToGetTokenExpiry(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3465, Level = LogLevel.Information, Message = "Token refreshed successfully for user: {UserId}")]
+    public static partial void LogTokenRefreshed(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3466, Level = LogLevel.Error, Message = "Error refreshing token. AccessTokenLength: {AccessTokenLength}, HasRefreshToken: {HasRefreshToken}")]
+    public static partial void LogTokenRefreshError(ILogger logger, Exception ex, int accessTokenLength, bool hasRefreshToken);
+
+    [LoggerMessage(EventId = 3441, Level = LogLevel.Warning, Message = "AppUser creation failed for {Email}: {Error}")]
+    public static partial void LogAppUserCreationWarning(ILogger logger, string email, string error);
+
+    [LoggerMessage(EventId = 3442, Level = LogLevel.Information, Message = "AppUser {UserId} created successfully for {Email}")]
+    public static partial void LogAppUserCreated(ILogger logger, string userId, string email);
+
+    [LoggerMessage(EventId = 3443, Level = LogLevel.Error, Message = "AppUser creation failed for {Email}. Attempting Identity rollback.")]
+    public static partial void LogAppUserCreationFailed(ILogger logger, string email, Exception ex);
+
+    [LoggerMessage(EventId = 3444, Level = LogLevel.Information, Message = "Identity rollback succeeded for {Email}")]
+    public static partial void LogIdentityRollbackSucceeded(ILogger logger, string email);
+
+    [LoggerMessage(EventId = 3445, Level = LogLevel.Critical, Message = "MANUAL CLEANUP REQUIRED — orphaned Identity user {UserId} for {Email}")]
+    public static partial void LogIdentityRollbackCritical(ILogger logger, string userId, string email);
+
+    [LoggerMessage(EventId = 3446, Level = LogLevel.Error, Message = "Error retrieving current user")]
+    public static partial void LogGetCurrentUserError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3447, Level = LogLevel.Error, Message = "Error getting OTP status for user: {UserId}")]
+    public static partial void LogGetOtpStatusError(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 3448, Level = LogLevel.Information, Message = "System access granted to employee {EmployeeId} by {GrantedBy}")]
+    public static partial void LogEmployeeSystemAccessGranted(ILogger logger, string employeeId, string grantedBy);
+
+    [LoggerMessage(EventId = 3449, Level = LogLevel.Error, Message = "Failed to create user session for user {UserId}")]
+    public static partial void LogFailedToCreateUserSession(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3450, Level = LogLevel.Error, Message = "Failed to get user claims for user: {UserId}")]
+    public static partial void LogFailedToGetUserClaims(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3451, Level = LogLevel.Error, Message = "Error during login for User: {UserName}")]
+    public static partial void LogLoginError(ILogger logger, string userName, Exception ex);
+
+    [LoggerMessage(EventId = 3452, Level = LogLevel.Information, Message = "User {UserId} signed out")]
+    public static partial void LogUserSignedOut(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3453, Level = LogLevel.Warning, Message = "Invalid email OTP for user {UserId}")]
+    public static partial void LogInvalidEmailOtp(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3454, Level = LogLevel.Information, Message = "Email confirmed via OTP for user {UserId}")]
+    public static partial void LogEmailConfirmedViaOtp(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3455, Level = LogLevel.Error, Message = "Error verifying password for user or email.")]
+    public static partial void LogErrorVerifyingPassword(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3456, Level = LogLevel.Warning, Message = "2FA verification attempt for non-existent user: {UserId}")]
+    public static partial void Log2FAVerificationAttemptNonExistentUser(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3457, Level = LogLevel.Information, Message = "Using temp secret for OTP setup for user: {UserId}")]
+    public static partial void LogUsingTempSecret(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3458, Level = LogLevel.Information, Message = "OTP enabled for user: {UserId}")]
+    public static partial void LogOtpEnabled(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3459, Level = LogLevel.Warning, Message = "Invalid OTP code for user: {UserId}")]
+    public static partial void LogInvalidOtpCode(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 3460, Level = LogLevel.Information, Message = "Email sent successfully to {To}")]
+    public static partial void LogEmailSent(ILogger logger, string to);
+
+    [LoggerMessage(EventId = 3461, Level = LogLevel.Error, Message = "Failed to send email to {To}: {Errors}")]
+    public static partial void LogFailedToSendEmail(ILogger logger, string to, string errors);
+
+    [LoggerMessage(EventId = 3462, Level = LogLevel.Error, Message = "Error sending email to {To}")]
+    public static partial void LogErrorSendingEmail(ILogger logger, string to, Exception ex);
 }

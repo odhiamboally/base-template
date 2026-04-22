@@ -1,6 +1,7 @@
 ﻿using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Extensions;
 using BT.Infrastructure.Configuration;
+using BT.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -67,9 +68,9 @@ internal sealed class JwtService(
 
             return Convert.ToBase64String(randomNumber);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error generating refresh token");
+            ServiceLogDefinitions.LogFailedToGenerateRefreshToken(_logger, string.Empty);
             throw;
         }
     }
@@ -80,13 +81,13 @@ internal sealed class JwtService(
         {
             if (string.IsNullOrWhiteSpace(token))
             {
-                _logger.LogWarning("Token is null or empty");
+                ServiceLogDefinitions.LogInvalidToken(_logger);
                 return new();
             }
 
             if (string.IsNullOrWhiteSpace(_jwtSettings.SecretKey))
             {
-                _logger.LogWarning("JWT Security Key is not configured");
+                ServiceLogDefinitions.LogJwtSecurityKeyNotConfigured(_logger);
                 return new();
 
             }
@@ -109,9 +110,9 @@ internal sealed class JwtService(
             var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
 
             if (validatedToken is not JwtSecurityToken jwtToken ||
-                !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("Invalid JWT algorithm or token type");
+                ServiceLogDefinitions.LogInvalidJwtAlgorithm(_logger);
                 return new();
             }
 
@@ -119,12 +120,12 @@ internal sealed class JwtService(
         }
         catch (SecurityTokenException ex)
         {
-            _logger.LogWarning(ex, "Security token exception while parsing expired token");
+            ServiceLogDefinitions.LogSecurityTokenException(_logger, ex);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error parsing expired token");
+            ServiceLogDefinitions.LogErrorParsingExpiredToken(_logger, ex);
             throw;
         }
     }
@@ -141,7 +142,7 @@ internal sealed class JwtService(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting token expiry");
+            ServiceLogDefinitions.LogErrorParsingExpiredToken(_logger, ex);
             throw;
         }
     }
@@ -176,17 +177,17 @@ internal sealed class JwtService(
         }
         catch (SecurityTokenExpiredException ex)
         {
-            _logger.LogWarning(ex, "Token has expired");
+            ServiceLogDefinitions.LogTokenExpired(_logger, ex);
             throw;
         }
         catch (SecurityTokenValidationException ex)
         {
-            _logger.LogWarning(ex, "Invalid token");
+            ServiceLogDefinitions.LogInvalidTokenWithException(_logger, ex);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during token validation");
+            ServiceLogDefinitions.LogUnexpectedTokenValidationError(_logger, ex);
             throw;
         }
     }

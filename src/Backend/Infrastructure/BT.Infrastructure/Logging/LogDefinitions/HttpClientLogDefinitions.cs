@@ -10,7 +10,7 @@ internal static partial class HttpClientLogDefinitions
     [LoggerMessage(EventId = 3200, Level = LogLevel.Error, Message = "External API call to {Uri} failed. Method: {Method}")]
     public static partial void LogExternalApiError(ILogger logger, string method, string uri, Exception ex);
 
-    [LoggerMessage(EventId = 3201, Level = LogLevel.Warning, Message = "External API {Uri} returned {StatusCode}")]
+    [LoggerMessage(EventId = 3201, Level = LogLevel.Warning, Message = "External API {Uri} returned {StatusCode}. Method: {Method}")]
     public static partial void LogExternalApiWarning(ILogger logger, string method, string uri, int statusCode);
 
     [LoggerMessage(EventId = 3202, Level = LogLevel.Debug, Message = "Request: {Method} {Path} with body: {Body}")]

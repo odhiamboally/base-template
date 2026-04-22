@@ -18,14 +18,14 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
-namespace BT.Application.Features.Clients.Commands;
+namespace BT.Application.Features.Customers.CommandHandlers; 
 
 /// <summary>
 /// Invalidation: bump the version token for "clients" in the current user scope.
 /// No entity key to delete (the entity does not exist in cache yet).
 /// The caller's versioned list entries are orphaned in O(1).
 /// </summary>
-public record CreateCustomerCommand(CreateCustomerRequest CreateCustomerRequest, string UserId) 
+public sealed record CreateCustomerCommand(CreateCustomerRequest CreateCustomerRequest, string UserId) 
     : IRequest<AppResponse<CustomerResponse>>, ICacheInvalidatorRequest
 {
     // No direct keys — new entity, nothing cached yet.
@@ -38,10 +38,10 @@ public record CreateCustomerCommand(CreateCustomerRequest CreateCustomerRequest,
 }
     
 internal sealed class CreateCustomerCommandHandler(
-    IUnitOfWork _unitOfWork,
-    ICustomerNumberGenerator _clientNumberGenerator,
-    ILogger<CreateCustomerCommandHandler> _logger
-    
+    IBankingUnitOfWork _bankingUnitOfWork,
+    ILogger<CreateCustomerCommandHandler> _logger,
+    ICustomerNumberGenerator _clientNumberGenerator
+
 ) : IRequestHandler<CreateCustomerCommand, AppResponse<CustomerResponse>>
 {
     public async Task<AppResponse<CustomerResponse>> Handle(CreateCustomerCommand command, CancellationToken ct)
@@ -113,9 +113,9 @@ internal sealed class CreateCustomerCommandHandler(
                 string.Empty // ToDo: Should get currentuser
             );
 
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            await _bankingUnitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                await _unitOfWork.CustomerRepository.CreateAsync(client, ct).ConfigureAwait(false);
+                await _bankingUnitOfWork.CustomerRepository.CreateAsync(client, ct).ConfigureAwait(false);
                 return true;
             }, ct).ConfigureAwait(false);
 

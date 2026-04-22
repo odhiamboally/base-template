@@ -11,21 +11,20 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace BT.Application.Features.Employees.Commands;
+namespace BT.Application.Features.Employees.CommandHandlers;
 
-internal sealed record CreateEmployeeCommand(CreateEmployeeRequest Request) : IRequest<AppResponse<EmployeeResponse>>, ICacheInvalidatorRequest
+public sealed record CreateEmployeeCommand(CreateEmployeeRequest Request, string User) : IRequest<AppResponse<EmployeeResponse>>, ICacheInvalidatorRequest
 {
     public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("employees", "all")];
     public IReadOnlyList<string> GroupVersionKeysToInvalidate => [];
 }
 
-internal sealed class CreateEmployee(IUnitOfWork unitOfWork, ILogger<CreateEmployee> logger) 
+internal sealed class CreateEmployee(IHrUnitOfWork unitOfWork, ILogger<CreateEmployee> logger) 
     : IRequestHandler<CreateEmployeeCommand, AppResponse<EmployeeResponse>>
 {
     public async Task<AppResponse<EmployeeResponse>> Handle(CreateEmployeeCommand command, CancellationToken cancellationToken)
     {
         var request = command.Request;
-        AppUser? createdUser = null;
 
         try
         {
@@ -36,7 +35,7 @@ internal sealed class CreateEmployee(IUnitOfWork unitOfWork, ILogger<CreateEmplo
 
             if (existing != null)
             {
-                logger.LogWarning("Duplicate registration attempt for employee: {EmployeeNumber}", request.EmployeeNumber);
+                LogDefinitions.LogEmployeeDuplicateRegistration(logger, request.EmployeeNumber);
                 return AppResponse.Failure<EmployeeResponse>("You are already registered. Please log in.");
             }
 
@@ -65,7 +64,7 @@ internal sealed class CreateEmployee(IUnitOfWork unitOfWork, ILogger<CreateEmplo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Registration failed for employee {Email}. Rolling back changes.", request.Email);
+            LogDefinitions.LogEmployeeRegistrationFailed(logger, request.Email, ex);
 
             throw;
         }

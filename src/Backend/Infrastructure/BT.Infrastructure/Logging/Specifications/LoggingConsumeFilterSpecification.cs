@@ -1,7 +1,7 @@
 ﻿using MassTransit;
 using MassTransit.Configuration;
 
-namespace BT.Infrastructure.Logging;
+namespace BT.Infrastructure.Logging.Specifications;
 
 internal sealed class LoggingConsumeFilterSpecification<TConsumer, TMessage> : IPipeSpecification<ConsumerConsumeContext<TConsumer, TMessage>>
     where TConsumer : class

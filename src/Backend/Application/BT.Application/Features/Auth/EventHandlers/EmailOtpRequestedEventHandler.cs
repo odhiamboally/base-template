@@ -1,5 +1,6 @@
 ﻿using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Mappings;
+using BT.Application.Utilities;
 using BT.Domain.Enums;
 using BT.Domain.Events;
 using BT.SharedKernel.Dtos.Common;
@@ -37,6 +38,6 @@ internal sealed class EmailOtpRequestedEventHandler(
             Body = body
         }, ct).ConfigureAwait(false);
 
-        logger.LogInformation("Email OTP delivered for {Purpose} to {UserId}", e.Purpose, e.UserId);
+        LogDefinitions.LogEmailOtpDelivered(logger, e.Purpose, e.UserId);
     }
 }

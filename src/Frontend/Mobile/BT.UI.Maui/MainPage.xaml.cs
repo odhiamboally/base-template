@@ -1,6 +1,6 @@
 ﻿namespace BT.UI.Maui;
 
-public partial class MainPage : ContentPage
+internal sealed partial class MainPage : ContentPage
 {
     public MainPage()
     {

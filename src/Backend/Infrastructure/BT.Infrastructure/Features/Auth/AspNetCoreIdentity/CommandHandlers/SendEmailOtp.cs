@@ -5,6 +5,7 @@ using BT.Application.Utilities;
 using BT.Domain.Entities;
 using BT.Domain.Enums;
 using BT.Domain.Events;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -66,7 +67,7 @@ internal sealed class SendEmailOtp(
             request.Purpose,
             expiresAt), ct).ConfigureAwait(false);
 
-        logger.LogInformation("Email OTP sent to user {UserId} for {Purpose}", user.Id, request.Purpose);
+        ServiceLogDefinitions.LogEmailOtpSent(logger, user.Id, request.Purpose);
         return AppResponse.Success(
             "Code sent", 
             new SendEmailOtpResponse(

@@ -1,5 +1,6 @@
 using BT.Application.Features.Auth.Commands;
 using BT.Domain.Entities;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -53,7 +54,7 @@ internal sealed class VerifyPassword(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error verifying password for user or email.");
+            ServiceLogDefinitions.LogErrorVerifyingPassword(logger, ex);
             throw;
         }
     }

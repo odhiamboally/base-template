@@ -11,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.Application.Features.Clients.Commands;
+namespace BT.Application.Features.Customers.CommandHandlers;
 
 /// <summary>
 /// Same invalidation pattern as Update: remove the entity entry + bump the list version.
@@ -24,7 +24,7 @@ public record DeleteClientCommand(Guid ClientId, string UserId) : IRequest<AppRe
         
 }
 
-internal sealed class DeleteClientCommandHandler(IUnitOfWork _unitOfWork, ILogger<DeleteClientCommandHandler> _logger)
+internal sealed class DeleteClientCommandHandler(IBankingUnitOfWork _unitOfWork, ILogger<DeleteClientCommandHandler> _logger)
     : IRequestHandler<DeleteClientCommand, AppResponse<bool>>
 {
     public async Task<AppResponse<bool>> Handle(DeleteClientCommand command, CancellationToken ct)

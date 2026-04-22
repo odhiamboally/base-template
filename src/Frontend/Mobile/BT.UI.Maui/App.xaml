@@ -2,7 +2,8 @@
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:BT.UI.Maui"
-             x:Class="BT.UI.Maui.App">
+             x:Class="BT.UI.Maui.App"
+             x:ClassModifier="internal">
     <Application.Resources>
         <ResourceDictionary>
 
@@ -11,6 +12,8 @@
                 please refer to the documentation:
                 https://go.microsoft.com/fwlink/?linkid=2282329
             -->
+
+            <!-- your MAUI styles -->
 
         </ResourceDictionary>
     </Application.Resources>

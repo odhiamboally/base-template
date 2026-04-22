@@ -85,7 +85,7 @@ internal sealed class ApiService : IApiService
         catch (Exception ex)
         {
             HttpClientLogDefinitions.LogExternalApiError(_logger, "DELETE", endpoint, ex);
-            return AppResponse.Failure<TResponse?>(responseMessage);
+            throw;
         }
     }
 
@@ -245,7 +245,6 @@ internal sealed class ApiService : IApiService
 
     public async Task<AppResponse<TResponse?>> PutAsync<TRequest, TResponse>(string endpoint, TRequest request)
     {
-        string responseMessage = string.Empty;
         try
         {
             SetAuthorizationHeader();
@@ -270,25 +269,23 @@ internal sealed class ApiService : IApiService
             var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<AppResponse<TResponse>>(responseContent, _jsonOptions);
 
-            if (response == null)
+            return response switch
             {
-                responseMessage = "Response content is null";
-                return AppResponse.Failure<TResponse?>("Response content is null");
-            }
+                null => AppResponse.Failure<TResponse>("Response content is null"),
 
-            if (!response.Successful || response.Data == null)
-            {
-                responseMessage = response.Message ?? "Update operation failed";
-                return AppResponse.Failure<TResponse?>(responseMessage);
-            }
+                { Successful: false } or { Data: null }
+                    => AppResponse.Failure<TResponse>(response.Message ?? "Update operation failed"),
 
-            responseMessage = response.Message ?? "Resource updated successfully";
-            return AppResponse.Success(response.Message!, response.Data);
+                _ => AppResponse.Success(
+                        response.Message ?? "Resource updated successfully",
+                        response.Data)
+            };
+
         }
         catch (Exception ex)
         {
             HttpClientLogDefinitions.LogExternalApiError(_logger, "PUT", endpoint, ex);
-            return AppResponse.Failure<TResponse?>(responseMessage);
+            throw;
         }
     }
 

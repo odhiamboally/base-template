@@ -1,5 +1,6 @@
 ﻿using BT.Application.Features.Auth.Commands;
 using BT.Domain.Entities;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -38,7 +39,7 @@ internal sealed class GetOtpStatus(UserManager<AppUser> userManager, ILogger<Get
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting OTP status for user: {UserId}", command.UserId);
+            ServiceLogDefinitions.LogGetOtpStatusError(logger, command.UserId, ex);
             throw;
         }
     }

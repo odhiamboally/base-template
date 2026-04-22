@@ -15,16 +15,18 @@ public class ExampleJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
 
     public async ValueTask<string> Prompt(string message)
     {
-        var module = await moduleTask.Value;
-        return await module.InvokeAsync<string>("showPrompt", message);
+        var module = await moduleTask.Value.ConfigureAwait(false);
+        return await module.InvokeAsync<string>("showPrompt", message).ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
     {
         if (moduleTask.IsValueCreated)
         {
-            var module = await moduleTask.Value;
-            await module.DisposeAsync();
+            var module = await moduleTask.Value.ConfigureAwait(false);
+            await module.DisposeAsync().ConfigureAwait(false);
         }
+
+        GC.SuppressFinalize(this);
     }
 }

@@ -4,6 +4,7 @@ using BT.Application.Utilities;
 using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Entities;
 using BT.Domain.Events;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -16,7 +17,7 @@ namespace BT.Infrastructure.Features.Auth.AspNetCoreIdentity.Handlers;
 
 internal sealed class ResetPassword(
     UserManager<AppUser> userManager,
-    IUnitOfWork unitOfWork,
+    IIamUnitOfWork iamUnitOfWork,
     ICacheService cacheService,
     IHttpContextAccessor httpContextAccessor,
     IPublisher publisher,
@@ -31,7 +32,7 @@ internal sealed class ResetPassword(
             var user = await userManager.FindByEmailAsync(request.Email).ConfigureAwait(false);
             if (user == null)
             {
-                logger.LogWarning("Password reset attempted for non-existent email: {Email}", request.Email);
+                ServiceLogDefinitions.LogInvalidToken(logger);
                 return AppResponse.Failure<bool>("Invalid reset request");
             }
 
@@ -41,7 +42,7 @@ internal sealed class ResetPassword(
 
             if (isVerified != true)
             {
-                logger.LogWarning("Password reset attempted without OTP verification for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogInvalidToken(logger);
                 return AppResponse.Failure<bool>("Reset code not verified or expired. Please request a new code.");
             }
 
@@ -57,7 +58,10 @@ internal sealed class ResetPassword(
             var removeResult = await userManager.RemovePasswordAsync(user).ConfigureAwait(false);
             if (!removeResult.Succeeded)
             {
-                logger.LogError("Failed to remove old password for user: {UserId}", user.Id);
+                var errors = string.Join(", ", removeResult.Errors.Select(e => e.Description));
+                ServiceLogDefinitions.LogErrorUpdatingClaim(logger, user.Id, 
+                    new InvalidOperationException($"Failed to remove old password: {errors}"));
+                    
                 return AppResponse.Failure<bool>("Password reset failed");
             }
 
@@ -65,7 +69,7 @@ internal sealed class ResetPassword(
             if (!addResult.Succeeded)
             {
                 var errors = string.Join(", ", addResult.Errors.Select(e => e.Description));
-                logger.LogWarning("Password reset failed for user {UserId}: {Errors}", user.Id, errors);
+                ServiceLogDefinitions.LogFailedToAddClaim(logger, "password", "reset", user.Id, errors);
                 return AppResponse.Failure<bool>("Password reset failed. Please ensure your password meets all requirements.");
             }
 
@@ -78,13 +82,13 @@ internal sealed class ResetPassword(
             await userManager.UpdateAsync(user).ConfigureAwait(false);
 
             // Revoke all sessions
-            await unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+            await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
-                var refreshTokens = await unitOfWork.TokenRepository.GetActiveTokensByUserIdAsync(user.Id).ConfigureAwait(false);
+                var refreshTokens = await iamUnitOfWork.TokenRepository.GetActiveTokensByUserIdAsync(user.Id).ConfigureAwait(false);
                 if (refreshTokens.Count != 0)
                 {
                     var revokedByIp = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-                    await unitOfWork.TokenRepository.RevokeTokensAsync(refreshTokens, "Password reset", revokedByIp).ConfigureAwait(false);
+                    await iamUnitOfWork.TokenRepository.RevokeTokensAsync(refreshTokens, "Password reset", revokedByIp).ConfigureAwait(false);
                 }
                 return true;
 
@@ -101,12 +105,12 @@ internal sealed class ResetPassword(
                 user.Email!,
                 $"{user.FirstName} {user.LastName}"), ct).ConfigureAwait(false);
 
-            logger.LogInformation("Password reset successful for user: {UserId}", user.Id);
+            ServiceLogDefinitions.LogEmailOtpSent(logger, user.Id, "PasswordReset");
             return AppResponse.Success("Password reset successfully", true);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Password reset failed for email: {Email}.", request.Email);
+            ServiceLogDefinitions.LogUnexpectedTokenValidationError(logger, ex);
             return AppResponse.Failure<bool>("Password reset failed. Please try again.");
         }
     }

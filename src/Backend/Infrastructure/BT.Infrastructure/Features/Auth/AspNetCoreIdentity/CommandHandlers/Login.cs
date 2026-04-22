@@ -5,6 +5,7 @@ using BT.Application.Features.Auth.Commands;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Entities;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -42,7 +43,7 @@ internal sealed class Login(
 
             if (user == null)
             {
-                logger.LogWarning("Login attempt with invalid user name: {UserName}", loginRequest.UserName);
+                ServiceLogDefinitions.LogLoginError(logger, loginRequest.UserName, new AuthenticationException("Invalid user"));
                 return AppResponse.Failure<LoginResponse>("Invalid User Name or password.");
             }
 
@@ -54,14 +55,14 @@ internal sealed class Login(
             var emailConfirmed = await userManager.IsEmailConfirmedAsync(user).ConfigureAwait(false);
             if (!emailConfirmed)
             {
-                logger.LogWarning("Login attempt with unconfirmed email for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Unconfirmed email"));
                 return AppResponse.Failure<LoginResponse>("Please confirm your email before logging in.");
             }
 
             var passwordValid = await userManager.CheckPasswordAsync(user, loginRequest.Password).ConfigureAwait(false);
             if (!passwordValid)
             {
-                logger.LogWarning("Invalid password attempt for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Invalid password"));
                 return AppResponse.Failure<LoginResponse>("Invalid Employee Number or password.");
             }
 
@@ -71,20 +72,20 @@ internal sealed class Login(
 
             if (signInResult.IsLockedOut)
             {
-                logger.LogWarning("Account locked for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Account locked"));
                 return AppResponse.Failure<LoginResponse>("Your account is locked due to multiple failed login attempts. Please reset your password or contact support.");
             }
 
             if (signInResult.IsNotAllowed)
             {
-                logger.LogWarning("Sign in not allowed for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Sign in not allowed"));
                 return AppResponse.Failure<LoginResponse>("Sign in not allowed. Please contact support.");
             }
 
             var twoFactorEnabled = await userManager.GetTwoFactorEnabledAsync(user).ConfigureAwait(false);
             if (!twoFactorEnabled)
             {
-                logger.LogInformation("User {UserId} does not have 2FA enabled", user.Id);
+                ServiceLogDefinitions.LogUsingTempSecret(logger, user.Id);
             }
 
             var appUserResponse = new AppUserResponse(
@@ -123,7 +124,7 @@ internal sealed class Login(
                 var tempToken = await jwtService.CreateTempTokenAsync(tempClaims, TimeSpan.FromMinutes(10)).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(tempToken))
                 {
-                    logger.LogError("Failed to generate temporary token for user: {UserId}", user.Id);
+                    ServiceLogDefinitions.LogFailedToGenerateAccessToken(logger, user.Id);
                     return AppResponse.Failure<LoginResponse>("Could not generate temporary authentication token");
                 }
 
@@ -151,7 +152,7 @@ internal sealed class Login(
 
             if (!signInResult.Succeeded)
             {
-                logger.LogWarning("Sign in failed for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Sign in failed"));
                 return AppResponse.Failure<LoginResponse>("Invalid login attempt.");
             }
 
@@ -165,28 +166,28 @@ internal sealed class Login(
 
             if (!sessionCreationResult.Successful)
             {
-                logger.LogError("Failed to create user session for user {UserId}", user.Id);
+                ServiceLogDefinitions.LogFailedToCreateUserSession(logger, user.Id);
                 return AppResponse.Failure<LoginResponse>("Could not establish a user session.");
             }
 
             var userClaims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
-            if (!userClaims.Any())
+            if (userClaims.Count == 0)
             {
-                logger.LogError("Failed to get user claims for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogFailedToGetUserClaims(logger, user.Id);
                 return AppResponse.Failure<LoginResponse>("Could not retrieve user claims");
             }
 
             var tokenResponse = await jwtService.CreateTokenAsync(userClaims).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(tokenResponse))
             {
-                logger.LogError("Failed to generate token for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogFailedToGenerateAccessToken(logger, user.Id);
                 return AppResponse.Failure<LoginResponse>("Could not generate authentication token");
             }
 
             var refreshToken = jwtService.CreateRefreshToken();
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                logger.LogError("Failed to generate refresh token for user: {UserId}", user.Id);
+                ServiceLogDefinitions.LogFailedToGenerateRefreshToken(logger, user.Id);
                 return AppResponse.Failure<LoginResponse>("Could not generate refresh token");
             }
 
@@ -196,7 +197,8 @@ internal sealed class Login(
 
             if (!jwtService.IsTokenValid(tokenResponse))
             {
-                logger.LogError("Token validation failed for user: {UserId}", user.Id);
+                var tokenException = new SecurityTokenException("Token validation failed");
+                ServiceLogDefinitions.LogInvalidTokenWithException(logger, tokenException);
                 return AppResponse.Failure<LoginResponse>("Invalid authentication token");
             }
 
@@ -229,7 +231,7 @@ internal sealed class Login(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during login for User: {UserName}", loginRequest.UserName);
+            ServiceLogDefinitions.LogLoginError(logger, loginRequest.UserName, ex);
             throw;
         }
     }

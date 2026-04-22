@@ -1,5 +1,6 @@
 using BT.Application.Features.Auth.Commands;
 using BT.Domain.Events;
+using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -23,7 +24,7 @@ internal sealed class Logout(
             var userId = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             var sessionId = httpContextAccessor.HttpContext?.Request.Headers["X-Session-Id"].FirstOrDefault();
 
-            logger.LogInformation("API sign out called. UserId: {UserId}, SessionId: {SessionId}", userId, sessionId);
+            ServiceLogDefinitions.LogUserSignedOut(logger, userId ?? string.Empty);
 
             await signInManager.SignOutAsync().ConfigureAwait(false);
 
@@ -36,7 +37,7 @@ internal sealed class Logout(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during API sign out");
+            ServiceLogDefinitions.LogUnexpectedTokenValidationError(logger, ex);
             throw;
         }
     }

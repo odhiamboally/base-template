@@ -12,22 +12,22 @@ public abstract class BaseUnitOfWork<TContext>(
     ILogger logger
 ) where TContext : DbContext
 {
-    protected readonly TContext _context = context;
+    protected TContext Context { get; } = context;
     private readonly IPublisher _publisher = publisher;
     private readonly ILogger _logger = logger;
 
     public async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> operation, CancellationToken cancellationToken)
     {
-        var strategy = _context.Database.CreateExecutionStrategy();
+        var strategy = Context.Database.CreateExecutionStrategy();
 
         return await strategy.ExecuteAsync(async () =>
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await Context.Database.BeginTransactionAsync(cancellationToken);
             try
             {
                 var result = await operation().ConfigureAwait(false);
                 await DispatchDomainEventsAsync(cancellationToken).ConfigureAwait(false);
-                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                await Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return result;
             }
@@ -35,7 +35,7 @@ public abstract class BaseUnitOfWork<TContext>(
             {
                 PersistenceLogDefinitions.LogTransactionConcurrencyRollback(_logger, ex);
                 await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-                _context.ChangeTracker.Clear();
+                Context.ChangeTracker.Clear();
                 throw;
             }
             catch (Exception ex)
@@ -49,24 +49,24 @@ public abstract class BaseUnitOfWork<TContext>(
 
     public async Task<TResult> ExecuteInTransactionWithRetryAsync<TResult>(Func<Task<TResult>> operation, int maxRetries = 3, int baseDelayMs = 50)
     {
-        var strategy = _context.Database.CreateExecutionStrategy();
+        var strategy = Context.Database.CreateExecutionStrategy();
 
         return await strategy.ExecuteAsync(async () =>
         {
             for (var attempt = 1; attempt <= maxRetries; attempt++)
             {
-                await using var transaction = await _context.Database.BeginTransactionAsync();
+                await using var transaction = await Context.Database.BeginTransactionAsync();
                 try
                 {
                     var result = await operation().ConfigureAwait(false);
-                    await _context.SaveChangesAsync().ConfigureAwait(false);
+                    await Context.SaveChangesAsync().ConfigureAwait(false);
                     await transaction.CommitAsync().ConfigureAwait(false);
                     return result;
                 }
                 catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
                 {
                     await transaction.RollbackAsync().ConfigureAwait(false);
-                    _context.ChangeTracker.Clear();
+                    Context.ChangeTracker.Clear();
                     await Task.Delay(TimeSpan.FromMilliseconds(baseDelayMs * attempt)).ConfigureAwait(false);
                     continue;
                 }
@@ -81,11 +81,33 @@ public abstract class BaseUnitOfWork<TContext>(
     }
 
     public async Task<int> CompleteAsync(CancellationToken ct = default)
-        => await _context.SaveChangesAsync(ct).ConfigureAwait(false);
+        => await Context.SaveChangesAsync(ct).ConfigureAwait(false);
+
+    public IReadOnlyList<IDomainEvent> GetPendingDomainEvents()
+    {
+        var domainEntities = Context.ChangeTracker
+            .Entries<IHasDomainEvents>()
+            .Where(x => x.Entity.DomainEvents.Count > 0)
+            .Select(x => x.Entity)
+            .ToList();
+
+        return domainEntities.SelectMany(x => x.DomainEvents).ToList().AsReadOnly();
+    }
+
+    public void ClearDomainEvents()
+    {
+        var domainEntities = Context.ChangeTracker
+            .Entries<IHasDomainEvents>()
+            .Where(x => x.Entity.DomainEvents.Count > 0)
+            .Select(x => x.Entity)
+            .ToList();
+
+        domainEntities.ForEach(x => x.ClearDomainEvents());
+    }
 
     private async Task DispatchDomainEventsAsync(CancellationToken cancellationToken)
     {
-        var domainEntities = _context.ChangeTracker
+        var domainEntities = Context.ChangeTracker
             .Entries<IHasDomainEvents>()
             .Where(x => x.Entity.DomainEvents.Count > 0)
             .Select(x => x.Entity)

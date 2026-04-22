@@ -43,7 +43,7 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
 
     public string? TotpSecret { get; set; }
 
-    public bool IsActive { get; set; } = false;
+    public bool IsActive { get; set; }
 
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

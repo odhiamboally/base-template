@@ -4,7 +4,7 @@ using Serilog;
 
 namespace BT.Api.Utilities;
 
-internal class SafeSchemaTransformer : IOpenApiSchemaTransformer
+internal sealed class SafeSchemaTransformer : IOpenApiSchemaTransformer
 {
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {

@@ -10,7 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.Application.Features.Clients.Queries;
+namespace BT.Application.Features.Customers.QueryHandlers;
 
 /// <summary>
 /// Fetches a single client by ID.
@@ -33,7 +33,7 @@ public record GetClientByIdQuery(Guid Id) : IRequest<AppResponse<CustomerRespons
 }
 
 internal sealed class GetClientByIdQueryHandler(
-    IUnitOfWork _unitOfWork,
+    IBankingUnitOfWork _bankingUnitOfWork,
     ILogger<GetClientByIdQueryHandler> _logger)
     : IRequestHandler<GetClientByIdQuery, AppResponse<CustomerResponse>>
 {
@@ -41,7 +41,7 @@ internal sealed class GetClientByIdQueryHandler(
     {
         try
         {
-            var customer = await _unitOfWork.CustomerRepository.FindByIdAsync(query.Id, ct).ConfigureAwait(false);
+            var customer = await _bankingUnitOfWork.CustomerRepository.FindByIdAsync(query.Id, ct).ConfigureAwait(false);
 
             if (customer is null)
                 return AppResponse.Failure<CustomerResponse>($"Customer with ID {query.Id} was not found.");

@@ -73,7 +73,11 @@ public static class DependencyInjection
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        // Register domain-specific unit of work interfaces
+        services.AddScoped<IBankingUnitOfWork, UnitOfWork>();
+        services.AddScoped<IHrUnitOfWork, UnitOfWork>();
+        services.AddScoped<IIamUnitOfWork, UnitOfWork>();
+        services.AddScoped<ISharedUnitOfWork, UnitOfWork>();
 
         services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
 
