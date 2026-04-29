@@ -1,4 +1,4 @@
-﻿using BT.Application.Contracts.Dtos;
+using BT.Application.Contracts.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Text;

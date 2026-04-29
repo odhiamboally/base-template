@@ -1,4 +1,4 @@
-﻿using BT.Application.Contracts.Interfaces.Services;
+using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Extensions;
 using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Logging;

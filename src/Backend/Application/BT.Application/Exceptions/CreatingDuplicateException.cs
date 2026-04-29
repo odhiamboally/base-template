@@ -1,4 +1,4 @@
-﻿namespace BT.Application.Exceptions;
+namespace BT.Application.Exceptions;
 public class CreatingDuplicateException : CustomException
 {
     public CreatingDuplicateException(string message = null!) : base(message: message)

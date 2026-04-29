@@ -1,6 +1,14 @@
-using BT.Domain.Contracts.Interfaces.Common;
-using BT.Domain.Contracts.Interfaces.Repositories;
-using BT.Domain.Contracts.Specifications;
+using BT.Domain.Banking.Contracts;
+using BT.Domain.HR.Contracts;
+using BT.Domain.IAM.Contracts;
+using BT.Domain.Shared.Contracts;
+using BT.Domain.Shared.Contracts.Common;
+using BT.Domain.Banking.Contracts.Repositories;
+using BT.Domain.HR.Contracts.Repositories;
+using BT.Domain.IAM.Contracts.Repositories;
+using BT.Domain.Shared.Contracts.Repositories;
+using BT.Domain.Banking.Contracts.Specifications;
+using BT.Domain.Shared.Contracts.Specifications;
 
 using BT.Persistence.Extensions;
 using Microsoft.EntityFrameworkCore;

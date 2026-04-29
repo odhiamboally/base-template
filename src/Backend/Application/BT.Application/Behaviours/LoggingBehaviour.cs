@@ -1,4 +1,4 @@
-﻿using BT.Application.Utilities;
+using BT.Application.Utilities;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System;

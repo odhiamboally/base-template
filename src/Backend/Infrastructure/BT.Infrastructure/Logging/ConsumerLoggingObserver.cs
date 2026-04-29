@@ -1,4 +1,4 @@
-﻿using BT.Infrastructure.Logging.Specifications;
+using BT.Infrastructure.Logging.Specifications;
 using BT.Infrastructure.Messaging;
 using MassTransit;
 using System;

@@ -1,5 +1,3 @@
-using BT.Domain.Banking.Lookups;
-using BT.Domain.IAM.Lookups;
 using BT.Domain.Shared.Lookups;
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using BT.SharedKernel.Dtos.Common;
 
 namespace BT.SharedKernel.Dtos.Auth;

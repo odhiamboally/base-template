@@ -1,4 +1,4 @@
-﻿namespace BT.Application.Configuration;
+namespace BT.Application.Configuration;
 public class EmailValidationSettings
 {
     public bool BlockPersonalDomains { get; set; } = true;

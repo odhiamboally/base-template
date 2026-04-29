@@ -1,4 +1,4 @@
-﻿using BT.Api.Logging;
+using BT.Api.Logging;
 using BT.Application.Contracts.Interfaces.Services;
 
 using Microsoft.AspNetCore.Authentication;
@@ -40,7 +40,7 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
         if (!sessionValidation.Successful)
         {
             MiddlewareLogDefinitions.LogInvalidSession(logger, sessionId, userId, sessionValidation.Message); //
-        
+
             await HandleSessionInvalid(context, sessionValidation.Message).ConfigureAwait(false);
             return;
         }
@@ -104,9 +104,9 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
     private static string? GetSessionId(HttpContext context)
     {
         // For APIs, only check headers and cookies (not session storage)
-       
+
         var sessionId = context.Request.Headers["X-Session-Id"].FirstOrDefault() ?? context.Request.Cookies["session_id"];
-                       
+
 
         // Only check session storage for non-API requests
         if (sessionId == null && !IsApiRequest(context.Request))
@@ -134,7 +134,7 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
         }
         catch (Exception ex)
         {
-            MiddlewareLogDefinitions.LogSignOutError(logger, ex); 
+            MiddlewareLogDefinitions.LogSignOutError(logger, ex);
             throw;
         }
 

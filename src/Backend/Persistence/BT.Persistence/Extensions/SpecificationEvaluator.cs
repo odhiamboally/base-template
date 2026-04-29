@@ -1,4 +1,5 @@
-﻿using BT.Domain.Contracts.Specifications;
+using BT.Domain.Banking.Contracts.Specifications;
+using BT.Domain.Shared.Contracts.Specifications;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

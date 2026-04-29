@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.Api.Logging; 
+namespace BT.Api.Logging;
 
 internal static partial class MiddlewareLogDefinitions
 {

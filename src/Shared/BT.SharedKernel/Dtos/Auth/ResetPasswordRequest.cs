@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using System.ComponentModel.DataAnnotations;
 
 namespace BT.SharedKernel.Dtos.Auth;

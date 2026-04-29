@@ -1,4 +1,4 @@
-﻿using BT.Application.Exceptions;
+using BT.Application.Exceptions;
 using BT.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
@@ -113,7 +113,7 @@ internal sealed class ApiExceptionHandler : IExceptionHandler
         problemDetails.Extensions["traceId"] = httpContext.TraceIdentifier;
 
         httpContext.Response.StatusCode = problemDetails.Status.Value;
-        
+
         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         return true;

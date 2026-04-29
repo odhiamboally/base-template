@@ -1,4 +1,4 @@
-﻿using BT.Infrastructure.Logging;
+using BT.Infrastructure.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;

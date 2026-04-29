@@ -1,4 +1,4 @@
-﻿using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using System;
 using System.Collections.Generic;

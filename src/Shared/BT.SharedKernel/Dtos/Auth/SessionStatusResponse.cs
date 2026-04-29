@@ -1,4 +1,4 @@
-﻿namespace BT.SharedKernel.Dtos.Auth;
+namespace BT.SharedKernel.Dtos.Auth;
 public record SessionStatusResponse
 {
     public bool IsValid { get; init; }

@@ -1,11 +1,14 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Extensions;
-using BT.Domain.Contracts.Interfaces.Common;
+using BT.Domain.Banking.Contracts;
+using BT.Domain.HR.Contracts;
+using BT.Domain.IAM.Contracts;
+using BT.Domain.Shared.Contracts;
+using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Banking.Events;
 using BT.Domain.HR.Events;
 using BT.Domain.IAM.Events;
-using BT.Domain.Shared.Events;
 using BT.Infrastructure.Utilities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Enums;
@@ -18,9 +21,6 @@ using System.Text;
 using BT.Application.IntegrationEvents;
 using BT.Application.Utilities;
 using BT.Infrastructure.Logging;
-using BT.Domain.Banking.Entities;
-using BT.Domain.HR.Entities;
-using BT.Domain.IAM.Entities;
 using BT.Domain.Shared.Entities;
 
 namespace BT.Infrastructure.Contracts.Implementations.Services;

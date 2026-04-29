@@ -1,4 +1,4 @@
-﻿using BT.UI.Maui;
+using BT.UI.Maui;
 using ObjCRuntime;
 using UIKit;
 

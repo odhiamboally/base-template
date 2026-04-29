@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using NetArchTest.Rules;
 using System;
 using System.Collections.Generic;

@@ -1,7 +1,11 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
-using BT.Domain.Contracts.Interfaces.Common;
+using BT.Domain.Banking.Contracts;
+using BT.Domain.HR.Contracts;
+using BT.Domain.IAM.Contracts;
+using BT.Domain.Shared.Contracts;
+using BT.Domain.Shared.Contracts.Common;
 using BT.SharedKernel.Dtos.Banking.Customers;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;

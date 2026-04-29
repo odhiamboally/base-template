@@ -1,4 +1,4 @@
-﻿using Asp.Versioning;
+using Asp.Versioning;
 using BT.Api.Middleware;
 using BT.Application.Exceptions;
 using BT.Domain.Exceptions;
@@ -129,7 +129,7 @@ internal static class DependencyInjection
         {
             http.AddStandardResilienceHandler();
         });
-        
+
     }
 
     private static void ConfigureDataProtection(IServiceCollection services, IConfiguration configuration)
@@ -260,7 +260,7 @@ internal static class DependencyInjection
             // 1. Add the EF Outbox
             x.AddEntityFrameworkOutbox<SharedDbContext>(o =>
             {
-                o.UseSqlServer(); 
+                o.UseSqlServer();
                 o.UseBusOutbox(); // Integrates with the IPublishEndpoint
 
                 // How long a message ID is kept to prevent processing it twice (Default: 24 hours)

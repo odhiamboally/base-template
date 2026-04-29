@@ -1,4 +1,4 @@
-﻿namespace BT.Api.Logging;
+namespace BT.Api.Logging;
 
 internal static partial class AuthenticationLogDefinitions
 {

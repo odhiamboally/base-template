@@ -1,11 +1,5 @@
 using BT.Domain.Banking.Enums;
-using BT.Domain.HR.Enums;
-using BT.Domain.IAM.Enums;
-using BT.Domain.Shared.Enums;
 using BT.Domain.Banking.Events;
-using BT.Domain.HR.Events;
-using BT.Domain.IAM.Events;
-using BT.Domain.Shared.Events;
 using BT.Persistence.Shared.DataContext;
 using MassTransit;
 using MassTransit.EntityFrameworkCoreIntegration;

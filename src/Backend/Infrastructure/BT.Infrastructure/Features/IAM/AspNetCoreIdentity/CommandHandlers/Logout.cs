@@ -1,9 +1,6 @@
 using BT.Application.Features.IAM.Commands;
 using BT.Domain.IAM.Entities;
-using BT.Domain.Banking.Events;
-using BT.Domain.HR.Events;
 using BT.Domain.IAM.Events;
-using BT.Domain.Shared.Events;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;

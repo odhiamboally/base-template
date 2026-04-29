@@ -1,4 +1,4 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using Microsoft.Extensions.Caching.Hybrid;
 using OpenTelemetry.Trace;
 using System;

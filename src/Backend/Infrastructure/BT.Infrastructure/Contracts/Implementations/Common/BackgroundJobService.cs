@@ -1,4 +1,4 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Infrastructure.Jobs;
 using MediatR;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

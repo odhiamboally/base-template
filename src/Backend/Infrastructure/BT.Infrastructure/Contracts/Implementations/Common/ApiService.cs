@@ -1,4 +1,4 @@
-﻿using BT.Infrastructure.Contracts.Interfaces;
+using BT.Infrastructure.Contracts.Interfaces;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Configurations;
 using BT.SharedKernel.Dtos.Common;

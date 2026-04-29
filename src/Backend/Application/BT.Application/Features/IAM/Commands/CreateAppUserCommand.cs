@@ -1,4 +1,4 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Utilities;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;

@@ -1,4 +1,4 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Contracts.Interfaces.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System;

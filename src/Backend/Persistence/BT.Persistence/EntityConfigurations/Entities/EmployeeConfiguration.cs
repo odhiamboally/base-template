@@ -1,7 +1,4 @@
-using BT.Domain.Banking.Entities;
 using BT.Domain.HR.Entities;
-using BT.Domain.IAM.Entities;
-using BT.Domain.Shared.Entities;
 using BT.Persistence.Seeds;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

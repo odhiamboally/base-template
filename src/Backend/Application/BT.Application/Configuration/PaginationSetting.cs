@@ -1,4 +1,4 @@
-﻿namespace BT.Application.Configuration;
+namespace BT.Application.Configuration;
 public record PaginationSetting
 {
     public int PageSize { get; init; } = 50;

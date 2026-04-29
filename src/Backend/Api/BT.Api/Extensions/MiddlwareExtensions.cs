@@ -1,4 +1,4 @@
-﻿using BT.Api.Middleware;
+using BT.Api.Middleware;
 
 namespace BT.Api.Extensions;
 

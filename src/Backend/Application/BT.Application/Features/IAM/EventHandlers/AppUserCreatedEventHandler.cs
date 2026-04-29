@@ -1,10 +1,7 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.IntegrationEvents;
 using BT.Application.Utilities;
-using BT.Domain.Banking.Events;
-using BT.Domain.HR.Events;
 using BT.Domain.IAM.Events;
-using BT.Domain.Shared.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System;

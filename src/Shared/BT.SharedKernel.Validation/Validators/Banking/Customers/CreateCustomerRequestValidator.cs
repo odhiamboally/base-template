@@ -1,7 +1,4 @@
 using BT.Domain.Banking.Enums;
-using BT.Domain.HR.Enums;
-using BT.Domain.IAM.Enums;
-using BT.Domain.Shared.Enums;
 using BT.SharedKernel.Extensions;
 using BT.SharedKernel.Validation.Validators.Common;
 using BT.SharedKernel.Dtos.Banking.Customers;

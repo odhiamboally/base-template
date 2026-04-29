@@ -1,4 +1,4 @@
-﻿namespace BT.SharedKernel.Configurations;
+namespace BT.SharedKernel.Configurations;
 public class SecuritySettings
 {
     public SessionSettings SessionSettings { get; set; } = new();

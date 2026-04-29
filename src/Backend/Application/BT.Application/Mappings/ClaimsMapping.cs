@@ -1,4 +1,4 @@
-﻿using BT.SharedKernel.Dtos.Auth;
+using BT.SharedKernel.Dtos.Auth;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;

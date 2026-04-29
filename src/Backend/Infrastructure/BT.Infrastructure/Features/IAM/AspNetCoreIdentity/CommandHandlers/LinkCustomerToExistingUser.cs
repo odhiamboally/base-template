@@ -1,13 +1,8 @@
 using BT.Application.Extensions;
 using BT.Application.Features.IAM.Commands;
 using BT.Domain.Banking.Entities;
-using BT.Domain.HR.Entities;
 using BT.Domain.IAM.Entities;
-using BT.Domain.Shared.Entities;
-using BT.Domain.Banking.Enums;
-using BT.Domain.HR.Enums;
 using BT.Domain.IAM.Enums;
-using BT.Domain.Shared.Enums;
 using BT.SharedKernel.Dtos.Banking.Customers;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;

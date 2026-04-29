@@ -1,4 +1,4 @@
-﻿using BT.Application.Behaviours;
+using BT.Application.Behaviours;
 using BT.Application.Contracts.Implementations.Common;
 using BT.Application.Contracts.Interfaces.Common;
 using Microsoft.Extensions.Configuration;

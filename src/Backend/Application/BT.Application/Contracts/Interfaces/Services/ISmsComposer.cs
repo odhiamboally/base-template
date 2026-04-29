@@ -1,7 +1,4 @@
-using BT.Domain.Banking.Events;
-using BT.Domain.HR.Events;
 using BT.Domain.IAM.Events;
-using BT.Domain.Shared.Events;
 using System;
 using System.Collections.Generic;
 using System.Text;

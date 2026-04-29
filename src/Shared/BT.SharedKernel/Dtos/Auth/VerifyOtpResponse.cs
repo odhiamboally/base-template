@@ -1,4 +1,4 @@
-﻿
+
 
 namespace BT.SharedKernel.Dtos.Auth;
 public record VerifyOtpResponse(

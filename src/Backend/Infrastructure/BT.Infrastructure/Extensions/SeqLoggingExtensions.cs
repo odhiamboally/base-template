@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;

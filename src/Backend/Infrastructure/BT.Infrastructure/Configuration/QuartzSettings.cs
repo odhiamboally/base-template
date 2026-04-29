@@ -1,4 +1,4 @@
-﻿namespace BT.Infrastructure.Configuration;
+namespace BT.Infrastructure.Configuration;
 
 public class QuartzSettings
 {

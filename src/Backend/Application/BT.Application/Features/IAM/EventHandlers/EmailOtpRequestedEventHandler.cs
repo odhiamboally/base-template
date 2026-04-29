@@ -1,14 +1,8 @@
 using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
-using BT.Domain.Banking.Enums;
-using BT.Domain.HR.Enums;
 using BT.Domain.IAM.Enums;
-using BT.Domain.Shared.Enums;
-using BT.Domain.Banking.Events;
-using BT.Domain.HR.Events;
 using BT.Domain.IAM.Events;
-using BT.Domain.Shared.Events;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;

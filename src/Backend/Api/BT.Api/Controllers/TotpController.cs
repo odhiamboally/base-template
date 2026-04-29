@@ -1,4 +1,4 @@
-﻿using Asp.Versioning;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,6 +11,6 @@ internal sealed class TotpController : ControllerBase
 {
     public TotpController()
     {
-            
+
     }
 }

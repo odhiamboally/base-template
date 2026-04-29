@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 using MassTransit.Configuration;
 
 namespace BT.Infrastructure.Logging.Specifications;

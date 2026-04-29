@@ -1,8 +1,5 @@
 using BT.Application.Contracts.Dtos;
-using BT.Domain.Banking.Entities;
-using BT.Domain.HR.Entities;
 using BT.Domain.IAM.Entities;
-using BT.Domain.Shared.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;

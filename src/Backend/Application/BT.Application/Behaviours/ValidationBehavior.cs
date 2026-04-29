@@ -1,4 +1,4 @@
-﻿using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Dtos.Common;
 using FluentValidation;
 using MediatR;
 using System;

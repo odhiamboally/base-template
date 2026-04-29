@@ -1,4 +1,4 @@
-﻿using BT.Application.Contracts.Interfaces.Services;
+using BT.Application.Contracts.Interfaces.Services;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
 using FluentEmail.Core;
