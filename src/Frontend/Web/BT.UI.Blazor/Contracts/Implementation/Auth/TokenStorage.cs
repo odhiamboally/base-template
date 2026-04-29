@@ -1,4 +1,7 @@
-﻿using BT.Domain.Entities;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
 using BT.UI.Rcl.Contracts.Interfaces.Auth;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 

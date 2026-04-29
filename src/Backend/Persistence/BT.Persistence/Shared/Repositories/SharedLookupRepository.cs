@@ -1,6 +1,11 @@
 using BT.Domain.Contracts.Interfaces.Repositories;
-using BT.Domain.Enums;
-using BT.Domain.Lookups;
+using BT.Domain.Banking.Enums;
+using BT.Domain.HR.Enums;
+using BT.Domain.IAM.Enums;
+using BT.Domain.Shared.Enums;
+using BT.Domain.Banking.Lookups;
+using BT.Domain.IAM.Lookups;
+using BT.Domain.Shared.Lookups;
 using BT.Persistence.Contracts.Implementations.Repositories;
 using BT.Persistence.Shared.DataContext;
 using Microsoft.EntityFrameworkCore;

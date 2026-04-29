@@ -1,6 +1,12 @@
-﻿using BT.Domain.Contracts.Specifications;
-using BT.Domain.Entities;
-using BT.Domain.Enums;
+using BT.Domain.Contracts.Specifications;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
+using BT.Domain.Banking.Enums;
+using BT.Domain.HR.Enums;
+using BT.Domain.IAM.Enums;
+using BT.Domain.Shared.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;

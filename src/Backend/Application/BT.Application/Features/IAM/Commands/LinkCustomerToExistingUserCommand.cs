@@ -1,4 +1,4 @@
-﻿using BT.SharedKernel.Dtos.Client;
+using BT.SharedKernel.Dtos.Banking.Customers;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using System;

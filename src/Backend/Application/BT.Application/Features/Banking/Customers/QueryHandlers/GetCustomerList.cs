@@ -1,13 +1,19 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Extensions;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Contracts.Implementations.Specifications;
 using BT.Domain.Contracts.Interfaces.Common;
 using BT.Domain.Contracts.Specifications;
-using BT.Domain.Entities;
-using BT.Domain.Enums;
-using BT.SharedKernel.Dtos.Client;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
+using BT.Domain.Banking.Enums;
+using BT.Domain.HR.Enums;
+using BT.Domain.IAM.Enums;
+using BT.Domain.Shared.Enums;
+using BT.SharedKernel.Dtos.Banking.Customers;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -23,25 +29,25 @@ namespace BT.Application.Features.Banking.Customers.QueryHandlers;
 
 
 // ════════════════════════════════════════════════════════════════════════════════
-//  GET CLIENT LIST  (unfiltered, paginated)
+//  GET CUSTOMER LIST  (unfiltered, paginated)
 // ════════════════════════════════════════════════════════════════════════════════
  
 /// <summary>
-/// Returns the full client list with cursor-based pagination, no search filters.
+/// Returns the full customer list with cursor-based pagination, no search filters.
 ///
 /// Cache strategy — VERSIONED list entry:
-///   Key:  "clients:list:{userId}:{versionToken}:{discriminator}"
+///   Key:  "customers:list:{userId}:{versionToken}:{discriminator}"
 ///   TTL:  30 minutes
 ///   Scope: per user — each RM sees only their relevant data
 ///
-/// Invalidation: any mutation command bumps CacheKeys.GroupVersion("clients", userId),
+/// Invalidation: any mutation command bumps CacheKeys.GroupVersion("customers", userId),
 /// which orphans every versioned entry for that user in O(1).
 /// </summary>
-public record GetCustomerListQuery(CustomerListRequest ClientListRequest, string UserId)
+public record GetCustomerListQuery(CustomerListRequest CustomerListRequest, string UserId)
     : IRequest<AppResponse<PagedResponse<CustomerResponse, Guid>>>, ICachableRequest
 {
     public string CacheGroup => "customers";
-    public string Discriminator => CacheKeys.Discriminator(new CustomerListRequest(ClientListRequest.Cursor, ClientListRequest.PageSize));
+    public string Discriminator => CacheKeys.Discriminator(new CustomerListRequest(CustomerListRequest.Cursor, CustomerListRequest.PageSize));
     public string? CacheUserId => UserId;
     public bool IsVersioned => true;
 }
@@ -53,7 +59,7 @@ internal sealed class GetCustomerListQueryHandler(IBankingUnitOfWork _bankingUni
     {
         try
         {
-            var req = query.ClientListRequest;
+            var req = query.CustomerListRequest;
 
             var pageSize = Math.Clamp(req.PageSize, 1, 50);
 

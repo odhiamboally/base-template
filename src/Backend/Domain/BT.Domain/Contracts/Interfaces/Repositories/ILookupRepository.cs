@@ -1,5 +1,10 @@
-﻿using BT.Domain.Enums;
-using BT.Domain.Lookups;
+using BT.Domain.Banking.Enums;
+using BT.Domain.HR.Enums;
+using BT.Domain.IAM.Enums;
+using BT.Domain.Shared.Enums;
+using BT.Domain.Banking.Lookups;
+using BT.Domain.IAM.Lookups;
+using BT.Domain.Shared.Lookups;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -1,7 +1,10 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Utilities;
 using BT.Domain.Contracts.Interfaces.Common;
-using BT.Domain.Enums;
+using BT.Domain.Banking.Enums;
+using BT.Domain.HR.Enums;
+using BT.Domain.IAM.Enums;
+using BT.Domain.Shared.Enums;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Dtos.Dashboard;
 using MediatR;

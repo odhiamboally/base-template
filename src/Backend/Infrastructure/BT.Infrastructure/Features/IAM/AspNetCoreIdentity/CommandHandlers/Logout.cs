@@ -1,5 +1,9 @@
 using BT.Application.Features.IAM.Commands;
-using BT.Domain.Events;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Banking.Events;
+using BT.Domain.HR.Events;
+using BT.Domain.IAM.Events;
+using BT.Domain.Shared.Events;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
@@ -11,7 +15,7 @@ using System.Security.Claims;
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class Logout(
-    SignInManager<Domain.Entities.AppUser> signInManager,
+    SignInManager<AppUser> signInManager,
     IHttpContextAccessor httpContextAccessor,
     IPublisher publisher,
     ILogger<Logout> logger) : IRequestHandler<LogoutCommand, AppResponse<bool>>

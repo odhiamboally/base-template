@@ -14,7 +14,7 @@
     <PackageReference Include="MediatR">
       <VersionOverride>14.1.0</VersionOverride>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.6">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7">
       <VersionOverride>10.0.5</VersionOverride>
     </PackageReference>
   </ItemGroup>

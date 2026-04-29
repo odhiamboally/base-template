@@ -19,7 +19,7 @@ namespace BT.Application.Contracts.Interfaces.Common;
 public interface ICachableRequest
 {
     /// <summary>
-    /// Logical group this request belongs to, e.g. "clients", "staff-members".
+    /// Logical group this request belongs to, e.g. "customers", "employees".
     /// Used as the root namespace in every cache key produced for this request,
     /// and as the scope for version token lookups when <see cref="IsVersioned"/> is true.
     /// </summary>

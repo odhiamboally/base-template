@@ -1,4 +1,5 @@
-﻿using BT.SharedKernel.Dtos.Common;
+using BT.Domain.Shared.Entities;
+using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Enums;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ namespace BT.Application.Mappings;
 
 public static class EmailTemplateMapping
 {
-    public static EmailTemplateResponse ToEmailTemplateResponse(this Domain.Entities.EmailTemplate entity)
+    public static EmailTemplateResponse ToEmailTemplateResponse(this EmailTemplate entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
@@ -22,7 +23,7 @@ public static class EmailTemplateMapping
         };
     }
 
-    public static EmailTemplateType ToEnum(this Domain.Entities.EmailTemplate entity)
+    public static EmailTemplateType ToEnum(this EmailTemplate entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
         return entity.Name.ToTemplateEnum();
@@ -34,7 +35,6 @@ public static class EmailTemplateMapping
 
         return templateName switch
         {
-
             nameof(EmailTemplateType.AppUserCreated) => EmailTemplateType.AppUserCreated,
             nameof(EmailTemplateType.TenantWelcome) => EmailTemplateType.TenantWelcome,
             nameof(EmailTemplateType.TenantPasswordReset) => EmailTemplateType.TenantPasswordReset,
@@ -51,9 +51,7 @@ public static class EmailTemplateMapping
             nameof(EmailTemplateType.SecuritySettingsChanged) => EmailTemplateType.SecuritySettingsChanged,
 
             _ => throw new ArgumentException($"Unknown email template name: {templateName}")
-
         };
-
     }
 
     public static string ToTemplateName(this EmailTemplateType enumValue)
@@ -78,9 +76,4 @@ public static class EmailTemplateMapping
             _ => throw new ArgumentException($"Undefined enum value: {enumValue}")
         };
     }
-
-
-
-
 }
-

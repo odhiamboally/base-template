@@ -1,4 +1,6 @@
-﻿using BT.Domain.Lookups;
+using BT.Domain.Banking.Lookups;
+using BT.Domain.IAM.Lookups;
+using BT.Domain.Shared.Lookups;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;

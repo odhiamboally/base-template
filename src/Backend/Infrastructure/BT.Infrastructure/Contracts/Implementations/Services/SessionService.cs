@@ -1,6 +1,9 @@
-﻿using BT.Application.Contracts.Interfaces.Services;
+using BT.Application.Contracts.Interfaces.Services;
 using BT.Domain.Contracts.Interfaces.Common;
-using BT.Domain.Entities;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Configurations;
 using BT.SharedKernel.Dtos.Common;
@@ -285,7 +288,7 @@ internal sealed class SessionService(
                     .PurgeOldSessionsAsync(retentionLimit)
                     .ConfigureAwait(false);
 
-                await _unitOfWork.CompleteAsync();
+                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
             }
 
             return AppResponse.Success($"Cleaned up {expiredSessions.Count} expired sessions", true);

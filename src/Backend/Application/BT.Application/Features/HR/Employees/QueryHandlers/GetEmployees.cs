@@ -2,7 +2,7 @@
 using BT.Application.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Contracts.Interfaces.Common;
-using BT.SharedKernel.Dtos.Client;
+using BT.SharedKernel.Dtos.Employees;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

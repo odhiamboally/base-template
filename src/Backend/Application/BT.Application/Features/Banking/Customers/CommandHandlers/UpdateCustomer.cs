@@ -1,12 +1,18 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Extensions;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Contracts.Interfaces.Common;
-using BT.Domain.Entities;
-using BT.Domain.Enums;
-using BT.Domain.ValueObjects;
-using BT.SharedKernel.Dtos.Client;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
+using BT.Domain.Banking.Enums;
+using BT.Domain.HR.Enums;
+using BT.Domain.IAM.Enums;
+using BT.Domain.Shared.Enums;
+using BT.Domain.Banking.ValueObjects;
+using BT.SharedKernel.Dtos.Banking.Customers;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -20,7 +26,7 @@ namespace BT.Application.Features.Banking.Customers.CommandHandlers;
 /// <summary>
 /// Invalidation:
 ///   - Direct:  delete the entity entry so the next GetById call fetches fresh data.
-///   - Version: bump the caller-scoped "clients" version to orphan list entries.
+///   - Version: bump the caller-scoped "customers" version to orphan list entries.
 ///
 /// Both are necessary: without the direct deletion the entity detail page would
 /// still show stale data even after the list refreshes.

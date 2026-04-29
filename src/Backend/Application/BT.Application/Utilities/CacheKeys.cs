@@ -30,7 +30,7 @@ public static class CacheKeys
     /// Version sentinel key for a cache group.
     /// Bumping this key orphans every versioned list entry in the group.
     /// </summary>
-    /// <param name="group">e.g. "clients"</param>
+    /// <param name="group">e.g. "customers"</param>
     /// <param name="userId">Null for a global (cross-user) version token.</param>
     public static string GroupVersion(string group, string? userId = null)
         => userId is null
@@ -41,7 +41,7 @@ public static class CacheKeys
     /// Non-versioned key for a single entity lookup.
     /// Invalidated directly by its exact key when the entity is mutated.
     /// </summary>
-    /// <param name="group">e.g. "clients"</param>
+    /// <param name="group">e.g. "customers"</param>
     /// <param name="id">String form of the entity identifier.</param>
     public static string Entity(string group, string id)
         => $"{NormalizeRequired(group, nameof(group))}:entity:{NormalizeRequired(id, nameof(id))}";

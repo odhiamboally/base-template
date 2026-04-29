@@ -1,6 +1,5 @@
 using Asp.Versioning;
 using BT.Application.Features.HR.Employees.CommandHandlers;
-using BT.SharedKernel.Dtos.Client;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Dtos.Employees;
 using MediatR;

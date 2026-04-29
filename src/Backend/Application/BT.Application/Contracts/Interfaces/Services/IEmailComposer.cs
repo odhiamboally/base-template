@@ -1,5 +1,8 @@
-﻿using BT.Application.IntegrationEvents;
-using BT.Domain.Events;
+using BT.Application.IntegrationEvents;
+using BT.Domain.Banking.Events;
+using BT.Domain.HR.Events;
+using BT.Domain.IAM.Events;
+using BT.Domain.Shared.Events;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Enums;
 using System;

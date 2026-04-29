@@ -1,14 +1,23 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.IntegrationEvents;
 using BT.Application.Extensions;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Contracts.Interfaces.Common;
-using BT.Domain.Entities;
-using BT.Domain.Enums;
-using BT.Domain.Events;
-using BT.Domain.ValueObjects;
-using BT.SharedKernel.Dtos.Client;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
+using BT.Domain.Banking.Enums;
+using BT.Domain.HR.Enums;
+using BT.Domain.IAM.Enums;
+using BT.Domain.Shared.Enums;
+using BT.Domain.Banking.Events;
+using BT.Domain.HR.Events;
+using BT.Domain.IAM.Events;
+using BT.Domain.Shared.Events;
+using BT.Domain.Banking.ValueObjects;
+using BT.SharedKernel.Dtos.Banking.Customers;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -21,7 +30,7 @@ using System.Text;
 namespace BT.Application.Features.Banking.Customers.CommandHandlers;
 
 /// <summary>
-/// Invalidation: bump the version token for "clients" in the current user scope.
+/// Invalidation: bump the version token for "customers" in the current user scope.
 /// No entity key to delete (the entity does not exist in cache yet).
 /// The caller's versioned list entries are orphaned in O(1).
 /// </summary>
@@ -31,8 +40,8 @@ public sealed record CreateCustomerCommand(CreateCustomerRequest CreateCustomerR
     // No direct keys — new entity, nothing cached yet.
     public IReadOnlyList<string> DirectInvalidationKeys => [];
 
-    // Bump the scoped "clients" version so the caller sees the new entry on next list load.
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("clients", UserId)];
+    // Bump the scoped "customers" version so the caller sees the new entry on next list load.
+    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("customers", UserId)];
         
 
 }

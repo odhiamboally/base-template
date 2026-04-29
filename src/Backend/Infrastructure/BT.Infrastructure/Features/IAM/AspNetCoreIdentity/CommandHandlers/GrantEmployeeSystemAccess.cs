@@ -1,5 +1,8 @@
 using BT.Application.Features.IAM.Commands;
-using BT.Domain.Entities;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;

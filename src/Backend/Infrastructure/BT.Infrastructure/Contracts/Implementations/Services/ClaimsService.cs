@@ -1,5 +1,8 @@
-﻿using BT.Application.Contracts.Interfaces.Services;
-using BT.Domain.Entities;
+using BT.Application.Contracts.Interfaces.Services;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;

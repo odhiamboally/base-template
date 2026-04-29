@@ -1,5 +1,8 @@
 using BT.Domain.Contracts.Interfaces.Common;
-using BT.Domain.Entities;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
 using BT.Persistence.Seeds;

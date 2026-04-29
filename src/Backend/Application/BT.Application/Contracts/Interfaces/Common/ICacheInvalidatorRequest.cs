@@ -22,15 +22,15 @@ public interface ICacheInvalidatorRequest
     /// <summary>
     /// Exact cache keys to delete immediately after the command succeeds.
     /// Use for entity-level entries whose key is known at command time.
-    /// Example: CacheKeys.Entity("clients", command.ClientId.ToString())
+    /// Example: CacheKeys.Entity("customers", command.CustomerId.ToString())
     /// </summary>
     IReadOnlyList<string> DirectInvalidationKeys => [];
 
     /// <summary>
     /// Version sentinel keys to bump after the command succeeds.
     /// Each bump orphans ALL versioned list/search entries for the corresponding group and user scope.
-    /// Example: CacheKeys.GroupVersion("clients", command.UserId)
-    ///          CacheKeys.GroupVersion("clients")          ← global scope
+    /// Example: CacheKeys.GroupVersion("customers", command.UserId)
+    ///          CacheKeys.GroupVersion("customers")        ← global scope
     /// </summary>
     IReadOnlyList<string> GroupVersionKeysToInvalidate => [];
 }

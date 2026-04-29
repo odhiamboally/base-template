@@ -2,7 +2,10 @@ using BT.Application.Contracts.Interfaces.Services;
 using BT.Application.Features.IAM.Commands;
 using BT.Application.Mappings;
 using BT.Domain.Contracts.Interfaces.Common;
-using BT.Domain.Entities;
+using BT.Domain.Banking.Entities;
+using BT.Domain.HR.Entities;
+using BT.Domain.IAM.Entities;
+using BT.Domain.Shared.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
@@ -119,7 +122,7 @@ internal sealed class RefreshToken(
 
             await iamUnitOfWork.TokenRepository.MarkTokenAsUsedAsync(storedRefreshToken).ConfigureAwait(false);
 
-            var newRefreshTokenEntity = new Domain.Entities.RefreshToken
+            var newRefreshTokenEntity = new BT.Domain.IAM.Entities.RefreshToken
             {
                 Token = newRefreshTokenResponse,
                 AppUserId = userId,

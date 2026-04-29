@@ -1,11 +1,14 @@
-﻿using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Extensions;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Contracts.Implementations.Specifications;
 using BT.Domain.Contracts.Interfaces.Common;
-using BT.Domain.Enums;
-using BT.SharedKernel.Dtos.Client;
+using BT.Domain.Banking.Enums;
+using BT.Domain.HR.Enums;
+using BT.Domain.IAM.Enums;
+using BT.Domain.Shared.Enums;
+using BT.SharedKernel.Dtos.Banking.Customers;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
