@@ -1,4 +1,4 @@
-using BT.Domain.Banking.Enums;
+using BT.Domain.Features.Banking.Customers.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -6,7 +6,7 @@ using System.Text;
 namespace BT.Persistence.Seeds;
 
 /// <summary>
-/// Provides deterministic seed data for the <see cref="BT.Domain.Banking.Entities.Customer"/> aggregate
+/// Provides deterministic seed data for the <see cref="BT.Domain.Features.Banking.Customers.Entities.Customer"/> aggregate
 /// and all its owned entities (<see cref="CorporateDetail"/>, <see cref="Address"/>,
 /// <see cref="CommunicationPreference"/>).
 /// </summary>
@@ -181,7 +181,7 @@ public static class CustomerSeed
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Returns the 150 <see cref="BT.Domain.Banking.Entities.Customer"/> root records as anonymous objects
+    /// Returns the 150 <see cref="BT.Domain.Features.Banking.Customers.Entities.Customer"/> root records as anonymous objects
     /// for use with <c>entity.HasData(...)</c> inside
     /// <c>IEntityTypeConfiguration&lt;Client&gt;</c>.
     /// </summary>

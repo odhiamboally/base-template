@@ -1,4 +1,4 @@
-using BT.Domain.HR.Entities;
+using BT.Domain.Features.HR.Employees.Entities;
 using BT.Persistence.Seeds;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

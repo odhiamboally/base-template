@@ -2,16 +2,11 @@ namespace BT.Infrastructure.Configuration;
 
 public class SmsSettings 
 {
-    public Settings GetSettings { get; set; } = new();
+    public const string SectionName = "SmsSettings";
 
-    public class Settings
-    {
-        public TwilioSettings Twilio { get; set; } = new();
+    public TwilioSettings Twilio { get; set; } = new();
 
-        public bool EnableProviderFallback { get; set; } = true;
-
-
-    }
+    public bool EnableProviderFallback { get; set; } = true;
 
     public class TwilioSettings
     {
@@ -21,9 +16,4 @@ public class SmsSettings
         public string FromNumber { get; set; } = string.Empty;
 
     }
-
-    
-
-
-
 }

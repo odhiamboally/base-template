@@ -1,11 +1,11 @@
-using BT.Domain.Banking.Contracts;
-using BT.Domain.HR.Contracts;
-using BT.Domain.IAM.Contracts;
+using BT.Domain.Features.Banking.Contracts;
+using BT.Domain.Features.HR.Contracts;
+using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
-using BT.Domain.Banking.Contracts.Repositories;
-using BT.Domain.HR.Contracts.Repositories;
-using BT.Domain.IAM.Contracts.Repositories;
+using BT.Domain.Features.Banking.Customers.Contracts.Repositories;
+using BT.Domain.Features.HR.Employees.Contracts.Repositories;
+using BT.Domain.Features.IAM.Users.Contracts.Repositories;
 using BT.Domain.Shared.Contracts.Repositories;
 using BT.Persistence.Logging;
 using BT.Persistence.DataContext;

@@ -1,5 +1,5 @@
-using BT.Application.Extensions;
-using BT.Domain.Banking.Entities;
+using BT.SharedKernel.Extensions;
+using BT.Domain.Features.Banking.Customers.Entities;
 using BT.SharedKernel.Dtos.Banking.Customers;
 using System;
 using System.Collections.Generic;

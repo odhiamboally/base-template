@@ -1,7 +1,7 @@
-using BT.Application.Extensions;
+using BT.SharedKernel.Extensions;
 using BT.Application.Features.IAM.Commands;
 using BT.Application.Mappings;
-using BT.Domain.IAM.Entities;
+using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
@@ -63,7 +63,7 @@ internal sealed class GetCurrentUser(
                 appUser.PhoneNumber ?? string.Empty,
                 emailConfirmed,
                 twoFactorEnabled,
-                appUser.Gender.MapToString(),
+                appUser.Gender.ToDisplayString(),
                 isAuthenticated,
                 lastLoginAt,
                 rolesList));

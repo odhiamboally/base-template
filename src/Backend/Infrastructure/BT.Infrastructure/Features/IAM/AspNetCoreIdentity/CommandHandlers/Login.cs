@@ -1,11 +1,12 @@
 using BT.Application.Contracts.Interfaces.Common;
-using BT.Application.Contracts.Interfaces.Services;
-using BT.Application.Extensions;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
+using BT.SharedKernel.Extensions;
 using BT.Application.Features.IAM.Commands;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
-using BT.Domain.HR.Entities;
-using BT.Domain.IAM.Entities;
+using BT.Domain.Features.HR.Employees.Entities;
+using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
@@ -97,7 +98,7 @@ internal sealed class Login(
                 user.PhoneNumber,
                 user.NationalId,
                 user.Email ?? string.Empty,
-                user.Gender.MapToString(),
+                user.Gender.ToDisplayString(),
                 user.ProfilePictureUrl,
                 true,
                 twoFactorEnabled,

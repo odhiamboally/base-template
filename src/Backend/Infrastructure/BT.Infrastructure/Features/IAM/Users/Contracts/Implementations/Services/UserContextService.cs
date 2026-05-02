@@ -1,0 +1,25 @@
+using BT.Application.Features.IAM.Users.Contracts.Dtos;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using Microsoft.AspNetCore.Http;
+
+namespace BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Services;
+
+
+internal sealed class UserContextService(IHttpContextAccessor httpContextAccessor) : IUserContextService
+{
+    public UserIdentityContext GetCurrentContext()
+    {
+        var user = httpContextAccessor.HttpContext?.User
+            ?? throw new InvalidOperationException("No active HTTP context.");
+
+        return !user.Identity?.IsAuthenticated ?? true
+            ? throw new UnauthorizedAccessException("User is not authenticated.")
+            : UserIdentityContext.FromClaims(user);
+    }
+
+    public Task SwitchContextAsync(string context, CancellationToken ct = default)
+    {
+        // re-issue token with updated active_context claim
+        throw new NotImplementedException();
+    }
+}

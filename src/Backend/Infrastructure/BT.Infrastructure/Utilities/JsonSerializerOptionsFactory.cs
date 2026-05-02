@@ -1,4 +1,4 @@
-using BT.Domain.HR.Enums;
+using BT.Domain.Features.HR.Employees.Enums;
 using BT.SharedKernel.Dtos.Utilities;
 using System;
 using System.Collections.Generic;

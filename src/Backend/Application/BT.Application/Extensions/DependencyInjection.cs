@@ -1,5 +1,9 @@
 using BT.Application.Behaviours;
 using BT.Application.Contracts.Implementations.Common;
+using BT.Application.Features.Banking.Customers.Contracts.Implementations;
+using BT.Application.Features.Banking.Customers.Contracts.Interfaces;
+using BT.Application.Features.HR.Employees.Contracts.Implementations;
+using BT.Application.Features.HR.Employees.Contracts.Interfaces;
 using BT.Application.Contracts.Interfaces.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +46,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<ICustomerNumberGenerator, CustomerNumberGenerator>();
+        services.AddScoped<IEmployeeNumberGenerator, EmployeeNumberGenerator>();
         services.AddScoped<IServiceManager, ServiceManager>();
 
     }

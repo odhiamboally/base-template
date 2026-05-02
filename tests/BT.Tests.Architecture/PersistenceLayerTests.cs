@@ -75,10 +75,10 @@ public sealed class PersistenceLayerTests
 
         var allowedNamespaces = new[]
         {
-            "BT.Persistence.Banking.DataContext",
-            "BT.Persistence.HR.DataContext",
-            "BT.Persistence.IAM.DataContext",
-            "BT.Persistence.Shared.DataContext",
+            "BT.Persistence.Features.Banking.DataContext",
+            "BT.Persistence.Features.HR.DataContext",
+            "BT.Persistence.Features.IAM.DataContext",
+            "BT.Persistence.Features.Shared.DataContext",
             "BT.Persistence.DataContext"
         };
 
@@ -103,8 +103,8 @@ public sealed class PersistenceLayerTests
             .ToList();
 
         dbContextTypeNames.Should().Contain([
-            "SharedDbContext",
-            "IamDbContext",
+            "SharedDBContext",
+            "IamDBContext",
             "HrDbContext",
             "BankingDbContext"
         ], because: "the modular monolith requires one DbContext per bounded context.");

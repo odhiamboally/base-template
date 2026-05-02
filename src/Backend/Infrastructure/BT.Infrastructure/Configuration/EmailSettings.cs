@@ -7,9 +7,9 @@ public class EmailSettings
     public bool EnableSsl { get; set; } = true;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public string FromEmail { get; set; } = string.Empty;
-    public string FromName { get; set; } = string.Empty;
+    public string FromAddress { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
     public string ClientBaseUrl { get; set; } = string.Empty;
-    public string EmailTemplatePath { get; set; } = string.Empty;
+    public string TemplatePath { get; set; } = string.Empty;
     
 }

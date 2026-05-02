@@ -1,0 +1,19 @@
+using BT.Application.IntegrationEvents;
+using BT.Domain.Features.HR.Employees.Events;
+using BT.Domain.Features.IAM.Users.Events;
+using BT.Domain.Shared.Contracts.Common;
+using BT.Domain.Shared.Entities;
+using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Enums;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
+
+public interface IEmailComposer<TEvent> where TEvent : IIntegrationEvent
+{
+    Task<AppResponse<ComposeEmailResponse>> ComposeAsync(TEvent evt, CancellationToken ct);
+    Task<EmailTemplate?> ResolveTemplateAsync(EmailTemplateType emailTemplateType, CancellationToken cancellationToken);
+
+}

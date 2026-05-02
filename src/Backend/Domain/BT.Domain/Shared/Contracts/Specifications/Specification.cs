@@ -1,4 +1,4 @@
-using BT.Domain.Banking.Contracts.Specifications;
+using BT.Domain.Features.Banking.Customers.Contracts.Specifications;
 using BT.Domain.Shared.Contracts.Specifications;
 using System;
 using System.Collections.Generic;

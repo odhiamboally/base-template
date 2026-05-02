@@ -1,12 +1,13 @@
-using BT.Application.Contracts.Interfaces.Services;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.Application.Features.IAM.Commands;
 using BT.Application.Mappings;
-using BT.Domain.Banking.Contracts;
-using BT.Domain.HR.Contracts;
-using BT.Domain.IAM.Contracts;
+using BT.Domain.Features.Banking.Contracts;
+using BT.Domain.Features.HR.Contracts;
+using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
-using BT.Domain.IAM.Entities;
+using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;
@@ -16,6 +17,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using BT.SharedKernel.Extensions;
 
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
@@ -123,7 +125,7 @@ internal sealed class RefreshToken(
 
             await iamUnitOfWork.TokenRepository.MarkTokenAsUsedAsync(storedRefreshToken).ConfigureAwait(false);
 
-            var newRefreshTokenEntity = new BT.Domain.IAM.Entities.RefreshToken
+            var newRefreshTokenEntity = new BT.Domain.Features.IAM.Users.Entities.RefreshToken
             {
                 Token = newRefreshTokenResponse,
                 AppUserId = userId,
@@ -151,7 +153,7 @@ internal sealed class RefreshToken(
                 user.PhoneNumber,
                 user.NationalId,
                 user.Email ?? string.Empty,
-                user.Gender.MapToString(),
+                user.Gender.ToDisplayString(),
                 user.ProfilePictureUrl,
                 user.IsActive,
                 twoFactorEnabled,

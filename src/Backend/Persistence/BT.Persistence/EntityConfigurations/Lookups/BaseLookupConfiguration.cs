@@ -1,4 +1,4 @@
-using BT.Domain.Shared.Lookups;
+using BT.Domain.Features.Shared.Lookups.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;

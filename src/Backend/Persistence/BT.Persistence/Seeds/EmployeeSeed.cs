@@ -1,4 +1,4 @@
-using BT.Domain.HR.Entities;
+using BT.Domain.Features.HR.Employees.Entities;
 using BT.Domain.Shared.Entities;
 using Bogus;
 using System;

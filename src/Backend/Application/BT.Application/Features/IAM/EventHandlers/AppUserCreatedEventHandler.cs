@@ -1,7 +1,7 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.IntegrationEvents;
 using BT.Application.Utilities;
-using BT.Domain.IAM.Events;
+using BT.Domain.Features.IAM.Users.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System;

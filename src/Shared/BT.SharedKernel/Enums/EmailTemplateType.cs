@@ -59,5 +59,11 @@ public enum EmailTemplateType
     Corporate,
 
     [Description("Small Medium Enterprise")]
-    SmallMediumEnterprise
+    SmallMediumEnterprise,
+
+    [Description("Individual Welcome")]
+    IndividualWelcome,
+
+    [Description("Enterprise Welcome")]
+    EnterpriseWelcome
 }

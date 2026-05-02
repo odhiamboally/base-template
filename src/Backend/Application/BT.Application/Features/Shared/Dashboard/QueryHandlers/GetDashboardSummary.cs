@@ -1,11 +1,11 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Utilities;
-using BT.Domain.Banking.Contracts;
-using BT.Domain.HR.Contracts;
-using BT.Domain.IAM.Contracts;
+using BT.Domain.Features.Banking.Contracts;
+using BT.Domain.Features.HR.Contracts;
+using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
-using BT.Domain.Banking.Enums;
+using BT.Domain.Features.Banking.Customers.Enums;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Dtos.Dashboard;
 using MediatR;
@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using BT.Application.Extensions;
+using BT.SharedKernel.Extensions;
 
 namespace BT.Application.Features.Shared.Dashboard.QueryHandlers;
 

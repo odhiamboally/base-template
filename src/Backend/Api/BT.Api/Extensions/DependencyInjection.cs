@@ -4,7 +4,7 @@ using BT.Application.Exceptions;
 using BT.Domain.Exceptions;
 using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Messaging.Consumers;
-using BT.Persistence.Shared.DataContext;
+using BT.Persistence.Features.Shared.DataContext;
 using FluentValidation;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -258,7 +258,7 @@ internal static class DependencyInjection
         services.AddMassTransit(x =>
         {
             // 1. Add the EF Outbox
-            x.AddEntityFrameworkOutbox<SharedDbContext>(o =>
+            x.AddEntityFrameworkOutbox<SharedDBContext>(o =>
             {
                 o.UseSqlServer();
                 o.UseBusOutbox(); // Integrates with the IPublishEndpoint
@@ -274,7 +274,7 @@ internal static class DependencyInjection
                 o.QueryMessageLimit = 100;
             });
 
-            x.AddConsumer<CustomerCreatedEventConsumer>();
+            x.AddConsumers(typeof(IntegrationEventEmailConsumer<>).Assembly);
             //x.AddConsumer<CustomerUpdatedNotificationConsumer>();
             //x.AddConsumer<CustomerDeletedAuditConsumer>();
 
@@ -291,12 +291,12 @@ internal static class DependencyInjection
     public static IServiceCollection ConfigureOutBoxMessagingWithGlobalRetry(this IServiceCollection services, IConfiguration configuration)
     {
         var messagingSettings = configuration.GetSection(MessagingSettings.SectionName).Get<MessagingSettings>() ?? new MessagingSettings();
-        var assembly = typeof(CustomerCreatedEventConsumer).Assembly;
+        var assembly = typeof(IntegrationEventEmailConsumer<>).Assembly;
 
         services.AddMassTransit(x =>
         {
             // EF Outbox
-            x.AddEntityFrameworkOutbox<SharedDbContext>(o =>
+            x.AddEntityFrameworkOutbox<SharedDBContext>(o =>
             {
                 o.UseSqlServer();
                 o.UseBusOutbox();

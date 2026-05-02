@@ -24,10 +24,6 @@
     <ProjectReference Include="..\..\Domain\BT.Domain\BT.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Contracts\Implementations\Services\" />
-  </ItemGroup>
-
   
 
 </Project>

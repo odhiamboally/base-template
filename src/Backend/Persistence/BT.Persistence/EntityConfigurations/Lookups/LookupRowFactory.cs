@@ -1,4 +1,4 @@
-using BT.Domain.Shared.Lookups;
+using BT.Domain.Features.Shared.Lookups.Entities;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

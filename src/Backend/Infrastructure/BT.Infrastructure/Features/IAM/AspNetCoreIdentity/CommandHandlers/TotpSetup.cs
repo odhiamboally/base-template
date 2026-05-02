@@ -1,11 +1,11 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Commands;
-using BT.Domain.Banking.Contracts;
-using BT.Domain.HR.Contracts;
-using BT.Domain.IAM.Contracts;
+using BT.Domain.Features.Banking.Contracts;
+using BT.Domain.Features.HR.Contracts;
+using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
-using BT.Domain.IAM.Entities;
+using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Auth;
 using BT.SharedKernel.Dtos.Common;

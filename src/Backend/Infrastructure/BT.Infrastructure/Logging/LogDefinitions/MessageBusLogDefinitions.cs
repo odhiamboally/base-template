@@ -24,4 +24,13 @@ internal static partial class MessageBusLogDefinitions
 
     [LoggerMessage(EventId = 3309, Level = LogLevel.Warning, Message = "Temporary consumer failure on attempt {RetryCount}")]
     public static partial void LogTemporaryConsumerFailure(ILogger logger, int retryCount, Exception ex);
+
+    [LoggerMessage(EventId = 3310, Level = LogLevel.Warning, Message = "Email composition failed for message {MessageId}")]
+    public static partial void LogEmailCompositionFailed(ILogger logger, string messageId);
+
+    [LoggerMessage(EventId = 3311, Level = LogLevel.Error, Message = "Permanent failure for event {EventName} after {RetryCount} attempts")]
+    public static partial void LogPermanentEventFailure(ILogger logger, string eventName, int retryCount, Exception ex);
+
+    [LoggerMessage(EventId = 3312, Level = LogLevel.Warning, Message = "Transient failure for event {EventName}; retry {RetryCount}")]
+    public static partial void LogTransientEventFailure(ILogger logger, string eventName, int retryCount, Exception ex);
 }

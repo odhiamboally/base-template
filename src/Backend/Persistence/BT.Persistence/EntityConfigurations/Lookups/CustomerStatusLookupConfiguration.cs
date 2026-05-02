@@ -1,6 +1,6 @@
-using BT.Domain.Banking.Enums;
-using BT.Domain.Banking.Lookups;
-using BT.Domain.Shared.Lookups;
+using BT.Domain.Features.Banking.Customers.Enums;
+using BT.Domain.Features.Banking.Customers.Lookups;
+using BT.Domain.Features.Shared.Lookups.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;

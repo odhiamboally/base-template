@@ -3,11 +3,11 @@ using Azure.Identity;
 using BT.Api.Extensions;
 using BT.Api.Utilities;
 using BT.Application.Extensions;
-using BT.Infrastructure.Banking.Extensions;
+using BT.Infrastructure.Features.Banking.Extensions;
 using BT.Infrastructure.Extensions;
-using BT.Infrastructure.HR.Extensions;
-using BT.Infrastructure.IAM.Extensions;
-using BT.Persistence.Shared.Extensions;
+using BT.Infrastructure.Features.HR.Extensions;
+using BT.Infrastructure.Features.IAM.Extensions;
+using BT.Persistence.Features.Shared.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
@@ -178,9 +178,9 @@ try
     });
 
     builder.Services.AddHealthChecks()
-            .AddCheck("self-live", () => HealthCheckResult.Healthy(), tags: ["live"])
-            .AddCheck("self-ready", () => HealthCheckResult.Healthy(), tags: ["ready"]);
-
+        .AddCheck("self-ready", () => HealthCheckResult.Healthy(), tags: ["ready"])
+        .AddCheck("self-live", () => HealthCheckResult.Healthy(), tags: ["live"]);
+            
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())

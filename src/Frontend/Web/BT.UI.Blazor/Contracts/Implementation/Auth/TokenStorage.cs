@@ -1,4 +1,4 @@
-using BT.Domain.IAM.Entities;
+using BT.Domain.Features.IAM.Users.Entities;
 using BT.UI.Rcl.Contracts.Interfaces.Auth;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 

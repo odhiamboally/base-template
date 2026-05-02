@@ -1,25 +1,31 @@
 using Azure.Monitor.OpenTelemetry.AspNetCore;
-using BT.Application.Configuration;
 using BT.Application.Contracts.Interfaces.Common;
-using BT.Application.Contracts.Interfaces.Services;
-using BT.Domain.Banking.Contracts;
-using BT.Domain.HR.Contracts;
-using BT.Domain.IAM.Contracts;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
+using BT.Domain.Features.Banking.Contracts;
+using BT.Domain.Features.HR.Contracts;
+using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
-using BT.Domain.Banking.Contracts.Repositories;
-using BT.Domain.HR.Contracts.Repositories;
-using BT.Domain.IAM.Contracts.Repositories;
+using BT.Domain.Features.Banking.Customers.Contracts.Repositories;
+using BT.Domain.Features.HR.Employees.Contracts.Repositories;
+using BT.Domain.Features.IAM.Users.Contracts.Repositories;
 using BT.Domain.Shared.Contracts.Repositories;
 using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Contracts.Implementations.Common;
 using BT.Infrastructure.Contracts.Implementations.Caching;
-using BT.Infrastructure.Contracts.Implementations.Services;
+using BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Services;
+using BT.Infrastructure.Features.Shared.Notifications.Contracts.Implementations.Services;
+using BT.Infrastructure.Contracts.Interfaces;
+using BT.Infrastructure.Features.Banking.Customers.EmailComposers;
+using BT.Infrastructure.Features.HR.Employees.EmailComposers;
 using BT.Infrastructure.Logging.Enrichers;
 using BT.Infrastructure.Middleware;
 using BT.Infrastructure.Utilities;
+using BT.Application.IntegrationEvents;
 using BT.SharedKernel.Configurations;
 using FluentValidation;
+using FluentEmail.MailKitSmtp;
 using MailKit.Net.Smtp;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -65,13 +71,15 @@ public static class DependencyInjection
             services.AddSingleton(JsonSerializerOptionsFactory.Create());
             services.Configure<ObservabilitySettings>(configuration.GetSection(ObservabilitySettings.SectionName));
             services.Configure<AuthProviderSettings>(configuration.GetSection(AuthProviderSettings.SectionName));
+            services.Configure<ApiSettings>(configuration.GetSection(nameof(ApiSettings)));
 
             var cacheSettings = configuration.GetSection("CacheSettings").Get<CacheSettings>() 
                 ?? throw new InvalidOperationException("CacheSettings not found.");
 
             services.Configure<SessionSettings>(configuration.GetSection("SecuritySettings:SessionSettings"));
             ConfigureDistributedCache(services, configuration, cacheSettings);
-            ConfigureMailKitlWithSmtp(services, configuration);
+            ConfigureMailKitWithSmtp(services, configuration);
+            ConfigureSms(services, configuration);
             ConfigureQuartz(services, configuration);
             ConfigureSerilogEnrichers(services);
             var observabilitySettings = configuration.GetSection(ObservabilitySettings.SectionName).Get<ObservabilitySettings>() ?? new ObservabilitySettings();
@@ -93,6 +101,7 @@ public static class DependencyInjection
         services.AddScoped<IAppUserService, AppUserService>();
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
+        services.AddHttpClient<IApiService, ApiService>();
 
         if (!authProviderSettings.Enabled)
         {
@@ -105,7 +114,8 @@ public static class DependencyInjection
         }
 
         services.AddScoped<IEmailService, FluentMailService>();
-        services.AddScoped<IEmailComposer, EmailComposer>();
+        services.AddScoped<IEmailComposer<CustomerCreatedIntegrationEvent>, CustomerWelcomeEmailComposer>();
+        services.AddScoped<IEmailComposer<EmployeeCreatedIntegrationEvent>, EmployeeWelcomeEmailComposer>();
         services.AddScoped<ISmsComposer, SmsComposer>();
         services.AddScoped<ISmsService, SmsService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
@@ -415,14 +425,16 @@ public static class DependencyInjection
         return services;
     }
 
-    private static void ConfigureSMS(IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureSms(IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<SmsSettings>(configuration.GetSection("SmsSettings"));
+        services.Configure<SmsSettings>(configuration.GetSection(SmsSettings.SectionName));
 
-        var smsSettings = configuration.GetSection("SmsSettings").Get<SmsSettings>();
-        var twilio = smsSettings?.GetSettings.Twilio;
+        var smsSettings = configuration.GetSection(SmsSettings.SectionName).Get<SmsSettings>();
+        var twilio = smsSettings?.Twilio;
 
-        if (twilio != null)
+        if (twilio is not null &&
+            !string.IsNullOrWhiteSpace(twilio.AccountSid) &&
+            !string.IsNullOrWhiteSpace(twilio.AuthToken))
         {
             TwilioClient.Init(twilio.AccountSid, twilio.AuthToken);
         }
@@ -430,7 +442,7 @@ public static class DependencyInjection
 
     }
 
-    private static void ConfigureMailKitlWithSmtp(IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureMailKitWithSmtp(IServiceCollection services, IConfiguration configuration)
     {
         var emailSettings = configuration.GetSection("EmailSettings").Get<EmailSettings>()
             ?? throw new InvalidOperationException("EmailSettings section not found in configuration");
@@ -440,6 +452,18 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(EmailSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
+
+        services
+            .AddFluentEmail(emailSettings.FromAddress, emailSettings.DisplayName)
+            .AddMailKitSender(new SmtpClientOptions
+            {
+                Server = emailSettings.Host,
+                Port = emailSettings.Port,
+                User = emailSettings.Username,
+                Password = emailSettings.Password,
+                UseSsl = emailSettings.EnableSsl,
+                RequiresAuthentication = !string.IsNullOrWhiteSpace(emailSettings.Username)
+            });
 
         services.AddTransient<ISmtpClient, SmtpClient>();
     }

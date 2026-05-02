@@ -1,4 +1,5 @@
-using BT.Application.Contracts.Interfaces.Services;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,7 +11,6 @@ public interface IServiceManager
     ICacheService CacheService { get; }
     ISessionService SessionService { get; }
     IBackgroundJobService BackgroundJobService { get; }
-    IEmailComposer MailComposer { get; }
     IEmailService EmailService { get; }
     ISmsComposer SmsComposer { get; }
     IEncryptionService EncryptionService { get; }

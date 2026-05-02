@@ -1,8 +1,10 @@
-using BT.Application.Contracts.Interfaces.Services;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
+using BT.SharedKernel.Extensions;
 using BT.Application.Mappings;
 using BT.Application.Utilities;
-using BT.Domain.IAM.Enums;
-using BT.Domain.IAM.Events;
+using BT.Domain.Features.IAM.Users.Enums;
+using BT.Domain.Features.IAM.Users.Events;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -20,7 +22,7 @@ internal sealed class EmailOtpRequestedEventHandler(
     public async Task Handle(EmailOtpRequestedEvent e, CancellationToken ct)
     {
         // ToDo: Consider using templates
-        var (subject, body) = e.Purpose.ToPurposeEnum() switch
+        var (subject, body) = e.Purpose.ToEnum<OtpPurpose>() switch
         {
             OtpPurpose.Login => ("Your login code",
                 $"Hi {e.FirstName},\n\nYour code is: {e.Code}\n\nExpires at {e.ExpiresAt:HH:mm} UTC. Do not share it."),

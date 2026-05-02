@@ -1,4 +1,4 @@
-using BT.Domain.HR.Entities;
+using BT.Domain.Features.HR.Employees.Entities;
 using BT.SharedKernel.Dtos.Employees;
 using System;
 using System.Collections.Generic;

@@ -1,8 +1,8 @@
 using BT.Application.Contracts.Interfaces.Common;
-using BT.Application.Extensions;
+using BT.SharedKernel.Extensions;
 using BT.Application.IntegrationEvents;
 using BT.Application.Utilities;
-using BT.Domain.Banking.Events;
+using BT.Domain.Features.Banking.Customers.Events;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Enums;
 using MediatR;
@@ -22,21 +22,21 @@ public class CustomerCreatedEventHandler(
             ArgumentNullException.ThrowIfNull(evt, nameof(evt));
 
             var integrationEvent = new CustomerCreatedIntegrationEvent(
-                evt.ClientId, 
-                evt.ClientNumber, 
-                evt.ClientName, 
-                evt.Email, 
-                evt.ClientType.ToDisplayString()
+                evt.CustomerId, 
+                evt.CustomerNumber, 
+                evt.CustomerName, 
+                evt.CustomerEmail, 
+                evt.CustomerType.ToDisplayString()
                 
             );
             
             await integrationEventPublisher.PublishAsync(integrationEvent, cancellationToken).ConfigureAwait(false);
 
-            LogDefinitions.LogCustomerCreatedIntegrationPublished(_logger, evt.ClientId);
+            LogDefinitions.LogCustomerCreatedIntegrationPublished(_logger, evt.CustomerId);
         }
         catch (Exception ex)
         {
-            LogDefinitions.LogCustomerCreatedDomainEventHandlerError(_logger, evt?.Email ?? string.Empty, ex);
+            LogDefinitions.LogCustomerCreatedDomainEventHandlerError(_logger, evt?.CustomerEmail ?? string.Empty, ex);
             throw;
         }
     }

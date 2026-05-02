@@ -1,5 +1,6 @@
 using BT.Api.Logging;
-using BT.Application.Contracts.Interfaces.Services;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 
 using Microsoft.AspNetCore.Authentication;
 
