@@ -28,6 +28,7 @@ internal static class AssemblyReferences
     internal static readonly Assembly Persistence = typeof(SharedDBContext).Assembly;
     internal static readonly Assembly SharedKernel = typeof(LookupResponse).Assembly;
     internal static readonly Assembly SharedKernelValidation = typeof(GetLookupRequestValidator).Assembly;
+    internal static string RepoRoot => FindRepoRoot();
 
     private static string FindRepoRoot()
     {

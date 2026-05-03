@@ -142,5 +142,27 @@ public sealed class NamingConventionTests
             because: "feature-owned validators must live under BT.SharedKernel.Validation.Features.*; only generic validator bases stay in Common. Found: {0}",
             string.Join(", ", misplacedTypes));
     }
+
+    [Fact]
+    public void Api_Controllers_Should_Reside_In_Features_Namespace()
+    {
+        var apiRoot = Path.Combine(
+            AssemblyReferences.RepoRoot,
+            "src",
+            "Backend",
+            "Api",
+            "BT.Api");
+
+        var misplacedControllers = Directory
+            .EnumerateFiles(apiRoot, "*Controller.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}Common{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+                           !path.Contains($"{Path.DirectorySeparatorChar}Features{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Select(path => Path.GetRelativePath(apiRoot, path))
+            .ToList();
+
+        misplacedControllers.Should().BeEmpty(
+            because: "feature-owned API controllers must live under BT.Api.Features by bounded context and feature. Found: {0}",
+            string.Join(", ", misplacedControllers));
+    }
 }
 

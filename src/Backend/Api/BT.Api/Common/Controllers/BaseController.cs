@@ -1,20 +1,11 @@
-using Asp.Versioning;
 using BT.SharedKernel.Dtos.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BT.Api.Controllers;
+namespace BT.Api.Common.Controllers;
 
-[ApiVersion("1.0")]
-[Route("api/v{version:apiVersion}/[controller]")]
-[ApiController]
-internal class BaseController : ControllerBase
+internal abstract class BaseController : ControllerBase
 {
-    public BaseController()
-    {
-
-    }
-
     protected IActionResult HandleResponse<T>(AppResponse<T> response)
     {
         if (response.Successful && response.Data != null)

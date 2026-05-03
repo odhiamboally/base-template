@@ -8,6 +8,26 @@ Features/{BoundedContext}/{Feature}
 
 Use this convention consistently across Application, Domain, Persistence, and Infrastructure when code has a clear business owner. This keeps a feature easy to find in every layer without mixing unrelated concerns.
 
+API controllers follow the same ownership rule:
+
+```text
+Api/Features/{BoundedContext}/{Feature}/Controllers
+```
+
+Use explicit bounded-context routes rather than controller-name routes:
+
+```text
+api/v{version}/{bounded-context}/{feature}
+```
+
+Examples:
+
+- `api/v{version}/banking/customers`
+- `api/v{version}/hr/employees`
+- `api/v{version}/iam/users/totp`
+
+Keep shared API base types and helpers outside feature folders, for example under `Api/Common`.
+
 SharedKernel and SharedKernel.Validation follow the same ownership rule for externally shared contracts:
 
 ```text
