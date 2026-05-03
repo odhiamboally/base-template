@@ -10,4 +10,7 @@ internal static partial class AuthenticationLogDefinitions
 
     [LoggerMessage(EventId = 1002, Level = LogLevel.Information, Message = "Token refreshed for User {UserId}")]
     public static partial void LogTokenRefreshed(ILogger logger, string userId);
+
+    [LoggerMessage(EventId = 1003, Level = LogLevel.Warning, Message = "JWT authentication failed: {Reason}")]
+    public static partial void LogJwtAuthenticationFailed(ILogger logger, string reason, Exception ex);
 }

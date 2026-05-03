@@ -1,0 +1,24 @@
+using BT.Domain.Features.Banking.Contracts;
+using BT.Domain.Features.HR.Contracts;
+using BT.Domain.Features.IAM.Contracts;
+using BT.Domain.Shared.Contracts;
+using BT.Domain.Shared.Contracts.Common;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace BT.Application.Features.IAM.Users.IntegrationEvents;
+
+internal sealed record AppUserCreatedIntegrationEvent(
+    string UserId,
+    Guid TenantId,
+    Guid? EmployeeId,
+    string UserName,
+    string FullName,
+    string Email
+
+) : IIntegrationEvent
+{
+    public DateTimeOffset OccurredAt { get; } = DateTimeOffset.UtcNow;
+}
+

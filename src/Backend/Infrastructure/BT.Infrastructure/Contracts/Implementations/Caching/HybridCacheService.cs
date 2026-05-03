@@ -1,5 +1,7 @@
 using BT.Application.Contracts.Interfaces.Common;
+using BT.Infrastructure.Logging;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry.Trace;
 using System;
 using System.Collections.Generic;
@@ -9,7 +11,7 @@ using System.Text;
 
 namespace BT.Infrastructure.Contracts.Implementations.Caching;
 
-internal sealed class HybridCacheService(HybridCache cache) : ICacheService
+internal sealed class HybridCacheService(HybridCache cache, ILogger<HybridCacheService> logger) : ICacheService
 {
     // HybridCache handles the "Get or Create" logic internally. 
     // Since your MediatR behavior handles the 'Create' part, we use it for simple retrieval.
@@ -58,6 +60,7 @@ internal sealed class HybridCacheService(HybridCache cache) : ICacheService
         {
             activity?.SetStatus(ActivityStatusCode.Error);
             activity?.AddException(ex);
+            ServiceLogDefinitions.LogCacheOperationError(logger, "GET", key, ex);
             throw;
         }
     }
@@ -93,6 +96,7 @@ internal sealed class HybridCacheService(HybridCache cache) : ICacheService
         {
             activity?.SetStatus(ActivityStatusCode.Error);
             activity?.AddException(ex);
+            ServiceLogDefinitions.LogCacheOperationError(logger, "SET", key, ex);
             throw;
         }
     }
@@ -112,6 +116,7 @@ internal sealed class HybridCacheService(HybridCache cache) : ICacheService
         {
             activity?.SetStatus(ActivityStatusCode.Error);
             activity?.AddException(ex);
+            ServiceLogDefinitions.LogCacheOperationError(logger, "REMOVE", key, ex);
             throw;
         }
     }

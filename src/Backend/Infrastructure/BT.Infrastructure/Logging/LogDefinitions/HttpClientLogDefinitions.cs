@@ -24,4 +24,7 @@ internal static partial class HttpClientLogDefinitions
 
     [LoggerMessage(EventId = 3205, Level = LogLevel.Debug, Message = "ApiService initialized for {BaseAddress}")]
     public static partial void LogApiServiceDebug(ILogger logger, Uri? baseAddress);
+
+    [LoggerMessage(EventId = 3206, Level = LogLevel.Debug, Message = "External API error content was not valid JSON.")]
+    public static partial void LogNonJsonErrorContent(ILogger logger, Exception ex);
 }

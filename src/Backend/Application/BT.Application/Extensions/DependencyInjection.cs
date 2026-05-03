@@ -18,17 +18,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
-        try
-        {
-            RegisterApplicationServices(services);
-
-            return services;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-
+        RegisterApplicationServices(services);
+        return services;
     }
 
     private static void RegisterApplicationServices(IServiceCollection services)

@@ -1,6 +1,8 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Infrastructure.Jobs;
+using BT.Infrastructure.Logging;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Quartz;
 using System;
@@ -12,7 +14,7 @@ using TriggerBuilder = Quartz.TriggerBuilder;
 
 namespace BT.Infrastructure.Contracts.Implementations.Common;
 
-internal sealed class BackgroundJobService(ISchedulerFactory _schedulerFactory) : IBackgroundJobService
+internal sealed class BackgroundJobService(ISchedulerFactory _schedulerFactory, ILogger<BackgroundJobService> logger) : IBackgroundJobService
 {
     public void Enqueue(IRequest request)
     {
@@ -38,9 +40,9 @@ internal sealed class BackgroundJobService(ISchedulerFactory _schedulerFactory) 
                 await scheduler.ScheduleJob(job, trigger).ConfigureAwait(false);
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-
+            ServiceLogDefinitions.LogBackgroundJobEnqueueError(logger, request.GetType().Name, ex);
             throw;
         }
     }

@@ -1,8 +1,13 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.Banking.Customers.Contracts.Interfaces;
-using BT.Application.IntegrationEvents;
+using BT.Application.Features.Banking.Customers.IntegrationEvents;
+using BT.Application.Features.HR.Employees.IntegrationEvents;
+using BT.Application.Features.IAM.Users.IntegrationEvents;
 using BT.SharedKernel.Extensions;
-using BT.Application.Mappings;
+using BT.Application.Features.Banking.Customers.Mappings;
+using BT.Application.Features.HR.Employees.Mappings;
+using BT.Application.Features.IAM.Users.Mappings;
+using BT.Application.Features.Shared.EmailTemplates.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;

@@ -184,4 +184,19 @@ internal static partial class ServiceLogDefinitions
 
     [LoggerMessage(EventId = 3462, Level = LogLevel.Error, Message = "Error sending email to {To}")]
     public static partial void LogErrorSendingEmail(ILogger logger, string to, Exception ex);
+
+    [LoggerMessage(EventId = 3467, Level = LogLevel.Error, Message = "Cache {Operation} failed for key {Key}")]
+    public static partial void LogCacheOperationError(ILogger logger, string operation, string key, Exception ex);
+
+    [LoggerMessage(EventId = 3468, Level = LogLevel.Error, Message = "Failed to enqueue background job {RequestType}")]
+    public static partial void LogBackgroundJobEnqueueError(ILogger logger, string requestType, Exception ex);
+
+    [LoggerMessage(EventId = 3469, Level = LogLevel.Error, Message = "Error granting system access to employee {EmployeeId}")]
+    public static partial void LogGrantEmployeeSystemAccessError(ILogger logger, string employeeId, Exception ex);
+
+    [LoggerMessage(EventId = 3470, Level = LogLevel.Warning, Message = "JWT authentication failed: {Reason}")]
+    public static partial void LogJwtAuthenticationFailed(ILogger logger, string reason, Exception ex);
+
+    [LoggerMessage(EventId = 3471, Level = LogLevel.Error, Message = "Error getting user claims for user {UserId}")]
+    public static partial void LogGetUserClaimsError(ILogger logger, string userId, Exception ex);
 }

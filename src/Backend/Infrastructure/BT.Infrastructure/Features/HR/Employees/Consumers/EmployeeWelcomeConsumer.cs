@@ -1,6 +1,8 @@
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
-using BT.Application.IntegrationEvents;
+using BT.Application.Features.Banking.Customers.IntegrationEvents;
+using BT.Application.Features.HR.Employees.IntegrationEvents;
+using BT.Application.Features.IAM.Users.IntegrationEvents;
 using BT.Domain.Shared.Contracts;
 using BT.Infrastructure.Messaging.Consumers;
 using Microsoft.Extensions.Logging;

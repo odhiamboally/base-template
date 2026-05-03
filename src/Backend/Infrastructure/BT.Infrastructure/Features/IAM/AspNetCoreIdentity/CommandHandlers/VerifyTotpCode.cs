@@ -3,7 +3,10 @@ using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.SharedKernel.Extensions;
 using BT.Application.Features.IAM.Commands;
-using BT.Application.Mappings;
+using BT.Application.Features.Banking.Customers.Mappings;
+using BT.Application.Features.HR.Employees.Mappings;
+using BT.Application.Features.IAM.Users.Mappings;
+using BT.Application.Features.Shared.EmailTemplates.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
@@ -186,7 +189,7 @@ internal sealed class VerifyTotpCode(
         return true;
     }
 
-    private static bool VerifyTotp(string secret, string code, int windowSize = 2)
+    private bool VerifyTotp(string secret, string code, int windowSize = 2)
     {
         if (string.IsNullOrWhiteSpace(secret) || string.IsNullOrWhiteSpace(code) || code.Length != 6)
         {
@@ -200,8 +203,9 @@ internal sealed class VerifyTotpCode(
             var window = new VerificationWindow(windowSize, windowSize);
             return totp.VerifyTotp(code.Trim(), out _, window);
         }
-        catch
+        catch (Exception ex)
         {
+            ServiceLogDefinitions.LogTotpPlainTextCodeVerificationError(logger, ex);
             return false;
         }
     }

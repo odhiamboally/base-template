@@ -45,19 +45,23 @@ public sealed class PersistenceLayerTests
     }
 
     [Fact]
-    public void EntityConfigurations_Should_Reside_In_Configurations_Namespace()
+    public void EntityConfigurations_Should_Reside_In_Feature_Configuration_Namespaces()
     {
         var result = Types.InAssembly(AssemblyReferences.Persistence)
             .That()
             .ImplementInterface(typeof(IEntityTypeConfiguration<>))
-            .Should()
-            .ResideInNamespaceStartingWith("BT.Persistence.EntityConfigurations")
-            .GetResult();
+            .GetTypes();
 
-        result.IsSuccessful.Should().BeTrue(
-            because: "All entity configurations must live under BT.Persistence.EntityConfigurations. " +
-                     "Failing types: {0}", string.Join(", ",
-                result.FailingTypes?.Select(t => t.Name) ?? []));
+        var misplacedTypes = configurationTypes
+            .Where(t => t.Namespace is null ||
+                        !t.Namespace.StartsWith("BT.Persistence.Features.", StringComparison.Ordinal) ||
+                        !t.Namespace.Contains(".EntityConfigurations", StringComparison.Ordinal))
+            .Select(t => t.FullName)
+            .ToList();
+
+        misplacedTypes.Should().BeEmpty(
+            because: "entity configurations must live under their owning Persistence feature folder. Found: {0}",
+            string.Join(", ", misplacedTypes));
     }
 
     // ── DbContexts ────────────────────────────────────────────────────────────
@@ -78,8 +82,7 @@ public sealed class PersistenceLayerTests
             "BT.Persistence.Features.Banking.DataContext",
             "BT.Persistence.Features.HR.DataContext",
             "BT.Persistence.Features.IAM.DataContext",
-            "BT.Persistence.Features.Shared.DataContext",
-            "BT.Persistence.DataContext"
+            "BT.Persistence.Features.Shared.DataContext"
         };
 
         var misplacedTypes = dbContextTypes
@@ -105,8 +108,8 @@ public sealed class PersistenceLayerTests
         dbContextTypeNames.Should().Contain([
             "SharedDBContext",
             "IamDBContext",
-            "HrDbContext",
-            "BankingDbContext"
+            "HrDBContext",
+            "BankingDBContext"
         ], because: "the modular monolith requires one DbContext per bounded context.");
     }
 }

@@ -18,4 +18,7 @@ internal static partial class MiddlewareLogDefinitions
 
     [LoggerMessage(EventId = 1103, Level = LogLevel.Debug, Message = "Error during sign out in session validation middleware")]
     public static partial void LogSignOutError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 1104, Level = LogLevel.Debug, Message = "Session state is unavailable while resolving the current session id.")]
+    public static partial void LogSessionStateUnavailable(ILogger logger, Exception ex);
 }

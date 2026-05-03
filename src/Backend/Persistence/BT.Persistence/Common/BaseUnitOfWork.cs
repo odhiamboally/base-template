@@ -26,7 +26,8 @@ public abstract class BaseUnitOfWork<TContext>(
 
         return await strategy.ExecuteAsync(async () =>
         {
-            await using var transaction = await Context.Database.BeginTransactionAsync(cancellationToken);
+            var transaction = await Context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using var configuredTransaction = transaction.ConfigureAwait(false);
             try
             {
                 var result = await operation().ConfigureAwait(false);
@@ -59,7 +60,8 @@ public abstract class BaseUnitOfWork<TContext>(
         {
             for (var attempt = 1; attempt <= maxRetries; attempt++)
             {
-                await using var transaction = await Context.Database.BeginTransactionAsync();
+                var transaction = await Context.Database.BeginTransactionAsync().ConfigureAwait(false);
+                await using var configuredTransaction = transaction.ConfigureAwait(false);
                 try
                 {
                     var result = await operation().ConfigureAwait(false);
@@ -67,15 +69,17 @@ public abstract class BaseUnitOfWork<TContext>(
                     await transaction.CommitAsync().ConfigureAwait(false);
                     return result;
                 }
-                catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
+                catch (DbUpdateConcurrencyException ex) when (attempt < maxRetries)
                 {
+                    PersistenceLogDefinitions.LogTransactionConcurrencyRetry(_logger, attempt, maxRetries, ex);
                     await transaction.RollbackAsync().ConfigureAwait(false);
                     Context.ChangeTracker.Clear();
                     await Task.Delay(TimeSpan.FromMilliseconds(baseDelayMs * attempt)).ConfigureAwait(false);
                     continue;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    PersistenceLogDefinitions.LogRetryableTransactionErrorRollback(_logger, ex);
                     await transaction.RollbackAsync().ConfigureAwait(false);
                     throw;
                 }

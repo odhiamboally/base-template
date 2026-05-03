@@ -7,7 +7,7 @@ using BT.Domain.Features.Shared.FailedMessages.Enums;
 using BT.Domain.Features.Shared.Lookups.Enums;
 using BT.Domain.Features.Shared.Outbox.Enums;
 using BT.Domain.Features.Shared.Lookups.Entities;
-using BT.Persistence.Contracts.Implementations.Repositories;
+using BT.Persistence.Common.Repositories;
 using BT.Persistence.Features.Shared.DataContext;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;

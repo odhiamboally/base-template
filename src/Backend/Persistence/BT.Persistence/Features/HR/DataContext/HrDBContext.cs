@@ -7,7 +7,6 @@ using BT.Domain.Features.HR.Employees.Entities;
 using BT.Domain.Shared.Entities;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
-using BT.Persistence.Seeds;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -44,8 +43,9 @@ public class HrDBContext(
             }
         }
 
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(HrDBContext).Assembly);
-        modelBuilder.Entity<Employee>().HasData(EmployeeSeed.GetSeedData());
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(HrDBContext).Assembly,
+            type => type.Namespace?.StartsWith("BT.Persistence.Features.HR", StringComparison.Ordinal) == true);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -80,8 +80,10 @@ public class HrDBContext(
             _collectedDomainEvents?.Clear();
             throw;
         }
-        catch
+        catch (Exception ex)
         {
+            if (logger is not null)
+                PersistenceLogDefinitions.LogDbContextSaveChangesError(logger, nameof(HrDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }

@@ -1,7 +1,10 @@
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.Application.Features.IAM.Commands;
-using BT.Application.Mappings;
+using BT.Application.Features.Banking.Customers.Mappings;
+using BT.Application.Features.HR.Employees.Mappings;
+using BT.Application.Features.IAM.Users.Mappings;
+using BT.Application.Features.Shared.EmailTemplates.Mappings;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;

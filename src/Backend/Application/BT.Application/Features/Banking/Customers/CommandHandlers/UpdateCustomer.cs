@@ -1,6 +1,9 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.SharedKernel.Extensions;
-using BT.Application.Mappings;
+using BT.Application.Features.Banking.Customers.Mappings;
+using BT.Application.Features.HR.Employees.Mappings;
+using BT.Application.Features.IAM.Users.Mappings;
+using BT.Application.Features.Shared.EmailTemplates.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;

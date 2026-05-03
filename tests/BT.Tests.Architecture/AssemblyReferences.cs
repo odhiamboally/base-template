@@ -1,5 +1,5 @@
 using BT.Domain.Shared.Entities;
-using BT.Persistence.DataContext;
+using BT.Persistence.Features.Shared.DataContext;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Validation.Validators.Lookups;
 using System.IO;
@@ -25,7 +25,7 @@ internal static class AssemblyReferences
             AppContext.BaseDirectory,
             "..", "..", "..", "..",
             "src", "Backend", "Application", "BT.Application", "bin", "Debug", "net10.0", "BT.Application.dll")));
-    internal static readonly Assembly Persistence = typeof(DBContext).Assembly;
+    internal static readonly Assembly Persistence = typeof(SharedDBContext).Assembly;
     internal static readonly Assembly SharedKernel = typeof(LookupResponse).Assembly;
     internal static readonly Assembly SharedKernelValidation = typeof(GetLookupRequestValidator).Assembly;
 }

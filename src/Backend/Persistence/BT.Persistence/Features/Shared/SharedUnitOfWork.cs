@@ -37,7 +37,8 @@ public sealed class SharedUnitOfWork(
 
     public async Task<int> CompleteWithEventsAsync(List<IIntegrationEvent>? appEvents = null, CancellationToken ct = default)
     {
-        await using var transaction = await _sharedContext.Database.BeginTransactionAsync(ct);
+        var transaction = await _sharedContext.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
+        await using var configuredTransaction = transaction.ConfigureAwait(false);
 
         try
         {

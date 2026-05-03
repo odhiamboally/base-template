@@ -44,7 +44,9 @@ public class BankingDBContext(
             }
         }
 
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(BankingDBContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(BankingDBContext).Assembly,
+            type => type.Namespace?.StartsWith("BT.Persistence.Features.Banking", StringComparison.Ordinal) == true);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -79,8 +81,10 @@ public class BankingDBContext(
             _collectedDomainEvents?.Clear();
             throw;
         }
-        catch
+        catch (Exception ex)
         {
+            if (logger is not null)
+                PersistenceLogDefinitions.LogDbContextSaveChangesError(logger, nameof(BankingDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }

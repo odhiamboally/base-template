@@ -1,0 +1,38 @@
+using BT.Domain.Features.Banking.Customers.Enums;
+using BT.Domain.Features.Banking.Customers.Lookups;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace BT.Persistence.Features.Shared.Lookups.EntityConfigurations;
+
+internal sealed class IdentificationTypeLookupConfiguration : BaseLookupConfiguration<IdentificationTypeLookup>
+{
+    public override void Configure(EntityTypeBuilder<IdentificationTypeLookup> builder)
+    {
+        base.Configure(builder);
+        builder.ToTable("Lkp_IdentificationTypes");
+
+        builder.HasData(
+            Row((int)IdentificationType.CertificateOfIncorporation,
+                "CertificateOfIncorporation",
+                "Certificate of Incorporation",
+                1),
+
+            Row((int)IdentificationType.TIN,
+                "TIN",
+                "Tax Identification Number",
+                2),
+
+            Row((int)IdentificationType.BusinessLicense,
+                "BusinessLicense",
+                "Business License",
+                3),
+
+            Row((int)IdentificationType.CompanyRegistrationCertificate,
+                "CompanyRegistrationCertificate",
+                "Company Registration Certificate",
+                4)
+        );
+    }
+}
+

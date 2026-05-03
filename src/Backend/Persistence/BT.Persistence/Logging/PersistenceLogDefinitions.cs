@@ -37,4 +37,22 @@ internal static partial class PersistenceLogDefinitions
 
     [LoggerMessage(EventId = 4204, Level = LogLevel.Error, Message = "Transaction failed - rolling back")]
     public static partial void LogCompleteWithEventsRollback(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 4205, Level = LogLevel.Warning, Message = "Concurrency conflict on transaction attempt {Attempt} of {MaxRetries}; retrying.")]
+    public static partial void LogTransactionConcurrencyRetry(ILogger logger, int attempt, int maxRetries, Exception ex);
+
+    [LoggerMessage(EventId = 4206, Level = LogLevel.Error, Message = "Error in retryable transaction. Rolling back...")]
+    public static partial void LogRetryableTransactionErrorRollback(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 4207, Level = LogLevel.Error, Message = "Unhandled error while saving changes in {DbContextName}")]
+    public static partial void LogDbContextSaveChangesError(ILogger logger, string dbContextName, Exception ex);
+
+    [LoggerMessage(EventId = 4208, Level = LogLevel.Error, Message = "Failed to delete expired temp TOTP secrets")]
+    public static partial void LogDeleteExpiredTempTotpSecretsError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 4209, Level = LogLevel.Error, Message = "Failed to delete temp TOTP secrets for user {UserId}")]
+    public static partial void LogDeleteUserTempTotpSecretsError(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 4210, Level = LogLevel.Error, Message = "Failed to deactivate TOTP secrets for user {UserId}")]
+    public static partial void LogDeactivateUserTotpSecretsError(ILogger logger, string userId, Exception ex);
 }

@@ -50,7 +50,9 @@ public class IamDBContext(
             }
         }
 
-        builder.ApplyConfigurationsFromAssembly(typeof(IamDBContext).Assembly);
+        builder.ApplyConfigurationsFromAssembly(
+            typeof(IamDBContext).Assembly,
+            type => type.Namespace?.StartsWith("BT.Persistence.Features.IAM", StringComparison.Ordinal) == true);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -88,8 +90,10 @@ public class IamDBContext(
             _collectedDomainEvents?.Clear();
             throw;
         }
-        catch
+        catch (Exception ex)
         {
+            if (logger is not null)
+                PersistenceLogDefinitions.LogDbContextSaveChangesError(logger, nameof(IamDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }

@@ -1,4 +1,6 @@
-using BT.Application.IntegrationEvents;
+using BT.Application.Features.Banking.Customers.IntegrationEvents;
+using BT.Application.Features.HR.Employees.IntegrationEvents;
+using BT.Application.Features.IAM.Users.IntegrationEvents;
 using BT.Domain.Features.HR.Employees.Events;
 using BT.Domain.Features.IAM.Users.Events;
 using BT.Domain.Shared.Contracts.Common;

@@ -19,10 +19,13 @@ using BT.Infrastructure.Features.Shared.Notifications.Contracts.Implementations.
 using BT.Infrastructure.Contracts.Interfaces;
 using BT.Infrastructure.Features.Banking.Customers.EmailComposers;
 using BT.Infrastructure.Features.HR.Employees.EmailComposers;
+using BT.Infrastructure.Logging;
 using BT.Infrastructure.Logging.Enrichers;
 using BT.Infrastructure.Middleware;
 using BT.Infrastructure.Utilities;
-using BT.Application.IntegrationEvents;
+using BT.Application.Features.Banking.Customers.IntegrationEvents;
+using BT.Application.Features.HR.Employees.IntegrationEvents;
+using BT.Application.Features.IAM.Users.IntegrationEvents;
 using BT.SharedKernel.Configurations;
 using FluentValidation;
 using FluentEmail.MailKitSmtp;
@@ -64,9 +67,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddSharedInfrastructure(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
-        try
-        {
-            ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
+        ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
 
             services.AddSingleton(JsonSerializerOptionsFactory.Create());
             services.Configure<ObservabilitySettings>(configuration.GetSection(ObservabilitySettings.SectionName));
@@ -87,19 +88,11 @@ public static class DependencyInjection
             ConfigureObservability(services, configuration, environment, observabilitySettings);
             AddServices(services, authProviderSettings);
             
-            return services;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-
+        return services;
     }
 
     private static IServiceCollection AddServices(this IServiceCollection services, AuthProviderSettings authProviderSettings)
     {
-        services.AddScoped<IAppUserService, AppUserService>();
-        services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
         services.AddHttpClient<IApiService, ApiService>();
 
@@ -114,9 +107,6 @@ public static class DependencyInjection
         }
 
         services.AddScoped<IEmailService, FluentMailService>();
-        services.AddScoped<IEmailComposer<CustomerCreatedIntegrationEvent>, CustomerWelcomeEmailComposer>();
-        services.AddScoped<IEmailComposer<EmployeeCreatedIntegrationEvent>, EmployeeWelcomeEmailComposer>();
-        services.AddScoped<ISmsComposer, SmsComposer>();
         services.AddScoped<ISmsService, SmsService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddScoped<IEncryptionService, EncryptionService>();
@@ -126,9 +116,7 @@ public static class DependencyInjection
 
     internal static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
-        try
-        {
-            var jwtSettings = new JwtSettings();
+        var jwtSettings = new JwtSettings();
             configuration.GetSection("JwtSettings").Bind(jwtSettings);
 
             services.AddSingleton(jwtSettings);
@@ -169,16 +157,10 @@ public static class DependencyInjection
                 ConfigureJwtBearer(options, jwtSettings);
             });
 
-            services.Configure<DataProtectionTokenProviderOptions>(options =>
-            {
-                options.TokenLifespan = TimeSpan.FromHours(24); // 24 hours for email tokens
-            });
-
-        }
-        catch (Exception)
+        services.Configure<DataProtectionTokenProviderOptions>(options =>
         {
-            throw;
-        }
+            options.TokenLifespan = TimeSpan.FromHours(24); // 24 hours for email tokens
+        });
     }
 
     internal static void ConfigureIdentityOptions(IdentityOptions options)
@@ -279,13 +261,18 @@ public static class DependencyInjection
                 }
                 else
                 {
-                    //ToDo: Log other JWT validation errors
+                    var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                    var logger = loggerFactory.CreateLogger("JwtAuthentication");
 
                     // Check for NotBefore issues specifically
                     if (context.Exception.Message.Contains("NotBefore", StringComparison.OrdinalIgnoreCase) || 
                     context.Exception.Message.Contains("not yet valid", StringComparison.OrdinalIgnoreCase))
                     {
-                        //ToDo: Log
+                        ServiceLogDefinitions.LogJwtAuthenticationFailed(logger, "Token is not yet valid", context.Exception);
+                    }
+                    else
+                    {
+                        ServiceLogDefinitions.LogJwtAuthenticationFailed(logger, "Token validation failed", context.Exception);
                     }
                 }
 

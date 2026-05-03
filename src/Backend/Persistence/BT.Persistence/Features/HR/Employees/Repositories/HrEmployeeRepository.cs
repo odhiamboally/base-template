@@ -3,7 +3,7 @@ using BT.Domain.Features.HR.Employees.Contracts.Repositories;
 using BT.Domain.Features.IAM.Users.Contracts.Repositories;
 using BT.Domain.Shared.Contracts.Repositories;
 using BT.Domain.Features.HR.Employees.Entities;
-using BT.Persistence.Contracts.Implementations.Repositories;
+using BT.Persistence.Common.Repositories;
 using BT.Persistence.Features.HR.DataContext;
 
 namespace BT.Persistence.Features.HR.Employees.Repositories;

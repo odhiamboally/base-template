@@ -88,8 +88,9 @@ internal sealed class ClaimsService(
 
             return claims;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            ServiceLogDefinitions.LogGetUserClaimsError(_logger, user.Id, ex);
             throw;
         }
 
@@ -176,7 +177,9 @@ internal sealed class ClaimsService(
                 return false;
             }
 
-            ServiceLogDefinitions.LogUpdatedClaim(_logger, user.Id, $"{existingClaim.Type}:{existingClaim.Value}", $"{newClaim.Type}:{newClaim.Value}");
+            var oldClaim = $"{existingClaim.Type}:{existingClaim.Value}";
+            var replacementClaim = $"{newClaim.Type}:{newClaim.Value}";
+            ServiceLogDefinitions.LogUpdatedClaim(_logger, user.Id, oldClaim, replacementClaim);
 
             return true;
         }

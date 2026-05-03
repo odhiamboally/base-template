@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using BT.Api.Logging;
 using BT.Api.Middleware;
 using BT.Application.Exceptions;
 using BT.Domain.Exceptions;
@@ -58,9 +59,7 @@ internal static class DependencyInjection
 
     private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
-        try
-        {
-            var jwtSettings = new JwtSettings();
+        var jwtSettings = new JwtSettings();
             configuration.GetSection("JwtSettings").Bind(jwtSettings);
 
             services.AddSingleton(jwtSettings);
@@ -105,16 +104,10 @@ internal static class DependencyInjection
                 ConfigureJwtBearer(options, jwtSettings);
             });
 
-            services.Configure<DataProtectionTokenProviderOptions>(options =>
-            {
-                options.TokenLifespan = TimeSpan.FromHours(24); // 24 hours for email tokens
-            });
-
-        }
-        catch (Exception)
+        services.Configure<DataProtectionTokenProviderOptions>(options =>
         {
-            throw;
-        }
+            options.TokenLifespan = TimeSpan.FromHours(24); // 24 hours for email tokens
+        });
     }
 
     private static void ConfigureHttpResilience(IServiceCollection services, IConfiguration configuration)
@@ -157,9 +150,7 @@ internal static class DependencyInjection
 
     private static void ConfigureCustomRateLimiting(IServiceCollection services)
     {
-        try
-        {
-            services.AddRateLimiter(options =>
+        services.AddRateLimiter(options =>
             {
                 options.AddFixedWindowLimiter("LoginPolicy", configureOptions =>
                 {
@@ -242,15 +233,7 @@ internal static class DependencyInjection
                         JsonSerializer.Serialize(errorResponse), token).ConfigureAwait(false);
                 };
 
-
-            });
-        }
-        catch (Exception)
-        {
-            //ToDo: Log the exception for debugging purposes
-            throw;
-        }
-
+        });
     }
 
     public static IServiceCollection ConfigureOutBoxMessaging(this IServiceCollection services, IConfiguration configuration)
@@ -392,9 +375,7 @@ internal static class DependencyInjection
 
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
     {
-        try
-        {
-            return app.Use(async (context, next) =>
+        return app.Use(async (context, next) =>
             {
                 context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
                 context.Response.Headers.Append("X-Frame-Options", "DENY");
@@ -405,16 +386,8 @@ internal static class DependencyInjection
                 // API-specific headers
                 context.Response.Headers.Append("X-API-Version", "1.0");
                 context.Response.Headers.Append("Cache-Control", "no-cache, no-store, must-revalidate");
-
-                await next().ConfigureAwait(false);
-            });
-        }
-        catch (Exception)
-        {
-
-            throw;
-        }
-
+            await next().ConfigureAwait(false);
+        });
     }
 
     private static void ConfigureIdentityOptions(IdentityOptions options)
@@ -515,12 +488,17 @@ internal static class DependencyInjection
                 }
                 else
                 {
-                    //ToDo: Log other JWT validation errors
+                    var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                    var logger = loggerFactory.CreateLogger("JwtAuthentication");
 
                     // Check for NotBefore issues specifically
                     if (context.Exception.Message.Contains("NotBefore") || context.Exception.Message.Contains("not yet valid"))
                     {
-                        //ToDo: Log
+                        AuthenticationLogDefinitions.LogJwtAuthenticationFailed(logger, "Token is not yet valid", context.Exception);
+                    }
+                    else
+                    {
+                        AuthenticationLogDefinitions.LogJwtAuthenticationFailed(logger, "Token validation failed", context.Exception);
                     }
                 }
 

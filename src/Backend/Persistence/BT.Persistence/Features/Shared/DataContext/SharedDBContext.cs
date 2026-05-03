@@ -60,7 +60,9 @@ public class SharedDBContext(
             }
         }
 
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(SharedDBContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(SharedDBContext).Assembly,
+            type => type.Namespace?.StartsWith("BT.Persistence.Features.Shared", StringComparison.Ordinal) == true);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -95,8 +97,10 @@ public class SharedDBContext(
             _collectedDomainEvents?.Clear();
             throw;
         }
-        catch
+        catch (Exception ex)
         {
+            if (logger is not null)
+                PersistenceLogDefinitions.LogDbContextSaveChangesError(logger, nameof(SharedDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }

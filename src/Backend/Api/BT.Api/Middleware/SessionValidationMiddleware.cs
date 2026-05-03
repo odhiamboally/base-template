@@ -102,7 +102,7 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
             path.StartsWithSegments(skipPath, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static string? GetSessionId(HttpContext context)
+    private string? GetSessionId(HttpContext context)
     {
         // For APIs, only check headers and cookies (not session storage)
 
@@ -116,8 +116,9 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
             {
                 sessionId = context.Session.GetString("SessionId");
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
+                MiddlewareLogDefinitions.LogSessionStateUnavailable(logger, ex);
                 // Session not configured - ignore for API requests
                 // This is expected for API-only applications
             }

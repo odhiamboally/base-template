@@ -3,14 +3,16 @@ using BT.Domain.Features.HR.Employees.Contracts.Repositories;
 using BT.Domain.Features.IAM.Users.Contracts.Repositories;
 using BT.Domain.Shared.Contracts.Repositories;
 using BT.Domain.Features.IAM.Users.Entities;
-using BT.Persistence.Contracts.Implementations.Repositories;
+using BT.Persistence.Common.Repositories;
 using BT.Persistence.Features.IAM.DataContext;
+using BT.Persistence.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 
 namespace BT.Persistence.Features.IAM.Users.Repositories;
 
-internal sealed class IamTempTotpSecretRepository(IamDBContext context) : Repository<TempTotpSecret>(context), ITempTotpSecretRepository
+internal sealed class IamTempTotpSecretRepository(IamDBContext context, ILogger<IamTempTotpSecretRepository> logger) : Repository<TempTotpSecret>(context), ITempTotpSecretRepository
 {
     public async Task<TempTotpSecret?> GetValidTempSecretByUserIdAsync(string userId)
     {
@@ -40,8 +42,9 @@ internal sealed class IamTempTotpSecretRepository(IamDBContext context) : Reposi
             await UpdateRangeAsync(new Collection<TempTotpSecret>(expiredSecrets), cancellationToken).ConfigureAwait(false);
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            PersistenceLogDefinitions.LogDeleteExpiredTempTotpSecretsError(logger, ex);
             return false;
         }
     }
@@ -63,8 +66,9 @@ internal sealed class IamTempTotpSecretRepository(IamDBContext context) : Reposi
             await UpdateAsync(tempSecret).ConfigureAwait(false);
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            PersistenceLogDefinitions.LogDeleteUserTempTotpSecretsError(logger, userId, ex);
             return false;
         }
     }

@@ -271,12 +271,12 @@ internal sealed class ApiService : IApiService
 
             return response switch
             {
-                null => AppResponse.Failure<TResponse>("Response content is null"),
+                null => AppResponse.Failure<TResponse?>("Response content is null"),
 
                 { Successful: false } or { Data: null }
-                    => AppResponse.Failure<TResponse>(response.Message ?? "Update operation failed"),
+                    => AppResponse.Failure<TResponse?>(response.Message ?? "Update operation failed"),
 
-                _ => AppResponse.Success(
+                _ => AppResponse.Success<TResponse?>(
                         response.Message ?? "Resource updated successfully",
                         response.Data)
             };
@@ -474,7 +474,7 @@ internal sealed class ApiService : IApiService
         }
     }
 
-    private static string? ExtractErrorMessage(string content)
+    private string? ExtractErrorMessage(string content)
     {
         if (string.IsNullOrWhiteSpace(content))
             return null;
@@ -488,8 +488,9 @@ internal sealed class ApiService : IApiService
                 return message;
             }
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            HttpClientLogDefinitions.LogNonJsonErrorContent(_logger, ex);
             // Not valid JSON — may be encrypted or plain text error;
         }
 

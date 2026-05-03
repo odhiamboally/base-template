@@ -47,9 +47,7 @@ internal static class SpecificationEvaluator<T, TCursor> where T : class
 
     private static Expression<Func<T, bool>>? BuildCursorPredicate(TCursor cursorValue, string propertyName)
     {
-        try
-        {
-            var param = Expression.Parameter(typeof(T), "x");
+        var param = Expression.Parameter(typeof(T), "x");
             var propExpr = Expression.PropertyOrField(param, propertyName);
             var underlyingType = Nullable.GetUnderlyingType(propExpr.Type) ?? propExpr.Type;
 
@@ -91,13 +89,7 @@ internal static class SpecificationEvaluator<T, TCursor> where T : class
                 return Expression.Lambda<Func<T, bool>>(Expression.AndAlso(hasValue, comparison), param);
             }
 
-            return Expression.Lambda<Func<T, bool>>(comparison, param);
-
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        return Expression.Lambda<Func<T, bool>>(comparison, param);
     }
 
 }

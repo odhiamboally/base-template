@@ -15,6 +15,8 @@ internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager
 {
     public async Task<AppResponse<bool>> Handle(GrantEmployeeSystemAccessCommand command, CancellationToken ct)
     {
+        var employeeId = command.EmployeeId.ToString();
+
         try
         {
             var user = await userManager.Users
@@ -45,16 +47,16 @@ internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager
             }
 
             _ = await userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
-
             if (logger.IsEnabled(LogLevel.Information))
             {
-                ServiceLogDefinitions.LogEmployeeSystemAccessGranted(logger, command.EmployeeId.ToString(), command.GrantedBy);
+                ServiceLogDefinitions.LogEmployeeSystemAccessGranted(logger, employeeId, command.GrantedBy);
             }
 
             return AppResponse.Success("System access granted. Activation email sent.", true);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            ServiceLogDefinitions.LogGrantEmployeeSystemAccessError(logger, employeeId, ex);
             throw;
         }
     }

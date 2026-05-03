@@ -1,6 +1,8 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.SharedKernel.Extensions;
-using BT.Application.IntegrationEvents;
+using BT.Application.Features.Banking.Customers.IntegrationEvents;
+using BT.Application.Features.HR.Employees.IntegrationEvents;
+using BT.Application.Features.IAM.Users.IntegrationEvents;
 using BT.Application.Utilities;
 using BT.Domain.Features.Banking.Customers.Events;
 using BT.SharedKernel.Dtos.Common;
