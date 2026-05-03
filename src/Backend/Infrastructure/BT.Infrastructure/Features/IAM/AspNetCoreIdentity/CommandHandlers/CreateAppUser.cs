@@ -13,7 +13,7 @@ using BT.Domain.Features.IAM.Users.Entities;
 using BT.Domain.Features.HR.Employees.Enums;
 using BT.Domain.Features.IAM.Users.Enums;
 using BT.Infrastructure.Logging;
-using BT.SharedKernel.Dtos.Auth;
+using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using FluentEmail.Core;
 using MediatR;

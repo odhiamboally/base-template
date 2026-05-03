@@ -6,7 +6,7 @@ using BT.Application.Features.IAM.Users.IntegrationEvents;
 using BT.Application.Utilities;
 using BT.Domain.Features.Banking.Customers.Events;
 using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Enums;
+using BT.SharedKernel.Features.Shared.EmailTemplates.Enums;
 using MediatR;
 using Microsoft.Extensions.Logging;
 

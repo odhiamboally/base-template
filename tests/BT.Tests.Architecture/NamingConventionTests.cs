@@ -1,4 +1,5 @@
 using FluentAssertions;
+using FluentValidation;
 using NetArchTest.Rules;
 using System;
 using System.Collections.Generic;
@@ -95,6 +96,51 @@ public sealed class NamingConventionTests
         persistenceDtos.Should().BeEmpty(
             because: "DTOs must live in BT.Shared, not BT.Persistence. " +
                      "Found in Persistence: {0}", string.Join(", ", persistenceDtos.Select(t => t.Name)));
+    }
+
+    [Fact]
+    public void SharedKernel_FeatureOwned_Types_Should_Reside_In_Features_Namespace()
+    {
+        var misplacedTypes = Types.InAssembly(AssemblyReferences.SharedKernel)
+            .That()
+            .ResideInNamespaceStartingWith("BT.SharedKernel.Dtos.Auth")
+            .Or()
+            .ResideInNamespaceStartingWith("BT.SharedKernel.Dtos.Employees")
+            .Or()
+            .ResideInNamespaceStartingWith("BT.SharedKernel.Dtos.Directors")
+            .Or()
+            .ResideInNamespaceStartingWith("BT.SharedKernel.Dtos.Dashboard")
+            .Or()
+            .ResideInNamespaceStartingWith("BT.SharedKernel.Dtos.Lookups")
+            .Or()
+            .ResideInNamespaceStartingWith("BT.SharedKernel.Dtos.Banking")
+            .Or()
+            .ResideInNamespaceStartingWith("BT.SharedKernel.Enums")
+            .GetTypes();
+
+        misplacedTypes.Should().BeEmpty(
+            because: "feature-owned SharedKernel DTOs and enums must live under BT.SharedKernel.Features.*. Found: {0}",
+            string.Join(", ", misplacedTypes.Select(t => t.FullName)));
+    }
+
+    [Fact]
+    public void SharedKernel_Validators_Should_Reside_In_Features_Or_Common_Namespace()
+    {
+        var validatorTypes = Types.InAssembly(AssemblyReferences.SharedKernelValidation)
+            .That()
+            .Inherit(typeof(AbstractValidator<>))
+            .GetTypes();
+
+        var misplacedTypes = validatorTypes
+            .Where(t => t.Namespace is null ||
+                        (!t.Namespace.StartsWith("BT.SharedKernel.Validation.Features.", StringComparison.Ordinal) &&
+                         !t.Namespace.StartsWith("BT.SharedKernel.Validation.Validators.Common", StringComparison.Ordinal)))
+            .Select(t => t.FullName)
+            .ToList();
+
+        misplacedTypes.Should().BeEmpty(
+            because: "feature-owned validators must live under BT.SharedKernel.Validation.Features.*; only generic validator bases stay in Common. Found: {0}",
+            string.Join(", ", misplacedTypes));
     }
 }
 

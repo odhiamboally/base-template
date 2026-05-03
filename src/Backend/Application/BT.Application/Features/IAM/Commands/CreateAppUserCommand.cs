@@ -1,6 +1,6 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Utilities;
-using BT.SharedKernel.Dtos.Auth;
+using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using System;

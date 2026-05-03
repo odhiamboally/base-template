@@ -3,7 +3,7 @@ using BT.Application.Features.IAM.Commands;
 using BT.Domain.Features.Banking.Customers.Entities;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Domain.Features.IAM.Users.Enums;
-using BT.SharedKernel.Dtos.Banking.Customers;
+using BT.SharedKernel.Features.Banking.Customers.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;

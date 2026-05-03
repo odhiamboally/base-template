@@ -47,7 +47,7 @@ public sealed class PersistenceLayerTests
     [Fact]
     public void EntityConfigurations_Should_Reside_In_Feature_Configuration_Namespaces()
     {
-        var result = Types.InAssembly(AssemblyReferences.Persistence)
+        var configurationTypes = Types.InAssembly(AssemblyReferences.Persistence)
             .That()
             .ImplementInterface(typeof(IEntityTypeConfiguration<>))
             .GetTypes();

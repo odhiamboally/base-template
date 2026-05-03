@@ -1,7 +1,8 @@
 using BT.Domain.Shared.Entities;
 using BT.Persistence.Features.Shared.DataContext;
 using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Validation.Validators.Lookups;
+using BT.SharedKernel.Features.Shared.Lookups.Dtos;
+using BT.SharedKernel.Validation.Features.Shared.Lookups.Validators;
 using System.IO;
 using System.Reflection;
 
@@ -22,10 +23,22 @@ internal static class AssemblyReferences
     internal static readonly Assembly Domain = typeof(BaseEntity).Assembly;
     internal static readonly Assembly Application = Assembly.LoadFrom(
         Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..", "..", "..", "..",
+            FindRepoRoot(),
             "src", "Backend", "Application", "BT.Application", "bin", "Debug", "net10.0", "BT.Application.dll")));
     internal static readonly Assembly Persistence = typeof(SharedDBContext).Assembly;
     internal static readonly Assembly SharedKernel = typeof(LookupResponse).Assembly;
     internal static readonly Assembly SharedKernelValidation = typeof(GetLookupRequestValidator).Assembly;
+
+    private static string FindRepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "src")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName
+            ?? throw new DirectoryNotFoundException("Could not locate repository root from architecture test output directory.");
+    }
 }

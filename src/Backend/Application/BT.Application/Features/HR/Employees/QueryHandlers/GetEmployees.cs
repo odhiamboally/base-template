@@ -9,7 +9,7 @@ using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
-using BT.SharedKernel.Dtos.Employees;
+using BT.SharedKernel.Features.HR.Employees.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

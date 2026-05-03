@@ -1,3 +1,4 @@
+using BT.SharedKernel.Features.Shared.Notifications.Dtos;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.Infrastructure.Logging;

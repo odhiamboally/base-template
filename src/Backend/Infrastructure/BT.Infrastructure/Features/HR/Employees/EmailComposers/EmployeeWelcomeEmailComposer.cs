@@ -1,3 +1,4 @@
+using BT.SharedKernel.Features.Shared.Notifications.Dtos;
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
@@ -13,7 +14,7 @@ using BT.Infrastructure.Logging;
 using BT.Infrastructure.Messaging.Consumers;
 using BT.Infrastructure.Utilities;
 using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Enums;
+using BT.SharedKernel.Features.Shared.EmailTemplates.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;

@@ -11,7 +11,7 @@ using BT.Domain.Features.Shared.Lookups.Enums;
 using BT.Domain.Features.Shared.Outbox.Enums;
 using BT.Domain.Features.Shared.Lookups.Entities;
 using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Dtos.Lookups;
+using BT.SharedKernel.Features.Shared.Lookups.Dtos;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System;

@@ -13,7 +13,7 @@ using BT.Domain.Features.HR.Employees.Entities;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Domain.Features.IAM.Users.Enums;
 using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Dtos.Employees;
+using BT.SharedKernel.Features.HR.Employees.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

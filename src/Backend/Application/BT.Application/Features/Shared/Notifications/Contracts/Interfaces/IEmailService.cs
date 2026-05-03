@@ -1,3 +1,4 @@
+using BT.SharedKernel.Features.Shared.Notifications.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using System;
 using System.Collections.Generic;

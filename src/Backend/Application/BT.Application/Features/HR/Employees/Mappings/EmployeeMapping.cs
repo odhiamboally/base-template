@@ -1,5 +1,5 @@
 using BT.Domain.Features.HR.Employees.Entities;
-using BT.SharedKernel.Dtos.Employees;
+using BT.SharedKernel.Features.HR.Employees.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

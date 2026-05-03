@@ -1,7 +1,7 @@
 using BT.SharedKernel.Extensions;
 using BT.Domain.Shared.Entities;
-using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Enums;
+using BT.SharedKernel.Features.Shared.EmailTemplates.Dtos;
+using BT.SharedKernel.Features.Shared.EmailTemplates.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;

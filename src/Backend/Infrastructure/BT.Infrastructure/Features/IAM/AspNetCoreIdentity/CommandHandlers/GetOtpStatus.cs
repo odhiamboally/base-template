@@ -1,7 +1,7 @@
 using BT.Application.Features.IAM.Commands;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
-using BT.SharedKernel.Dtos.Auth;
+using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;

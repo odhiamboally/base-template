@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
-using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Features.Shared.Lookups.Dtos;
 
 namespace BT.SharedKernel.Extensions;
 

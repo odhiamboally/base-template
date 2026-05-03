@@ -11,7 +11,7 @@ using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.HR.Employees.Entities;
 using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Dtos.Employees;
+using BT.SharedKernel.Features.HR.Employees.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +25,7 @@ public sealed record CreateEmployeeCommand(CreateEmployeeRequest Request, string
     public IReadOnlyList<string> GroupVersionKeysToInvalidate => [];
 }
 
-internal sealed class CreateEmployee(IHrUnitOfWork unitOfWork, ILogger<CreateEmployee> logger) 
+internal sealed class CreateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILogger<CreateEmployeeCommandHandler> logger) 
     : IRequestHandler<CreateEmployeeCommand, AppResponse<EmployeeResponse>>
 {
     public async Task<AppResponse<EmployeeResponse>> Handle(CreateEmployeeCommand command, CancellationToken cancellationToken)

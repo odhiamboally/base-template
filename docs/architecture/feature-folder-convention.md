@@ -8,6 +8,15 @@ Features/{BoundedContext}/{Feature}
 
 Use this convention consistently across Application, Domain, Persistence, and Infrastructure when code has a clear business owner. This keeps a feature easy to find in every layer without mixing unrelated concerns.
 
+SharedKernel and SharedKernel.Validation follow the same ownership rule for externally shared contracts:
+
+```text
+SharedKernel/Features/{BoundedContext}/{Feature}/Dtos
+SharedKernel.Validation/Features/{BoundedContext}/{Feature}/Validators
+```
+
+Keep only genuinely generic transport primitives in root shared folders, such as `AppResponse`, `AppRequest`, `PagedResponse`, enum converters, settings, and generic validator base types.
+
 ## Ownership Rules
 
 - Banking owns customer business capabilities, including customer entities, customer commands/queries, customer repositories, customer email consumers, and customer number generation.
@@ -48,6 +57,8 @@ Examples:
 - `Features/Banking/Customers/Mappings/CustomerMapping.cs`
 - `Features/HR/Employees/IntegrationEvents/EmployeeCreatedIntegrationEvent.cs`
 - `Features/IAM/Users/Mappings/AppUserMapping.cs`
+- `SharedKernel/Features/IAM/Users/Dtos/LoginRequest.cs`
+- `SharedKernel.Validation/Features/Banking/Customers/Validators/CreateCustomerRequestValidator.cs`
 
 Use a shared feature folder only when the artifact belongs to a shared capability rather than one business feature. For example, email template mapping belongs under `Features/Shared/EmailTemplates/Mappings`.
 

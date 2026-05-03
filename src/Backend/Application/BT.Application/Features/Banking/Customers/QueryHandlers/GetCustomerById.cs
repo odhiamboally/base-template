@@ -9,7 +9,7 @@ using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
-using BT.SharedKernel.Dtos.Banking.Customers;
+using BT.SharedKernel.Features.Banking.Customers.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;

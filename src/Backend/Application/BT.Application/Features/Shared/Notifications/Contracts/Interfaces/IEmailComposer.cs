@@ -1,3 +1,4 @@
+using BT.SharedKernel.Features.Shared.Notifications.Dtos;
 using BT.Application.Features.Banking.Customers.IntegrationEvents;
 using BT.Application.Features.HR.Employees.IntegrationEvents;
 using BT.Application.Features.IAM.Users.IntegrationEvents;
@@ -6,7 +7,7 @@ using BT.Domain.Features.IAM.Users.Events;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
 using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Enums;
+using BT.SharedKernel.Features.Shared.EmailTemplates.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;

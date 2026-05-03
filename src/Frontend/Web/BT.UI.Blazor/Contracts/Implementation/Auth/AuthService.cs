@@ -1,5 +1,5 @@
 using BT.Application.Features.IAM.Commands;
-using BT.SharedKernel.Dtos.Auth;
+using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using BT.UI.Rcl.Contracts.Interfaces.Auth;
 using MediatR;
