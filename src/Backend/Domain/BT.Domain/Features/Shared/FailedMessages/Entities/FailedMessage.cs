@@ -10,7 +10,7 @@ public class FailedMessage : BaseEntity
 {
     public required string MessageId { get; set; }
     public required string MessageType { get; set; }
-    public string? EntityId { get; set; } // Generic - could be ClientId, OrderId, etc.
+    public string? EntityId { get; set; } // Generic - could be CustomerId, OrderId, etc.
     public required string Payload { get; set; }
     public required string ErrorMessage { get; set; }
     public string? ErrorStackTrace { get; set; }

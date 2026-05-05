@@ -27,8 +27,8 @@ internal sealed class SharedLookupRepository : Repository<BaseLookup>, ILookupRe
     {
         IQueryable<BaseLookup> query = lookupType switch
         {
-            LookupType.ClientStatus => _sharedContext.ClientStatuses,
-            LookupType.ClientType => _sharedContext.ClientTypes,
+            LookupType.CustomerStatus => _sharedContext.CustomerStatuses,
+            LookupType.CustomerType => _sharedContext.CustomerTypes,
             LookupType.SegmentType => _sharedContext.SegmentTypes,
             LookupType.SubSegmentType => _sharedContext.SubSegmentTypes,
             LookupType.LineOfBusiness => _sharedContext.LinesOfBusiness,

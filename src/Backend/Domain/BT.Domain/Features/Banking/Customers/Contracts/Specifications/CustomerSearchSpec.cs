@@ -12,7 +12,7 @@ public class CustomerSearchSpec : Specification<Customer, Guid>, ICustomerSearch
 {
     public CustomerSearchSpec(
         string? globalSearch,
-        CustomerType? clientType,
+        CustomerType? type,
         SegmentType? segmentType,
         SubSegmentType? subSegmentType,
         IdentificationType? identificationType,
@@ -24,22 +24,22 @@ public class CustomerSearchSpec : Specification<Customer, Guid>, ICustomerSearch
 
     )
     {
-        AddCriteria(client =>
+        AddCriteria(customer =>
             (string.IsNullOrWhiteSpace(globalSearch) ||
-                client.ClientNumber.Contains(globalSearch) ||
-                client.CorporateDetail.CompanyName.Contains(globalSearch) ||
-                client.CorporateDetail.RegistrationNumber.Contains(globalSearch) ||
-                (client.CorporateDetail.TINNumber != null && client.CorporateDetail.TINNumber.Contains(globalSearch)) ||
-                (client.Address.Mobile != null && client.Address.Mobile.Contains(globalSearch)) ||
-                (client.Address.Email != null && client.Address.Email.Contains(globalSearch)))
+                customer.Number.Contains(globalSearch) ||
+                customer.CorporateDetail.CompanyName.Contains(globalSearch) ||
+                customer.CorporateDetail.RegistrationNumber.Contains(globalSearch) ||
+                (customer.CorporateDetail.TINNumber != null && customer.CorporateDetail.TINNumber.Contains(globalSearch)) ||
+                (customer.Address.Mobile != null && customer.Address.Mobile.Contains(globalSearch)) ||
+                (customer.Address.Email != null && customer.Address.Email.Contains(globalSearch)))
 
-            && (!clientType.HasValue || client.ClientType == clientType.Value)
-            && (!segmentType.HasValue || client.SegmentType == segmentType.Value)
-            && (!subSegmentType.HasValue || client.SubSegmentType == subSegmentType.Value)
-            && (!identificationType.HasValue || client.CorporateDetail.IdentificationType == identificationType.Value)
-            && (!lineOfBusiness.HasValue || client.CorporateDetail.LineOfBusiness == lineOfBusiness.Value)
-            && (!status.HasValue || client.Status == status.Value)
-            && (!relationshipManagerId.HasValue || client.RelationshipManagerId == relationshipManagerId.Value)
+            && (!type.HasValue || customer.Type == type.Value)
+            && (!segmentType.HasValue || customer.SegmentType == segmentType.Value)
+            && (!subSegmentType.HasValue || customer.SubSegmentType == subSegmentType.Value)
+            && (!identificationType.HasValue || customer.CorporateDetail.IdentificationType == identificationType.Value)
+            && (!lineOfBusiness.HasValue || customer.CorporateDetail.LineOfBusiness == lineOfBusiness.Value)
+            && (!status.HasValue || customer.Status == status.Value)
+            && (!relationshipManagerId.HasValue || customer.RelationshipManagerId == relationshipManagerId.Value)
         );
 
         AddInclude(c => c.RelationshipManager!);

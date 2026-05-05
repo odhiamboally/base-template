@@ -17,7 +17,7 @@ public class BankingDBContext(
     ILogger<BankingDBContext>? logger = null
 ) : DbContext(options)
 {
-    public DbSet<Customer> Clients { get; set; }
+    public DbSet<Customer> Customers { get; set; }
     public DbSet<Director> Directors { get; set; }
 
     private List<IDomainEvent> _collectedDomainEvents = [];

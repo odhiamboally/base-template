@@ -7,10 +7,10 @@ namespace BT.SharedKernel.Features.Banking.Customers.Dtos;
 public record CreateCustomerRequest(
 
     // ── Classification ──────────────────────────────────────────────────
-    string ClientType,
+    string Type,
     string SegmentType,
     string SubSegmentType,
-    string? ClientClassification,
+    string? Classification,
 
     // ── Corporate Details ────────────────────────────────────────────────
     string CompanyName,

@@ -13,12 +13,12 @@ using System.Text;
 namespace BT.Domain.Features.Banking.Customers.Entities;
 
 /// <summary>
-/// Child entity of Client. Has its own identity — can be added/removed independently.
+/// Child entity of Customer. Has its own identity — can be added/removed independently.
 /// Corresponds to Directors' Details tab in the original UI.
 /// </summary>
 public class Director : BaseEntity, ISoftDeletable
 {
-    public Guid ClientId { get; private set; }
+    public Guid CustomerId { get; private set; }
     public string FullName { get; private set; } = string.Empty;
     public DirectorRelationType RelationType { get; private set; }
     public IdentificationType IdentificationType { get; private set; }
@@ -34,7 +34,7 @@ public class Director : BaseEntity, ISoftDeletable
     private Director() { }
 
     public static Director Create(
-        Guid clientId,
+        Guid customerId,
         string fullName,
         DirectorRelationType relationType,
         IdentificationType identificationType,
@@ -54,7 +54,7 @@ public class Director : BaseEntity, ISoftDeletable
         return new Director
         {
             Id = Guid.NewGuid(),
-            ClientId = clientId,
+            CustomerId = customerId,
             FullName = fullName.Trim(),
             RelationType = relationType,
             IdentificationType = identificationType,

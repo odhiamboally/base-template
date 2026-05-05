@@ -25,10 +25,10 @@ public class CustomerCreatedEventHandler(
 
             var integrationEvent = new CustomerCreatedIntegrationEvent(
                 evt.CustomerId, 
-                evt.CustomerNumber, 
-                evt.CustomerName, 
-                evt.CustomerEmail, 
-                evt.CustomerType.ToDisplayString()
+                evt.Number,
+                evt.Name,
+                evt.Email,
+                evt.Type.ToDisplayString()
                 
             );
             
@@ -38,7 +38,7 @@ public class CustomerCreatedEventHandler(
         }
         catch (Exception ex)
         {
-            LogDefinitions.LogCustomerCreatedDomainEventHandlerError(_logger, evt?.CustomerEmail ?? string.Empty, ex);
+            LogDefinitions.LogCustomerCreatedDomainEventHandlerError(_logger, evt?.Email ?? string.Empty, ex);
             throw;
         }
     }

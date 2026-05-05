@@ -17,10 +17,10 @@ public class CreateCustomerRequestValidator : Validator<CreateCustomerRequest>
         ClassLevelCascadeMode = CascadeMode.Stop;
 
         // ── Classification ──────────────────────────────────────────────
-        RuleFor(x => x.ClientType)
-            .NotEmpty().WithMessage("Client type is required.")
+        RuleFor(x => x.Type)
+            .NotEmpty().WithMessage("Customer type is required.")
             .Must(v => Enum.TryParse<CustomerType>(v, out _))
-            .WithMessage("Please select a valid client type.");
+            .WithMessage("Please select a valid customer type.");
 
         RuleFor(x => x.SegmentType)
             .NotEmpty().WithMessage("Segment type is required.")
@@ -76,9 +76,9 @@ public class CreateCustomerRequestValidator : Validator<CreateCustomerRequest>
             .When(x => !string.IsNullOrWhiteSpace(x.Website));
 
         RuleFor(x => x.TINNumber)
-            .NotEmpty().WithMessage("TIN Number is required for corporate clients.")
+            .NotEmpty().WithMessage("TIN Number is required for corporate customers.")
             .MaximumLength(50).WithMessage("TIN Number cannot exceed 50 characters.")
-            .When(x => x.ClientType == CustomerType.Enterprise.ToDisplayString());
+            .When(x => x.Type == CustomerType.Enterprise.ToDisplayString());
 
         // ── Relationship Manager & Dates ────────────────────────────────
         RuleFor(x => x.RelationshipManagerId)

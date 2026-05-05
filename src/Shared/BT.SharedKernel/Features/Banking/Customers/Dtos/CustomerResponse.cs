@@ -7,8 +7,8 @@ namespace BT.SharedKernel.Features.Banking.Customers.Dtos;
 public record CustomerResponse(
     // Identity & Classification
     Guid Id,
-    string? ClientNumber,
-    string ClientType,
+    string? Number,
+    string Type,
     string SegmentType,
     string SubSegmentType,
     string Status,

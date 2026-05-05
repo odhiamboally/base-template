@@ -30,7 +30,7 @@ public record SearchCustomerListQuery(CustomerSearchRequest SearchRequest, strin
     public string CacheGroup => "customers";
     public string Discriminator => CacheKeys.Discriminator(new CustomerSearchRequest(
         SearchRequest.GlobalSearch,
-        SearchRequest.ClientType,
+        SearchRequest.Type,
         SearchRequest.SegmentType,
         SearchRequest.SubSegmentType,
         SearchRequest.IdentificationType,
@@ -56,7 +56,7 @@ internal sealed class SearchCustomerListQueryHandler(IBankingUnitOfWork _banking
 
             var pageSize = Math.Clamp(req.PageSize, 1, 50);
 
-            var clientType = req.ClientType?.ToEnum<CustomerType>();
+            var customerType = req.Type?.ToEnum<CustomerType>();
             var segmentType = req.SegmentType?.ToEnum<SegmentType>();
             var subSegmentType = req.SubSegmentType?.ToEnum<SubSegmentType>();
             var identificationType = req.IdentificationType?.ToEnum<IdentificationType>();
@@ -65,7 +65,7 @@ internal sealed class SearchCustomerListQueryHandler(IBankingUnitOfWork _banking
 
             var spec = new CustomerSearchSpec(
                 req.GlobalSearch,
-                clientType,
+                customerType,
                 segmentType,
                 subSegmentType,
                 identificationType,
@@ -89,7 +89,7 @@ internal sealed class SearchCustomerListQueryHandler(IBankingUnitOfWork _banking
             var nextCursor = hasNextPage ? items[^1].Id : (Guid?)null;
 
             // Display sort — purely cosmetic, does not affect pagination
-            items = [.. items.OrderBy(x => x.ClientNumber, StringComparer.OrdinalIgnoreCase)];
+            items = [.. items.OrderBy(x => x.Number, StringComparer.OrdinalIgnoreCase)];
 
             bool isFirstPage = req.Cursor == null || req.Cursor == Guid.Empty;
 

@@ -12,8 +12,8 @@ public class AddDirectorRequestValidator : Validator<AddDirectorRequest>
 {
     public AddDirectorRequestValidator()
     {
-        RuleFor(x => x.ClientId)
-            .NotEmpty().WithMessage("Client ID is required.");
+        RuleFor(x => x.CustomerId)
+            .NotEmpty().WithMessage("Customer ID is required.");
 
         RuleFor(x => x.FullName)
             .NotEmpty().WithMessage("Director full name is required.")

@@ -35,7 +35,7 @@ internal sealed class CustomerWelcomeEmailComposer(
 {
     public override async Task<AppResponse<ComposeEmailResponse>> ComposeAsync(CustomerCreatedIntegrationEvent evt, CancellationToken ct)
     {
-        var templateType = evt.CustomerType.ToEnum<CustomerType>() switch
+        var templateType = evt.Type.ToEnum<CustomerType>() switch
         {
             CustomerType.Corporate => EmailTemplateType.Corporate,
             CustomerType.Institutional => EmailTemplateType.Institutional,
@@ -54,9 +54,9 @@ internal sealed class CustomerWelcomeEmailComposer(
             var tokens = new Dictionary<string, string>
             {
                 ["CustomerId"] = evt.CustomerId.ToString(),
-                ["CustomerNumber"] = evt.CustomerNumber,
-                ["CustomerName"] = evt.CustomerName,
-                ["CustomerType"] = evt.CustomerType,
+                ["CustomerNumber"] = evt.Number,
+                ["CustomerName"] = evt.Name,
+                ["CustomerType"] = evt.Type,
                 ["Date"] = evt.OccurredAt.ToString("f", CultureInfo.InvariantCulture)
             };
 
@@ -64,8 +64,8 @@ internal sealed class CustomerWelcomeEmailComposer(
 
             return AppResponse.Success("Email composed", new ComposeEmailResponse(
                 template.Name,
-                evt.CustomerName,
-                evt.CustomerEmail,
+                evt.Name,
+                evt.Email,
                 template.Subject,
                 body));
         }

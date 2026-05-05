@@ -5,11 +5,11 @@ using System.Text;
 namespace BT.SharedKernel.Features.Shared.Dashboard.Dtos;
 
 public record DashboardSummaryResponse(
-    int TotalClients,
-    int ActiveClients,
-    int PendingApprovalClients,
-    int DraftClients,
+    int TotalCustomers,
+    int ActiveCustomers,
+    int PendingApprovalCustomers,
+    int DraftCustomers,
     IReadOnlyList<BreakdownGroup> BySegment,
-    IReadOnlyList<BreakdownGroup> ByClientType,
+    IReadOnlyList<BreakdownGroup> ByCustomerType,
     AgingData Aging,
     IReadOnlyList<RmWorkloadRow> RmWorkload);

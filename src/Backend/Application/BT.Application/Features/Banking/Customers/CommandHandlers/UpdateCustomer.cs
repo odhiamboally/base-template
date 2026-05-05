@@ -79,7 +79,7 @@ internal sealed class UpdateCustomerCommandHandler(
                 req.NumberOfEmployees,
                 req.Website,
                 req.TINNumber,
-                req.ClientClassification,
+                req.Classification,
                 req.Comments
                 
             ));
@@ -116,7 +116,7 @@ internal sealed class UpdateCustomerCommandHandler(
             await _bankingUnitOfWork.CustomerRepository.UpdateAsync(customer).ConfigureAwait(false);
             await _bankingUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
 
-            LogDefinitions.LogCustomerUpdated(_logger, customer.ClientNumber);
+            LogDefinitions.LogCustomerUpdated(_logger, customer.Number);
 
             return AppResponse.Success("Customer updated successfully.", customer.ToCustomerResponse());
         }

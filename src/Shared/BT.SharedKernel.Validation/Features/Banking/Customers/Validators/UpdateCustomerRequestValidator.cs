@@ -17,11 +17,11 @@ public class UpdateCustomerRequestValidator : Validator<UpdateCustomerRequest>
         ClassLevelCascadeMode = CascadeMode.Stop;
 
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("Client ID is required.");
+            .NotEmpty().WithMessage("Customer ID is required.");
 
         // Reuse all rules from Create — delegate to avoid duplication
         RuleFor(x => new CreateCustomerRequest(
-            x.ClientType, x.SegmentType, x.SubSegmentType, x.ClientClassification,
+            x.Type, x.SegmentType, x.SubSegmentType, x.Classification,
             x.CompanyName, x.LineOfBusiness, x.LineOfBusinessMoreInfo, x.NatureOfBusiness,
             x.IdentificationType, x.RegistrationNumber, x.DateOfRegistration,
             x.RegisteredAt, x.RegisteredOffice, x.BusinessStartedYear, x.NumberOfEmployees,

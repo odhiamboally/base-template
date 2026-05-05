@@ -24,7 +24,7 @@ namespace BT.Domain.Features.Shared.Lookups.Entities;
 /// <para>
 /// <b>Id</b> maps to the corresponding C# enum's integer value so that the two stay in sync
 /// without any extra mapping logic. Cast the enum to int to get the lookup row:
-/// <code>var id = (int)ClientStatus.Active;</code>
+/// <code>var id = (int)CustomerStatus.Active;</code>
 /// </para>
 /// <para>
 /// <b>Code</b> holds the enum member name as a string (e.g. "PendingApproval"). This is what

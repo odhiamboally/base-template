@@ -13,7 +13,7 @@ internal sealed class CustomerTypeLookupConfiguration : BaseLookupConfiguration<
     public override void Configure(EntityTypeBuilder<CustomerTypeLookup> builder)
     {
         base.Configure(builder);
-        builder.ToTable("Lkp_ClientTypes");
+        builder.ToTable("Lkp_CustomerTypes");
 
         builder.HasData(
             Row((int)CustomerType.Individual, "Individual", "Individual", 1),

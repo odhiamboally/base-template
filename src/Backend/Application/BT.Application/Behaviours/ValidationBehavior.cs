@@ -18,7 +18,10 @@ public class ValidationBehavior<TRequest, TResponse>
     {
         ArgumentNullException.ThrowIfNull(next);
 
-        if (!_validators.Any()) return await next(cancellationToken).ConfigureAwait(false);
+        if (!_validators.Any())
+        {
+            return await next(cancellationToken).ConfigureAwait(false);
+        }
 
         var context = new ValidationContext<TRequest>(request);
 

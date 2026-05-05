@@ -18,12 +18,11 @@ internal sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
 
         builder.Property(x => x.Number)
             .IsRequired()
-            .HasColumnName("EmployeeNumber")
             .HasMaxLength(20);
 
         builder.HasIndex(x => x.Number)
             .IsUnique()
-            .HasDatabaseName("IX_Employees_EmployeeNumber");
+            .HasDatabaseName("IX_Employees_Number");
 
         builder.Property(x => x.FirstName)
             .IsRequired()

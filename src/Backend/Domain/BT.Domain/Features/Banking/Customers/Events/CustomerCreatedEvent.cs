@@ -12,10 +12,10 @@ namespace BT.Domain.Features.Banking.Customers.Events;
 
 public sealed record CustomerCreatedEvent(
     Guid CustomerId,
-    string CustomerNumber,
-    string CustomerName,
-    string CustomerEmail,
-    CustomerType CustomerType
+    string Number,
+    string Name,
+    string Email,
+    CustomerType Type
 
 ) : IDomainEvent
 {

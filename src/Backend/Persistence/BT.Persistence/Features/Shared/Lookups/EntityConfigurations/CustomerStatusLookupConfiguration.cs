@@ -29,7 +29,7 @@ internal sealed class CustomerStatusLookupConfiguration : BaseLookupConfiguratio
     public override void Configure(EntityTypeBuilder<CustomerStatusLookup> builder)
     {
         base.Configure(builder);
-        builder.ToTable("Lkp_ClientStatuses");
+        builder.ToTable("Lkp_CustomerStatuses");
 
         builder.HasData(
             Row((int)CustomerStatus.Draft, "Draft", "Draft", 1),

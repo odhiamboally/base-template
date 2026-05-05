@@ -22,8 +22,8 @@ public class SharedDBContext(
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<FailedMessage> FailedMessages { get; set; }
 
-    public DbSet<CustomerStatusLookup> ClientStatuses { get; set; }
-    public DbSet<CustomerTypeLookup> ClientTypes { get; set; }
+    public DbSet<CustomerStatusLookup> CustomerStatuses { get; set; }
+    public DbSet<CustomerTypeLookup> CustomerTypes { get; set; }
     public DbSet<SegmentTypeLookup> SegmentTypes { get; set; }
     public DbSet<SubSegmentTypeLookup> SubSegmentTypes { get; set; }
     public DbSet<LineOfBusinessLookup> LinesOfBusiness { get; set; }

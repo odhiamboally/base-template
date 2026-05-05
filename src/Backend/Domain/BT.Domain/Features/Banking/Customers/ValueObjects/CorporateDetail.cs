@@ -25,7 +25,7 @@ public class CorporateDetail
     public string? Comments { get; private set; }
     public string? Website { get; private set; }
     public string? TINNumber { get; private set; }
-    public string? ClientClassification { get; private set; }
+    public string? Classification { get; private set; }
 
     private CorporateDetail() { }
 
@@ -65,7 +65,7 @@ public class CorporateDetail
             NumberOfEmployees = employees,
             Website = website?.Trim(),
             TINNumber = tin?.Trim(),
-            ClientClassification = classification?.Trim(),
+            Classification = classification?.Trim(),
             Comments = comments?.Trim()
         };
     }
@@ -104,7 +104,7 @@ public class CorporateDetail
         Comments = comments?.Trim();
         Website = website?.Trim();
         TINNumber = tinNumber?.Trim();
-        ClientClassification = clientClassification?.Trim();
+        Classification = clientClassification?.Trim();
     }
 }
 

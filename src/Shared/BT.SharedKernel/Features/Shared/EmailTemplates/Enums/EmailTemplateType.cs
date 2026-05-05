@@ -22,19 +22,19 @@ public enum EmailTemplateType
     [Description("Tenant Notification Email")]
     TenantNotification,
 
-    [Description("Client Created Email")]
-    ClientCreated,
+    [Description("Customer Created Email")]
+    CustomerCreated,
 
-    [Description("Client Created Email")]
-    ClientApproved,
+    [Description("Customer Approved Email")]
+    CustomerApproved,
 
-    [Description("Client Welcome Email")]
-    ClientWelcome,
+    [Description("Customer Welcome Email")]
+    CustomerWelcome,
 
     [Description("Employee Created Email")]
     EmployeeCreated,
 
-    [Description("Client Created Email")]
+    [Description("Employee Approved Email")]
     EmployeApproved,
 
     [Description("Employee Welcome Email")]

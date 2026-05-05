@@ -5,7 +5,7 @@ using System.Text;
 namespace BT.SharedKernel.Features.Banking.Customers.Dtos;
 
 /// <summary>
-/// Search and filter parameters for the client listing.
+/// Search and filter parameters for the customer listing.
 /// All filter fields are optional — the spec only applies a filter when the field has a value.
 /// Uses cursor-based pagination — no page number, just the last seen ID.
 /// </summary>
@@ -13,13 +13,13 @@ public record CustomerSearchRequest(
 
     // ── Free-text global search ─────────────────────────────────────────────
     /// <summary>
-    /// Searches across ClientNumber, CompanyName, RegistrationNumber,
+    /// Searches across Number, CompanyName, RegistrationNumber,
     /// TINNumber, Mobile, and EmailId simultaneously.
     /// </summary>
     string? GlobalSearch = null,
 
     // ── Discrete field filters — all optional ───────────────────────────────
-    string? ClientType = null,
+    string? Type = null,
     string? SegmentType = null,
     string? SubSegmentType = null,
     string? IdentificationType = null,

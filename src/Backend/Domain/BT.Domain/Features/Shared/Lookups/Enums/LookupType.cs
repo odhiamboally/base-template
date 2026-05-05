@@ -10,8 +10,8 @@ namespace BT.Domain.Features.Shared.Lookups.Enums;
 /// </summary>
 public enum LookupType
 {
-    ClientStatus,
-    ClientType,
+    CustomerStatus,
+    CustomerType,
     SegmentType,
     SubSegmentType,
     LineOfBusiness,

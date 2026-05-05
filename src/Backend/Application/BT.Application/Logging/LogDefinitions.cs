@@ -14,8 +14,8 @@ internal static partial class LogDefinitions
     [LoggerMessage(EventId = 2301, Level = LogLevel.Error, Message = "An unexpected error occurred: {ErrorMessage}")]
     public static partial void LogUnexpectedError(ILogger logger, string errorMessage, Exception exception);
 
-    [LoggerMessage(EventId = 2302, Level = LogLevel.Information, Message = "Customer created: {CustomerNumber} — {CompanyName}")]
-    public static partial void LogCustomerCreated(ILogger logger, string customerNumber, string companyName);
+    [LoggerMessage(EventId = 2302, Level = LogLevel.Information, Message = "Customer created: {Number} — {CompanyName}")]
+    public static partial void LogCustomerCreated(ILogger logger, string number, string companyName);
 
     [LoggerMessage(EventId = 2303, Level = LogLevel.Warning, Message = "Domain validation failed creating customer")]
     public static partial void LogCustomerCreateValidationFailed(ILogger logger, Exception ex);
@@ -23,8 +23,8 @@ internal static partial class LogDefinitions
     [LoggerMessage(EventId = 2304, Level = LogLevel.Error, Message = "Error creating customer")]
     public static partial void LogCustomerCreateFailed(ILogger logger, Exception ex);
 
-    [LoggerMessage(EventId = 2305, Level = LogLevel.Information, Message = "Customer updated: {CustomerNumber}")]
-    public static partial void LogCustomerUpdated(ILogger logger, string customerNumber);
+    [LoggerMessage(EventId = 2305, Level = LogLevel.Information, Message = "Customer updated: {Number}")]
+    public static partial void LogCustomerUpdated(ILogger logger, string number);
 
     [LoggerMessage(EventId = 2306, Level = LogLevel.Error, Message = "Error updating customer {CustomerId}")]
     public static partial void LogCustomerUpdateFailed(ILogger logger, Guid customerId, Exception ex);

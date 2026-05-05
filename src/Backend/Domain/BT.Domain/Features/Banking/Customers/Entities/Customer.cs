@@ -17,16 +17,16 @@ using System.Text;
 namespace BT.Domain.Features.Banking.Customers.Entities;
 
 /// <summary>
-/// Client is the aggregate root for corporate client onboarding.
+    /// Customer is the aggregate root for corporate customer onboarding.
 /// All state changes go through this entity — nothing is set directly
 /// on owned entities from outside the aggregate.
 /// </summary>
 public class Customer : BaseEntity, ISoftDeletable, IHasDomainEvents
 {
     // Header Info
-    public string ClientNumber { get; private set; } = string.Empty;
-    public string ClientName { get; private set; } = string.Empty;
-    public CustomerType ClientType { get; private set; }
+    public string Number { get; private set; } = string.Empty;
+    public string Name { get; private set; } = string.Empty;
+    public CustomerType Type { get; private set; }
     public SegmentType SegmentType { get; private set; }
     public SubSegmentType SubSegmentType { get; private set; }
     public CustomerStatus Status { get; set; }
@@ -54,13 +54,13 @@ public class Customer : BaseEntity, ISoftDeletable, IHasDomainEvents
     private Customer() { }
 
     /// <summary>
-    /// Factory method — the only way to create a valid Client aggregate.
-    /// Raises ClientCreatedEvent on success.
+    /// Factory method — the only way to create a valid Customer aggregate.
+    /// Raises CustomerCreatedEvent on success.
     /// </summary>
     public static Customer Create(
-        string clientNumber,
-        string clientName,
-        CustomerType clientType,
+        string number,
+        string name,
+        CustomerType type,
         SegmentType segmentType,
         SubSegmentType subSegmentType,
         Guid rmId,
@@ -71,12 +71,12 @@ public class Customer : BaseEntity, ISoftDeletable, IHasDomainEvents
         string createdBy
     )
     {
-        var client = new Customer
+        var customer = new Customer
         {
             Id = Guid.CreateVersion7(), // The Id is created...
-            ClientNumber = clientNumber,
-            ClientName = clientName,
-            ClientType = clientType,
+            Number = number,
+            Name = name,
+            Type = type,
             SegmentType = segmentType,
             SubSegmentType = subSegmentType,
             RelationshipManagerId = rmId,
@@ -88,18 +88,18 @@ public class Customer : BaseEntity, ISoftDeletable, IHasDomainEvents
         };
 
         var domainEvent = new CustomerCreatedEvent(
-            client.Id,
-            client.ClientNumber,
-            client.ClientName,
-            client.Address.Email ?? string.Empty,
-            client.ClientType
+            customer.Id,
+            customer.Number,
+            customer.Name,
+            customer.Address.Email ?? string.Empty,
+            customer.Type
     );
 
         // Step 3: Raise the event on the newly created instance.
-        client.RaiseDomainEvent(domainEvent);
+        customer.RaiseDomainEvent(domainEvent);
 
-        // Step 4: Return the fully constructed client with its pending domain event.
-        return client;
+        // Step 4: Return the fully constructed customer with its pending domain event.
+        return customer;
     }
 
     // -------------------------------------------------------------------------

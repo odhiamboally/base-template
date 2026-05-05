@@ -8,7 +8,7 @@ namespace BT.SharedKernel.Features.Banking.Customers.Dtos;
 
 public record UpdateDirectorRequest(
     Guid DirectorId,
-    Guid ClientId,
+    Guid CustomerId,
     string FullName,
     string RelationType,
     string IdentificationType,

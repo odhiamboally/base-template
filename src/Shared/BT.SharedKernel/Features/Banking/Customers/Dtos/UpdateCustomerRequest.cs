@@ -6,10 +6,10 @@ namespace BT.SharedKernel.Features.Banking.Customers.Dtos;
 
 public record UpdateCustomerRequest(
     Guid Id,
-    string ClientType,
+    string Type,
     string SegmentType,
     string SubSegmentType,
-    string? ClientClassification,
+    string? Classification,
     string CompanyName,
     string LineOfBusiness,
     string? LineOfBusinessMoreInfo,

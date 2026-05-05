@@ -19,12 +19,12 @@ namespace BT.Persistence.Features.Banking.Customers.Seeds;
 /// <para>
 /// <b>Owned entity seeding:</b> <see cref="CorporateDetail"/>, <see cref="Address"/>, and
 /// <see cref="CommunicationPreference"/> are EF Core owned entities. Their seed data is exposed
-/// as anonymous objects that include the <c>ClientId</c> shadow FK property.
-/// Call these methods from within <c>IEntityTypeConfiguration&lt;Client&gt;</c>:
+/// as anonymous objects that include the <c>CustomerId</c> shadow FK property.
+/// Call these methods from within <c>IEntityTypeConfiguration&lt;Customer&gt;</c>:
 /// <code>
-/// entity.OwnsOne(c => c.CorporateDetail,   cd => cd.HasData(ClientSeed.GetCorporateDetailSeedData()));
-/// entity.OwnsOne(c => c.Address,           a  => a.HasData(ClientSeed.GetAddressSeedData()));
-/// entity.OwnsOne(c => c.CommunicationPreference, cp => cp.HasData(ClientSeed.GetCommunicationPreferenceSeedData()));
+/// entity.OwnsOne(c => c.CorporateDetail,   cd => cd.HasData(CustomerSeed.GetCorporateDetailSeedData()));
+/// entity.OwnsOne(c => c.Address,           a  => a.HasData(CustomerSeed.GetAddressSeedData()));
+/// entity.OwnsOne(c => c.CommunicationPreference, cp => cp.HasData(CustomerSeed.GetCommunicationPreferenceSeedData()));
 /// </code>
 /// </para>
 /// <para>
@@ -50,10 +50,10 @@ public static class CustomerSeed
         new("0194f800-0000-7000-8000-000000000005"), // Ops Manager
     ];
 
-    // 150 pre-generated, fixed client GUIDs.
+    // 150 pre-generated, fixed customer GUIDs.
     // Pattern: 0194f900-0000-7000-8000-{1-based index padded to 12 decimal digits}
     // Generated once; treat as immutable after the initial migration.
-    public static readonly Guid[] ClientIds = Enumerable
+    public static readonly Guid[] CustomerIds = Enumerable
         .Range(1, 150)
         .Select(i => new Guid($"0194f900-0000-7000-8000-{i:D12}"))
         .ToArray();
@@ -183,15 +183,15 @@ public static class CustomerSeed
     /// <summary>
     /// Returns the 150 <see cref="BT.Domain.Features.Banking.Customers.Entities.Customer"/> root records as anonymous objects
     /// for use with <c>entity.HasData(...)</c> inside
-    /// <c>IEntityTypeConfiguration&lt;Client&gt;</c>.
+    /// <c>IEntityTypeConfiguration&lt;Customer&gt;</c>.
     /// </summary>
     /// <remarks>
-    /// We return <c>object</c> (anonymous type) rather than <c>Client</c> because
+    /// We return <c>object</c> (anonymous type) rather than <c>Customer</c> because
     /// <c>HasData</c> for owned entities and shadow properties requires the anonymous
-    /// object form. For the client root itself this isn't strictly necessary, but using
+    /// object form. For the customer root itself this isn't strictly necessary, but using
     /// a consistent pattern across all seed methods avoids confusion.
     /// </remarks>
-    public static IEnumerable<object> GetClientSeedData()
+    public static IEnumerable<object> GetCustomerSeedData()
     {
         var r = new Random(42); // Fixed seed — deterministic across all runs
 
@@ -201,17 +201,17 @@ public static class CustomerSeed
 
             return (object)new
             {
-                Id = ClientIds[i],
-                ClientNumber = $"CLT-{(i + 1):D4}",
-                ClientName = $"{CompanyNames[i % CompanyNames.Length]} {GetSuffix(seg.Type)}",
-                ClientType = seg.Type,
+                Id = CustomerIds[i],
+                Number = $"CUS-{(i + 1):D4}",
+                Name = $"{CompanyNames[i % CompanyNames.Length]} {GetSuffix(seg.Type)}",
+                Type = seg.Type,
                 SegmentType = seg.Segment,
                 SubSegmentType = seg.SubSegment,
                 Status = CustomerStatus.Draft,
                 OpenedOn = SeedDate,
                 RelationshipManagerId = RmIds[i % RmIds.Length],
                 IsDeleted = false,
-                DeletedOn = (DateTimeOffset?)null,
+                DeletedAt = (DateTimeOffset?)null,
                 DeletedBy = (string?)null,
                 CreatedAt = SeedDate,
                 CreatedBy = "System",
@@ -225,7 +225,7 @@ public static class CustomerSeed
     /// <summary>
     /// Returns seed data for the owned <see cref="CorporateDetail"/> entity.
     /// Use inside <c>entity.OwnsOne(c => c.CorporateDetail, cd => cd.HasData(...))</c>.
-    /// The <c>ClientId</c> property is the shadow FK linking back to the owning client.
+    /// The <c>CustomerId</c> property is the shadow FK linking back to the owning customer.
     /// </summary>
     public static IEnumerable<object> GetCorporateDetailSeedData()
     {
@@ -241,7 +241,7 @@ public static class CustomerSeed
 
             return (object)new
             {
-                ClientId = ClientIds[i],        // shadow FK — required
+                CustomerId = CustomerIds[i],        // shadow FK — required
                 CompanyName = companyName,
                 LineOfBusiness = lob,
                 LineOfBusinessMoreInfo = (string?)null,
@@ -259,7 +259,7 @@ public static class CustomerSeed
                 .Replace("&", "and", StringComparison.Ordinal)}.co.ke",
 
                 TINNumber = $"P0{(51234560 + i):D8}Y",
-                ClientClassification = GetClassification(i),
+                Classification = GetClassification(i),
             };
         });
     }
@@ -272,7 +272,7 @@ public static class CustomerSeed
     {
         return Enumerable.Range(0, 150).Select(i => (object)new
         {
-            ClientId = ClientIds[i],
+            CustomerId = CustomerIds[i],
             ResidentialAddress = $"{CompanyNames[i % CompanyNames.Length]} Building, {Streets[i % Streets.Length]}",
             BusinessAddress = $"P.O. Box {1000 + i}, {Regions[i % Regions.Length]}",
             OfficeAddress = (string?)null,
@@ -304,7 +304,7 @@ public static class CustomerSeed
     {
         return Enumerable.Range(0, 150).Select(i => (object)new
         {
-            ClientId = ClientIds[i],
+            CustomerId = CustomerIds[i],
             CanSendGreetings = i % 2 == 0,
             CanSendAssociateSpecialOffer = i % 3 == 0,
             CanSendOurSpecialOffers = i % 4 == 0,

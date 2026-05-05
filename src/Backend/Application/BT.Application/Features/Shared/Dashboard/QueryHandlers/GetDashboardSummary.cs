@@ -47,7 +47,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
                 .Select(c => new Row(
                     c.Status,
                     c.SegmentType,
-                    c.ClientType,
+                    c.Type,
                     c.OpenedOn,
                     c.RelationshipManager != null
                         ? $"{c.RelationshipManager.FirstName} {c.RelationshipManager.LastName}"
@@ -64,7 +64,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
 
             // ── Breakdowns ─────────────────────────────────────────────────────
             var bySegment = Breakdown(rows, r => r.SegmentType.ToDisplayString(), r => r.Status);
-            var byClientType = Breakdown(rows, r => r.ClientType.ToDisplayString(), r => r.Status);
+            var byCustomerType = Breakdown(rows, r => r.Type.ToDisplayString(), r => r.Status);
 
             // ── Aging ──────────────────────────────────────────────────────────
             var pendingRows = rows.Where(r => r.Status == CustomerStatus.PendingApproval).ToList();
@@ -100,7 +100,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
 
             return AppResponse.Success<DashboardSummaryResponse>(new(
                 total, active, pendingApproval, draft,
-                bySegment, byClientType, aging, rmWorkload));
+                bySegment, byCustomerType, aging, rmWorkload));
         }
         catch (Exception ex)
         {
@@ -113,7 +113,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
 
     /// <summary>
     /// Groups a row set by a label, builds per-status counts for each group.
-    /// Works for any dimension: segment, client type, or sub-breakdowns within an RM.
+    /// Works for any dimension: segment, customer type, or sub-breakdowns within an RM.
     /// </summary>
     private static IReadOnlyList<BreakdownGroup> Breakdown<T>(
         IEnumerable<T> source, Func<T, string> labelSelector, Func<T, CustomerStatus> statusSelector)
@@ -169,7 +169,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
     private sealed record Row(
         CustomerStatus Status,
         SegmentType SegmentType,
-        CustomerType ClientType,
+        CustomerType Type,
         DateTimeOffset OpenedOn,
         string? RmName);
 

@@ -12,10 +12,10 @@ namespace BT.Application.Features.Banking.Customers.IntegrationEvents;
 
 public record CustomerCreatedIntegrationEvent(
     Guid CustomerId,
-    string CustomerNumber,
-    string CustomerName,
-    string CustomerEmail,
-    string CustomerType) : IIntegrationEvent
+    string Number,
+    string Name,
+    string Email,
+    string Type) : IIntegrationEvent
 {
     public DateTimeOffset OccurredAt { get; } = DateTimeOffset.UtcNow;
 }

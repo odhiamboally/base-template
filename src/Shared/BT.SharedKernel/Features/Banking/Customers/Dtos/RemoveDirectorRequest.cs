@@ -4,4 +4,4 @@ using System.Text;
 
 namespace BT.SharedKernel.Features.Banking.Customers.Dtos;
 
-public record RemoveDirectorRequest(Guid ClientId, Guid DirectorId);
+public record RemoveDirectorRequest(Guid CustomerId, Guid DirectorId);

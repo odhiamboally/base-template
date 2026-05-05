@@ -5,7 +5,7 @@ using System.Text;
 namespace BT.SharedKernel.Features.Banking.Customers.Dtos;
 
 public record AddDirectorRequest(
-    Guid ClientId,
+    Guid CustomerId,
     string FullName,
     string RelationType,
     string IdentificationType,

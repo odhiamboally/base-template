@@ -49,7 +49,7 @@ public sealed record CreateCustomerCommand(CreateCustomerRequest CreateCustomerR
 internal sealed class CreateCustomerCommandHandler(
     IBankingUnitOfWork _bankingUnitOfWork,
     ILogger<CreateCustomerCommandHandler> _logger,
-    ICustomerNumberGenerator _clientNumberGenerator
+    ICustomerNumberGenerator _customerNumberGenerator
 
 ) : IRequestHandler<CreateCustomerCommand, AppResponse<CustomerResponse>>
 {
@@ -58,7 +58,7 @@ internal sealed class CreateCustomerCommandHandler(
         try
         {
             var req = command.CreateCustomerRequest;
-            var clientNumber = await _clientNumberGenerator.GenerateAsync(ct).ConfigureAwait(false);
+            var customerNumber = await _customerNumberGenerator.GenerateAsync(ct).ConfigureAwait(false);
 
             // Build owned entities
             var corporateDetails = CorporateDetail.Create(
@@ -75,7 +75,7 @@ internal sealed class CreateCustomerCommandHandler(
                 req.NumberOfEmployees,
                 req.Website,
                 req.TINNumber,
-                req.ClientClassification,
+                req.Classification,
                 req.Comments
                 
             );
@@ -108,10 +108,10 @@ internal sealed class CreateCustomerCommandHandler(
             );
 
             // Create aggregate root — domain rules enforced inside
-            var client = Customer.Create(
-                clientNumber,
+            var customer = Customer.Create(
+                customerNumber,
                 req.CompanyName,
-                req.ClientType.ToEnum<CustomerType>(),
+                req.Type.ToEnum<CustomerType>(),
                 req.SegmentType.ToEnum<SegmentType>(),
                 req.SubSegmentType.ToEnum<SubSegmentType>(),
                 req.RelationshipManagerId,
@@ -124,12 +124,12 @@ internal sealed class CreateCustomerCommandHandler(
 
             await _bankingUnitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                await _bankingUnitOfWork.CustomerRepository.CreateAsync(client, ct).ConfigureAwait(false);
+                await _bankingUnitOfWork.CustomerRepository.CreateAsync(customer, ct).ConfigureAwait(false);
                 return true;
             }, ct).ConfigureAwait(false);
 
-            LogDefinitions.LogCustomerCreated(_logger, client.ClientNumber, client.CorporateDetail.CompanyName);
-            return AppResponse.Success($"Customer {client.ClientNumber} created successfully.", client.ToCustomerResponse());
+            LogDefinitions.LogCustomerCreated(_logger, customer.Number, customer.CorporateDetail.CompanyName);
+            return AppResponse.Success($"Customer {customer.Number} created successfully.", customer.ToCustomerResponse());
 
         }
         catch (ArgumentException ex)
