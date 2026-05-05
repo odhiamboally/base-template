@@ -8,7 +8,6 @@ namespace BT.Domain.Features.HR.Employees.Entities;
 
 public class Employee : BaseEntity
 {
-    public string AppUserId { get; private set; } = string.Empty;
     public string Number { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
     public string FirstName { get; private set; } = string.Empty;

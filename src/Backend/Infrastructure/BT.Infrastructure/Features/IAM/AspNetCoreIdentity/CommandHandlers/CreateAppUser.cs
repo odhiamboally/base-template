@@ -87,7 +87,7 @@ internal sealed class CreateAppUser(
                     createdBy: "System");
 
             appUser.NationalId = req.IdNumber ?? string.Empty;
-            appUser.CustomerId = req.MemberId;
+            appUser.CustomerId = req.CustomerId;
             appUser.Gender = Enum.TryParse<Gender>(req.Gender, true, out var g) ? g : Gender.Other;
 
             var identityResult = await userManager

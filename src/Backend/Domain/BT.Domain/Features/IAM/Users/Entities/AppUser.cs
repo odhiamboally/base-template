@@ -161,14 +161,28 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         string nationalId,
         string createdBy)
     {
-        // validation...
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(createdBy);
+
         return new AppUser
         {
             Id = Guid.CreateVersion7().ToString(),
             TenantId = tenantId,
             EmployeeId = null,
             CustomerId = customerId,
-            // ...rest
+            UserName = userName,
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
+            PhoneNumber = phoneNumber,
+            NationalId = nationalId,
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            SecurityStamp = Guid.NewGuid().ToString(),
+            CreatedBy = createdBy,
+            CreatedAt = DateTimeOffset.UtcNow,
         };
     }
 
@@ -179,13 +193,22 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         string email,
         string createdBy)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(createdBy);
+
         return new AppUser
         {
             Id = Guid.CreateVersion7().ToString(),
             TenantId = tenantId,
             EmployeeId = null,
             CustomerId = null,
-            // ...rest
+            UserName = userName,
+            Email = email,
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            SecurityStamp = Guid.NewGuid().ToString(),
+            CreatedBy = createdBy,
+            CreatedAt = DateTimeOffset.UtcNow,
         };
     }
 
@@ -256,7 +279,7 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         ActivatedBy = grantedBy;
         RequirePasswordChange = true; // Force password set on first login
 
-        RaiseDomainEvent(new AppUserAccessGrantedEvent(Id, EmployeeId, Guid.Empty, grantedBy));
+        RaiseDomainEvent(new AppUserAccessGrantedEvent(Id, EmployeeId, CustomerId, grantedBy));
     }
 
     public void RevokeAccess(string revokedBy, string reason)
@@ -269,7 +292,7 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         DeactivatedBy = revokedBy;
         DeactivationReason = reason;
 
-        RaiseDomainEvent(new AppUserAccessRevokedEvent(Id, EmployeeId, Guid.Empty, revokedBy, reason));
+        RaiseDomainEvent(new AppUserAccessRevokedEvent(Id, EmployeeId, CustomerId, revokedBy, reason));
     }
 }
 

@@ -13,4 +13,10 @@
     <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="10.0.7" />
   </ItemGroup>
 
+  
+  <ItemGroup>
+    <Folder Include="Features\Shared\Outbox\Entities\" />
+    <Folder Include="Features\Shared\Outbox\Enums\" />
+  </ItemGroup>
+
 </Project>

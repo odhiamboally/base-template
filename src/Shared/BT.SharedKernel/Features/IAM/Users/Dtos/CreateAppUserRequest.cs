@@ -18,7 +18,7 @@ public record CreateAppUserRequest(
     string Gender,
 
     Guid? EmployeeId,
-    Guid? MemberId,
+    Guid? CustomerId,
 
     ICollection<string>? Roles
 );

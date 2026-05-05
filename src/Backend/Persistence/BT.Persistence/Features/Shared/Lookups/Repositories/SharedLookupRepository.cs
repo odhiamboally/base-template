@@ -5,7 +5,6 @@ using BT.Domain.Shared.Contracts.Repositories;
 using BT.Domain.Features.Banking.Customers.Enums;
 using BT.Domain.Features.Shared.FailedMessages.Enums;
 using BT.Domain.Features.Shared.Lookups.Enums;
-using BT.Domain.Features.Shared.Outbox.Enums;
 using BT.Domain.Features.Shared.Lookups.Entities;
 using BT.Persistence.Common.Repositories;
 using BT.Persistence.Features.Shared.DataContext;

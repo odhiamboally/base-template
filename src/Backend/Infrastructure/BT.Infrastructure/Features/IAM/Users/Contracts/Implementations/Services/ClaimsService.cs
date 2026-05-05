@@ -64,7 +64,7 @@ internal sealed class ClaimsService(
                 claims.Add(new("employee_id", user.EmployeeId.Value.ToString()));
 
             if (user.CustomerId.HasValue)
-                claims.Add(new("member_id", user.CustomerId.Value.ToString()));
+                claims.Add(new("customer_id", user.CustomerId.Value.ToString()));
 
             var roles = await _userManager.GetRolesAsync(user).ConfigureAwait(false);
 

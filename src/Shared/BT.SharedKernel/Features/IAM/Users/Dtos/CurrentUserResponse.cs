@@ -3,7 +3,7 @@ namespace BT.SharedKernel.Features.IAM.Users.Dtos;
 public record CurrentUserResponse(
     string AppUserId,
     Guid StaffId,
-    Guid MemberId,
+    Guid CustomerId,
     string IdNumber,
     string UserName,
     string Email,

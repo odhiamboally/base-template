@@ -8,7 +8,6 @@ using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.Shared.FailedMessages.Enums;
 using BT.Domain.Features.Shared.Lookups.Enums;
-using BT.Domain.Features.Shared.Outbox.Enums;
 using BT.Domain.Features.Shared.Lookups.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.Lookups.Dtos;

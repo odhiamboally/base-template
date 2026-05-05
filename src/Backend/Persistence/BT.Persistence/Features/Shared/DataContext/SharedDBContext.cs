@@ -29,7 +29,6 @@ public class SharedDBContext(
     public DbSet<LineOfBusinessLookup> LinesOfBusiness { get; set; }
     public DbSet<IdentificationTypeLookup> IdentificationTypes { get; set; }
     public DbSet<DirectorRelationTypeLookup> DirectorRelationTypes { get; set; }
-    public DbSet<OutboxMessageTypeLookup> OutboxMessageTypes { get; set; }
     public DbSet<FailedMessageStatusLookup> FailedMessageStatuses { get; set; }
 
     private List<IDomainEvent> _collectedDomainEvents = [];

@@ -28,5 +28,5 @@ public record AppUserResponse(
     ICollection<string> Roles,
     Guid TenantId,
     Guid? EmployeeId,
-    Guid? MemberId
+    Guid? CustomerId
 );

@@ -19,5 +19,4 @@ global using BT.Domain.Features.Shared.FailedMessages.Enums;
 global using BT.Domain.Features.Shared.Lookups.Contracts.Repositories;
 global using BT.Domain.Features.Shared.Lookups.Entities;
 global using BT.Domain.Features.Shared.Lookups.Enums;
-global using BT.Domain.Features.Shared.Outbox.Entities;
-global using BT.Domain.Features.Shared.Outbox.Enums;
+
