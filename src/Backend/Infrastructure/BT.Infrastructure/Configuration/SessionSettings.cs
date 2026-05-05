@@ -1,8 +1,9 @@
-namespace BT.SharedKernel.Configurations;
+namespace BT.Infrastructure.Configuration;
 
-
-public class SessionSettings
+public sealed class SessionSettings
 {
+    public const string SectionName = "SecuritySettings:SessionSettings";
+
     public int MaxConcurrentSessions { get; set; } = 1;
     public int SessionTimeoutMinutes { get; set; } = 15;
     public bool SlidingExpiration { get; set; } = true;

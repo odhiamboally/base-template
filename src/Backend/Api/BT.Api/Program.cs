@@ -76,6 +76,7 @@ try
     builder.Services.AddHrModule(builder.Configuration);
     builder.Services.AddBankingModule(builder.Configuration);
     builder.Services.AddSharedPersistence(builder.Configuration);
+    builder.Services.ConfigureOutBoxMessagingWithGlobalRetry(builder.Configuration);
 
     builder.Services.AddControllers()
             .AddJsonOptions(options =>

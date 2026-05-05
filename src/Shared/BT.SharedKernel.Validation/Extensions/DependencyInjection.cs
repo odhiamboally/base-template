@@ -12,17 +12,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddSharedValidationServices(this IServiceCollection services)
     {
-        try
-        {
-            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-
-            return services;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+        return services;
     }
-
 }

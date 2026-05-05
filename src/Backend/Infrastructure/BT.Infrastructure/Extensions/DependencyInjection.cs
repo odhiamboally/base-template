@@ -26,7 +26,6 @@ using BT.Infrastructure.Utilities;
 using BT.Application.Features.Banking.Customers.IntegrationEvents;
 using BT.Application.Features.HR.Employees.IntegrationEvents;
 using BT.Application.Features.IAM.Users.IntegrationEvents;
-using BT.SharedKernel.Configurations;
 using FluentValidation;
 using FluentEmail.MailKitSmtp;
 using MailKit.Net.Smtp;
@@ -77,7 +76,7 @@ public static class DependencyInjection
             var cacheSettings = configuration.GetSection(CacheSettings.SectionName).Get<CacheSettings>()
                 ?? throw new InvalidOperationException("CacheSettings not found.");
 
-            services.Configure<SessionSettings>(configuration.GetSection("SecuritySettings:SessionSettings"));
+            services.Configure<SessionSettings>(configuration.GetSection(SessionSettings.SectionName));
             ConfigureDistributedCache(services, configuration, cacheSettings);
             ConfigureMailKitWithSmtp(services, configuration);
             ConfigureSms(services, configuration);

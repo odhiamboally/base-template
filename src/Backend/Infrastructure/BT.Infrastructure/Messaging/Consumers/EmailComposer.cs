@@ -8,6 +8,7 @@ using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
 using BT.Infrastructure.Logging;
+using BT.Infrastructure.Utilities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.EmailTemplates.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,25 @@ public abstract class EmailComposer<TEvent>(
     private static readonly TimeSpan Ttl = TimeSpan.FromHours(1);
 
     public abstract Task<AppResponse<ComposeEmailResponse>> ComposeAsync(TEvent evt,CancellationToken ct);
+
+    protected static ComposeEmailResponse ComposeFromTemplate(
+        EmailTemplate template,
+        string recipientName,
+        string recipientEmail,
+        IReadOnlyDictionary<string, string> tokens)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipientName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipientEmail);
+        ArgumentNullException.ThrowIfNull(tokens);
+
+        return new ComposeEmailResponse(
+            template.Name,
+            recipientName,
+            recipientEmail,
+            EmailTemplateRenderer.Render(template.Subject, tokens),
+            EmailTemplateRenderer.Render(template.Body, tokens));
+    }
         
     public async Task<EmailTemplate?> ResolveTemplateAsync(EmailTemplateType emailTemplateType, CancellationToken cancellationToken)
     {

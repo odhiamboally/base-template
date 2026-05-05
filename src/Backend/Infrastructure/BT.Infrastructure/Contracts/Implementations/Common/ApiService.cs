@@ -1,6 +1,6 @@
 using BT.Infrastructure.Contracts.Interfaces;
 using BT.Infrastructure.Logging;
-using BT.SharedKernel.Configurations;
+using BT.Infrastructure.Configuration;
 using BT.SharedKernel.Dtos.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

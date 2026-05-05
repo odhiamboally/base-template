@@ -7,7 +7,7 @@ using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
-using BT.SharedKernel.Configurations;
+using BT.Infrastructure.Configuration;
 using BT.SharedKernel.Dtos.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

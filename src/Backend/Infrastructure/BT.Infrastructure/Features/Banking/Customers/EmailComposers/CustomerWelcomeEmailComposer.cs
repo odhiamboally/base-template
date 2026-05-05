@@ -57,17 +57,19 @@ internal sealed class CustomerWelcomeEmailComposer(
                 ["CustomerNumber"] = evt.Number,
                 ["CustomerName"] = evt.Name,
                 ["CustomerType"] = evt.Type,
+                ["Id"] = evt.CustomerId.ToString(),
+                ["Number"] = evt.Number,
+                ["Name"] = evt.Name,
+                ["Type"] = evt.Type,
+                ["Email"] = evt.Email,
                 ["Date"] = evt.OccurredAt.ToString("f", CultureInfo.InvariantCulture)
             };
 
-            var body = EmailTemplateRenderer.Render(template.Body, tokens);
-
-            return AppResponse.Success("Email composed", new ComposeEmailResponse(
-                template.Name,
+            return AppResponse.Success("Email composed", ComposeFromTemplate(
+                template,
                 evt.Name,
                 evt.Email,
-                template.Subject,
-                body));
+                tokens));
         }
         catch (Exception ex)
         {
