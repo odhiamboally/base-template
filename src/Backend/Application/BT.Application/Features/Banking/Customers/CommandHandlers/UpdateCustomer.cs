@@ -27,7 +27,7 @@ namespace BT.Application.Features.Banking.Customers.CommandHandlers;
 /// <summary>
 /// Invalidation:
 ///   - Direct:  delete the entity entry so the next GetById call fetches fresh data.
-///   - Version: bump the caller-scoped "customers" version to orphan list entries.
+///   - Version: bump the global "customers" and "dashboard" versions to orphan list entries.
 ///
 /// Both are necessary: without the direct deletion the entity detail page would
 /// still show stale data even after the list refreshes.
@@ -36,7 +36,11 @@ public record UpdateCustomerCommand(Guid Id, UpdateCustomerRequest UpdateCustome
     : IRequest<AppResponse<CustomerResponse>>, ICacheInvalidatorRequest
 {
     public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("customers", Id.ToString())];
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("customers", UserId)];
+    public IReadOnlyList<string> GroupVersionKeysToInvalidate =>
+    [
+        CacheKeys.GroupVersion("customers"),
+        CacheKeys.GroupVersion("dashboard")
+    ];
         
 }
 

@@ -24,9 +24,9 @@ public sealed record GetLookupQuery(GetLookupRequest GetLookupRequest, string Us
     : IRequest<AppResponse<IReadOnlyList<LookupResponse>>>, ICachableRequest
 {
     public string CacheGroup => "lookups";
-    public string Discriminator => "all";
-    public string? CacheUserId => UserId;
-    public bool IsVersioned => true;
+    public string Discriminator => GetLookupRequest.LookupType;
+    public string? CacheUserId => null;
+    public bool IsVersioned => false;
 }
 
 internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUnitOfWork, ILogger<GetLookupQueryHandler> _logger) 
@@ -86,7 +86,6 @@ internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUnitOfWork,
         {
             LogDefinitions.LogPipelineException(_logger, nameof(GetLookupQueryHandler), ex);
                 
-            throw;
             throw;
         }
 

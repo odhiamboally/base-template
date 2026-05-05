@@ -40,7 +40,7 @@ public record SearchCustomerListQuery(CustomerSearchRequest SearchRequest, strin
         SearchRequest.Cursor,
         SearchRequest.PageSize));
 
-    public string? CacheUserId => UserId;
+    public string? CacheUserId => null;
     public bool IsVersioned => true;
     public bool BypassCache => false;  // explicit; see XML doc above
 }

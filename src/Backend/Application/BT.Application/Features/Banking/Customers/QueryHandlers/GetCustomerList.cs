@@ -36,11 +36,11 @@ namespace BT.Application.Features.Banking.Customers.QueryHandlers;
 /// Returns the full customer list with cursor-based pagination, no search filters.
 ///
 /// Cache strategy — VERSIONED list entry:
-///   Key:  "customers:list:{userId}:{versionToken}:{discriminator}"
+///   Key:  "customers:list:global:{versionToken}:{discriminator}"
 ///   TTL:  30 minutes
-///   Scope: per user — each RM sees only their relevant data
+///   Scope: global — the handler currently returns the same data for every user.
 ///
-/// Invalidation: any mutation command bumps CacheKeys.GroupVersion("customers", userId),
+/// Invalidation: any mutation command bumps CacheKeys.GroupVersion("customers"),
 /// which orphans every versioned entry for that user in O(1).
 /// </summary>
 public record GetCustomerListQuery(CustomerListRequest CustomerListRequest, string UserId)
@@ -48,7 +48,7 @@ public record GetCustomerListQuery(CustomerListRequest CustomerListRequest, stri
 {
     public string CacheGroup => "customers";
     public string Discriminator => CacheKeys.Discriminator(new CustomerListRequest(CustomerListRequest.Cursor, CustomerListRequest.PageSize));
-    public string? CacheUserId => UserId;
+    public string? CacheUserId => null;
     public bool IsVersioned => true;
 }
 

@@ -20,14 +20,14 @@ using System.Text;
 
 namespace BT.Application.Features.HR.Employees.QueryHandlers;
 
-// ── Get Active Staff Members (for RM dropdown) ────────────────────────────────
+// ── Get Active Employees (for RM dropdown) ────────────────────────────────
 
 public record GetEmployeesQuery(string UserId) : IRequest<AppResponse<List<EmployeeResponse>>>, ICachableRequest
 {
-    public string CacheGroup => "staff-members";
-    public string Discriminator => "all";           // no filter — one entry per user
-    public string? CacheUserId => UserId;
-    public bool IsVersioned => false;
+    public string CacheGroup => "employees";
+    public string Discriminator => "all";
+    public string? CacheUserId => null;
+    public bool IsVersioned => true;
 }
 
 

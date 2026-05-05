@@ -22,9 +22,9 @@ public record GetDashboardSummaryQuery(string UserId, string? RoleScope = null) 
     
 {
     public string CacheGroup => "dashboard";
-    public string Discriminator => CacheKeys.Discriminator(new { UserId });
-    public string? CacheUserId => UserId;
-    public bool IsVersioned => false;  // invalidated directly after mutations
+    public string Discriminator => CacheKeys.Discriminator(new { RoleScope });
+    public string? CacheUserId => null;
+    public bool IsVersioned => true;
     public TimeSpan? Expiration => TimeSpan.FromMinutes(5); 
 }
 

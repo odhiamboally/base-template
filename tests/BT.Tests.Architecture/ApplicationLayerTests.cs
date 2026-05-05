@@ -138,6 +138,45 @@ public sealed class ApplicationLayerTests
     }
 
     [Fact]
+    public void Queries_Should_Declare_Cache_Strategy()
+    {
+        var queriesWithoutCacheStrategy = Types.InAssembly(AssemblyReferences.Application)
+            .That()
+            .ImplementInterface(typeof(IRequest<>))
+            .And()
+            .HaveNameEndingWith("Query")
+            .GetTypes()
+            .Where(t => !ImplementsInterface(t, "BT.Application.Contracts.Interfaces.Common.ICachableRequest"))
+            .Select(t => t.FullName)
+            .ToList();
+
+        queriesWithoutCacheStrategy.Should().BeEmpty(
+            because: "read queries should explicitly opt into the cache pipeline and declare their cache key strategy. Found: {0}",
+            string.Join(", ", queriesWithoutCacheStrategy));
+    }
+
+    [Fact]
+    public void Banking_And_Hr_Write_Commands_Should_Declare_Cache_Invalidation()
+    {
+        var writeCommandsWithoutInvalidation = Types.InAssembly(AssemblyReferences.Application)
+            .That()
+            .ImplementInterface(typeof(IRequest<>))
+            .And()
+            .HaveNameEndingWith("Command")
+            .GetTypes()
+            .Where(t => t.Namespace is not null &&
+                        (t.Namespace.StartsWith("BT.Application.Features.Banking.", StringComparison.Ordinal) ||
+                         t.Namespace.StartsWith("BT.Application.Features.HR.", StringComparison.Ordinal)))
+            .Where(t => !ImplementsInterface(t, "BT.Application.Contracts.Interfaces.Common.ICacheInvalidatorRequest"))
+            .Select(t => t.FullName)
+            .ToList();
+
+        writeCommandsWithoutInvalidation.Should().BeEmpty(
+            because: "Banking and HR write commands mutate data used by cached reads and must declare invalidation keys. Found: {0}",
+            string.Join(", ", writeCommandsWithoutInvalidation));
+    }
+
+    [Fact]
     public void Iam_Application_Artifacts_Should_Reside_In_Users_Feature()
     {
         var applicationRoot = Path.Combine(
@@ -162,5 +201,11 @@ public sealed class ApplicationLayerTests
         misplacedArtifacts.Should().BeEmpty(
             because: "IAM application artifacts belong under Features/IAM/Users unless a separate IAM feature is introduced. Found: {0}",
             string.Join(", ", misplacedArtifacts));
+    }
+
+    private static bool ImplementsInterface(Type type, string interfaceFullName)
+    {
+        return type.GetInterfaces()
+            .Any(i => string.Equals(i.FullName, interfaceFullName, StringComparison.Ordinal));
     }
 }

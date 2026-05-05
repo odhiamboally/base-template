@@ -30,9 +30,9 @@ using System.Text;
 namespace BT.Application.Features.Banking.Customers.CommandHandlers;
 
 /// <summary>
-/// Invalidation: bump the version token for "customers" in the current user scope.
+/// Invalidation: bump the global version tokens for customer lists and dashboards.
 /// No entity key to delete (the entity does not exist in cache yet).
-/// The caller's versioned list entries are orphaned in O(1).
+/// Versioned list entries are orphaned in O(1).
 /// </summary>
 public sealed record CreateCustomerCommand(CreateCustomerRequest CreateCustomerRequest, string UserId) 
     : IRequest<AppResponse<CustomerResponse>>, ICacheInvalidatorRequest
@@ -40,8 +40,11 @@ public sealed record CreateCustomerCommand(CreateCustomerRequest CreateCustomerR
     // No direct keys — new entity, nothing cached yet.
     public IReadOnlyList<string> DirectInvalidationKeys => [];
 
-    // Bump the scoped "customers" version so the caller sees the new entry on next list load.
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("customers", UserId)];
+    public IReadOnlyList<string> GroupVersionKeysToInvalidate =>
+    [
+        CacheKeys.GroupVersion("customers"),
+        CacheKeys.GroupVersion("dashboard")
+    ];
         
 
 }

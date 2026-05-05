@@ -21,8 +21,8 @@ namespace BT.Application.Features.HR.Employees.CommandHandlers;
 
 public sealed record CreateEmployeeCommand(CreateEmployeeRequest Request, string User) : IRequest<AppResponse<EmployeeResponse>>, ICacheInvalidatorRequest
 {
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("employees", "all")];
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [];
+    public IReadOnlyList<string> DirectInvalidationKeys => [];
+    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("employees")];
 }
 
 internal sealed class CreateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILogger<CreateEmployeeCommandHandler> logger) 

@@ -24,7 +24,11 @@ public record DeleteCustomerCommand(Guid CustomerId, string UserId) : IRequest<A
     
 {
     public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("customers", CustomerId.ToString())];
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("customers", UserId)];
+    public IReadOnlyList<string> GroupVersionKeysToInvalidate =>
+    [
+        CacheKeys.GroupVersion("customers"),
+        CacheKeys.GroupVersion("dashboard")
+    ];
         
 }
 
