@@ -44,9 +44,9 @@ internal sealed class EmployeeWelcomeEmailComposer(
             var tokens = new Dictionary<string, string>
             {
                 ["EmployeeId"] = evt.EmployeeId.ToString(),
-                ["EmployeeNumber"] = evt.EmployeeNumber,
-                ["EmployeeName"] = evt.EmployeeName,
-                ["Email"] = evt.EmployeeEmail,
+                ["EmployeeNumber"] = evt.Number,
+                ["EmployeeName"] = evt.Name,
+                ["Email"] = evt.Email,
                 ["Date"] = evt.OccurredAt.ToString("f", CultureInfo.InvariantCulture)
             };
 
@@ -54,8 +54,8 @@ internal sealed class EmployeeWelcomeEmailComposer(
 
             return AppResponse.Success("Email composed", new ComposeEmailResponse(
                 template.Name, 
-                evt.EmployeeName, 
-                evt.EmployeeEmail, 
+                evt.Name,
+                evt.Email,
                 template.Subject, 
                 body));
         }

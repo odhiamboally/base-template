@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.Application.Features.IAM.Commands;
+namespace BT.Application.Features.IAM.Users.Commands;
 
-public sealed record RefreshTokenCommand(RefreshTokenRequest Request) : IRequest<AppResponse<RefreshTokenResponse>>;
+public sealed record VerifyOtpCommand(VerifyOtpRequest Request) : IRequest<AppResponse<VerifyOtpResponse>>;
 

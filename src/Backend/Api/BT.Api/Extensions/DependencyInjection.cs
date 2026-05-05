@@ -60,7 +60,7 @@ internal static class DependencyInjection
     private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         var jwtSettings = new JwtSettings();
-            configuration.GetSection("JwtSettings").Bind(jwtSettings);
+            configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
 
             services.AddSingleton(jwtSettings);
 

@@ -1,5 +1,5 @@
 using BT.Application.Contracts.Interfaces.Common;
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;

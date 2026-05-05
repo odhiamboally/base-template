@@ -534,7 +534,7 @@ internal sealed class ApiService : IApiService
                 }
             }
 
-            if (errorList.Count > 0)
+            if (errorList.Any())
             {
                 message = string.Join("; ", errorList);
                 return true;

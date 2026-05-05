@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.Application.Features.IAM.Commands;
+namespace BT.Application.Features.IAM.Users.Commands;
 
-public sealed record ResetPasswordCommand(ResetPasswordRequest Request) : IRequest<AppResponse<bool>>;
-
+public record GetOtpStatusCommand(string UserId) : IRequest<AppResponse<OtpStatusResponse>>;

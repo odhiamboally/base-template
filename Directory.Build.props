@@ -56,6 +56,10 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Prefer Any()/AnyAsync() for emptiness checks; keep counting only when the count itself is needed. -->
+    <WarningsAsErrors>$(WarningsAsErrors);CA1827;CA1828;CA1829</WarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1860</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Label="NuGet and Packaging">

@@ -1,6 +1,6 @@
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Features.Banking.Customers.Mappings;
 using BT.Application.Features.HR.Employees.Mappings;
 using BT.Application.Features.IAM.Users.Mappings;
@@ -99,7 +99,7 @@ internal sealed class RefreshToken(
             }
 
             var userClaims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
-            if (userClaims.Count == 0)
+            if (!userClaims.Any())
             {
                 ServiceLogDefinitions.LogFailedToGetUserClaims(logger, userId);
                 return AppResponse.Failure<RefreshTokenResponse>("Could not retrieve user claims");

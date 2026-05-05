@@ -6,7 +6,7 @@ public record CreateEmployeeRequest
 {
     // Required fields
     public required string IdNumber { get; set; }
-    public required string EmployeeNumber { get; init; }
+    public required string Number { get; init; }
     public required string FirstName { get; init; }
     public required string LastName { get; init; }
     public required string Email { get; init; }

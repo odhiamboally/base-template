@@ -1,4 +1,4 @@
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Features.IAM.Users.Dtos;

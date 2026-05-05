@@ -4,6 +4,8 @@ using System.Text;
 namespace BT.Infrastructure.Configuration;
 public class JwtSettings
 {
+    public const string SectionName = "JwtSettings";
+
     public string? Secret { get; set; }
     public string? SecretKey { get; set; } // Keep this for backward compatibility
     public string? Issuer { get; set; }

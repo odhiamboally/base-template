@@ -7,6 +7,6 @@ namespace BT.SharedKernel.Features.HR.Employees.Dtos;
 public record EmployeeResponse(
     Guid Id,
     string FullName,
-    string EmployeeNumber,
+    string Number,
     Guid DepartmentId
 );

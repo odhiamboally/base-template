@@ -45,7 +45,7 @@ public static class EmployeeSeed
     private static readonly Guid IdLegalCounsel = new("0194f800-0000-7000-8000-000000000004");
     private static readonly Guid IdOpsManager = new("0194f800-0000-7000-8000-000000000005");
 
-    private static readonly (Guid Id, string EmployeeNumber, Guid DepartmentId, Guid ManagerId)[] Blueprints =
+    private static readonly (Guid Id, string Number, Guid DepartmentId, Guid ManagerId)[] Blueprints =
     [
         (IdHrManager, "EMP-001", IdDeptHr, Guid.Empty),
         (IdFinanceClerk, "EMP-002", IdDeptFinance, IdHrManager),
@@ -70,7 +70,7 @@ public static class EmployeeSeed
 
             return CreateSeedEmployee(
                 bp.Id,
-                bp.EmployeeNumber,
+                bp.Number,
                 email,
                 firstName,
                 lastName,
@@ -94,7 +94,7 @@ public static class EmployeeSeed
     /// </summary>
     private static Employee CreateSeedEmployee(
         Guid id,
-        string employeeNumber,
+        string number,
         string email,
         string firstName,
         string lastName,
@@ -110,7 +110,7 @@ public static class EmployeeSeed
         // Go through the domain factory so domain defaults and any future
         // constructor-time invariants are applied consistently.
         var employee = Employee.Create(
-            employeeNumber,
+            number,
             email,
             firstName,
             lastName,

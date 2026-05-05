@@ -1,5 +1,5 @@
 using BT.Application.Contracts.Interfaces.Common;
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Utilities;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
@@ -84,7 +84,7 @@ internal sealed class ResetPassword(
             await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
                 var refreshTokens = await iamUnitOfWork.TokenRepository.GetActiveTokensByUserIdAsync(user.Id).ConfigureAwait(false);
-                if (refreshTokens.Count != 0)
+                if (refreshTokens.Any())
                 {
                     var revokedByIp = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
                     await iamUnitOfWork.TokenRepository.RevokeTokensAsync(refreshTokens, "Password reset", revokedByIp).ConfigureAwait(false);

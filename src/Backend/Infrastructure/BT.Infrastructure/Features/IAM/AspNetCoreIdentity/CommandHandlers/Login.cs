@@ -2,7 +2,7 @@ using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.SharedKernel.Extensions;
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Features.Banking.Customers.Mappings;
 using BT.Application.Features.HR.Employees.Mappings;
 using BT.Application.Features.IAM.Users.Mappings;
@@ -172,7 +172,7 @@ internal sealed class Login(
             }
 
             var userClaims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
-            if (userClaims.Count == 0)
+            if (!userClaims.Any())
             {
                 ServiceLogDefinitions.LogFailedToGetUserClaims(logger, user.Id);
                 return AppResponse.Failure<LoginResponse>("Could not retrieve user claims");

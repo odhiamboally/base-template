@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.Application.Features.IAM.EventHandlers;
+namespace BT.Application.Features.IAM.Users.EventHandlers;
 
 
 internal sealed class EmailOtpRequestedEventHandler(

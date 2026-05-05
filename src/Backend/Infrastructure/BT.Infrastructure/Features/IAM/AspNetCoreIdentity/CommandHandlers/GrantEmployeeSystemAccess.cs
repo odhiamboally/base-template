@@ -1,4 +1,4 @@
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Domain.Features.HR.Employees.Entities;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
@@ -39,7 +39,7 @@ internal sealed class GrantEmployeeSystemAccess(UserManager<AppUser> userManager
             if (!updateResult.Succeeded)
                 return AppResponse.Failure<bool>(updateResult.Errors.First().Description);
 
-            if (command.Roles.Count > 0)
+            if (command.Roles.Any())
             {
                 var roleResult = await userManager.AddToRolesAsync(user, command.Roles).ConfigureAwait(false);
                 if (!roleResult.Succeeded)

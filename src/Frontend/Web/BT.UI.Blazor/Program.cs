@@ -1,10 +1,15 @@
 using BT.UI.Blazor.Components;
+using BT.UI.Blazor.Features.IAM.Users.Contracts.Implementations;
+using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddScoped<ITokenStorage, TokenStorage>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 

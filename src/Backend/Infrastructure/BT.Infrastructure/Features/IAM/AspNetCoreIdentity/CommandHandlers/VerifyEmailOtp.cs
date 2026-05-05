@@ -2,7 +2,7 @@ using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.SharedKernel.Extensions;
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Utilities;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;

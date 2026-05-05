@@ -1,8 +1,8 @@
 using BT.Domain.Features.IAM.Users.Entities;
-using BT.UI.Rcl.Contracts.Interfaces.Auth;
+using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
-namespace BT.UI.Blazor.Contracts.Implementation.Auth;
+namespace BT.UI.Blazor.Features.IAM.Users.Contracts.Implementations;
 
 internal sealed class TokenStorage(ProtectedLocalStorage storage) : ITokenStorage
 {

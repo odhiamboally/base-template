@@ -7,10 +7,10 @@ namespace BT.Application.Features.HR.Employees.IntegrationEvents;
 
 public sealed record EmployeeCreatedIntegrationEvent(
     Guid EmployeeId,
-    string EmployeeNumber,
-    string EmployeeName,
-    string EmployeeEmail,
-    string EmployeeType) : IIntegrationEvent
+    string Number,
+    string Name,
+    string Email,
+    string Type) : IIntegrationEvent
 {
     public DateTimeOffset OccurredAt { get; } = DateTimeOffset.UtcNow;
 }

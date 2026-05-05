@@ -29,7 +29,7 @@ public class ValidationBehavior<TRequest, TResponse>
             .Where(f => f != null)
             .ToList();
 
-        if (failures.Count != 0)
+        if (failures.Any())
         {
             // Extract the generic type of TResponse (e.g., the 'T' in ApiResponse<T>)
             var responseType = typeof(TResponse);

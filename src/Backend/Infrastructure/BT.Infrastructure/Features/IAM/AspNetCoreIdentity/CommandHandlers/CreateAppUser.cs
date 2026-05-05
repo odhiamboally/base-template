@@ -1,4 +1,4 @@
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Features.Banking.Customers.Mappings;
 using BT.Application.Features.HR.Employees.Mappings;
 using BT.Application.Features.IAM.Users.Mappings;
@@ -105,7 +105,7 @@ internal sealed class CreateAppUser(
 
             await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
-                if (req.Roles?.Count > 0)
+                if (req.Roles?.Any() == true)
                 {
                     var roleResult = await userManager
                         .AddToRolesAsync(appUser, req.Roles)

@@ -142,7 +142,7 @@ public class Repository<T>(DbContext context) : IRepository<T> where T : class
 
     public async Task<int> UpdateRangeAsync(Collection<T> entities, CancellationToken ct = default)
     {
-        if (entities == null || entities.Count == 0)
+        if (entities == null || !entities.Any())
             return 0;
 
         _context.Set<T>().UpdateRange(entities);

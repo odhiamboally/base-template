@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.Application.Features.IAM.Commands;
+namespace BT.Application.Features.IAM.Users.Commands;
 
-public sealed record VerifyPasswordCommand(VerifyPasswordRequest Request) : IRequest<AppResponse<bool>>;
-
+public sealed record LoginCommand(LoginRequest LoginRequest) : IRequest<AppResponse<LoginResponse>>;

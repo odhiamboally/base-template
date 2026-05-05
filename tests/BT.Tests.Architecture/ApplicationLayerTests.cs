@@ -136,4 +136,31 @@ public sealed class ApplicationLayerTests
                      "Failing types: {0}", string.Join(", ",
                 result.FailingTypes?.Select(t => t.Name) ?? []));
     }
+
+    [Fact]
+    public void Iam_Application_Artifacts_Should_Reside_In_Users_Feature()
+    {
+        var applicationRoot = Path.Combine(
+            AssemblyReferences.RepoRoot,
+            "src",
+            "Backend",
+            "Application",
+            "BT.Application");
+
+        var iamRoot = Path.Combine(applicationRoot, "Features", "IAM");
+        var misplacedArtifacts = Directory
+            .EnumerateFiles(iamRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(path =>
+                !path.Contains($"{Path.DirectorySeparatorChar}Users{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+                (path.Contains($"{Path.DirectorySeparatorChar}Commands{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
+                 path.Contains($"{Path.DirectorySeparatorChar}EventHandlers{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
+                 path.Contains($"{Path.DirectorySeparatorChar}Mappings{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
+                 path.Contains($"{Path.DirectorySeparatorChar}IntegrationEvents{Path.DirectorySeparatorChar}", StringComparison.Ordinal)))
+            .Select(path => Path.GetRelativePath(applicationRoot, path))
+            .ToList();
+
+        misplacedArtifacts.Should().BeEmpty(
+            because: "IAM application artifacts belong under Features/IAM/Users unless a separate IAM feature is introduced. Found: {0}",
+            string.Join(", ", misplacedArtifacts));
+    }
 }

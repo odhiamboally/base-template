@@ -1,5 +1,5 @@
 using BT.SharedKernel.Extensions;
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Features.Banking.Customers.Mappings;
 using BT.Application.Features.HR.Employees.Mappings;
 using BT.Application.Features.IAM.Users.Mappings;

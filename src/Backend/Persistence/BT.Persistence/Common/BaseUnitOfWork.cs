@@ -95,7 +95,7 @@ public abstract class BaseUnitOfWork<TContext>(
     {
         var domainEntities = Context.ChangeTracker
             .Entries<IHasDomainEvents>()
-            .Where(x => x.Entity.DomainEvents.Count > 0)
+            .Where(x => x.Entity.DomainEvents.Any())
             .Select(x => x.Entity)
             .ToList();
 
@@ -106,7 +106,7 @@ public abstract class BaseUnitOfWork<TContext>(
     {
         var domainEntities = Context.ChangeTracker
             .Entries<IHasDomainEvents>()
-            .Where(x => x.Entity.DomainEvents.Count > 0)
+            .Where(x => x.Entity.DomainEvents.Any())
             .Select(x => x.Entity)
             .ToList();
 
@@ -117,7 +117,7 @@ public abstract class BaseUnitOfWork<TContext>(
     {
         var domainEntities = Context.ChangeTracker
             .Entries<IHasDomainEvents>()
-            .Where(x => x.Entity.DomainEvents.Count > 0)
+            .Where(x => x.Entity.DomainEvents.Any())
             .Select(x => x.Entity)
             .ToList();
 

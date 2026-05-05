@@ -85,7 +85,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
 
     public async Task RevokeTokensAsync(List<RefreshToken> tokens, string reason, string? revokedByIp = null)
     {
-        if (tokens.Count == 0) return;
+        if (!tokens.Any()) return;
         revokedByIp ??= "Unknown";
 
         foreach (var token in tokens)
@@ -117,7 +117,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
     public async Task RevokeAllUserTokensAsync(string userId, string reason, string? revokedByIp = null)
     {
         var activeTokens = await GetActiveTokensByUserIdAsync(userId).ConfigureAwait(false);
-        if (activeTokens.Count == 0) return;
+        if (!activeTokens.Any()) return;
 
         foreach (var token in activeTokens)
         {
@@ -166,7 +166,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
         if (!string.IsNullOrWhiteSpace(userId))
             expiredTokens = expiredTokens.Where(t => t.AppUserId == userId).ToList();
 
-        if (expiredTokens.Count != 0)
+        if (expiredTokens.Any())
         {
             _iamContext.RefreshTokens.RemoveRange(expiredTokens);
             await _iamContext.SaveChangesAsync().ConfigureAwait(false);

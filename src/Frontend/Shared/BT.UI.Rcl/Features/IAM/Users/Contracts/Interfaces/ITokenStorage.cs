@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BT.UI.Rcl.Contracts.Interfaces.Auth;
+namespace BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 
 public interface ITokenStorage
 {

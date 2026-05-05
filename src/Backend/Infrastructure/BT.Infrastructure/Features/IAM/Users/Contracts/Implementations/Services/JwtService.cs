@@ -85,7 +85,8 @@ internal sealed class JwtService(
                 return new();
             }
 
-            if (string.IsNullOrWhiteSpace(_jwtSettings.SecretKey))
+            var securityKey = _jwtSettings.GetSecurityKey();
+            if (string.IsNullOrWhiteSpace(securityKey))
             {
                 ServiceLogDefinitions.LogJwtSecurityKeyNotConfigured(_logger);
                 return new();
@@ -98,7 +99,7 @@ internal sealed class JwtService(
             var validationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey)),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(securityKey)),
                 ValidateIssuer = true,
                 ValidIssuer = _jwtSettings.Issuer,
                 ValidateAudience = true,

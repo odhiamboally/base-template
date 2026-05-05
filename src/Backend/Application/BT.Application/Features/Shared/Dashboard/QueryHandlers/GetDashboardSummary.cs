@@ -149,7 +149,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
 
     private static AgingBucket BuildAgingBucket(IReadOnlyList<Row> rows, DateTimeOffset now)
     {
-        if (rows.Count == 0)
+        if (!rows.Any())
         {
             return new AgingBucket(0, 0, 0, 0, 0, 0);
         }

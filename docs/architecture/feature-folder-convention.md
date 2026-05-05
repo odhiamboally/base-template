@@ -158,6 +158,28 @@ Every `catch` block should log or deliberately translate the exception. Prefer e
 
 Avoid redundant `try/catch` blocks that only rethrow. If a catch exists because the code is translating, swallowing, retrying, or enriching an exception, log through a `LoggerMessage` definition before returning or rethrowing.
 
+## Naming Conventions
+
+Avoid repeating the enclosing context in member names when the type or feature already supplies that context.
+
+Examples:
+
+- Prefer `Employee.Number` over `Employee.EmployeeNumber`.
+- Prefer `EmployeeCreatedEvent.Number` over `EmployeeCreatedEvent.EmployeeNumber`.
+- Prefer `Customer.Name` over `Customer.CustomerName` when the aggregate is already clearly `Customer`.
+
+Keep the context when removing it would make the name vague or ambiguous outside that type. For example, `IEmployeeNumberGenerator` is clearer than a generic `INumberGenerator`, and foreign keys such as `AppUserId`, `EmployeeId`, or `CustomerId` should keep the referenced aggregate name.
+
+## Collection Emptiness
+
+Use `Any()` or `AnyAsync()` for emptiness checks. Use `Count`, `Length`, or `CountAsync()` only when the number itself is needed, such as pagination, capacity checks, or totals.
+
+Examples:
+
+- Prefer `items.Any()` over `items.Count > 0`.
+- Prefer `!items.Any()` over `items.Count == 0`.
+- Keep `items.Count > pageSize` when determining whether another page exists.
+
 ## Repository Pattern
 
 Keep the repository/unit-of-work pattern for now. In this solution it is doing more than wrapping EF Core: it helps isolate multiple DbContexts, bounded-context units of work, specifications, domain-event dispatch, and outbox/persistence concerns.

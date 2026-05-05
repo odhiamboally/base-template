@@ -8,9 +8,9 @@ namespace BT.Domain.Features.HR.Employees.Events;
 
 public sealed record EmployeeCreatedEvent(
     Guid EmployeeId,
-    string EmployeeNumber,
+    string Number,
     string Email,
-    string EmployeeName
+    string Name
 
 ) : IDomainEvent
 {

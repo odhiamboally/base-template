@@ -109,7 +109,7 @@ internal sealed class SessionService(
                 var sessionsToEnd = activeSessions.Where(s => s.DeviceFingerprint != deviceFingerprint).ToList();
 
                 // End other device sessions
-                if (sessionsToEnd.Count != 0)
+                if (sessionsToEnd.Any())
                 {
                     foreach (var session in sessionsToEnd)
                     {
@@ -219,7 +219,7 @@ internal sealed class SessionService(
                 ? activeSessions.Where(s => s.Id != excludeSessionGuid.Value).ToList()
                 : activeSessions;
 
-            if (sessionsToEnd.Count != 0)
+            if (sessionsToEnd.Any())
             {
                 foreach (var session in sessionsToEnd)
                 {
@@ -273,7 +273,7 @@ internal sealed class SessionService(
                 .GetExpiredSessionsAsync()
                 .ConfigureAwait(false);
 
-            if (expiredSessions.Count != 0)
+            if (expiredSessions.Any())
             {
                 foreach (var session in expiredSessions)
                 {

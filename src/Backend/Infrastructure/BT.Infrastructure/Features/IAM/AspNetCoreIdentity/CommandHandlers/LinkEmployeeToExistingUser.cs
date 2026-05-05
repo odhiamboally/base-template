@@ -3,7 +3,7 @@ using BT.Application.Features.Banking.Customers.Mappings;
 using BT.Application.Features.HR.Employees.Mappings;
 using BT.Application.Features.IAM.Users.Mappings;
 using BT.Application.Features.Shared.EmailTemplates.Mappings;
-using BT.Application.Features.IAM.Commands;
+using BT.Application.Features.IAM.Users.Commands;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;
@@ -41,7 +41,7 @@ internal sealed class LinkEmployeeToExistingUser(IHrUnitOfWork hrUnitOfWork, Use
         }
 
         var employee = Employee.Create(
-            command.EmployeeDetails.EmployeeNumber,
+            command.EmployeeDetails.Number,
             command.EmployeeDetails.Email,
             existingUser.FirstName,
             existingUser.LastName,

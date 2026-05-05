@@ -35,18 +35,18 @@ internal sealed class CreateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILo
         try
         {
             var existing = await unitOfWork.EmployeeRepository
-                .FindByCondition(e => e.EmployeeNumber == request.EmployeeNumber)
+                .FindByCondition(e => e.Number == request.Number)
                 .SingleOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             if (existing != null)
             {
-                LogDefinitions.LogEmployeeDuplicateRegistration(logger, request.EmployeeNumber);
+                LogDefinitions.LogEmployeeDuplicateRegistration(logger, request.Number);
                 return AppResponse.Failure<EmployeeResponse>("You are already registered. Please log in.");
             }
 
             var entityToCreate = Employee.Create(
-                    request.EmployeeNumber,
+                    request.Number,
                     request.Email,
                     request.FirstName,
                     request.LastName,

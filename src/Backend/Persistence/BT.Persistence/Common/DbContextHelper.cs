@@ -47,7 +47,7 @@ internal static class DbContextHelper
     {
         var events = new List<IDomainEvent>();
         foreach (var entry in changeTracker.Entries<IHasDomainEvents>())
-            if (entry.Entity.DomainEvents.Count != 0)
+            if (entry.Entity.DomainEvents.Any())
                 events.AddRange(entry.Entity.DomainEvents);
         return events;
     }

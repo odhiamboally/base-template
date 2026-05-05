@@ -74,8 +74,8 @@ internal static partial class LogDefinitions
     [LoggerMessage(EventId = 2321, Level = LogLevel.Information, Message = "Email OTP delivered for {Purpose} to {UserId}")]
     public static partial void LogEmailOtpDelivered(ILogger logger, string purpose, string userId);
 
-    [LoggerMessage(EventId = 2322, Level = LogLevel.Warning, Message = "Duplicate registration attempt for employee: {EmployeeNumber}")]
-    public static partial void LogEmployeeDuplicateRegistration(ILogger logger, string employeeNumber);
+    [LoggerMessage(EventId = 2322, Level = LogLevel.Warning, Message = "Duplicate registration attempt for employee: {Number}")]
+    public static partial void LogEmployeeDuplicateRegistration(ILogger logger, string number);
 
     [LoggerMessage(EventId = 2323, Level = LogLevel.Error, Message = "Registration failed for employee {Email}. Rolling back changes.")]
     public static partial void LogEmployeeRegistrationFailed(ILogger logger, string email, Exception ex);

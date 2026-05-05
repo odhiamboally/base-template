@@ -72,9 +72,9 @@ public static class DependencyInjection
             services.AddSingleton(JsonSerializerOptionsFactory.Create());
             services.Configure<ObservabilitySettings>(configuration.GetSection(ObservabilitySettings.SectionName));
             services.Configure<AuthProviderSettings>(configuration.GetSection(AuthProviderSettings.SectionName));
-            services.Configure<ApiSettings>(configuration.GetSection(nameof(ApiSettings)));
+            services.Configure<ApiSettings>(configuration.GetSection(ApiSettings.SectionName));
 
-            var cacheSettings = configuration.GetSection("CacheSettings").Get<CacheSettings>() 
+            var cacheSettings = configuration.GetSection(CacheSettings.SectionName).Get<CacheSettings>()
                 ?? throw new InvalidOperationException("CacheSettings not found.");
 
             services.Configure<SessionSettings>(configuration.GetSection("SecuritySettings:SessionSettings"));
@@ -117,7 +117,7 @@ public static class DependencyInjection
     internal static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         var jwtSettings = new JwtSettings();
-            configuration.GetSection("JwtSettings").Bind(jwtSettings);
+            configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
 
             services.AddSingleton(jwtSettings);
 
@@ -431,7 +431,7 @@ public static class DependencyInjection
 
     private static void ConfigureMailKitWithSmtp(IServiceCollection services, IConfiguration configuration)
     {
-        var emailSettings = configuration.GetSection("EmailSettings").Get<EmailSettings>()
+        var emailSettings = configuration.GetSection(EmailSettings.SectionName).Get<EmailSettings>()
             ?? throw new InvalidOperationException("EmailSettings section not found in configuration");
 
         services

@@ -15,7 +15,7 @@ public static class EmployeeMapping
         ArgumentNullException.ThrowIfNull(request, nameof(request));
 
         return Employee.Create(
-            request.EmployeeNumber,
+            request.Number,
             request.Email,
             request.FirstName,
             request.LastName,
@@ -34,7 +34,7 @@ public static class EmployeeMapping
         return new(
             employee.Id,
             $"{employee.FirstName} {employee.LastName}",
-            employee.EmployeeNumber,
+            employee.Number,
             employee.DepartmentId
         );
     }
@@ -43,7 +43,7 @@ public static class EmployeeMapping
         new EmployeeResponse(
             employee.Id,
             $"{employee.FirstName} {employee.LastName}",
-            employee.EmployeeNumber,
+            employee.Number,
             employee.DepartmentId
         );
 
