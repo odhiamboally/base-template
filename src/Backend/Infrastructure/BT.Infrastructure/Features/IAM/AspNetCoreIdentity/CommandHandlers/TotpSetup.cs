@@ -41,15 +41,11 @@ internal sealed class InitiateTotpSetupCommandHandler(
             var plainSecret = GenerateSecret();
             var encryptedSecret = encryptionService.Encrypt(plainSecret);
 
-            var tempSecret = new TempTotpSecret
-            {
-                Id = Guid.CreateVersion7(),
-                UserId = userId,
-                EncryptedSecret = encryptedSecret,
-                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30),
-                CreatedAt = DateTimeOffset.UtcNow,
-                CreatedBy = userId
-            };
+            var tempSecret = TempTotpSecret.Create(
+                userId,
+                encryptedSecret,
+                DateTimeOffset.UtcNow.AddMinutes(30),
+                userId);
 
             await iamUnitOfWork.TempTotpSecretRepository.CreateAsync(tempSecret, cancellationToken).ConfigureAwait(false);
             await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);

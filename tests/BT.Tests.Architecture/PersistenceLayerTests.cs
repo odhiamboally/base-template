@@ -64,6 +64,62 @@ public sealed class PersistenceLayerTests
             string.Join(", ", misplacedTypes));
     }
 
+    [Fact]
+    public void Declared_DbSet_Entities_Should_Have_Explicit_Configurations()
+    {
+        var configuredEntityTypes = AssemblyReferences.Persistence
+            .GetTypes()
+            .Where(t => !t.IsAbstract && !t.IsGenericTypeDefinition)
+            .SelectMany(GetConfiguredEntityTypes)
+            .ToHashSet();
+
+        var dbSetEntityTypes = Types.InAssembly(AssemblyReferences.Persistence)
+            .That()
+            .Inherit(typeof(DbContext))
+            .GetTypes()
+            .SelectMany(t => t.GetProperties(System.Reflection.BindingFlags.Instance |
+                                             System.Reflection.BindingFlags.Public |
+                                             System.Reflection.BindingFlags.DeclaredOnly))
+            .Where(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
+            .Select(p => p.PropertyType.GetGenericArguments()[0])
+            .Distinct()
+            .ToList();
+
+        var missingConfigurations = dbSetEntityTypes
+            .Where(t => !configuredEntityTypes.Contains(t))
+            .Select(t => t.FullName)
+            .ToList();
+
+        missingConfigurations.Should().BeEmpty(
+            because: "DbSet entities should have explicit IEntityTypeConfiguration<T> mappings. Missing: {0}",
+            string.Join(", ", missingConfigurations));
+    }
+
+    private static IEnumerable<Type> GetConfiguredEntityTypes(Type configurationType)
+    {
+        for (var current = configurationType; current is not null && current != typeof(object); current = current.BaseType)
+        {
+            if (current.IsGenericType &&
+                current.GetGenericTypeDefinition().Name.StartsWith("BaseLookupConfiguration", StringComparison.Ordinal))
+            {
+                yield return current.GetGenericArguments()[0];
+            }
+
+            foreach (var interfaceType in current.GetInterfaces())
+            {
+                if (interfaceType.IsGenericType &&
+                    interfaceType.GetGenericTypeDefinition() == typeof(IEntityTypeConfiguration<>))
+                {
+                    var configuredType = interfaceType.GetGenericArguments()[0];
+                    if (!configuredType.IsGenericParameter)
+                    {
+                        yield return configuredType;
+                    }
+                }
+            }
+        }
+    }
+
     // ── DbContexts ────────────────────────────────────────────────────────────
 
     [Fact]

@@ -65,20 +65,15 @@ public abstract class IntegrationEventEmailConsumer<TEvent>(
         {
             MessageBusLogDefinitions.LogPermanentEventFailure(logger, typeof(TEvent).Name, retryCount + 1, ex);
 
-            var failed = new FailedMessage
-            {
-                Id = Guid.CreateVersion7(),
-                MessageId = messageId,
-                MessageType = typeof(TEvent).FullName!,
-                EntityId = messageId, // integration events are the source of truth
-                Payload = JsonSerializer.Serialize(evt),
-                ErrorMessage = ex.Message,
-                ErrorStackTrace = ex.StackTrace,
-                RetryCount = retryCount + 1,
-                FailedAt = DateTimeOffset.UtcNow,
-                Status = FailedMessageStatus.Permanent,
-                CreatedBy = GetType().Name
-            };
+            var failed = FailedMessage.RecordPermanentFailure(
+                messageId,
+                typeof(TEvent).FullName!,
+                JsonSerializer.Serialize(evt),
+                ex.Message,
+                retryCount + 1,
+                GetType().Name,
+                messageId,
+                ex.StackTrace);
 
             await sharedUnitOfWork.FailedMessageRepository.CreateAsync(failed, context.CancellationToken).ConfigureAwait(false);
             await sharedUnitOfWork.CompleteAsync(context.CancellationToken).ConfigureAwait(false);

@@ -25,6 +25,7 @@ namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class CreateAppUser(
     UserManager<AppUser> userManager,
+    IBankingUnitOfWork bankingUnitOfWork,
     IHrUnitOfWork hrUnitOfWork,
     IIamUnitOfWork iamUnitOfWork,
     ILogger<CreateAppUser> logger) : IRequestHandler<CreateAppUserCommand, AppResponse<AppUserResponse>>
@@ -36,6 +37,9 @@ internal sealed class CreateAppUser(
 
         try
         {
+            if (req.EmployeeId.HasValue && req.CustomerId.HasValue)
+                return AppResponse.Failure<AppUserResponse>("A user account can be linked to either an employee or a customer, not both.");
+
             Employee? employee = null;
 
             if (req.EmployeeId.HasValue)
@@ -58,6 +62,27 @@ internal sealed class CreateAppUser(
                     return AppResponse.Failure<AppUserResponse>("A user account already exists for this employee.");
             }
 
+            Customer? customer = null;
+            if (req.CustomerId.HasValue)
+            {
+                customer = await bankingUnitOfWork.CustomerRepository
+                    .FindByCondition(c => c.Id == req.CustomerId.Value)
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(ct)
+                    .ConfigureAwait(false);
+
+                if (customer is null)
+                    return AppResponse.Failure<AppUserResponse>("The specified customer does not exist or has been deactivated.");
+
+                var alreadyLinked = await userManager.Users
+                    .AsNoTracking()
+                    .AnyAsync(u => u.CustomerId == req.CustomerId.Value, ct)
+                    .ConfigureAwait(false);
+
+                if (alreadyLinked)
+                    return AppResponse.Failure<AppUserResponse>("A user account already exists for this customer.");
+            }
+
             var emailOrUsernameExists = await userManager.Users
                 .AsNoTracking()
                 .AnyAsync(u => u.UserName == req.Username || u.Email == req.Email, ct)
@@ -67,7 +92,7 @@ internal sealed class CreateAppUser(
                 return AppResponse.Failure<AppUserResponse>("An account with this username or email already exists.");
 
             var appUser = employee is not null
-                ? AppUser.Create(
+                ? AppUser.CreateForEmployee(
                     Guid.Empty,
                     employee.Id,
                     req.Username,
@@ -75,8 +100,20 @@ internal sealed class CreateAppUser(
                     employee.LastName,
                     employee.Email,
                     employee.PhoneNumber,
+                    req.IdNumber ?? employee.IdNumber,
                     createdBy: "System")
-                : AppUser.Create(
+                : customer is not null
+                    ? AppUser.CreateForCustomer(
+                        Guid.Empty,
+                        customer.Id,
+                        req.Username,
+                        req.FirstName,
+                        req.LastName,
+                        req.Email,
+                        req.PhoneNumber ?? string.Empty,
+                        req.IdNumber ?? string.Empty,
+                        createdBy: "System")
+                    : AppUser.Create(
                     Guid.Empty,
                     employeeId: null,
                     req.Username,
@@ -86,9 +123,9 @@ internal sealed class CreateAppUser(
                     req.PhoneNumber ?? string.Empty,
                     createdBy: "System");
 
-            appUser.NationalId = req.IdNumber ?? string.Empty;
-            appUser.CustomerId = req.CustomerId;
-            appUser.Gender = Enum.TryParse<Gender>(req.Gender, true, out var g) ? g : Gender.Other;
+            appUser.SetIdentityProfile(
+                req.IdNumber ?? appUser.NationalId,
+                Enum.TryParse<Gender>(req.Gender, true, out var g) ? g : Gender.Other);
 
             var identityResult = await userManager
                 .CreateAsync(appUser, req.Password)
@@ -116,13 +153,12 @@ internal sealed class CreateAppUser(
                             string.Join(", ", roleResult.Errors.Select(e => e.Description)));
                 }
 
-                var profile = new AppUserProfile
-                {
-                    AppUserId = appUser.Id,
-                    TelephoneNo = appUser.PhoneNumber,
-                    Email = appUser.Email,
-                    CreatedBy = "System"
-                };
+                var profile = AppUserProfile.Create(
+                    appUser.Id,
+                    appUser.PhoneNumber,
+                    appUser.PhoneNumber,
+                    appUser.Email,
+                    "System");
 
                 await iamUnitOfWork.AppUserProfileRepository
                     .CreateOrUpdateAsync(appUser.Id, profile, ct)

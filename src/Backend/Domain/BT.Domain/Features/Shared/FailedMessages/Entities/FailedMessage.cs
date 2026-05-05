@@ -8,16 +8,69 @@ namespace BT.Domain.Features.Shared.FailedMessages.Entities;
 
 public class FailedMessage : BaseEntity
 {
-    public required string MessageId { get; set; }
-    public required string MessageType { get; set; }
-    public string? EntityId { get; set; } // Generic - could be CustomerId, OrderId, etc.
-    public required string Payload { get; set; }
-    public required string ErrorMessage { get; set; }
-    public string? ErrorStackTrace { get; set; }
-    public int RetryCount { get; set; }
-    public DateTimeOffset FailedAt { get; set; }
-    public FailedMessageStatus Status { get; set; }
-    public bool IsResolved { get; set; }
-    public DateTimeOffset? ResolvedAt { get; set; }
-    public string? ResolutionNotes { get; set; }
+    public string MessageId { get; private set; } = string.Empty;
+    public string MessageType { get; private set; } = string.Empty;
+    public string? EntityId { get; private set; } // Generic - could be CustomerId, OrderId, etc.
+    public string Payload { get; private set; } = string.Empty;
+    public string ErrorMessage { get; private set; } = string.Empty;
+    public string? ErrorStackTrace { get; private set; }
+    public int RetryCount { get; private set; }
+    public DateTimeOffset FailedAt { get; private set; }
+    public FailedMessageStatus Status { get; private set; }
+    public bool IsResolved { get; private set; }
+    public DateTimeOffset? ResolvedAt { get; private set; }
+    public string? ResolutionNotes { get; private set; }
+
+    private FailedMessage() { }
+
+    public static FailedMessage RecordPermanentFailure(
+        string messageId,
+        string messageType,
+        string payload,
+        string errorMessage,
+        int retryCount,
+        string createdBy,
+        string? entityId = null,
+        string? errorStackTrace = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageType);
+        ArgumentException.ThrowIfNullOrWhiteSpace(payload);
+        ArgumentException.ThrowIfNullOrWhiteSpace(errorMessage);
+        ArgumentException.ThrowIfNullOrWhiteSpace(createdBy);
+
+        return new FailedMessage
+        {
+            Id = Guid.CreateVersion7(),
+            MessageId = messageId,
+            MessageType = messageType,
+            EntityId = entityId,
+            Payload = payload,
+            ErrorMessage = errorMessage,
+            ErrorStackTrace = errorStackTrace,
+            RetryCount = retryCount,
+            FailedAt = DateTimeOffset.UtcNow,
+            Status = FailedMessageStatus.Permanent,
+            CreatedBy = createdBy
+        };
+    }
+
+    public void MarkResolved(string resolutionNotes, string resolvedBy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(resolutionNotes);
+        ArgumentException.ThrowIfNullOrWhiteSpace(resolvedBy);
+
+        IsResolved = true;
+        ResolvedAt = DateTimeOffset.UtcNow;
+        ResolutionNotes = resolutionNotes;
+        SetUpdatedInfo(resolvedBy);
+    }
+
+    public void MarkForManualRetry(string updatedBy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(updatedBy);
+
+        Status = FailedMessageStatus.ManualRetry;
+        SetUpdatedInfo(updatedBy);
+    }
 }

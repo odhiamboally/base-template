@@ -17,17 +17,11 @@ internal sealed class IamAppUserProfileRepository(IamDBContext context) : Reposi
 
         if (existing == null)
         {
-            profile.CreatedAt = DateTimeOffset.UtcNow;
-            profile.UpdatedAt = DateTimeOffset.UtcNow;
             await CreateAsync(profile, cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            existing.TelephoneNo = profile.TelephoneNo;
-            existing.MobileNo = profile.MobileNo;
-            existing.Email = profile.Email;
-            existing.UpdatedAt = DateTimeOffset.UtcNow;
-            existing.UpdatedBy = profile.UpdatedBy;
+            existing.UpdateContact(profile.TelephoneNo, profile.MobileNo, profile.Email, profile.UpdatedBy ?? profile.CreatedBy);
             profile = existing;
             await UpdateAsync(existing).ConfigureAwait(false);
         }

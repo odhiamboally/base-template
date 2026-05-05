@@ -40,8 +40,7 @@ internal sealed class IamAppUserTotpSecretRepository(IamDBContext context, ILogg
 
             foreach (var secret in secrets)
             {
-                secret.IsActive = false;
-                secret.UpdatedAt = DateTimeOffset.UtcNow;
+                secret.Deactivate();
             }
 
             await UpdateRangeAsync(new Collection<AppUserTotpSecret>(secrets)).ConfigureAwait(false);

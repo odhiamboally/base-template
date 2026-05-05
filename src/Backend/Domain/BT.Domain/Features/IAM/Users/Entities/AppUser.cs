@@ -129,7 +129,12 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         string nationalId,
         string createdBy)
     {
-        // validation...
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(createdBy);
+
         return new AppUser
         {
             Id = Guid.CreateVersion7().ToString(),
@@ -246,6 +251,33 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
     {
         FailedLoginAttempts = 0;
         LastFailedLoginAt = null;
+    }
+
+    public void SetIdentityProfile(string? nationalId, Gender gender, string? registrationNumber = null)
+    {
+        NationalId = nationalId?.Trim() ?? string.Empty;
+        RegistrationNumber = registrationNumber?.Trim() ?? string.Empty;
+        Gender = gender;
+    }
+
+    public void RecordSuccessfulLogin()
+    {
+        LastLoginAt = DateTimeOffset.UtcNow;
+        ResetFailedLoginAttempts();
+    }
+
+    public void CompletePasswordReset()
+    {
+        ResetFailedLoginAttempts();
+        PasswordLastChanged = DateTimeOffset.UtcNow;
+        RequirePasswordChange = false;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkUpdated(string? updatedBy = null)
+    {
+        UpdatedAt = DateTimeOffset.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     public void MarkAsDeleted(string deletedBy)

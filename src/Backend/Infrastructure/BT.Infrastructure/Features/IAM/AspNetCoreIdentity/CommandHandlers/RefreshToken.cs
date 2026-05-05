@@ -128,20 +128,18 @@ internal sealed class RefreshToken(
 
             await iamUnitOfWork.TokenRepository.MarkTokenAsUsedAsync(storedRefreshToken).ConfigureAwait(false);
 
-            var newRefreshTokenEntity = new BT.Domain.Features.IAM.Users.Entities.RefreshToken
-            {
-                Token = newRefreshTokenResponse,
-                AppUserId = userId,
-                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15),
-                CreatedAt = DateTimeOffset.UtcNow,
-                CreatedBy = string.Empty,
-                CreatedByIp = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString(),
-            };
+            var newRefreshTokenEntity = BT.Domain.Features.IAM.Users.Entities.RefreshToken.Create(
+                userId,
+                newRefreshTokenResponse,
+                DateTimeOffset.UtcNow.AddMinutes(15),
+                userId,
+                httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString(),
+                storedRefreshToken.TokenFamily);
 
             await iamUnitOfWork.TokenRepository.AddRefreshTokenAsync(newRefreshTokenEntity).ConfigureAwait(false);
             await iamUnitOfWork.TokenRepository.CleanupExpiredTokensAsync(userId).ConfigureAwait(false);
 
-            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.MarkUpdated(user.Id);
             await userManager.UpdateAsync(user).ConfigureAwait(false);
 
             var roles = await userManager.GetRolesAsync(user).ConfigureAwait(false);

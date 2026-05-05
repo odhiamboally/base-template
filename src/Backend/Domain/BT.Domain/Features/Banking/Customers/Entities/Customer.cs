@@ -29,7 +29,7 @@ public class Customer : BaseEntity, ISoftDeletable, IHasDomainEvents
     public CustomerType Type { get; private set; }
     public SegmentType SegmentType { get; private set; }
     public SubSegmentType SubSegmentType { get; private set; }
-    public CustomerStatus Status { get; set; }
+    public CustomerStatus Status { get; private set; }
 
     // Management
     public DateTimeOffset OpenedOn { get; private set; }
@@ -79,6 +79,7 @@ public class Customer : BaseEntity, ISoftDeletable, IHasDomainEvents
             Type = type,
             SegmentType = segmentType,
             SubSegmentType = subSegmentType,
+            Status = CustomerStatus.Draft,
             RelationshipManagerId = rmId,
             OpenedOn = openedOn,
             CorporateDetail = corporateDetail,
@@ -130,6 +131,38 @@ public class Customer : BaseEntity, ISoftDeletable, IHasDomainEvents
             throw new DomainException("A Relationship Manager must be assigned.");
 
         RelationshipManagerId = relationshipManagerId;
+    }
+
+    public void SubmitForApproval()
+    {
+        if (Status != CustomerStatus.Draft)
+            throw new DomainException("Only draft customers can be submitted for approval.");
+
+        Status = CustomerStatus.PendingApproval;
+    }
+
+    public void Activate()
+    {
+        if (Status is not CustomerStatus.PendingApproval and not CustomerStatus.Suspended)
+            throw new DomainException("Only pending or suspended customers can be activated.");
+
+        Status = CustomerStatus.Active;
+    }
+
+    public void Suspend()
+    {
+        if (Status != CustomerStatus.Active)
+            throw new DomainException("Only active customers can be suspended.");
+
+        Status = CustomerStatus.Suspended;
+    }
+
+    public void Close()
+    {
+        if (Status == CustomerStatus.Closed)
+            throw new DomainException("Customer is already closed.");
+
+        Status = CustomerStatus.Closed;
     }
 
     public void AddDirector(Director director)

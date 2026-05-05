@@ -34,9 +34,7 @@ internal sealed class IamTempTotpSecretRepository(IamDBContext context, ILogger<
 
             foreach (var secret in expiredSecrets)
             {
-                secret.IsDeleted = true;
-                secret.DeletedAt = DateTimeOffset.UtcNow;
-                secret.UpdatedAt = DateTimeOffset.UtcNow;
+                secret.MarkAsDeleted("System");
             }
 
             await UpdateRangeAsync(new Collection<TempTotpSecret>(expiredSecrets), cancellationToken).ConfigureAwait(false);
@@ -59,9 +57,7 @@ internal sealed class IamTempTotpSecretRepository(IamDBContext context, ILogger<
 
             if (tempSecret == null) return false;
 
-            tempSecret.IsDeleted = true;
-            tempSecret.DeletedAt = DateTimeOffset.UtcNow;
-            tempSecret.UpdatedAt = DateTimeOffset.UtcNow;
+            tempSecret.MarkAsDeleted(userId);
 
             await UpdateAsync(tempSecret).ConfigureAwait(false);
             return true;

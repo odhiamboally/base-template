@@ -61,14 +61,10 @@ internal sealed class VerifyTotpCode(
 
                 if (isValidCode)
                 {
-                    var newSecret = new AppUserTotpSecret
-                    {
-                        AppUserId = user.Id,
-                        EncryptedSecret = tempSecret.EncryptedSecret,
-                        IsActive = true,
-                        CreatedAt = DateTimeOffset.UtcNow,
-                        CreatedBy = user.Id,
-                    };
+                    var newSecret = AppUserTotpSecret.Create(
+                        user.Id,
+                        tempSecret.EncryptedSecret,
+                        user.Id);
 
                     await iamUnitOfWork.AppUserTotpSecretRepository.CreateAsync(newSecret, cancellationToken).ConfigureAwait(false);
                     await iamUnitOfWork.TempTotpSecretRepository.DeleteAsync(tempSecret.Id, cancellationToken).ConfigureAwait(false);
@@ -99,7 +95,7 @@ internal sealed class VerifyTotpCode(
             var tokenExpiry = jwtService.GetTokenExpiry(tokenResponse);
             var refreshToken = jwtService.CreateRefreshToken();
 
-            user.LastLoginAt = DateTimeOffset.UtcNow;
+            user.RecordSuccessfulLogin();
             await userManager.UpdateAsync(user).ConfigureAwait(false);
 
             if (request.RememberDevice)
@@ -181,7 +177,7 @@ internal sealed class VerifyTotpCode(
         }
 
         await cache.RemoveAsync(attemptKey, ct).ConfigureAwait(false);
-        secretEntity.LastUsedAt = DateTimeOffset.UtcNow;
+        secretEntity.MarkAsUsed();
 
         await iamUnitOfWork.AppUserTotpSecretRepository.UpdateAsync(secretEntity).ConfigureAwait(false);
         await iamUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);

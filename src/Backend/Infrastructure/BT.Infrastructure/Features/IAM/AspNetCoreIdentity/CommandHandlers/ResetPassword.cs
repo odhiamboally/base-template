@@ -74,10 +74,7 @@ internal sealed class ResetPassword(
                 return AppResponse.Failure<bool>("Password reset failed. Please ensure your password meets all requirements.");
             }
 
-            user.ResetFailedLoginAttempts();
-            user.PasswordLastChanged = DateTimeOffset.UtcNow;
-            user.RequirePasswordChange = false;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.CompletePasswordReset();
 
             await userManager.UpdateAsync(user).ConfigureAwait(false);
 

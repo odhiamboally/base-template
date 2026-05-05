@@ -67,18 +67,13 @@ internal sealed class SessionService(
             }
 
             var now = DateTimeOffset.UtcNow;
-            var session = new AppUserSession
-            {
-                Id = sessionId,
-                AppUserId = userId,
-                IpAddress = ipAddress,
-                UserAgent = userAgent,
-                CreatedAt = now,
-                CreatedBy = userId,
-                LastAccessedAt = now,
-                ExpiresAt = now.AddMinutes(_sessionSettings.SessionTimeoutMinutes),
-                IsActive = true
-            };
+            var session = AppUserSession.Create(
+                sessionId,
+                userId,
+                ipAddress,
+                userAgent,
+                now.AddMinutes(_sessionSettings.SessionTimeoutMinutes),
+                userId);
 
             await _unitOfWork.SessionRepository.CreateAsync(session).ConfigureAwait(false);
             await _unitOfWork.CompleteAsync().ConfigureAwait(false);
@@ -113,11 +108,7 @@ internal sealed class SessionService(
                 {
                     foreach (var session in sessionsToEnd)
                     {
-                        session.IsActive = false;
-                        session.IsRevoked = true;
-                        session.EndedAt = DateTimeOffset.UtcNow;
-                        session.EndReason = "New login from another device.";
-                        session.UpdatedAt = DateTimeOffset.UtcNow;
+                        session.Revoke("New login from another device.");
                     }
 
                     await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(sessionsToEnd)).ConfigureAwait(false);
@@ -128,29 +119,23 @@ internal sealed class SessionService(
                 // Update existing session OR create new one (not both)
                 if (existingSessionForDevice is not null)
                 {
-                    existingSessionForDevice.LastAccessedAt = now;
-                    existingSessionForDevice.ExpiresAt = now.AddMinutes(_sessionSettings.SessionTimeoutMinutes);
-                    existingSessionForDevice.IpAddress = ipAddress;
-                    existingSessionForDevice.UserAgent = userAgent;
-                    existingSessionForDevice.UpdatedAt = now;
+                    existingSessionForDevice.RefreshAccess(
+                        now.AddMinutes(_sessionSettings.SessionTimeoutMinutes),
+                        ipAddress,
+                        userAgent);
 
                     await _unitOfWork.SessionRepository.UpdateAsync(existingSessionForDevice).ConfigureAwait(false);
                 }
                 else
                 {
-                    var newSession = new AppUserSession
-                    {
-                        Id = sessionId,
-                        AppUserId = userId,
-                        IpAddress = ipAddress,
-                        UserAgent = userAgent,
-                        DeviceFingerprint = deviceFingerprint,
-                        CreatedAt = now,
-                        CreatedBy = userId,
-                        LastAccessedAt = now,
-                        ExpiresAt = now.AddMinutes(_sessionSettings.SessionTimeoutMinutes),
-                        IsActive = true
-                    };
+                    var newSession = AppUserSession.Create(
+                        sessionId,
+                        userId,
+                        ipAddress,
+                        userAgent,
+                        now.AddMinutes(_sessionSettings.SessionTimeoutMinutes),
+                        userId,
+                        deviceFingerprint);
 
                     await _unitOfWork.SessionRepository.CreateAsync(newSession).ConfigureAwait(false);
                 }
@@ -185,10 +170,7 @@ internal sealed class SessionService(
                 return AppResponse.Success("Session not found", true);
             }
 
-            session.IsActive = false;
-            session.IsRevoked = true;
-            session.EndedAt = DateTimeOffset.UtcNow;
-            session.UpdatedAt = DateTimeOffset.UtcNow;
+            session.Revoke("Session revoked by request");
 
             await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
             await _unitOfWork.CompleteAsync().ConfigureAwait(false);
@@ -223,11 +205,7 @@ internal sealed class SessionService(
             {
                 foreach (var session in sessionsToEnd)
                 {
-                    session.IsActive = false;
-                    session.IsRevoked = true;
-                    session.EndedAt = DateTimeOffset.UtcNow;
-                    session.UpdatedAt = DateTimeOffset.UtcNow;
-                    session.EndReason = "Concurrent session limit exceeded";
+                    session.Revoke("Concurrent session limit exceeded");
                 }
 
                 await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(sessionsToEnd)).ConfigureAwait(false);
@@ -277,11 +255,7 @@ internal sealed class SessionService(
             {
                 foreach (var session in expiredSessions)
                 {
-                    session.IsActive = false;
-                    session.IsRevoked = true;
-                    session.EndedAt = DateTimeOffset.UtcNow;
-                    session.EndReason = "Session expired";
-                    session.UpdatedAt = DateTimeOffset.UtcNow;
+                    session.Revoke("Session expired");
                 }
 
                 await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(expiredSessions)).ConfigureAwait(false);
@@ -329,23 +303,16 @@ internal sealed class SessionService(
             if (session.ExpiresAt <= DateTimeOffset.UtcNow)
             {
                 // Mark as expired
-                session.IsActive = false;
-                session.EndedAt = DateTimeOffset.UtcNow;
-                session.EndReason = "Session expired";
+                session.Expire();
                 await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
 
                 return AppResponse.Failure<bool>("Session has expired");
             }
 
-            // Update last accessed time
-            session.LastAccessedAt = DateTimeOffset.UtcNow;
-
-            // Extend expiry if sliding expiration is enabled
-            if (_sessionSettings.SlidingExpiration)
-            {
-                session.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(_sessionSettings.SessionTimeoutMinutes);
-            }
+            session.Touch(_sessionSettings.SlidingExpiration
+                ? DateTimeOffset.UtcNow.AddMinutes(_sessionSettings.SessionTimeoutMinutes)
+                : null);
 
             await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
             await _unitOfWork.CompleteAsync().ConfigureAwait(false);
@@ -385,23 +352,16 @@ internal sealed class SessionService(
             if (session.ExpiresAt <= DateTimeOffset.UtcNow)
             {
                 // Mark as expired
-                session.IsActive = false;
-                session.EndedAt = DateTimeOffset.UtcNow;
-                session.EndReason = "Session expired";
+                session.Expire();
                 await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
 
                 return AppResponse.Failure<bool>("Session has expired");
             }
 
-            // Update last accessed time
-            session.LastAccessedAt = DateTimeOffset.UtcNow;
-
-            // Extend expiry if sliding expiration is enabled
-            if (_sessionSettings.SlidingExpiration)
-            {
-                session.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(_sessionSettings.SessionTimeoutMinutes);
-            }
+            session.Touch(_sessionSettings.SlidingExpiration
+                ? DateTimeOffset.UtcNow.AddMinutes(_sessionSettings.SessionTimeoutMinutes)
+                : null);
 
             await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
             await _unitOfWork.CompleteAsync().ConfigureAwait(false);

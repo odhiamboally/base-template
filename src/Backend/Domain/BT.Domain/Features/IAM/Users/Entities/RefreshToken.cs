@@ -11,16 +11,16 @@ namespace BT.Domain.Features.IAM.Users.Entities;
 public class RefreshToken : BaseEntity
 {
 
-    public string? AppUserId { get; set; }
-    public string Token { get; set; } = string.Empty;
-    public DateTimeOffset ExpiresAt { get; set; }
-    public string? CreatedByIp { get; set; }
-    public DateTimeOffset? UsedAt { get; set; }
-    public DateTimeOffset? RevokedAt { get; set; }
-    public string? RevokedByIp { get; set; }
-    public string? RevokedReason { get; set; }
-    public string? ReplacedByToken { get; set; }
-    public string? TokenFamily { get; set; } = Guid.CreateVersion7().ToString();
+    public string AppUserId { get; private set; } = string.Empty;
+    public string Token { get; private set; } = string.Empty;
+    public DateTimeOffset ExpiresAt { get; private set; }
+    public string? CreatedByIp { get; private set; }
+    public DateTimeOffset? UsedAt { get; private set; }
+    public DateTimeOffset? RevokedAt { get; private set; }
+    public string? RevokedByIp { get; private set; }
+    public string? RevokedReason { get; private set; }
+    public string? ReplacedByToken { get; private set; }
+    public string? TokenFamily { get; private set; } = Guid.CreateVersion7().ToString();
 
 
 
@@ -38,6 +38,51 @@ public class RefreshToken : BaseEntity
     [NotMapped]
     public bool IsRevoked => RevokedAt.HasValue;
 
+    private RefreshToken() { }
+
+    public static RefreshToken Create(
+        string appUserId,
+        string token,
+        DateTimeOffset expiresAt,
+        string createdBy,
+        string? createdByIp = null,
+        string? tokenFamily = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(appUserId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(token);
+        ArgumentException.ThrowIfNullOrWhiteSpace(createdBy);
+
+        return new RefreshToken
+        {
+            Id = Guid.CreateVersion7(),
+            AppUserId = appUserId,
+            Token = token,
+            ExpiresAt = expiresAt,
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = createdBy,
+            CreatedByIp = createdByIp,
+            TokenFamily = string.IsNullOrWhiteSpace(tokenFamily)
+                ? Guid.CreateVersion7().ToString()
+                : tokenFamily
+        };
+    }
+
+    public void MarkAsUsed()
+    {
+        UsedAt = DateTimeOffset.UtcNow;
+        SetUpdatedInfo(AppUserId);
+    }
+
+    public void Revoke(string reason, string? revokedByIp = null, string? replacedByToken = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+
+        RevokedAt = DateTimeOffset.UtcNow;
+        RevokedReason = reason;
+        RevokedByIp = revokedByIp;
+        ReplacedByToken = replacedByToken;
+        SetUpdatedInfo(AppUserId);
+    }
 
     // Navigation
 

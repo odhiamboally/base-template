@@ -90,26 +90,20 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
 
         foreach (var token in tokens)
         {
-            token.RevokedAt = DateTimeOffset.UtcNow;
-            token.RevokedReason = reason;
-            token.RevokedByIp = revokedByIp;
-            token.UpdatedAt = DateTimeOffset.UtcNow;
+            token.Revoke(reason, revokedByIp);
             await UpdateAsync(token).ConfigureAwait(false);
         }
     }
 
     public async Task RevokeRefreshTokenAsync(RefreshToken refreshToken, string reason, string? revokedByIp = null)
     {
-        refreshToken.RevokedAt = DateTimeOffset.UtcNow;
-        refreshToken.RevokedReason = reason;
-        refreshToken.RevokedByIp = revokedByIp;
+        refreshToken.Revoke(reason, revokedByIp);
         await UpdateRefreshTokenAsync(refreshToken).ConfigureAwait(false);
     }
 
     public async Task RevokeRefreshTokenAsync(RefreshToken refreshToken, string reason)
     {
-        refreshToken.RevokedAt = DateTimeOffset.UtcNow;
-        refreshToken.RevokedReason = reason;
+        refreshToken.Revoke(reason);
         _iamContext.RefreshTokens.Update(refreshToken);
         await _iamContext.SaveChangesAsync().ConfigureAwait(false);
     }
@@ -121,10 +115,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
 
         foreach (var token in activeTokens)
         {
-            token.RevokedAt = DateTimeOffset.UtcNow;
-            token.RevokedReason = reason;
-            token.RevokedByIp = revokedByIp;
-            token.UpdatedAt = DateTimeOffset.UtcNow;
+            token.Revoke(reason, revokedByIp);
         }
 
         _iamContext.UpdateRange(activeTokens);
@@ -146,7 +137,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
 
     public async Task MarkTokenAsUsedAsync(RefreshToken refreshToken)
     {
-        refreshToken.UsedAt = DateTimeOffset.UtcNow;
+        refreshToken.MarkAsUsed();
         _iamContext.RefreshTokens.Update(refreshToken);
         await _iamContext.SaveChangesAsync().ConfigureAwait(false);
     }

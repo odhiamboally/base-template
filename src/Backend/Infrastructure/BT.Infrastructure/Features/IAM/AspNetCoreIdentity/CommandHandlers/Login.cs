@@ -41,7 +41,7 @@ internal sealed class Login(
 
         try
         {
-            var user = await userManager.Users.AsNoTracking()
+            var user = await userManager.Users
                 .FirstOrDefaultAsync(u => u.UserName == loginRequest.UserName, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -205,15 +205,19 @@ internal sealed class Login(
 
             var rolesResponse = await userManager.GetRolesAsync(user).ConfigureAwait(false);
             var userRoles = new Collection<string>(rolesResponse.ToList());
-            var finalAppUserResponse = appUserResponse with { Roles = userRoles };
+            user.RecordSuccessfulLogin();
+            var finalAppUserResponse = appUserResponse with { Roles = userRoles, LastLoginAt = user.LastLoginAt };
+
+            var userUpdateResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
+            if (!userUpdateResult.Succeeded)
+            {
+                var updateError = string.Join("; ", userUpdateResult.Errors.Select(e => e.Description));
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new InvalidOperationException(updateError));
+                return AppResponse.Failure<LoginResponse>("Could not complete login.");
+            }
 
             await serviceManager.CacheService
                 .SetAsync(CacheKeys.UserInfo(user.Id), finalAppUserResponse, TimeSpan.FromMinutes(10), cancellationToken)
-                .ConfigureAwait(false);
-
-            await userManager.Users
-                .Where(u => u.Id == user.Id)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.LastLoginAt, DateTimeOffset.UtcNow), cancellationToken)
                 .ConfigureAwait(false);
 
             return AppResponse.Success("Login successful", new LoginResponse(

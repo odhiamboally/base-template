@@ -10,19 +10,88 @@ namespace BT.Domain.Features.IAM.Users.Entities;
 
 public class AppUserSession : BaseEntity
 {
-    public string AppUserId { get; set; } = string.Empty;
-    public string IpAddress { get; set; } = string.Empty;
-    public string UserAgent { get; set; } = string.Empty;
-    public DateTimeOffset LastAccessedAt { get; set; }
-    public DateTimeOffset ExpiresAt { get; set; }
-    public DateTimeOffset? EndedAt { get; set; }
-    public string? EndReason { get; set; }
-    public bool IsActive { get; set; } = true;
-    public bool IsRevoked { get; set; }
+    public string AppUserId { get; private set; } = string.Empty;
+    public string IpAddress { get; private set; } = string.Empty;
+    public string UserAgent { get; private set; } = string.Empty;
+    public DateTimeOffset LastAccessedAt { get; private set; }
+    public DateTimeOffset ExpiresAt { get; private set; }
+    public DateTimeOffset? EndedAt { get; private set; }
+    public string? EndReason { get; private set; }
+    public bool IsActive { get; private set; } = true;
+    public bool IsRevoked { get; private set; }
 
     [Required]
     [MaxLength(256)] // SHA-256 hash is 64 hex characters, so 256 is safe.
-    public string DeviceFingerprint { get; set; } = string.Empty;
+    public string DeviceFingerprint { get; private set; } = string.Empty;
+
+    private AppUserSession() { }
+
+    public static AppUserSession Create(
+        Guid id,
+        string appUserId,
+        string ipAddress,
+        string userAgent,
+        DateTimeOffset expiresAt,
+        string createdBy,
+        string? deviceFingerprint = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(appUserId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(createdBy);
+
+        var now = DateTimeOffset.UtcNow;
+        return new AppUserSession
+        {
+            Id = id,
+            AppUserId = appUserId,
+            IpAddress = ipAddress,
+            UserAgent = userAgent,
+            DeviceFingerprint = deviceFingerprint ?? string.Empty,
+            CreatedAt = now,
+            CreatedBy = createdBy,
+            LastAccessedAt = now,
+            ExpiresAt = expiresAt,
+            IsActive = true
+        };
+    }
+
+    public void RefreshAccess(DateTimeOffset expiresAt, string ipAddress, string userAgent)
+    {
+        LastAccessedAt = DateTimeOffset.UtcNow;
+        ExpiresAt = expiresAt;
+        IpAddress = ipAddress;
+        UserAgent = userAgent;
+        SetUpdatedInfo(AppUserId);
+    }
+
+    public void Touch(DateTimeOffset? expiresAt = null)
+    {
+        LastAccessedAt = DateTimeOffset.UtcNow;
+        if (expiresAt.HasValue)
+        {
+            ExpiresAt = expiresAt.Value;
+        }
+
+        SetUpdatedInfo(AppUserId);
+    }
+
+    public void Revoke(string reason)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+
+        IsActive = false;
+        IsRevoked = true;
+        EndedAt = DateTimeOffset.UtcNow;
+        EndReason = reason;
+        SetUpdatedInfo(AppUserId);
+    }
+
+    public void Expire()
+    {
+        IsActive = false;
+        EndedAt = DateTimeOffset.UtcNow;
+        EndReason = "Session expired";
+        SetUpdatedInfo(AppUserId);
+    }
 
     // Navigation
     [JsonIgnore]

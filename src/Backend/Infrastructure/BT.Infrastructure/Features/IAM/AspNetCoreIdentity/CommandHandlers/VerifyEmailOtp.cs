@@ -85,7 +85,7 @@ internal sealed class VerifyEmailOtp(
         var refreshToken = jwtService.CreateRefreshToken();
         var expiry = jwtService.GetTokenExpiry(token);
 
-        user.LastLoginAt = DateTimeOffset.UtcNow;
+        user.RecordSuccessfulLogin();
         await userManager.UpdateAsync(user).ConfigureAwait(false);
 
         if (req.RememberDevice) await signInManager.RememberTwoFactorClientAsync(user).ConfigureAwait(false);
