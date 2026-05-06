@@ -121,15 +121,21 @@ Name workflow files by the boundary they protect.
 Recommended examples:
 
 ```text
-backend-architecture.yml
-backend-ci.yml
-frontend-ci.yml
-mobile-ci.yml
-full-solution-ci.yml
-release.yml
+backend-architecture.yml  Required backend architecture/build guardrail.
+backend-ci.yml            Backend Release build plus unit/integration tests.
+frontend-ci.yml           Blazor/RCL Release build.
+mobile-ci.yml             Supported MAUI target builds; currently manual/reusable.
+full-solution-ci.yml      Manual/scheduled orchestration across backend/frontend/mobile.
+release.yml               Manual Release artifact packaging.
 ```
 
 Avoid vague names like `ci.yml` once the repository has multiple platforms or deployment paths.
+
+## Debug vs Release
+
+Use `Debug` for fast local feedback and pre-push checks.
+
+Use `Release` in GitHub checks that protect `main`, because `main` represents merge-ready code and should stay close to deployable build conditions.
 
 ## Bypassing Local Hooks
 

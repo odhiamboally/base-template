@@ -8,29 +8,29 @@ namespace BT.Domain.Features.Banking.Customers.Enums;
 public enum SubSegmentType
 {
     [Description("Local")]
-    Local,
+    Local = 1,
 
     [Description("Multinational")]
-    Multinational,
+    Multinational = 2,
 
     [Description("Government Owned")]
-    GovernmentOwned,
+    GovernmentOwned = 3,
 
     [Description("Partnership")]
-    Partnership,
+    Partnership = 4,
 
     [Description("PrivateLimitedCompany")]
-    PrivateLimitedCompany,
+    PrivateLimitedCompany = 5,
 
     [Description("PublicLimitedCompany")]
-    PublicLimitedCompany,
+    PublicLimitedCompany = 6,
 
     [Description("Sole Proprietorship")]
-    SoleProprietorship,
+    SoleProprietorship = 7,
 
     [Description("Non Governmental Organisation")]
-    NGO,
+    NGO = 8,
 
     [Description("Non Governmental Organisation")]
-    Individual
+    Individual = 9
 }

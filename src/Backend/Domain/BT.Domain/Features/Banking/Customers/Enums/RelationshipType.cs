@@ -8,14 +8,14 @@ namespace BT.Domain.Features.Banking.Customers.Enums;
 public enum RelationshipType
 {
     [Description("Director")]
-    Director,
+    Director = 1,
 
     [Description("Shareholder")]
-    Shareholder,
+    Shareholder = 2,
 
     [Description("Signatory")]
-    Signatory,
+    Signatory = 3,
 
     [Description("Beneficial Owner")]
-    BeneficialOwner
+    BeneficialOwner = 4
 }

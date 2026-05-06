@@ -8,14 +8,14 @@ namespace BT.Domain.Features.Banking.Customers.Enums;
 public enum IdentificationType
 {
     [Description("Certificate of Incorporation")]
-    CertificateOfIncorporation,
+    CertificateOfIncorporation = 1,
 
     [Description("Tax Identification Number")]
-    TIN,
+    TIN = 2,
 
     [Description("Business License")]
-    BusinessLicense,
+    BusinessLicense = 3,
 
     [Description("Company Registration Certificate")]
-    CompanyRegistrationCertificate
+    CompanyRegistrationCertificate = 4
 }

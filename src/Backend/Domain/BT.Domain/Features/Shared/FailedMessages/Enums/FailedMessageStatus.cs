@@ -6,7 +6,7 @@ namespace BT.Domain.Features.Shared.FailedMessages.Enums;
 
 public enum FailedMessageStatus
 {
-    Transient = 0,
-    Permanent = 1,
-    ManualRetry = 2
+    Transient = 1,
+    Permanent = 2,
+    ManualRetry = 3
 }

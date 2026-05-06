@@ -8,17 +8,17 @@ namespace BT.Domain.Features.Banking.Customers.Enums;
 public enum CustomerStatus
 {
     [Description("Draft")]
-    Draft,
+    Draft = 1,
 
     [Description("Active")]
-    Active,
+    Active = 2,
 
     [Description("Suspended")]
-    Suspended,
+    Suspended = 3,
 
     [Description("Closed")]
-    Closed,
+    Closed = 4,
 
     [Description("Pending Approval")]
-    PendingApproval
+    PendingApproval = 5
 }

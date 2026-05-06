@@ -8,27 +8,27 @@ namespace BT.Domain.Features.Banking.Customers.Enums;
 public enum LineOfBusiness
 {
     [Description("Agriculture")]
-    Agriculture,
+    Agriculture = 1,
 
     [Description("Manufacturing")]
-    Manufacturing,
+    Manufacturing = 2,
 
     [Description("Technology")]
-    Technology,
+    Technology = 3,
 
     [Description("Financial Services")]
-    FinancialServices,
+    FinancialServices = 4,
 
     [Description("Retail")]
-    Retail,
+    Retail = 5,
 
     [Description("Services")]
-    Services,
+    Services = 6,
 
     [Description("Proprietary")]
-    Proprietary,
+    Proprietary = 7,
 
     [Description("Trading")]
-    Trading
+    Trading = 8
 
 }
