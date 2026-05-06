@@ -38,3 +38,11 @@ if (-not $SkipArchitecture) {
 }
 
 Write-Host "Local guardrails passed."
+
+#You can run this script with the following command:
+#powershell -NoProfile -ExecutionPolicy Bypass -File scripts\checks.ps1
+
+#If you ever need to bypass the pre-push hook temporarily:
+#git push --no-verify
+#$env:SKIP_GUARDRAILS="1"
+#git push
