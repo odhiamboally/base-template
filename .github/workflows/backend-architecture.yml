@@ -1,4 +1,4 @@
-name: Architecture Guardrails
+name: Backend Architecture Guardrails
 
 on:
   pull_request:
@@ -29,7 +29,7 @@ jobs:
         run: dotnet restore tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj
 
       - name: Build API
-        run: dotnet build src/Backend/Api/BT.Api/BT.Api.csproj --configuration Debug --no-restore
+        run: dotnet build src/Backend/Api/BT.Api/BT.Api.csproj --configuration Release --no-restore
 
       - name: Run architecture tests
-        run: dotnet test tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj --configuration Debug --no-restore --logger trx
+        run: dotnet test tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj --configuration Release --no-restore --logger trx
