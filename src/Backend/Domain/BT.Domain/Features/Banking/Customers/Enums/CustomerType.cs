@@ -8,17 +8,17 @@ namespace BT.Domain.Features.Banking.Customers.Enums;
 public enum CustomerType
 {
     [Description("Individual")]
-    Individual,
+    Individual = 1,
 
     [Description("Corporate")]
-    Corporate,
+    Corporate = 2,
 
     [Description("Institutional")]
-    Institutional,
+    Institutional = 3,
 
     [Description("SME")]
-    SmallMediumEnterprise,
+    SmallMediumEnterprise = 4,
 
     [Description("Enterprise")]
-    Enterprise
+    Enterprise = 5
 }

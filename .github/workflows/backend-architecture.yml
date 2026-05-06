@@ -1,4 +1,4 @@
-name: Architecture Guardrails
+name: Backend Architecture Guardrails
 
 on:
   pull_request:
@@ -10,6 +10,8 @@ jobs:
   architecture:
     name: Build and architecture tests
     runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout
@@ -20,8 +22,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore
-        run: dotnet restore BaseTemplate.slnx
+      - name: Restore API
+        run: dotnet restore src/Backend/Api/BT.Api/BT.Api.csproj
+
+      - name: Restore architecture tests
+        run: dotnet restore tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj
 
       - name: Build API
         run: dotnet build src/Backend/Api/BT.Api/BT.Api.csproj --configuration Release --no-restore

@@ -8,25 +8,25 @@ namespace BT.Domain.Features.Banking.Customers.Enums;
 public enum SegmentType
 {
     [Description("Public Limited Company")]
-    PublicLimitedCompany,
+    PublicLimitedCompany = 1,
 
     [Description("Private Limited Company")]
-    PrivateLimitedCompany,
+    PrivateLimitedCompany = 2,
 
     [Description("Sole Proprietorship")]
-    SoleProprietorship,
+    SoleProprietorship = 3,
 
     [Description("Corporate")]
-    Corporate,
+    Corporate = 4,
 
     [Description("Retail")]
-    Retail,
+    Retail = 5,
 
     [Description("Small Medium Enterprise")]
-    SME,
+    SME = 6,
 
     [Description("Small Medium Enterprise")]
-    Individual
+    Individual = 7
 
 
 
