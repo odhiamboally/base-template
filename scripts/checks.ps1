@@ -1,6 +1,7 @@
 param(
     [switch]$SkipBuild,
-    [switch]$SkipArchitecture
+    [switch]$SkipArchitecture,
+    [switch]$SkipRestore
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,6 +24,16 @@ function Invoke-GuardrailCommand {
     if ($LASTEXITCODE -ne 0) {
         throw "$Description failed with exit code $LASTEXITCODE."
     }
+}
+
+if (-not $SkipRestore) {
+    Invoke-GuardrailCommand `
+        -Description "Restoring API project..." `
+        -Command @("dotnet", "restore", "src\Backend\Api\BT.Api\BT.Api.csproj")
+
+    Invoke-GuardrailCommand `
+        -Description "Restoring architecture test project..." `
+        -Command @("dotnet", "restore", "tests\BT.Tests.Architecture\BT.Tests.Architecture.csproj")
 }
 
 if (-not $SkipBuild) {
