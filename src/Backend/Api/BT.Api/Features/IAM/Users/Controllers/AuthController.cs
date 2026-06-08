@@ -2,8 +2,6 @@ using Asp.Versioning;
 using BT.Api.Common.Controllers;
 using BT.Application.Features.IAM.Users.Commands;
 using BT.SharedKernel.Dtos.Common;
-using BT.SharedKernel.Features.Banking.Customers.Dtos;
-using BT.SharedKernel.Features.HR.Employees.Dtos;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -63,19 +61,6 @@ public sealed class AuthController(ISender sender) : BaseController
     {
         var response = await sender
             .Send(new GetCurrentUserCommand())
-            .ConfigureAwait(false);
-
-        return HandleResponse(response);
-    }
-
-    [HttpPost("users")]
-    [Authorize]
-    public async Task<IActionResult> CreateAppUser(CreateAppUserRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var response = await sender
-            .Send(new CreateAppUserCommand(request, GetUserId()))
             .ConfigureAwait(false);
 
         return HandleResponse(response);
@@ -151,45 +136,6 @@ public sealed class AuthController(ISender sender) : BaseController
         return HandleResponse(response);
     }
 
-    [HttpPost("employees/{employeeId:guid}/grant-access")]
-    [Authorize]
-    public async Task<IActionResult> GrantEmployeeSystemAccess(Guid employeeId, GrantEmployeeSystemAccessRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var response = await sender
-            .Send(new GrantEmployeeSystemAccessCommand(employeeId, request.Roles, GetUserId()))
-            .ConfigureAwait(false);
-
-        return HandleResponse(response);
-    }
-
-    [HttpPost("users/link-customer")]
-    [Authorize]
-    public async Task<IActionResult> LinkCustomerToExistingUser(LinkCustomerToExistingUserRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var response = await sender
-            .Send(new LinkCustomerToExistingUserCommand(request.AppUserId, request.CustomerId, GetUserId()))
-            .ConfigureAwait(false);
-
-        return HandleResponse(response);
-    }
-
-    [HttpPost("users/link-employee")]
-    [Authorize]
-    public async Task<IActionResult> LinkEmployeeToExistingUser(LinkEmployeeToExistingUserRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var response = await sender
-            .Send(new LinkEmployeeToExistingUserCommand(request.NationalId, request.EmployeeDetails, GetUserId()))
-            .ConfigureAwait(false);
-
-        return HandleResponse(response);
-    }
-
     private string GetUserId()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -216,9 +162,3 @@ public sealed record ResetPasswordApiRequest(
     string? Password,
     string? ConfirmPassword)
     : ResetPasswordRequest(Email, NewPassword, Password, ConfirmPassword);
-
-public sealed record GrantEmployeeSystemAccessRequest(IReadOnlyList<string> Roles);
-
-public sealed record LinkCustomerToExistingUserRequest(string AppUserId, Guid CustomerId);
-
-public sealed record LinkEmployeeToExistingUserRequest(string NationalId, CreateEmployeeRequest EmployeeDetails);

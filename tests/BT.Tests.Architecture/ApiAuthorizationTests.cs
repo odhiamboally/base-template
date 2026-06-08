@@ -20,6 +20,19 @@ public sealed class ApiAuthorizationTests
         "IamAdminController.GetNavigationMenus"
     ];
 
+    private static readonly string[] AuthControllerAllowedActions =
+    [
+        "GetCurrentUser",
+        "GetOtpStatus",
+        "Login",
+        "Logout",
+        "RefreshToken",
+        "ResetPassword",
+        "SendEmailOtp",
+        "VerifyEmailOtp",
+        "VerifyPassword"
+    ];
+
     [Fact]
     public void Api_Controller_Actions_Should_Declare_Authorization_Intent()
     {
@@ -48,6 +61,21 @@ public sealed class ApiAuthorizationTests
         actionsWithoutPermissions.Should().BeEmpty(
             because: "feature/admin API actions must use [RequirePermission] so authorization stays permission-driven. Found: {0}",
             string.Join(", ", actionsWithoutPermissions));
+    }
+
+    [Fact]
+    public void AuthController_Should_Only_Expose_Authentication_Actions()
+    {
+        var unexpectedActions = GetControllerActions()
+            .Where(static action => action.Controller.Name == "AuthController")
+            .Select(static action => action.Method.Name)
+            .Except(AuthControllerAllowedActions, StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        unexpectedActions.Should().BeEmpty(
+            because: "AuthController must stay limited to authentication/session endpoints. Admin or provisioning endpoints belong in IamAdminController. Found: {0}",
+            string.Join(", ", unexpectedActions));
     }
 
     private static IEnumerable<(Type Controller, MethodInfo Method)> GetControllerActions()
