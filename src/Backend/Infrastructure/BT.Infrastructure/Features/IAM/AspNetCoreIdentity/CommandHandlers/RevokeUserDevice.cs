@@ -1,0 +1,38 @@
+using BT.Application.Features.IAM.Users.Commands;
+using BT.Infrastructure.Logging;
+using BT.Persistence.Features.IAM.DataContext;
+using BT.SharedKernel.Dtos.Common;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
+
+internal sealed class RevokeUserDevice(IamDBContext context, ILogger<RevokeUserDevice> logger)
+    : IRequestHandler<RevokeUserDeviceCommand, AppResponse<bool>>
+{
+    public async Task<AppResponse<bool>> Handle(RevokeUserDeviceCommand command, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var device = await context.AppUserDevices
+                .SingleOrDefaultAsync(item => item.Id == command.DeviceId, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (device is null)
+            {
+                return AppResponse.Failure<bool>("User device not found.");
+            }
+
+            device.RevokeTrust(command.RevokedBy);
+            await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            return AppResponse.Success("Device trust revoked.", true);
+        }
+        catch (Exception ex)
+        {
+            ServiceLogDefinitions.LogUserDeviceRevokeError(logger, command.DeviceId.ToString(), ex);
+            throw;
+        }
+    }
+}

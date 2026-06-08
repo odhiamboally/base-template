@@ -47,7 +47,7 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<bool>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent)
+    public async Task<AppResponse<Guid>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent)
     {
         try
         {
@@ -61,7 +61,7 @@ internal sealed class SessionService(
                 {
                     ServiceLogDefinitions.LogFailedToEndOldSessions(_logger, userId, endSessionsResponse.Message ?? string.Empty);
 
-                    return AppResponse.Failure<bool>("Failed to end old sessions");
+                    return AppResponse.Failure<Guid>("Failed to end old sessions");
                 }
 
             }
@@ -78,7 +78,7 @@ internal sealed class SessionService(
             await _unitOfWork.SessionRepository.CreateAsync(session).ConfigureAwait(false);
             await _unitOfWork.CompleteAsync().ConfigureAwait(false);
 
-            return AppResponse.Success("Session created successfully", true);
+            return AppResponse.Success("Session created successfully", sessionId);
         }
         catch (Exception ex)
         {
@@ -87,7 +87,7 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<bool>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent, string deviceFingerprint)
+    public async Task<AppResponse<Guid>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent, string deviceFingerprint)
     {
         const int maxRetries = 3;
         try
@@ -125,6 +125,7 @@ internal sealed class SessionService(
                         userAgent);
 
                     await _unitOfWork.SessionRepository.UpdateAsync(existingSessionForDevice).ConfigureAwait(false);
+                    sessionId = existingSessionForDevice.Id;
                 }
                 else
                 {
@@ -141,7 +142,7 @@ internal sealed class SessionService(
                 }
 
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
-                return AppResponse.Success("Session created successfully", true);
+                return AppResponse.Success("Session created successfully", sessionId);
             }, maxRetries, 50).ConfigureAwait(false);
         }
         catch (Exception ex)

@@ -1,4 +1,5 @@
 using BT.Domain.Features.Shared.FailedMessages.Enums;
+using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Text;
 
 namespace BT.Domain.Features.Shared.FailedMessages.Entities;
 
-public class FailedMessage : BaseEntity
+public class FailedMessage : BaseEntity, ISoftDeletable
 {
     public string MessageId { get; private set; } = string.Empty;
     public string MessageType { get; private set; } = string.Empty;
@@ -20,6 +21,9 @@ public class FailedMessage : BaseEntity
     public bool IsResolved { get; private set; }
     public DateTimeOffset? ResolvedAt { get; private set; }
     public string? ResolutionNotes { get; private set; }
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
 
     private FailedMessage() { }
 
@@ -72,5 +76,15 @@ public class FailedMessage : BaseEntity
 
         Status = FailedMessageStatus.ManualRetry;
         SetUpdatedInfo(updatedBy);
+    }
+
+    public void MarkAsDeleted(string deletedBy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(deletedBy);
+
+        IsDeleted = true;
+        DeletedAt = DateTimeOffset.UtcNow;
+        DeletedBy = deletedBy;
+        SetUpdatedInfo(deletedBy);
     }
 }

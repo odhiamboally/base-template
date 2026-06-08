@@ -10,8 +10,10 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.HR.Employees.Entities;
+using BT.Application.Features.HR.Employees.Contracts.Interfaces;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Employees.Dtos;
+using BT.SharedKernel.Features.Shared.Phone;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +27,10 @@ public sealed record CreateEmployeeCommand(CreateEmployeeRequest Request, string
     public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("employees")];
 }
 
-internal sealed class CreateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILogger<CreateEmployeeCommandHandler> logger) 
+internal sealed class CreateEmployeeCommandHandler(
+    IHrUnitOfWork unitOfWork,
+    IEmployeeNumberGenerator numberGenerator,
+    ILogger<CreateEmployeeCommandHandler> logger) 
     : IRequestHandler<CreateEmployeeCommand, AppResponse<EmployeeResponse>>
 {
     public async Task<AppResponse<EmployeeResponse>> Handle(CreateEmployeeCommand command, CancellationToken cancellationToken)
@@ -34,27 +39,35 @@ internal sealed class CreateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILo
 
         try
         {
-            var existing = await unitOfWork.EmployeeRepository
-                .FindByCondition(e => e.Number == request.Number)
-                .SingleOrDefaultAsync(cancellationToken)
+            var duplicateEmail = await unitOfWork.EmployeeRepository
+                .FindByCondition(e => e.Email == request.Email)
+                .AnyAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            if (existing != null)
+            if (duplicateEmail)
             {
-                LogDefinitions.LogEmployeeDuplicateRegistration(logger, request.Number);
-                return AppResponse.Failure<EmployeeResponse>("You are already registered. Please log in.");
+                LogDefinitions.LogEmployeeDuplicateRegistration(logger, request.Email);
+                return AppResponse.Failure<EmployeeResponse>("An employee with this email already exists.");
             }
 
+            var employeeNumber = await numberGenerator.GenerateAsync(request.DepartmentId, cancellationToken).ConfigureAwait(false);
+            var phone = PhoneNumberFormatter.Normalize(
+                request.CountryCode,
+                request.PhoneNationalNumber,
+                request.PhoneNumber);
+
             var entityToCreate = Employee.Create(
-                    request.Number,
+                    employeeNumber,
                     request.Email,
                     request.FirstName,
                     request.LastName,
                     request.IdNumber,
-                    request.PhoneNumber,
+                    phone.CountryCode,
+                    phone.NationalNumber,
+                    phone.E164,
                     request.DepartmentId,
-                    request.ManagerId ?? Guid.Empty,
-                    "System");
+                    request.ManagerId,
+                    command.User);
 
             var result = await unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {

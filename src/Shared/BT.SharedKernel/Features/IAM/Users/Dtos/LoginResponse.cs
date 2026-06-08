@@ -10,9 +10,11 @@ public record LoginResponse(
     bool IsAuthenticated,
     string Token,
     string RefreshToken,
+    string? SessionId,
     DateTimeOffset TokenExpiresAt,
     AppUserResponse? UserInfo,
-    List<ClaimResponse>? UserClaims
+    List<ClaimResponse>? UserClaims,
+    bool MfaEnrollmentRequired = false
 
     );
 

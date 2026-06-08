@@ -21,4 +21,7 @@ internal static partial class MiddlewareLogDefinitions
 
     [LoggerMessage(EventId = 1104, Level = LogLevel.Debug, Message = "Session state is unavailable while resolving the current session id.")]
     public static partial void LogSessionStateUnavailable(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 1105, Level = LogLevel.Warning, Message = "Blocked request for user {UserId} because MFA enrollment is required. Path: {Path}")]
+    public static partial void LogMfaEnrollmentRequired(ILogger logger, string userId, string path);
 }

@@ -11,6 +11,7 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.IAM.Users.Entities;
+using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
@@ -18,6 +19,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using BT.SharedKernel.Extensions;
@@ -29,9 +31,13 @@ internal sealed class RefreshToken(
     IIamUnitOfWork iamUnitOfWork,
     IJwtService jwtService,
     IClaimsService claimsService,
+    ISessionService sessionService,
     IHttpContextAccessor httpContextAccessor,
+    IOptions<JwtSettings> jwtSettings,
     ILogger<RefreshToken> logger) : IRequestHandler<RefreshTokenCommand, AppResponse<RefreshTokenResponse>>
 {
+    private readonly JwtSettings _jwtSettings = jwtSettings.Value;
+
     public async Task<AppResponse<RefreshTokenResponse>> Handle(RefreshTokenCommand command, CancellationToken cancellationToken)
     {
         var request = command.Request;
@@ -65,6 +71,17 @@ internal sealed class RefreshToken(
                 return AppResponse.Failure<RefreshTokenResponse>("User account is not active");
             }
 
+            var sessionId = principal.FindFirstValue("session_id");
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                var sessionValidation = await sessionService.IsSessionValidAsync(sessionId, userId).ConfigureAwait(false);
+                if (!sessionValidation.Successful)
+                {
+                    SecurityLogDefinitions.LogSecurityEvent(logger, "InvalidSessionRefreshAttempt", userId, sessionValidation.Message ?? "Invalid session");
+                    return AppResponse.Failure<RefreshTokenResponse>("Your session is no longer active. Please sign in again.");
+                }
+            }
+
             var storedRefreshToken = await iamUnitOfWork.TokenRepository.GetRefreshTokenAsync(request.RefreshToken, userId).ConfigureAwait(false);
             if (storedRefreshToken == null)
             {
@@ -75,7 +92,13 @@ internal sealed class RefreshToken(
             if (storedRefreshToken.ExpiresAt <= DateTimeOffset.UtcNow)
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "ExpiredRefreshToken", userId, "Expired refresh token used");
-                await iamUnitOfWork.TokenRepository.RevokeRefreshTokenAsync(storedRefreshToken, "Token expired").ConfigureAwait(false);
+                await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+                {
+                    await iamUnitOfWork.TokenRepository.RevokeRefreshTokenAsync(storedRefreshToken, "Token expired").ConfigureAwait(false);
+                    await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+                    return true;
+                }).ConfigureAwait(false);
+
                 return AppResponse.Failure<RefreshTokenResponse>("Refresh token has expired");
             }
 
@@ -88,7 +111,13 @@ internal sealed class RefreshToken(
             if (storedRefreshToken.IsUsed)
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "TokenReuseDetected", userId, "Already used refresh token attempted");
-                await iamUnitOfWork.TokenRepository.RevokeAllUserTokensAsync(userId, "Token reuse detected").ConfigureAwait(false);
+                await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+                {
+                    await iamUnitOfWork.TokenRepository.RevokeAllUserTokensAsync(userId, "Token reuse detected").ConfigureAwait(false);
+                    await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+                    return true;
+                }).ConfigureAwait(false);
+
                 return AppResponse.Failure<RefreshTokenResponse>("Refresh token has already been used");
             }
 
@@ -98,7 +127,8 @@ internal sealed class RefreshToken(
                 return AppResponse.Failure<RefreshTokenResponse>("Token mismatch");
             }
 
-            var userClaims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
+            Guid? activeSessionId = Guid.TryParse(sessionId, out var parsedSessionId) ? parsedSessionId : null;
+            var userClaims = await claimsService.GetUserClaimsAsync(user, activeSessionId).ConfigureAwait(false);
             if (!userClaims.Any())
             {
                 ServiceLogDefinitions.LogFailedToGetUserClaims(logger, userId);
@@ -126,18 +156,23 @@ internal sealed class RefreshToken(
                 return AppResponse.Failure<RefreshTokenResponse>("Could not determine token expiry");
             }
 
-            await iamUnitOfWork.TokenRepository.MarkTokenAsUsedAsync(storedRefreshToken).ConfigureAwait(false);
-
             var newRefreshTokenEntity = BT.Domain.Features.IAM.Users.Entities.RefreshToken.Create(
                 userId,
                 newRefreshTokenResponse,
-                DateTimeOffset.UtcNow.AddMinutes(15),
+                DateTimeOffset.UtcNow.AddHours(_jwtSettings.RefreshTokenExpiryHours),
                 userId,
                 httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString(),
                 storedRefreshToken.TokenFamily);
+            var refreshTokenExpiresAt = newRefreshTokenEntity.ExpiresAt;
 
-            await iamUnitOfWork.TokenRepository.AddRefreshTokenAsync(newRefreshTokenEntity).ConfigureAwait(false);
-            await iamUnitOfWork.TokenRepository.CleanupExpiredTokensAsync(userId).ConfigureAwait(false);
+            await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+            {
+                await iamUnitOfWork.TokenRepository.MarkTokenAsUsedAsync(storedRefreshToken).ConfigureAwait(false);
+                await iamUnitOfWork.TokenRepository.AddRefreshTokenAsync(newRefreshTokenEntity).ConfigureAwait(false);
+                await iamUnitOfWork.TokenRepository.CleanupExpiredTokensAsync(userId).ConfigureAwait(false);
+                await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+                return true;
+            }).ConfigureAwait(false);
 
             user.MarkUpdated(user.Id);
             await userManager.UpdateAsync(user).ConfigureAwait(false);
@@ -172,8 +207,9 @@ internal sealed class RefreshToken(
                 newAccessTokenResponse,
                 newRefreshTokenResponse,
                 userId,
+                sessionId,
                 tokenExpiry,
-                tokenExpiry,
+                refreshTokenExpiresAt,
                 userInfo,
                 userClaims));
         }

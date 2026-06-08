@@ -4,6 +4,9 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.IAM.Users.Entities;
+using BT.Domain.Features.IAM.Menus.Entities;
+using BT.Domain.Features.IAM.Permissions.Entities;
+using BT.Domain.Features.IAM.ReferenceData.Entities;
 using BT.Domain.Shared.Entities;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
@@ -17,7 +20,7 @@ namespace BT.Persistence.Features.IAM.DataContext;
 public class IamDBContext(
     DbContextOptions<IamDBContext> options,
     ILogger<IamDBContext>? logger = null
-) : IdentityDbContext<AppUser, IdentityRole, string>(options)
+) : IdentityDbContext<AppUser, AppRole, string>(options)
 {
     public DbSet<AppUserProfile> AppUserProfiles { get; set; }
     public DbSet<AppUserTotpSecret> AppUserTotpSecrets { get; set; }
@@ -25,6 +28,14 @@ public class IamDBContext(
     public DbSet<AppUserDevice> AppUserDevices { get; set; }
     public DbSet<TempTotpSecret> TempTotpSecrets { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<MenuItem> MenuItems { get; set; }
+    public DbSet<PermissionContext> PermissionContexts { get; set; }
+    public DbSet<PermissionResource> PermissionResources { get; set; }
+    public DbSet<PermissionAction> PermissionActions { get; set; }
+    public DbSet<MenuPlacement> MenuPlacements { get; set; }
+    public DbSet<MenuIcon> MenuIcons { get; set; }
+    public DbSet<MenuRoute> MenuRoutes { get; set; }
 
     private List<IDomainEvent> _collectedDomainEvents = [];
     public IReadOnlyList<IDomainEvent>? GetCollectedDomainEvents() => _collectedDomainEvents?.AsReadOnly();

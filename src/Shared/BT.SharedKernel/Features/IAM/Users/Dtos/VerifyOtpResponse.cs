@@ -5,6 +5,7 @@ public record VerifyOtpResponse(
     string Token, 
     string RefreshToken, 
     string UserId, 
+    string? SessionId,
     bool IsAuthenticated, 
     DateTimeOffset ExpiresAt, 
     AppUserResponse UserInfo, 

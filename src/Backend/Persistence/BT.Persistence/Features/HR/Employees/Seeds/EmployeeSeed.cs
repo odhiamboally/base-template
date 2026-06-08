@@ -66,7 +66,8 @@ public static class EmployeeSeed
 
             var email = $"{firstName}.{lastName}.{index + 1}@basetemplate.local".ToLowerInvariant();
             var idNumber = faker.Random.ReplaceNumbers("########");
-            var phone = $"+2547{faker.Random.ReplaceNumbers("########")}";
+            var phoneNationalNumber = $"7{faker.Random.ReplaceNumbers("########")}";
+            var phoneNumber = $"+254{phoneNationalNumber}";
 
             return CreateSeedEmployee(
                 bp.Id,
@@ -75,7 +76,9 @@ public static class EmployeeSeed
                 firstName,
                 lastName,
                 idNumber,
-                phone,
+                "+254",
+                phoneNationalNumber,
+                phoneNumber,
                 bp.DepartmentId,
                 bp.ManagerId,
                 "System",
@@ -99,6 +102,8 @@ public static class EmployeeSeed
         string firstName,
         string lastName,
         string idNumber,
+        string countryCode,
+        string phoneNationalNumber,
         string phoneNumber,
         Guid departmentId,
         Guid managerId,
@@ -115,6 +120,8 @@ public static class EmployeeSeed
             firstName,
             lastName,
             idNumber,
+            countryCode,
+            phoneNationalNumber,
             phoneNumber,
             departmentId,
             managerId,

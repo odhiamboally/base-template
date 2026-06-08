@@ -1,0 +1,15 @@
+namespace BT.SharedKernel.Features.IAM.Menus.Dtos;
+
+public sealed record MenuResponse(
+    Guid Id,
+    Guid? ParentId,
+    Guid? DepartmentId,
+    string Key,
+    string Title,
+    string Description,
+    string Url,
+    string Icon,
+    string Placement,
+    string? RequiredPermissionKey,
+    bool IsActive,
+    IReadOnlyList<MenuResponse> Children);

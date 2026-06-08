@@ -5,7 +5,7 @@ using System.Text;
 
 namespace BT.Domain.Shared.Contracts.Common; 
 
-public interface IIntegrationEvent
+public interface IIntegrationEvent : INotification
 {
     DateTimeOffset OccurredAt { get; }
 }

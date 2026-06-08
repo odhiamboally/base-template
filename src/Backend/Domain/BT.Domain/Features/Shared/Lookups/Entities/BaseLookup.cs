@@ -53,11 +53,19 @@ public abstract class BaseLookup : ISoftDeletable
 
     public void MarkAsDeleted(string deletedBy)
     {
-        ArgumentNullException.ThrowIfNull(deletedBy);
+        ArgumentException.ThrowIfNullOrWhiteSpace(deletedBy);
         IsDeleted = true;
         DeletedAt = DateTimeOffset.UtcNow;
         DeletedBy = deletedBy;
+    }
 
+    public void Update(string code, string description, int displayOrder)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+        ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
+        Code = code.Trim();
+        Description = description.Trim();
+        DisplayOrder = displayOrder;
     }
 }

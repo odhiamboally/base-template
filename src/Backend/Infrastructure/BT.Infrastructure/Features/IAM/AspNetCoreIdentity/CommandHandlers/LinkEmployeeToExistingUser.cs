@@ -4,6 +4,7 @@ using BT.Application.Features.HR.Employees.Mappings;
 using BT.Application.Features.IAM.Users.Mappings;
 using BT.Application.Features.Shared.EmailTemplates.Mappings;
 using BT.Application.Features.IAM.Users.Commands;
+using BT.Application.Features.HR.Employees.Contracts.Interfaces;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;
@@ -14,13 +15,17 @@ using BT.Domain.Features.IAM.Users.Entities;
 using BT.Domain.Features.IAM.Users.Enums;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Employees.Dtos;
+using BT.SharedKernel.Features.Shared.Phone;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
-internal sealed class LinkEmployeeToExistingUser(IHrUnitOfWork hrUnitOfWork, UserManager<AppUser> userManager)
+internal sealed class LinkEmployeeToExistingUser(
+    IHrUnitOfWork hrUnitOfWork,
+    UserManager<AppUser> userManager,
+    IEmployeeNumberGenerator employeeNumberGenerator)
     : IRequestHandler<LinkEmployeeToExistingUserCommand, AppResponse<EmployeeResponse>>
 {
     public async Task<AppResponse<EmployeeResponse>> Handle(LinkEmployeeToExistingUserCommand command, CancellationToken ct)
@@ -40,15 +45,23 @@ internal sealed class LinkEmployeeToExistingUser(IHrUnitOfWork hrUnitOfWork, Use
             return AppResponse.Failure<EmployeeResponse>("This user already has an employee record linked.");
         }
 
+        var employeeNumber = await employeeNumberGenerator.GenerateAsync(command.EmployeeDetails.DepartmentId, ct).ConfigureAwait(false);
+        var phone = PhoneNumberFormatter.Normalize(
+            command.EmployeeDetails.CountryCode,
+            command.EmployeeDetails.PhoneNationalNumber,
+            command.EmployeeDetails.PhoneNumber);
+
         var employee = Employee.Create(
-            command.EmployeeDetails.Number,
+            employeeNumber,
             command.EmployeeDetails.Email,
             existingUser.FirstName,
             existingUser.LastName,
             command.NationalId,
-            command.EmployeeDetails.PhoneNumber,
+            phone.CountryCode,
+            phone.NationalNumber,
+            phone.E164,
             command.EmployeeDetails.DepartmentId,
-            command.EmployeeDetails.ManagerId ?? Guid.Empty,
+            command.EmployeeDetails.ManagerId,
             command.CreatedBy);
 
         await hrUnitOfWork.ExecuteInTransactionAsync(async () =>

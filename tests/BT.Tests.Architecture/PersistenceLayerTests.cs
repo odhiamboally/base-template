@@ -1,3 +1,4 @@
+using BT.Domain.Shared.Contracts.Common;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using NetArchTest.Rules;
@@ -73,17 +74,7 @@ public sealed class PersistenceLayerTests
             .SelectMany(GetConfiguredEntityTypes)
             .ToHashSet();
 
-        var dbSetEntityTypes = Types.InAssembly(AssemblyReferences.Persistence)
-            .That()
-            .Inherit(typeof(DbContext))
-            .GetTypes()
-            .SelectMany(t => t.GetProperties(System.Reflection.BindingFlags.Instance |
-                                             System.Reflection.BindingFlags.Public |
-                                             System.Reflection.BindingFlags.DeclaredOnly))
-            .Where(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
-            .Select(p => p.PropertyType.GetGenericArguments()[0])
-            .Distinct()
-            .ToList();
+        var dbSetEntityTypes = GetDeclaredDbSetEntityTypes();
 
         var missingConfigurations = dbSetEntityTypes
             .Where(t => !configuredEntityTypes.Contains(t))
@@ -94,6 +85,32 @@ public sealed class PersistenceLayerTests
             because: "DbSet entities should have explicit IEntityTypeConfiguration<T> mappings. Missing: {0}",
             string.Join(", ", missingConfigurations));
     }
+
+    [Fact]
+    public void Declared_DbSet_Entities_Should_Support_Soft_Delete()
+    {
+        var hardDeleteOnlyEntities = GetDeclaredDbSetEntityTypes()
+            .Where(t => !typeof(ISoftDeletable).IsAssignableFrom(t))
+            .Select(t => t.FullName)
+            .ToList();
+
+        hardDeleteOnlyEntities.Should().BeEmpty(
+            because: "persisted bounded-context entities should support soft delete by default. Missing: {0}",
+            string.Join(", ", hardDeleteOnlyEntities));
+    }
+
+    private static List<Type> GetDeclaredDbSetEntityTypes() =>
+        Types.InAssembly(AssemblyReferences.Persistence)
+            .That()
+            .Inherit(typeof(DbContext))
+            .GetTypes()
+            .SelectMany(t => t.GetProperties(System.Reflection.BindingFlags.Instance |
+                                             System.Reflection.BindingFlags.Public |
+                                             System.Reflection.BindingFlags.DeclaredOnly))
+            .Where(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
+            .Select(p => p.PropertyType.GetGenericArguments()[0])
+            .Distinct()
+            .ToList();
 
     private static IEnumerable<Type> GetConfiguredEntityTypes(Type configurationType)
     {

@@ -1,0 +1,46 @@
+using BT.Application.Features.IAM.Users.Commands;
+using BT.Domain.Features.IAM.Users.Entities;
+using BT.Infrastructure.Logging;
+using BT.SharedKernel.Dtos.Common;
+using MediatR;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
+
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
+
+internal sealed class DeactivateAdminUser(UserManager<AppUser> userManager, ILogger<DeactivateAdminUser> logger)
+    : IRequestHandler<DeactivateAdminUserCommand, AppResponse<bool>>
+{
+    public async Task<AppResponse<bool>> Handle(DeactivateAdminUserCommand command, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var user = await userManager.FindByIdAsync(command.UserId).ConfigureAwait(false);
+            if (user is null)
+            {
+                return AppResponse.Failure<bool>("User not found.");
+            }
+
+            if (!user.IsActive)
+            {
+                return AppResponse.Success("User is already inactive.", true);
+            }
+
+            var reason = string.IsNullOrWhiteSpace(command.Request.Reason)
+                ? "Deactivated by administrator"
+                : command.Request.Reason.Trim();
+
+            user.RevokeAccess(command.DeactivatedBy, reason);
+            var result = await userManager.UpdateAsync(user).ConfigureAwait(false);
+
+            return result.Succeeded
+                ? AppResponse.Success("User deactivated.", true)
+                : AppResponse.Failure<bool>(string.Join(", ", result.Errors.Select(static error => error.Description)));
+        }
+        catch (Exception ex)
+        {
+            ServiceLogDefinitions.LogDeactivateUserError(logger, command.UserId, ex);
+            throw;
+        }
+    }
+}

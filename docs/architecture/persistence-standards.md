@@ -1,0 +1,150 @@
+# Persistence Standards
+
+> Last updated: 2026-06-01
+>
+> This document defines how BaseTemplate uses EF Core, repositories, Unit of Work, soft delete, and feature-bound persistence code.
+
+---
+
+## 1. Decision
+
+BaseTemplate keeps the repository and Unit of Work pattern on top of EF Core.
+
+EF Core already implements many repository-like and unit-of-work mechanics through `DbSet<T>` and `DbContext`, but the template still uses explicit repositories because they give us:
+
+- A stable persistence boundary per bounded context.
+- A consistent place for soft delete, specifications, paging, and query conventions.
+- A domain/application-facing abstraction that avoids leaking EF Core everywhere.
+- Cleaner feature slices: Application depends on feature contracts, Persistence provides implementations.
+- A future seam if a feature needs read models, stored procedures, external stores, or specialized persistence.
+
+The rule is not "create custom repository methods for everything." The rule is "use the generic repository by default, and add feature-specific repository behavior only when it earns its place."
+
+---
+
+## 2. Generic Repository Responsibilities
+
+`IRepository<T>` and `Repository<T>` own common persistence operations:
+
+- Create.
+- Update.
+- Hard delete where explicitly intended.
+- Soft delete for entities implementing `ISoftDeletable`.
+- Find by id.
+- Find by condition.
+- Count.
+- Specification-based search.
+- Batch update where needed.
+
+If a feature operation can be handled cleanly by these methods plus a specification/query handler, do not duplicate it in the concrete repository.
+
+---
+
+## 3. Concrete Repository Responsibilities
+
+Concrete repositories should be feature-bound and usually thin:
+
+```csharp
+internal sealed class HrEmployeeRepository(HrDBContext context)
+    : Repository<Employee>(context), IEmployeeRepository
+{
+}
+```
+
+This is the preferred shape for normal aggregate repositories such as Customers, Employees, Email Templates, and Failed Messages.
+
+Concrete repositories may add methods only for persistence concerns that the generic repository cannot express cleanly.
+
+Allowed reasons include:
+
+- Aggregate-specific queries with required includes, ordering, or filters.
+- Security/session/token lifecycle queries.
+- Cross-table routing where the entity type is selected at runtime.
+- Bulk operations that must be executed consistently within a bounded context.
+- Persistence-specific cleanup or maintenance operations.
+- Queries that would otherwise force EF Core details into Application handlers.
+
+Not allowed:
+
+- Repeating generic `Create`, `Update`, `Delete`, `FindById`, or `Search` methods per entity.
+- Moving business orchestration into repositories.
+- Calling repositories from controllers directly.
+- Injecting `DbContext` into Application handlers.
+- Creating a concrete repository just to rename generic operations.
+
+---
+
+## 4. Unit Of Work Boundary
+
+The Unit of Work should coordinate `SaveChangesAsync`.
+
+Repositories should normally stage changes only. They should not call `SaveChangesAsync` inside ordinary create, update, revoke, or delete methods unless the method is intentionally an atomic persistence operation and the exception is documented.
+
+Preferred flow:
+
+1. Application command handler calls repository methods.
+2. Repository stages changes on the correct context.
+3. Unit of Work commits once.
+4. Transaction/pipeline behavior owns cross-operation consistency where applicable.
+
+This keeps command handlers predictable and prevents partial commits inside a larger workflow.
+
+---
+
+## 5. Query And Search Pattern
+
+For list screens and searchable APIs:
+
+- Prefer request DTOs for search/filter/page inputs.
+- Prefer specification objects or focused query handlers for reusable query rules.
+- Keep UI services thin and API-backed.
+- Keep filter names business-friendly, not database-shaped.
+- Use `Any` for existence checks rather than `Count > 0`.
+
+The Customer list is the current UI/API reference flow for search, filters, pagination, table actions, dialogs, and confirmation flows.
+
+---
+
+## 6. Soft Delete Standard
+
+Entities that represent business data or audit-relevant records should support soft delete unless there is a clear reason not to.
+
+Soft-deleteable entities should:
+
+- Implement `ISoftDeletable`.
+- Have EF query filters excluding deleted records by default.
+- Use repository `SoftDeleteAsync` or aggregate methods such as `MarkAsDeleted`.
+- Preserve hard delete only for explicit purge/retention scenarios.
+
+Delete actions exposed to users should normally be soft deletes.
+
+---
+
+## 7. Accepted Exceptions
+
+Some repositories are expected to be less thin because their persistence behavior is not generic.
+
+Current accepted examples:
+
+- `SharedLookupRepository`: routes a runtime `LookupType` to separate lookup tables and creates the correct concrete lookup entity.
+- IAM token/session/TOTP repositories: contain security lifecycle queries such as active tokens, active sessions, expired secrets, revocation, and cleanup.
+- Profile upsert repository methods: centralize persistence-specific "create or update by user id" behavior.
+
+Even for accepted exceptions, the repository should still avoid unnecessary `SaveChangesAsync` calls and avoid business orchestration.
+
+---
+
+## 8. Review Checklist
+
+When adding or reviewing a repository, check:
+
+- Does the feature already get what it needs from `IRepository<T>`?
+- Is this concrete repository method truly persistence-specific?
+- Could this be a specification/query handler instead?
+- Does it avoid duplicating generic CRUD?
+- Does it avoid business orchestration?
+- Does it respect soft delete and query filters?
+- Does it avoid committing changes before the Unit of Work?
+- Is the repository placed under the correct feature folder?
+
+If the answer is unclear, start with the generic repository and add a concrete method only when the use case proves it needs one.

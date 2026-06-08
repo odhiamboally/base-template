@@ -15,6 +15,6 @@ public sealed record CreateAppUserCommand(CreateAppUserRequest Request, string U
 {
     public IReadOnlyList<string> DirectInvalidationKeys => [];
     
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("appusers", UserId)];
+    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("iam-admin")];
 } 
     

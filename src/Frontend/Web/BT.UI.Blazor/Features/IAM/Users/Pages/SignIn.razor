@@ -1,0 +1,146 @@
+@page "/"
+@page "/iam/sign-in"
+@layout AuthLayout
+@rendermode InteractiveServer
+@using BT.SharedKernel.Features.IAM.Users.Dtos
+@inject IAuthSession AuthSession
+@inject NavigationManager Navigation
+@inject ILogger<SignIn> Logger
+@inject ISnackbar Snackbar
+
+<PageTitle>Sign in | Base Template</PageTitle>
+
+<section class="auth-shell">
+    <div class="auth-copy">
+        <span class="eyebrow">Identity and access</span>
+        <h1>Sign in to the operations console.</h1>
+        <p>
+            This flow talks to the API, stores protected tokens in browser storage, and keeps the UI independent from backend Application internals.
+        </p>
+        <div class="auth-proof">
+            <span>Production path</span>
+            <strong>UI → API → Application → Domain → Persistence</strong>
+        </div>
+    </div>
+
+    <div class="auth-card">
+        <EditForm Model="_form" OnValidSubmit="SignInAsync">
+            <DataAnnotationsValidator />
+
+            <div class="form-stack">
+                <div>
+                    <label for="username">Username or email</label>
+                    <InputText id="username" class="form-control form-control-lg" @bind-Value="_form.UserName" autocomplete="username" />
+                    <ValidationMessage For="@(() => _form.UserName)" />
+                </div>
+
+                <div>
+                    <label for="password">Password</label>
+                    <InputText id="password" type="password" class="form-control form-control-lg" @bind-Value="_form.Password" autocomplete="current-password" />
+                    <ValidationMessage For="@(() => _form.Password)" />
+                </div>
+
+                <label class="remember-row">
+                    <InputCheckbox @bind-Value="_form.RememberMe" />
+                    <span>Keep me signed in on this device</span>
+                </label>
+
+                @if (!string.IsNullOrWhiteSpace(_message))
+                {
+                    <div class="alert @(_isError ? "alert-danger" : "alert-success")" role="alert">@_message</div>
+                }
+
+                <button class="btn btn-bt-primary btn-lg" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Signing in..." : "Sign in")
+                </button>
+            </div>
+        </EditForm>
+
+        <div class="dev-hint">
+            <span>Local development admin</span>
+            <code>admin@basetemplate.local</code>
+        </div>
+    </div>
+</section>
+
+@code {
+    private SignInFormModel _form = new();
+    private bool _isBusy;
+    private bool _isError;
+    private string? _message;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await AuthSession.InitializeAsync();
+        if (AuthSession.IsAuthenticated)
+        {
+            Navigation.NavigateTo(AuthSession.MfaEnrollmentRequired ? "/iam/security" : "/dashboard");
+        }
+    }
+
+    private async Task SignInAsync()
+    {
+        _isBusy = true;
+        _message = null;
+        _isError = false;
+
+        try
+        {
+            var request = new PasswordLoginRequest(_form.UserName, _form.Password, _form.RememberMe, _form.ReturnUrl, "blazor-server");
+            var response = await AuthSession.SignInAsync(request);
+
+            if (!response.Successful || response.Data is null)
+            {
+                _isError = true;
+                _message = GetDisplayMessage(response.Message, "We could not sign you in. Please check your username and password.");
+                Snackbar.Add(_message, Severity.Error);
+                return;
+            }
+
+            if (response.Data.Requires2FA)
+            {
+                Navigation.NavigateTo($"/iam/verify-2fa?userId={Uri.EscapeDataString(response.Data.UserId)}");
+                return;
+            }
+
+            if (!AuthSession.IsAuthenticated)
+            {
+                _isError = true;
+                _message = GetDisplayMessage(
+                    AuthSession.LastError,
+                    "Sign in succeeded, but we could not load your profile. Please confirm the API is running and try again.");
+                Snackbar.Add(_message, Severity.Warning);
+                return;
+            }
+
+            Navigation.NavigateTo("/dashboard");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error while signing in.");
+            _isError = true;
+            _message = "Something went wrong while signing you in. Please try again. If this continues, check the UI logs for the sign-in error.";
+            Snackbar.Add(_message, Severity.Error);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private static string GetDisplayMessage(string? message, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(message)
+            || string.Equals(message, "Operation Successful", StringComparison.OrdinalIgnoreCase))
+        {
+            return fallback;
+        }
+
+        return message;
+    }
+}

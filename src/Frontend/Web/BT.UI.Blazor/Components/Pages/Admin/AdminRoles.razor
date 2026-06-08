@@ -1,0 +1,224 @@
+@page "/admin/roles"
+@rendermode InteractiveServer
+@using BT.SharedKernel.Features.IAM.Users.Dtos
+@inject IAuthSession AuthSession
+@inject IIamAdminService IamAdminService
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Roles | Base Template</PageTitle>
+
+<section class="dashboard-page">
+    <div class="dashboard-hero compact-hero">
+        <div>
+            <span class="eyebrow">Administration</span>
+            <h1>Roles.</h1>
+            <p>Role definitions and assignment counts are loaded from ASP.NET Core Identity.</p>
+        </div>
+        @if (AuthSession.HasPermission("roles.create"))
+        {
+            <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.AddModerator" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenRoleDialogAsync(null))">Create role</MudButton>
+        }
+    </div>
+
+    <MudPaper Class="poc-panel" Elevation="0">
+        <div class="panel-heading">
+            <div>
+                <span class="eyebrow">Role list</span>
+                <h2>Platform roles</h2>
+            </div>
+            <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
+        </div>
+
+        <div class="list-toolbar">
+            <MudTextField @bind-Value="_searchText"
+                          Placeholder="Search role name..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Margin="Margin.Dense"
+                          Variant="Variant.Outlined"
+                          Immediate="true" />
+        </div>
+
+        @if (_isLoading)
+        {
+            <MudProgressLinear Color="Color.Success" Indeterminate="true" Class="my-2" />
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true" Class="my-2">@_message</MudAlert>
+        }
+
+        <div class="bt-table-scroll">
+            <MudTable Items="FilteredRoles" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="50" Height="calc(100vh - 24rem)" Style="min-width: 760px;" Breakpoint="Breakpoint.None">
+                <HeaderContent>
+                    <MudTh>Role</MudTh>
+                    <MudTh>Scope</MudTh>
+                    <MudTh>Normalized</MudTh>
+                    <MudTh>Users</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Role">@context.Name</MudTd>
+                    <MudTd DataLabel="Scope">@context.DepartmentName</MudTd>
+                    <MudTd DataLabel="Normalized">@context.NormalizedName</MudTd>
+                    <MudTd DataLabel="Users">@context.UserCount</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info">Identity</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <TableRowActions OnView="@(() => ShowRoleSummary(context))"
+                                         OnEdit="@(() => OpenRoleDialogAsync(context))"
+                                         OnDelete="@(() => ConfirmDeleteRoleAsync(context))"
+                                         CanView="@AuthSession.HasPermission("roles.view")"
+                                         CanEdit="@AuthSession.HasPermission("roles.edit")"
+                                         CanDelete="@AuthSession.HasPermission("roles.delete")"
+                                         ExtraActions="@RoleExtraActions"
+                                         OnExtraAction="@((action) => HandleRoleActionAsync(context, action))" />
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
+                </NoRecordsContent>
+            </MudTable>
+        </div>
+    </MudPaper>
+</section>
+
+@code {
+    private readonly List<AdminRoleListResponse> _roles = [];
+    private bool _isLoading = true;
+    private string? _message;
+    private string? _searchText;
+
+    private string StatusLabel => _isLoading ? "Loading" : $"{FilteredRoles.Count} shown";
+
+    private IReadOnlyList<AdminRoleListResponse> FilteredRoles =>
+        string.IsNullOrWhiteSpace(_searchText)
+            ? _roles
+            : [.. _roles.Where(role => role.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                || role.NormalizedName.Contains(_searchText, StringComparison.OrdinalIgnoreCase))];
+
+    private IReadOnlyList<string> RoleExtraActions =>
+        AuthSession.HasPermission("roles.manage_permissions")
+            ? ["Manage permissions", "Review assignments"]
+            : ["Review assignments"];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await AuthSession.InitializeAsync();
+        if (!AuthSession.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/iam/sign-in");
+            return;
+        }
+
+        await LoadRolesAsync();
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        _isLoading = true;
+        _message = null;
+        StateHasChanged();
+
+        var response = await IamAdminService.GetRolesAsync();
+        if (!response.Successful || response.Data is null)
+        {
+            _message = response.Message ?? "We could not load roles.";
+            Snackbar.Add(_message, Severity.Error);
+            _isLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        _roles.Clear();
+        _roles.AddRange(response.Data);
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenRoleDialogAsync(AdminRoleListResponse? role)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(RoleFormDialog.ExistingRole), role }
+        };
+
+        var dialog = await DialogService.ShowAsync<RoleFormDialog>(
+            role is null ? "Create Role" : $"Edit - {role.Name}",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true, BackdropClick = false });
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            await LoadRolesAsync();
+        }
+    }
+
+    private void ShowRoleSummary(AdminRoleListResponse role)
+        => Snackbar.Add($"Role: {role.Name}. Users: {role.UserCount}", Severity.Info);
+
+    private async Task HandleRoleActionAsync(AdminRoleListResponse role, string action)
+    {
+        if (action.Equals("Manage permissions", StringComparison.OrdinalIgnoreCase))
+        {
+            await OpenRolePermissionsDialogAsync(role);
+            return;
+        }
+
+        Snackbar.Add($"Role {role.Name} currently has {role.UserCount} user assignment(s).", Severity.Info);
+    }
+
+    private async Task OpenRolePermissionsDialogAsync(AdminRoleListResponse role)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(RolePermissionsDialog.Role), role }
+        };
+
+        await DialogService.ShowAsync<RolePermissionsDialog>(
+            $"Permissions - {role.Name}",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true, BackdropClick = false });
+    }
+
+    private async Task ConfirmDeleteRoleAsync(AdminRoleListResponse role)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDialog.Message), $"Delete role {role.Name}? This will only proceed if no users or permission claims are assigned." },
+            { nameof(ConfirmDialog.ConfirmText), "Delete" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(
+            "Confirm Role Delete",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true });
+
+        var result = await dialog.Result;
+        if (result is not { Canceled: false })
+        {
+            return;
+        }
+
+        var response = await IamAdminService.DeleteRoleAsync(role.Id);
+        if (!response.Successful)
+        {
+            Snackbar.Add(response.Message ?? "Role delete failed.", Severity.Warning);
+            return;
+        }
+
+        Snackbar.Add("Role deleted.", Severity.Success);
+        await LoadRolesAsync();
+    }
+}

@@ -1,0 +1,210 @@
+@page "/iam/security"
+@rendermode InteractiveServer
+@inject IAuthSession AuthSession
+@inject IAuthService AuthService
+@inject IAuthenticatorQrCodeService QrCodeService
+@inject NavigationManager Navigation
+
+<PageTitle>Security | Base Template</PageTitle>
+
+<RequireAuthenticated>
+    <section class="security-page">
+        <div class="security-hero">
+            <div>
+                <span class="eyebrow">Account security</span>
+                <h1>@DisplayName</h1>
+                <p>@AuthSession.CurrentUser?.Email</p>
+            </div>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Logout" OnClick="SignOutAsync">Sign out</MudButton>
+        </div>
+
+        <div class="security-grid">
+            <article class="security-card">
+                <div class="card-heading">
+                    <span>Two-factor authentication</span>
+                    <strong class="@(_otpStatus?.IsEnabled == true ? "status-good" : "status-warn")">
+                        @(_otpStatus?.IsEnabled == true ? "Enabled" : "Action needed")
+                    </strong>
+                </div>
+                <p>
+                    Authenticator-app TOTP is the preferred base-template flow because it works with Microsoft Authenticator,
+                    Google Authenticator, 1Password, and similar enterprise password managers.
+                </p>
+
+                @if (_otpStatus is null)
+                {
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">2FA status will load once the profile is confirmed.</MudAlert>
+                }
+                else
+                {
+                    <dl class="status-list">
+                        <div>
+                            <dt>Provider</dt>
+                            <dd>@_otpStatus.DisplayName</dd>
+                        </div>
+                        <div>
+                            <dt>Configured</dt>
+                            <dd>@(_otpStatus.IsConfigured ? "Yes" : "No")</dd>
+                        </div>
+                    </dl>
+                }
+
+                <MudButton Variant="Variant.Filled" Class="bt-mud-primary" OnClick="StartTotpSetupAsync" Disabled="@_isBusy">
+                    @(_setupInfo is null ? "Set up authenticator app" : "Regenerate setup code")
+                </MudButton>
+            </article>
+
+            <article class="security-card setup-card">
+                <div class="card-heading">
+                    <span>Authenticator setup</span>
+                    <strong>30-minute setup window</strong>
+                </div>
+
+                @if (_setupInfo is null)
+                {
+                    <p>Start setup to generate a temporary TOTP secret. The secret is only committed after a valid code is verified.</p>
+                }
+                else
+                {
+                    <p>Add this account to your authenticator app, then verify the first generated code below.</p>
+
+                    <div class="qr-panel">
+                        <img src="@_qrCodeDataUri" alt="Authenticator app QR code" />
+                        <span>Scan with Microsoft Authenticator, Google Authenticator, 1Password, or another TOTP app.</span>
+                    </div>
+
+                    <label>Manual entry key</label>
+                    <div class="copy-box">@_setupInfo.ManualEntryKey</div>
+
+                    <EditForm Model="_verification" OnValidSubmit="VerifySetupAsync">
+                        <DataAnnotationsValidator />
+                        <div class="form-stack mt-3">
+                            <div>
+                                <label for="setup-code">6-digit code</label>
+                                <InputText id="setup-code" class="form-control form-control-lg otp-input" @bind-Value="_verification.Code" inputmode="numeric" autocomplete="one-time-code" />
+                                <ValidationMessage For="@(() => _verification.Code)" />
+                            </div>
+
+                            <MudButton Variant="Variant.Filled" Class="bt-mud-primary" ButtonType="ButtonType.Submit" Disabled="@_isBusy">
+                                @(_isBusy ? "Verifying..." : "Verify and enable 2FA")
+                            </MudButton>
+                        </div>
+                    </EditForm>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_message))
+                {
+                    <MudAlert Severity="@(_isError ? Severity.Error : Severity.Success)" Variant="Variant.Outlined" Class="mt-3">@_message</MudAlert>
+                }
+            </article>
+        </div>
+    </section>
+</RequireAuthenticated>
+
+@code {
+    private bool _isBusy;
+    private bool _isError;
+    private string? _message;
+    private string? _qrCodeDataUri;
+    private BT.SharedKernel.Features.IAM.Users.Dtos.OtpStatusResponse? _otpStatus;
+    private BT.SharedKernel.Features.IAM.Users.Dtos.TwoFactorSetupInfo? _setupInfo;
+    private readonly TotpVerificationModel _verification = new();
+
+    private string DisplayName
+    {
+        get
+        {
+            var fullName = $"{AuthSession.CurrentUser?.FirstName} {AuthSession.CurrentUser?.LastName}".Trim();
+            return string.IsNullOrWhiteSpace(fullName) ? AuthSession.CurrentUser?.Email ?? "Signed-in user" : fullName;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !AuthSession.IsAuthenticated || AuthSession.CurrentUser is null || _otpStatus is not null)
+        {
+            return;
+        }
+
+        _verification.UserId = AuthSession.CurrentUser.AppUserId;
+        await LoadOtpStatusAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadOtpStatusAsync()
+    {
+        if (AuthSession.CurrentUser is null)
+        {
+            return;
+        }
+
+        var status = await AuthService.GetTotpStatusAsync(AuthSession.CurrentUser.AppUserId);
+        if (status.Successful)
+        {
+            _otpStatus = status.Data;
+        }
+    }
+
+    private async Task StartTotpSetupAsync()
+    {
+        _isBusy = true;
+        _isError = false;
+        _message = null;
+
+        var response = await AuthService.InitiateTotpSetupAsync();
+        _isBusy = false;
+
+        if (!response.Successful || response.Data is null)
+        {
+            _isError = true;
+            _message = response.Message ?? "Could not start two-factor setup.";
+            return;
+        }
+
+        _setupInfo = response.Data;
+        _qrCodeDataUri = QrCodeService.GenerateDataUri(response.Data.QrCodeUri);
+        _message = "Temporary authenticator secret generated. Verify a code to enable 2FA.";
+    }
+
+    private async Task VerifySetupAsync()
+    {
+        if (AuthSession.CurrentUser is null)
+        {
+            Navigation.NavigateTo("/iam/sign-in");
+            return;
+        }
+
+        _isBusy = true;
+        _isError = false;
+        _message = null;
+
+        var response = await AuthSession.CompleteTwoFactorAsync(new BT.SharedKernel.Features.IAM.Users.Dtos.VerifyOtpRequest
+        {
+            UserId = AuthSession.CurrentUser.AppUserId,
+            Code = _verification.Code,
+            RememberMe = false,
+            RememberDevice = true,
+            DeviceFingerprint = _verification.DeviceFingerprint
+        });
+
+        _isBusy = false;
+
+        if (!response.Successful)
+        {
+            _isError = true;
+            _message = response.Message ?? "Could not enable two-factor authentication.";
+            return;
+        }
+
+        _message = "Two-factor authentication is now enabled for this account.";
+        _setupInfo = null;
+        _qrCodeDataUri = null;
+        await LoadOtpStatusAsync();
+    }
+
+    private async Task SignOutAsync()
+    {
+        await AuthSession.SignOutAsync();
+        Navigation.NavigateTo("/iam/sign-in");
+    }
+}

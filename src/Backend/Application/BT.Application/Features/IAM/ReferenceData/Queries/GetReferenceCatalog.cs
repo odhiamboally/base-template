@@ -1,0 +1,84 @@
+using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Utilities;
+using BT.Domain.Features.IAM.Contracts;
+using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Features.IAM.ReferenceData.Dtos;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace BT.Application.Features.IAM.ReferenceData.Queries;
+
+public sealed record GetReferenceCatalogQuery(string CatalogType)
+    : IRequest<AppResponse<IReadOnlyList<ReferenceCatalogItemResponse>>>, ICachableRequest
+{
+    public string CacheGroup => "iam-reference-data";
+    public string Discriminator => CacheKeys.Discriminator(new { CatalogType });
+    public string? CacheUserId => null;
+    public bool IsVersioned => true;
+}
+
+internal sealed class GetReferenceCatalogQueryHandler(IIamUnitOfWork unitOfWork, ILogger<GetReferenceCatalogQueryHandler> logger)
+    : IRequestHandler<GetReferenceCatalogQuery, AppResponse<IReadOnlyList<ReferenceCatalogItemResponse>>>
+{
+    public async Task<AppResponse<IReadOnlyList<ReferenceCatalogItemResponse>>> Handle(GetReferenceCatalogQuery query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!ReferenceCatalogTypes.All.Contains(query.CatalogType))
+            {
+                return AppResponse.Failure<IReadOnlyList<ReferenceCatalogItemResponse>>($"Catalog '{query.CatalogType}' is not supported.");
+            }
+
+            IReadOnlyList<ReferenceCatalogItemResponse> items = query.CatalogType.ToLowerInvariant() switch
+            {
+                ReferenceCatalogTypes.PermissionContexts => await unitOfWork.PermissionContextRepository.FindAll()
+                    .OrderBy(static item => item.Label)
+                    .Select(item => new ReferenceCatalogItemResponse(item.Id, ReferenceCatalogTypes.PermissionContexts, item.Key, item.Label, item.Description, null, null, item.IsActive))
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false),
+
+                ReferenceCatalogTypes.PermissionResources => await unitOfWork.PermissionResourceRepository.FindAll()
+                    .OrderBy(static item => item.ContextKey)
+                    .ThenBy(static item => item.Label)
+                    .Select(item => new ReferenceCatalogItemResponse(item.Id, ReferenceCatalogTypes.PermissionResources, item.Key, item.Label, item.Description, item.ContextKey, null, item.IsActive))
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false),
+
+                ReferenceCatalogTypes.PermissionActions => await unitOfWork.PermissionActionRepository.FindAll()
+                    .OrderBy(static item => item.Label)
+                    .Select(item => new ReferenceCatalogItemResponse(item.Id, ReferenceCatalogTypes.PermissionActions, item.Key, item.Label, item.Description, null, null, item.IsActive))
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false),
+
+                ReferenceCatalogTypes.MenuPlacements => await unitOfWork.MenuPlacementRepository.FindAll()
+                    .OrderBy(static item => item.Label)
+                    .Select(item => new ReferenceCatalogItemResponse(item.Id, ReferenceCatalogTypes.MenuPlacements, item.Key, item.Label, item.Description, null, null, item.IsActive))
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false),
+
+                ReferenceCatalogTypes.MenuIcons => await unitOfWork.MenuIconRepository.FindAll()
+                    .OrderBy(static item => item.Label)
+                    .Select(item => new ReferenceCatalogItemResponse(item.Id, ReferenceCatalogTypes.MenuIcons, item.Key, item.Label, item.Description, null, null, item.IsActive))
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false),
+
+                ReferenceCatalogTypes.MenuRoutes => await unitOfWork.MenuRouteRepository.FindAll()
+                    .OrderBy(static item => item.PlacementKey)
+                    .ThenBy(static item => item.Label)
+                    .Select(item => new ReferenceCatalogItemResponse(item.Id, ReferenceCatalogTypes.MenuRoutes, item.Key, item.Label, item.Description, item.PlacementKey, item.Url, item.IsActive))
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false),
+
+                _ => []
+            };
+
+            return AppResponse.Success("Reference catalog loaded.", items);
+        }
+        catch (Exception ex)
+        {
+            LogDefinitions.LogPipelineException(logger, nameof(GetReferenceCatalogQueryHandler), ex);
+            throw;
+        }
+    }
+}

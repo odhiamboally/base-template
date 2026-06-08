@@ -4,6 +4,7 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.Banking.Customers.Entities;
+using BT.Domain.Features.HR.Employees.Entities;
 using BT.Domain.Shared.Entities;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
@@ -47,6 +48,9 @@ public class BankingDBContext(
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(BankingDBContext).Assembly,
             type => type.Namespace?.StartsWith("BT.Persistence.Features.Banking", StringComparison.Ordinal) == true);
+
+        modelBuilder.Entity<Employee>()
+            .ToTable("Employees", table => table.ExcludeFromMigrations());
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

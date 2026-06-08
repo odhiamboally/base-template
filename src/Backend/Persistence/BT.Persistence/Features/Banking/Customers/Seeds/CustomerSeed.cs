@@ -39,6 +39,7 @@ public static class CustomerSeed
     // -------------------------------------------------------------------------
 
     private static readonly DateTimeOffset SeedDate = new(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly Guid TenantId = new("0194f700-0000-7000-8000-000000000001");
 
     // Employee GUIDs from EmployeeSeed — referenced as RelationshipManagerId
     private static readonly Guid[] RmIds =
@@ -210,6 +211,7 @@ public static class CustomerSeed
                 Status = CustomerStatus.Draft,
                 OpenedOn = SeedDate,
                 RelationshipManagerId = RmIds[i % RmIds.Length],
+                TenantId,
                 IsDeleted = false,
                 DeletedAt = (DateTimeOffset?)null,
                 DeletedBy = (string?)null,

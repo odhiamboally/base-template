@@ -39,6 +39,8 @@ internal sealed class AppUserDeviceConfiguration : IEntityTypeConfiguration<AppU
             .HasForeignKey(d => d.AppUserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(d => !d.IsDeleted && !d.AppUser.IsDeleted);
+
         builder.HasIndex(d => new { d.AppUserId, d.DeviceFingerprint })
             .IsUnique()
             .HasDatabaseName("IX_AppUserDevices_AppUserId_DeviceFingerprint");

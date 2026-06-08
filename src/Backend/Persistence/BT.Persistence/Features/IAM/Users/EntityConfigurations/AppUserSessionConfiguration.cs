@@ -39,6 +39,8 @@ internal sealed class AppUserSessionConfiguration : IEntityTypeConfiguration<App
             .HasForeignKey(s => s.AppUserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(s => !s.IsDeleted && !s.AppUser.IsDeleted);
+
         builder.HasIndex(s => new { s.AppUserId, s.IsActive, s.ExpiresAt })
             .HasDatabaseName("IX_AppUserSessions_AppUserId_IsActive_ExpiresAt");
 

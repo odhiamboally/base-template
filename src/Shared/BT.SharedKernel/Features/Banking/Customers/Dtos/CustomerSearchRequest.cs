@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace BT.SharedKernel.Features.Banking.Customers.Dtos;
@@ -28,4 +29,34 @@ public record CustomerSearchRequest(
     Guid? RelationshipManagerId = null,
     Guid? Cursor = null,
     int PageSize = 50
-);
+)
+{
+    public string BuildQueryString()
+    {
+        var parameters = new List<string>(9);
+        Add(parameters, nameof(GlobalSearch), GlobalSearch);
+        Add(parameters, nameof(Type), Type);
+        Add(parameters, nameof(SegmentType), SegmentType);
+        Add(parameters, nameof(SubSegmentType), SubSegmentType);
+        Add(parameters, nameof(IdentificationType), IdentificationType);
+        Add(parameters, nameof(LineOfBusiness), LineOfBusiness);
+        Add(parameters, nameof(Status), Status);
+        Add(parameters, nameof(RelationshipManagerId), RelationshipManagerId?.ToString());
+        Add(parameters, nameof(Cursor), Cursor?.ToString());
+        Add(parameters, nameof(PageSize), PageSize.ToString(CultureInfo.InvariantCulture));
+
+        return parameters.Count == 0 ? string.Empty : $"?{string.Join('&', parameters)}";
+    }
+
+    private static void Add(List<string> parameters, string key, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        parameters.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value)}");
+    }
+
+
+}

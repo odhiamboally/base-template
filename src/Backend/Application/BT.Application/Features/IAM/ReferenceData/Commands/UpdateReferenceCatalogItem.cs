@@ -1,0 +1,183 @@
+using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Features.IAM.ReferenceData.Mappings;
+using BT.Application.Utilities;
+using BT.SharedKernel.Dtos.Common;
+using BT.Domain.Features.IAM.Contracts;
+using BT.SharedKernel.Features.IAM.ReferenceData.Dtos;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace BT.Application.Features.IAM.ReferenceData.Commands;
+
+public sealed record UpdateReferenceCatalogItemCommand(string CatalogType, Guid Id, ReferenceCatalogItemRequest Request, string UserId)
+    : IRequest<AppResponse<ReferenceCatalogItemResponse>>, ICacheInvalidatorRequest
+{
+    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("iam-reference-data")];
+}
+
+internal sealed class UpdateReferenceCatalogItemCommandHandler(IIamUnitOfWork unitOfWork, ILogger<UpdateReferenceCatalogItemCommandHandler> logger)
+    : IRequestHandler<UpdateReferenceCatalogItemCommand, AppResponse<ReferenceCatalogItemResponse>>
+{
+    public async Task<AppResponse<ReferenceCatalogItemResponse>> Handle(UpdateReferenceCatalogItemCommand command, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!ReferenceCatalogTypes.All.Contains(command.CatalogType))
+            {
+                return AppResponse.Failure<ReferenceCatalogItemResponse>($"Catalog '{command.CatalogType}' is not supported.");
+            }
+
+            var parentError = await ValidateParentChangeAsync(command, cancellationToken).ConfigureAwait(false);
+            if (parentError is not null)
+            {
+                return AppResponse.Failure<ReferenceCatalogItemResponse>(parentError);
+            }
+
+            ReferenceCatalogItemResponse? response = command.CatalogType.ToLowerInvariant() switch
+            {
+                ReferenceCatalogTypes.PermissionContexts => await UpdatePermissionContextAsync(command, cancellationToken).ConfigureAwait(false),
+                ReferenceCatalogTypes.PermissionResources => await UpdatePermissionResourceAsync(command, cancellationToken).ConfigureAwait(false),
+                ReferenceCatalogTypes.PermissionActions => await UpdatePermissionActionAsync(command, cancellationToken).ConfigureAwait(false),
+                ReferenceCatalogTypes.MenuPlacements => await UpdateMenuPlacementAsync(command, cancellationToken).ConfigureAwait(false),
+                ReferenceCatalogTypes.MenuIcons => await UpdateMenuIconAsync(command, cancellationToken).ConfigureAwait(false),
+                ReferenceCatalogTypes.MenuRoutes => await UpdateMenuRouteAsync(command, cancellationToken).ConfigureAwait(false),
+                _ => null
+            };
+
+            if (response is null)
+            {
+                return AppResponse.Failure<ReferenceCatalogItemResponse>("Reference catalog item was not found.");
+            }
+
+            var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
+            return saved
+                ? AppResponse.Success("Reference catalog item updated.", response)
+                : AppResponse.Failure<ReferenceCatalogItemResponse>("Reference catalog item update failed.");
+        }
+        catch (Exception ex)
+        {
+            LogDefinitions.LogPipelineException(logger, nameof(UpdateReferenceCatalogItemCommandHandler), ex);
+            throw;
+        }
+    }
+
+    private async Task<ReferenceCatalogItemResponse?> UpdatePermissionContextAsync(UpdateReferenceCatalogItemCommand command, CancellationToken cancellationToken)
+    {
+        var item = await unitOfWork.PermissionContextRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (item is null) return null;
+        item.Update(command.Request.Label, command.Request.Description, command.Request.IsActive, command.UserId);
+        await unitOfWork.PermissionContextRepository.UpdateAsync(item).ConfigureAwait(false);
+        return item.ToResponse();
+    }
+
+    private async Task<ReferenceCatalogItemResponse?> UpdatePermissionResourceAsync(UpdateReferenceCatalogItemCommand command, CancellationToken cancellationToken)
+    {
+        var item = await unitOfWork.PermissionResourceRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (item is null) return null;
+        item.Update(command.Request.Label, command.Request.ParentKey ?? item.ContextKey, command.Request.Description, command.Request.IsActive, command.UserId);
+        await unitOfWork.PermissionResourceRepository.UpdateAsync(item).ConfigureAwait(false);
+        return item.ToResponse();
+    }
+
+    private async Task<ReferenceCatalogItemResponse?> UpdatePermissionActionAsync(UpdateReferenceCatalogItemCommand command, CancellationToken cancellationToken)
+    {
+        var item = await unitOfWork.PermissionActionRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (item is null) return null;
+        item.Update(command.Request.Label, command.Request.Description, command.Request.IsActive, command.UserId);
+        await unitOfWork.PermissionActionRepository.UpdateAsync(item).ConfigureAwait(false);
+        return item.ToResponse();
+    }
+
+    private async Task<ReferenceCatalogItemResponse?> UpdateMenuPlacementAsync(UpdateReferenceCatalogItemCommand command, CancellationToken cancellationToken)
+    {
+        var item = await unitOfWork.MenuPlacementRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (item is null) return null;
+        item.Update(command.Request.Label, command.Request.Description, command.Request.IsActive, command.UserId);
+        await unitOfWork.MenuPlacementRepository.UpdateAsync(item).ConfigureAwait(false);
+        return item.ToResponse();
+    }
+
+    private async Task<ReferenceCatalogItemResponse?> UpdateMenuIconAsync(UpdateReferenceCatalogItemCommand command, CancellationToken cancellationToken)
+    {
+        var item = await unitOfWork.MenuIconRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (item is null) return null;
+        item.Update(command.Request.Label, command.Request.Description, command.Request.IsActive, command.UserId);
+        await unitOfWork.MenuIconRepository.UpdateAsync(item).ConfigureAwait(false);
+        return item.ToResponse();
+    }
+
+    private async Task<ReferenceCatalogItemResponse?> UpdateMenuRouteAsync(UpdateReferenceCatalogItemCommand command, CancellationToken cancellationToken)
+    {
+        var item = await unitOfWork.MenuRouteRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (item is null) return null;
+        item.Update(command.Request.Label, command.Request.Url ?? item.Url, command.Request.ParentKey ?? item.PlacementKey, command.Request.Description, command.Request.IsActive, command.UserId);
+        await unitOfWork.MenuRouteRepository.UpdateAsync(item).ConfigureAwait(false);
+        return item.ToResponse();
+    }
+
+    private async Task<string?> ValidateParentChangeAsync(UpdateReferenceCatalogItemCommand command, CancellationToken cancellationToken)
+    {
+        if (command.CatalogType.Equals(ReferenceCatalogTypes.PermissionResources, StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(command.Request.ParentKey))
+            {
+                return "Permission resource requires a permission context.";
+            }
+
+            var item = await unitOfWork.PermissionResourceRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+            if (item is not null && !string.Equals(item.ContextKey, command.Request.ParentKey.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                var used = await unitOfWork.PermissionRepository
+                    .FindByCondition(permission => permission.Context == item.ContextKey && permission.Resource == item.Key)
+                    .AnyAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (used)
+                {
+                    return "This resource is already used by permissions, so its context cannot be changed.";
+                }
+            }
+
+            var contextExists = await unitOfWork.PermissionContextRepository
+                .FindByCondition(context => context.IsActive && context.Key == command.Request.ParentKey.Trim())
+                .AnyAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return contextExists ? null : $"Permission context '{command.Request.ParentKey}' is not registered.";
+        }
+
+        if (command.CatalogType.Equals(ReferenceCatalogTypes.MenuRoutes, StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(command.Request.ParentKey) || string.IsNullOrWhiteSpace(command.Request.Url))
+            {
+                return "Menu route requires a placement and URL.";
+            }
+
+            var item = await unitOfWork.MenuRouteRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+            if (item is not null
+                && (!string.Equals(item.PlacementKey, command.Request.ParentKey.Trim(), StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(item.Url, command.Request.Url.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                var used = await unitOfWork.MenuRepository
+                    .FindByCondition(menu => menu.Placement == item.PlacementKey && menu.Url == item.Url)
+                    .AnyAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (used)
+                {
+                    return "This route is already used by menus, so its placement or URL cannot be changed.";
+                }
+            }
+
+            var placementExists = await unitOfWork.MenuPlacementRepository
+                .FindByCondition(placement => placement.IsActive && placement.Key == command.Request.ParentKey.Trim())
+                .AnyAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return placementExists ? null : $"Menu placement '{command.Request.ParentKey}' is not registered.";
+        }
+
+        return null;
+    }
+}

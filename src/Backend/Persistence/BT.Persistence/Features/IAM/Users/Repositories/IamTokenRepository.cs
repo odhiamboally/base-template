@@ -20,8 +20,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
 
     public async Task AddRefreshTokenAsync(RefreshToken refreshToken)
     {
-        _iamContext.RefreshTokens.Add(refreshToken);
-        await _iamContext.SaveChangesAsync().ConfigureAwait(false);
+        await _iamContext.RefreshTokens.AddAsync(refreshToken).ConfigureAwait(false);
     }
 
     public async Task<List<RefreshToken>> GetActiveTokensByUserIdAsync(string userId)
@@ -49,7 +48,6 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
     public async Task<RefreshToken?> GetRefreshTokenAsync(string token, string userId)
     {
         return await _iamContext.RefreshTokens
-            .AsNoTracking()
             .FirstOrDefaultAsync(rt => rt.Token == token && rt.AppUserId == userId).ConfigureAwait(false);
     }
 
@@ -80,7 +78,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
     public async Task UpdateRefreshTokenAsync(RefreshToken refreshToken)
     {
         _iamContext.RefreshTokens.Update(refreshToken);
-        await _iamContext.SaveChangesAsync().ConfigureAwait(false);
+        await Task.CompletedTask.ConfigureAwait(false);
     }
 
     public async Task RevokeTokensAsync(List<RefreshToken> tokens, string reason, string? revokedByIp = null)
@@ -105,7 +103,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
     {
         refreshToken.Revoke(reason);
         _iamContext.RefreshTokens.Update(refreshToken);
-        await _iamContext.SaveChangesAsync().ConfigureAwait(false);
+        await Task.CompletedTask.ConfigureAwait(false);
     }
 
     public async Task RevokeAllUserTokensAsync(string userId, string reason, string? revokedByIp = null)
@@ -119,7 +117,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
         }
 
         _iamContext.UpdateRange(activeTokens);
-        await _iamContext.SaveChangesAsync().ConfigureAwait(false);
+        await Task.CompletedTask.ConfigureAwait(false);
     }
 
     public async Task<bool> IsTokenActiveAsync(string token)
@@ -139,7 +137,7 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
     {
         refreshToken.MarkAsUsed();
         _iamContext.RefreshTokens.Update(refreshToken);
-        await _iamContext.SaveChangesAsync().ConfigureAwait(false);
+        await Task.CompletedTask.ConfigureAwait(false);
     }
 
     public async Task CleanupExpiredTokensAsync(string? userId = null)
@@ -160,7 +158,6 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
         if (expiredTokens.Any())
         {
             _iamContext.RefreshTokens.RemoveRange(expiredTokens);
-            await _iamContext.SaveChangesAsync().ConfigureAwait(false);
         }
     }
 

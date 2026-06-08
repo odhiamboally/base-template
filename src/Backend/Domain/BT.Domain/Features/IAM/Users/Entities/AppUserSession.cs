@@ -4,11 +4,12 @@ using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.Json.Serialization;
 
+using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
 
 namespace BT.Domain.Features.IAM.Users.Entities;
 
-public class AppUserSession : BaseEntity
+public class AppUserSession : BaseEntity, ISoftDeletable
 {
     public string AppUserId { get; private set; } = string.Empty;
     public string IpAddress { get; private set; } = string.Empty;
@@ -19,6 +20,9 @@ public class AppUserSession : BaseEntity
     public string? EndReason { get; private set; }
     public bool IsActive { get; private set; } = true;
     public bool IsRevoked { get; private set; }
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
 
     [Required]
     [MaxLength(256)] // SHA-256 hash is 64 hex characters, so 256 is safe.
@@ -91,6 +95,19 @@ public class AppUserSession : BaseEntity
         EndedAt = DateTimeOffset.UtcNow;
         EndReason = "Session expired";
         SetUpdatedInfo(AppUserId);
+    }
+
+    public void MarkAsDeleted(string deletedBy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(deletedBy);
+
+        IsDeleted = true;
+        DeletedAt = DateTimeOffset.UtcNow;
+        DeletedBy = deletedBy;
+        IsActive = false;
+        EndedAt ??= DateTimeOffset.UtcNow;
+        EndReason ??= "Soft deleted";
+        SetUpdatedInfo(deletedBy);
     }
 
     // Navigation

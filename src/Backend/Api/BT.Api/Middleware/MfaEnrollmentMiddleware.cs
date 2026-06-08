@@ -1,0 +1,82 @@
+using BT.Infrastructure.Configuration;
+using BT.Api.Logging;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using System.Text.Json;
+
+namespace BT.Api.Middleware;
+
+internal sealed class MfaEnrollmentMiddleware(
+    RequestDelegate next,
+    IOptions<MfaSettings> mfaSettings,
+    ILogger<MfaEnrollmentMiddleware> logger)
+{
+    private readonly MfaSettings _mfaSettings = mfaSettings.Value;
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (!RequiresEnrollmentGate(context))
+        {
+            await next(context).ConfigureAwait(false);
+            return;
+        }
+
+        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
+        MiddlewareLogDefinitions.LogMfaEnrollmentRequired(logger, userId, context.Request.Path.Value ?? string.Empty);
+
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        context.Response.ContentType = "application/json";
+
+        var response = new
+        {
+            successful = false,
+            message = "Two-factor authentication setup is required before you can continue.",
+            code = "MFA_ENROLLMENT_REQUIRED",
+            redirectUrl = "/iam/security"
+        };
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response)).ConfigureAwait(false);
+    }
+
+    private bool RequiresEnrollmentGate(HttpContext context)
+    {
+        if (!_mfaSettings.Enabled || !_mfaSettings.EnforceEnrollment)
+        {
+            return false;
+        }
+
+        if (ShouldSkip(context.Request.Path) || context.User.Identity?.IsAuthenticated != true)
+        {
+            return false;
+        }
+
+        var roleRequiresMfa = context.User.Claims
+            .Where(static claim => string.Equals(claim.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase))
+            .Select(static claim => claim.Value)
+            .Any(role => _mfaSettings.RequiredRoles.Contains(role, StringComparer.OrdinalIgnoreCase));
+
+        if (!roleRequiresMfa)
+        {
+            return false;
+        }
+
+        var mfaEnrolled = context.User.FindFirst("mfa_enrolled")?.Value;
+        return !string.Equals(mfaEnrolled, "true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ShouldSkip(PathString path)
+    {
+        var value = path.Value ?? string.Empty;
+
+        return path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/scalar", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/openapi", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("/iam/auth/login", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("/iam/auth/refresh-token", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("/iam/auth/logout", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("/iam/auth/me", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("/iam/users/totp", StringComparison.OrdinalIgnoreCase);
+    }
+}

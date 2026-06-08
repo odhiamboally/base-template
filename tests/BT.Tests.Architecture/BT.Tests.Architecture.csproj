@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Backend\Api\BT.Api\BT.Api.csproj" />
     <ProjectReference Include="..\..\src\Backend\Domain\BT.Domain\BT.Domain.csproj" />
     <ProjectReference Include="..\..\src\Backend\Persistence\BT.Persistence\BT.Persistence.csproj" />
     <ProjectReference Include="..\..\src\Shared\BT.SharedKernel.Validation\BT.SharedKernel.Validation.csproj" />

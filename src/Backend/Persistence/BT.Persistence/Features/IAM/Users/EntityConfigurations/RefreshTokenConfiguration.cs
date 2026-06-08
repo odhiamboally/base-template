@@ -45,6 +45,8 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
             .HasForeignKey(t => t.AppUserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(t => !t.IsDeleted && !t.AppUser.IsDeleted);
+
         builder.HasIndex(t => t.Token)
             .IsUnique()
             .HasDatabaseName("IX_RefreshTokens_Token");

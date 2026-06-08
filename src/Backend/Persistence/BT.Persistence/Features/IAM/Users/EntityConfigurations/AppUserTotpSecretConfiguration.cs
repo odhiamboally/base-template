@@ -30,6 +30,8 @@ internal sealed class AppUserTotpSecretConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(s => s.AppUserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(s => !s.IsDeleted && !s.AppUser.IsDeleted);
+
         builder.HasIndex(s => new { s.AppUserId, s.IsActive, s.ExpiresAt })
             .HasDatabaseName("IX_AppUserTotpSecrets_AppUserId_IsActive_ExpiresAt");
     }

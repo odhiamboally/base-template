@@ -72,6 +72,8 @@ public static class DependencyInjection
             services.Configure<ObservabilitySettings>(configuration.GetSection(ObservabilitySettings.SectionName));
             services.Configure<AuthProviderSettings>(configuration.GetSection(AuthProviderSettings.SectionName));
             services.Configure<ApiSettings>(configuration.GetSection(ApiSettings.SectionName));
+            services.Configure<IamProvisioningSettings>(configuration.GetSection(IamProvisioningSettings.SectionName));
+            services.Configure<MfaSettings>(configuration.GetSection(MfaSettings.SectionName));
 
             var cacheSettings = configuration.GetSection(CacheSettings.SectionName).Get<CacheSettings>()
                 ?? throw new InvalidOperationException("CacheSettings not found.");
@@ -80,19 +82,37 @@ public static class DependencyInjection
             ConfigureDistributedCache(services, configuration, cacheSettings);
             ConfigureMailKitWithSmtp(services, configuration);
             ConfigureSms(services, configuration);
-            ConfigureQuartz(services, configuration);
             ConfigureSerilogEnrichers(services);
             var observabilitySettings = configuration.GetSection(ObservabilitySettings.SectionName).Get<ObservabilitySettings>() ?? new ObservabilitySettings();
             var authProviderSettings = configuration.GetSection(AuthProviderSettings.SectionName).Get<AuthProviderSettings>() ?? new AuthProviderSettings();
+            var messagingSettings = configuration.GetSection(MessagingSettings.SectionName).Get<MessagingSettings>() ?? new MessagingSettings();
+            var backgroundJobSettings = configuration.GetSection(BackgroundJobSettings.SectionName).Get<BackgroundJobSettings>() ?? new BackgroundJobSettings();
             ConfigureObservability(services, configuration, environment, observabilitySettings);
-            AddServices(services, authProviderSettings);
+            if (backgroundJobSettings.Enabled)
+            {
+                ConfigureQuartz(services, configuration);
+            }
+
+            AddServices(services, authProviderSettings, messagingSettings, backgroundJobSettings);
             
         return services;
     }
 
-    private static IServiceCollection AddServices(this IServiceCollection services, AuthProviderSettings authProviderSettings)
+    private static IServiceCollection AddServices(
+        this IServiceCollection services,
+        AuthProviderSettings authProviderSettings,
+        MessagingSettings messagingSettings,
+        BackgroundJobSettings backgroundJobSettings)
     {
-        services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
+        if (messagingSettings.Enabled)
+        {
+            services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
+        }
+        else
+        {
+            services.AddScoped<IIntegrationEventPublisher, NoOpIntegrationEventPublisher>();
+        }
+
         services.AddHttpClient<IApiService, ApiService>();
 
         if (!authProviderSettings.Enabled)
@@ -107,7 +127,12 @@ public static class DependencyInjection
 
         services.AddScoped<IEmailService, FluentMailService>();
         services.AddScoped<ISmsService, SmsService>();
-        services.AddScoped<IBackgroundJobService, BackgroundJobService>();
+        services.AddScoped<IBackgroundJobService>(_ =>
+            backgroundJobSettings.Enabled
+                ? new BackgroundJobService(
+                    _.GetRequiredService<ISchedulerFactory>(),
+                    _.GetRequiredService<ILogger<BackgroundJobService>>())
+                : new NoOpBackgroundJobService());
         services.AddScoped<IEncryptionService, EncryptionService>();
 
         return services;
@@ -115,6 +140,8 @@ public static class DependencyInjection
 
     internal static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+
         var jwtSettings = new JwtSettings();
             configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
 
@@ -284,7 +311,7 @@ public static class DependencyInjection
 
     private static void ConfigureDistributedCache(IServiceCollection services, IConfiguration configuration, CacheSettings cacheSettings)
     {
-        if (!string.IsNullOrWhiteSpace(cacheSettings.Azure?.ConnectionString))
+        if (IsConfiguredConnectionString(cacheSettings.Azure?.ConnectionString))
         {
             services.AddStackExchangeRedisCache(options =>
             {
@@ -304,6 +331,14 @@ public static class DependencyInjection
         services.AddSingleton<ICacheService, HybridCacheService>();
 
 
+    }
+
+    private static bool IsConfiguredConnectionString(string? connectionString)
+    {
+        return !string.IsNullOrWhiteSpace(connectionString) &&
+            !connectionString.Contains("your-", StringComparison.OrdinalIgnoreCase) &&
+            !connectionString.Contains("replace", StringComparison.OrdinalIgnoreCase) &&
+            !connectionString.Contains("set_via", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void ConfigureSerilogEnrichers(IServiceCollection services)

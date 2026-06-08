@@ -8,5 +8,13 @@ public record EmployeeResponse(
     Guid Id,
     string FullName,
     string Number,
-    Guid DepartmentId
+    string Email,
+    string IdNumber,
+    string PhoneNumber,
+    Guid DepartmentId,
+    Guid? ManagerId,
+    string DepartmentName = "",
+    string ManagerName = "",
+    string CountryCode = "+254",
+    string PhoneNationalNumber = ""
 );

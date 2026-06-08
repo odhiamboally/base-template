@@ -1,6 +1,6 @@
+using BT.Persistence.Common.DesignTime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Configuration;
 
 namespace BT.Persistence.Features.Banking.DataContext;
 
@@ -8,15 +8,9 @@ public class BankingDBContextFactory : IDesignTimeDbContextFactory<BankingDBCont
 {
     public BankingDBContext CreateDbContext(string[] args)
     {
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false)
-            .AddJsonFile("appsettings.Development.json", optional: true)
-            .Build();
-
+        var configuration = DesignTimeConfigurationFactory.Create();
         var optionsBuilder = new DbContextOptionsBuilder<BankingDBContext>();
-        var connectionString = configuration.GetConnectionString("BankingConnection")
-            ?? configuration.GetConnectionString("DefaultConnection");
+        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "BankingConnection");
 
         optionsBuilder.UseSqlServer(connectionString);
         return new BankingDBContext(optionsBuilder.Options);

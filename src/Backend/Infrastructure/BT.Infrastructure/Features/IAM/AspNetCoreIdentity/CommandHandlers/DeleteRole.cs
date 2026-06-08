@@ -1,0 +1,59 @@
+using BT.Application.Features.IAM.Users.Commands;
+using BT.Domain.Features.IAM.Users.Entities;
+using BT.Infrastructure.Logging;
+using BT.Persistence.Features.IAM.DataContext;
+using BT.SharedKernel.Dtos.Common;
+using MediatR;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
+
+internal sealed class DeleteRole(RoleManager<AppRole> roleManager, IamDBContext context, ILogger<DeleteRole> logger)
+    : IRequestHandler<DeleteRoleCommand, AppResponse<bool>>
+{
+    public async Task<AppResponse<bool>> Handle(DeleteRoleCommand command, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var role = await roleManager.FindByIdAsync(command.RoleId).ConfigureAwait(false);
+            if (role is null)
+            {
+                return AppResponse.Failure<bool>("Role not found.");
+            }
+
+            var assignedUserCount = await context.UserRoles
+                .AsNoTracking()
+                .CountAsync(userRole => userRole.RoleId == role.Id, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (assignedUserCount > 0)
+            {
+                return AppResponse.Failure<bool>($"Role cannot be deleted because it is assigned to {assignedUserCount} user(s). Remove assignments first.");
+            }
+
+            var permissionCount = await context.RoleClaims
+                .AsNoTracking()
+                .CountAsync(roleClaim => roleClaim.RoleId == role.Id, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (permissionCount > 0)
+            {
+                return AppResponse.Failure<bool>($"Role cannot be deleted because it has {permissionCount} permission claim(s). Remove permissions first.");
+            }
+
+            role.MarkAsDeleted(command.DeletedBy);
+            var result = await roleManager.UpdateAsync(role).ConfigureAwait(false);
+
+            return result.Succeeded
+                ? AppResponse.Success("Role deleted.", true)
+                : AppResponse.Failure<bool>(string.Join(", ", result.Errors.Select(static error => error.Description)));
+        }
+        catch (Exception ex)
+        {
+            ServiceLogDefinitions.LogRoleDeleteError(logger, command.RoleId, ex);
+            throw;
+        }
+    }
+}

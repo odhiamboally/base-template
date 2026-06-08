@@ -6,15 +6,15 @@ public record CreateEmployeeRequest
 {
     // Required fields
     public required string IdNumber { get; set; }
-    public required string Number { get; init; }
     public required string FirstName { get; init; }
     public required string LastName { get; init; }
     public required string Email { get; init; }
-    public required string PhoneNumber { get; init; }
+    public string CountryCode { get; init; } = "+254";
+    public string PhoneNationalNumber { get; init; } = string.Empty;
+    public string PhoneNumber { get; init; } = string.Empty;
     public required DateOnly HireDate { get; init; }
     public required Guid DepartmentId { get; init; }
     public required Guid PositionId { get; init; }
-    public required string Password { get; init; }
 
     // Optional fields
     public DateOnly? DateOfBirth { get; init; }

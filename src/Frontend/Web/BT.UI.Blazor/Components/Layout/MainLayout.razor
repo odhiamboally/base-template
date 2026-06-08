@@ -1,14 +1,23 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
+<MudProviderHost />
+
+<div class="page app-shell">
+    <aside class="sidebar">
         <NavMenu />
-    </div>
+    </aside>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+    <main class="workspace">
+        <header class="app-top-row px-4">
+            <div>
+                <span class="top-kicker">Base Template</span>
+                <strong>Operations Console</strong>
+            </div>
+            <div class="topbar-meta">
+                <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Size="Size.Small" />
+                <span>POC Workspace</span>
+            </div>
+        </header>
 
         <article class="content px-4">
             @Body
@@ -19,5 +28,5 @@
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">x</span>
 </div>

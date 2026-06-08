@@ -16,5 +16,6 @@ public enum LookupType
     SubSegmentType,
     LineOfBusiness,
     IdentificationType,
-    DirectorRelationType
+    DirectorRelationType,
+    FailedMessageStatus
 }

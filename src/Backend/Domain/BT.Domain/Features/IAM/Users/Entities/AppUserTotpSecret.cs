@@ -2,17 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
 
 namespace BT.Domain.Features.IAM.Users.Entities;
 
-public class AppUserTotpSecret : BaseEntity
+public class AppUserTotpSecret : BaseEntity, ISoftDeletable
 {
     public string AppUserId { get; private set; } = string.Empty;
     public string EncryptedSecret { get; private set; } = string.Empty;
     public bool IsActive { get; private set; } = true;
     public DateTimeOffset? LastUsedAt { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
 
     private AppUserTotpSecret() { }
 
@@ -48,6 +52,17 @@ public class AppUserTotpSecret : BaseEntity
     {
         IsActive = false;
         SetUpdatedInfo(AppUserId);
+    }
+
+    public void MarkAsDeleted(string deletedBy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(deletedBy);
+
+        IsDeleted = true;
+        DeletedAt = DateTimeOffset.UtcNow;
+        DeletedBy = deletedBy;
+        IsActive = false;
+        SetUpdatedInfo(deletedBy);
     }
 
     public virtual AppUser AppUser { get; set; } = null!;

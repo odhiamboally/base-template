@@ -1,98 +1,136 @@
 .page {
-    position: relative;
     display: flex;
-    flex-direction: column;
-}
-
-main {
-    flex: 1;
+    height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background:
+        radial-gradient(circle at 20% 0%, rgba(215, 157, 59, 0.28), transparent 16rem),
+        linear-gradient(180deg, #122617 0%, #1c3423 55%, #0d1811 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    color: #fff;
+    flex: 0 0 15rem;
+    height: 100vh;
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
 }
 
-.top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
-    display: flex;
+.workspace {
+    flex: 1;
+    height: 100vh;
+    min-width: 0;
+    overflow-y: auto;
+    scrollbar-color: rgba(72, 107, 82, 0.35) transparent;
+    scrollbar-width: thin;
+}
+
+.workspace::-webkit-scrollbar {
+    width: 0.55rem;
+}
+
+.workspace::-webkit-scrollbar-thumb {
+    background: rgba(72, 107, 82, 0.28);
+    border-radius: 999px;
+}
+
+.app-top-row {
     align-items: center;
+    background: rgba(255, 250, 241, 0.86);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(23, 33, 27, 0.1);
+    display: flex;
+    height: 4.5rem;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
+.app-top-row strong {
+    color: #17211b;
+    display: block;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
 }
 
-@media (min-width: 641px) {
+.top-kicker {
+    color: #607067;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.topbar-meta {
+    align-items: center;
+    color: #486b52;
+    display: flex;
+    gap: 0.45rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.content {
+    padding-bottom: 4rem;
+    padding-top: 1.5rem;
+}
+
+@media (max-width: 800px) {
     .page {
-        flex-direction: row;
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
     }
 
     .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
+        flex-basis: auto;
+        height: auto;
+        min-height: auto;
+        position: relative;
     }
 
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
+    .workspace {
+        height: auto;
+        overflow: visible;
     }
 
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+    .signed-in-user {
+        display: none;
     }
 }
 
 #blazor-error-ui {
     color-scheme: light only;
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    background: #fffaf1;
+    border: 1px solid rgba(135, 49, 42, 0.2);
+    border-radius: 1rem;
+    bottom: 1rem;
+    box-shadow: 0 1rem 2.5rem rgba(23, 33, 27, 0.18);
     box-sizing: border-box;
+    color: #6e211c;
     display: none;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    font-weight: 700;
+    left: 50%;
+    max-width: min(42rem, calc(100vw - 2rem));
+    padding: 0.85rem 3rem 0.85rem 1rem;
     position: fixed;
-    width: 100%;
+    transform: translateX(-50%);
+    width: auto;
     z-index: 1000;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
+#blazor-error-ui a {
+    color: #244b31;
+    margin-left: 0.5rem;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 1rem;
+    top: 0.85rem;
+}

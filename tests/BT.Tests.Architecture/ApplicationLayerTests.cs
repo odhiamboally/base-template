@@ -177,7 +177,7 @@ public sealed class ApplicationLayerTests
     }
 
     [Fact]
-    public void Iam_Application_Artifacts_Should_Reside_In_Users_Feature()
+    public void Iam_Application_Artifacts_Should_Reside_In_Approved_Features()
     {
         var applicationRoot = Path.Combine(
             AssemblyReferences.RepoRoot,
@@ -187,10 +187,12 @@ public sealed class ApplicationLayerTests
             "BT.Application");
 
         var iamRoot = Path.Combine(applicationRoot, "Features", "IAM");
+        string[] approvedFeatureRoots = ["Users", "Permissions", "Menus", "ReferenceData"];
+
         var misplacedArtifacts = Directory
             .EnumerateFiles(iamRoot, "*.cs", SearchOption.AllDirectories)
             .Where(path =>
-                !path.Contains($"{Path.DirectorySeparatorChar}Users{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+                !approvedFeatureRoots.Any(feature => path.Contains($"{Path.DirectorySeparatorChar}{feature}{Path.DirectorySeparatorChar}", StringComparison.Ordinal)) &&
                 (path.Contains($"{Path.DirectorySeparatorChar}Commands{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
                  path.Contains($"{Path.DirectorySeparatorChar}EventHandlers{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
                  path.Contains($"{Path.DirectorySeparatorChar}Mappings{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
@@ -199,7 +201,7 @@ public sealed class ApplicationLayerTests
             .ToList();
 
         misplacedArtifacts.Should().BeEmpty(
-            because: "IAM application artifacts belong under Features/IAM/Users unless a separate IAM feature is introduced. Found: {0}",
+            because: "IAM application artifacts belong under approved IAM feature slices. Found: {0}",
             string.Join(", ", misplacedArtifacts));
     }
 
