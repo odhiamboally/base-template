@@ -9,11 +9,11 @@ public sealed class DevelopmentSeedSettings
     public bool Enabled { get; init; }
 
     [Required]
-    public string AdminUserName { get; init; } = "admin@basetemplate.local";
+    public string AdminUserName { get; init; } = "aamodhiambo@gmail.com";
 
     [Required]
     [EmailAddress]
-    public string AdminEmail { get; init; } = "admin@basetemplate.local";
+    public string AdminEmail { get; init; } = "aamodhiambo@gmail.com";
 
     [Required]
     public string AdminPassword { get; init; } = "Admin@12345";

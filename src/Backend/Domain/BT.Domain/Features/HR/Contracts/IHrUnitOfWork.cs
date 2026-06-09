@@ -11,4 +11,5 @@ public interface IHrUnitOfWork : ITransactionalUnitOfWork
 {
     IDepartmentRepository DepartmentRepository { get; }
     IEmployeeRepository EmployeeRepository { get; }
+    IEmployeeNumberSequenceRepository EmployeeNumberSequenceRepository { get; }
 }

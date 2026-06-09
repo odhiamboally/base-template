@@ -19,10 +19,12 @@ public sealed class HrUnitOfWork(
     HrDBContext context,
     IDepartmentRepository departmentRepository,
     IEmployeeRepository employeeRepository,
+    IEmployeeNumberSequenceRepository employeeNumberSequenceRepository,
     IPublisher publisher,
     ILogger<HrUnitOfWork> logger
 ) : BaseUnitOfWork<HrDBContext>(context, publisher, logger), IHrUnitOfWork
 {
     public IDepartmentRepository DepartmentRepository { get; } = departmentRepository;
     public IEmployeeRepository EmployeeRepository { get; } = employeeRepository;
+    public IEmployeeNumberSequenceRepository EmployeeNumberSequenceRepository { get; } = employeeNumberSequenceRepository;
 }

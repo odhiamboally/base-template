@@ -16,11 +16,11 @@ internal sealed class EmployeeNumberGenerator(IHrUnitOfWork _hrUnitOfWork) : IEm
             ?? throw new InvalidOperationException("Department is required before generating an employee number.");
 
         var prefix = department.Code;
-        var totalCount = await _hrUnitOfWork.EmployeeRepository
-            .FindByCondition(employee => employee.DepartmentId == departmentId)
-            .CountAsync(ct)
+        var year = DateTime.UtcNow.Year;
+        var sequence = await _hrUnitOfWork.EmployeeNumberSequenceRepository
+            .AllocateNextAsync(departmentId, year, ct)
             .ConfigureAwait(false);
-        var sequence = totalCount + 1;
-        return $"{prefix}-{DateTime.UtcNow.Year}-{sequence:D4}";
+
+        return $"{prefix}-{year}-{sequence:D4}";
     }
 }

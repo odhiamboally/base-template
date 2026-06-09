@@ -1,9 +1,5 @@
 using BT.Domain.Features.HR.Employees.Entities;
 using BT.Domain.Shared.Entities;
-using Bogus;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace BT.Persistence.Features.HR.Employees.Seeds;
 
@@ -35,50 +31,32 @@ public static class EmployeeSeed
     private static readonly Guid IdDeptHr = new("0194f800-0000-7000-8000-000000000100");
     private static readonly Guid IdDeptFinance = new("0194f800-0000-7000-8000-000000000200");
     private static readonly Guid IdDeptIt = new("0194f800-0000-7000-8000-000000000300");
-    private static readonly Guid IdDeptLegal = new("0194f800-0000-7000-8000-000000000400");
-    private static readonly Guid IdDeptOps = new("0194f800-0000-7000-8000-000000000500");
-
     // --- Employee IDs (Deterministic V7 GUIDs) ---
     private static readonly Guid IdHrManager = new("0194f800-0000-7000-8000-000000000001");
     private static readonly Guid IdFinanceClerk = new("0194f800-0000-7000-8000-000000000002");
     private static readonly Guid IdItAdmin = new("0194f800-0000-7000-8000-000000000003");
-    private static readonly Guid IdLegalCounsel = new("0194f800-0000-7000-8000-000000000004");
-    private static readonly Guid IdOpsManager = new("0194f800-0000-7000-8000-000000000005");
 
-    private static readonly (Guid Id, string Number, Guid DepartmentId, Guid ManagerId)[] Blueprints =
+    private static readonly (Guid Id, string Number, string Email, string FirstName, string LastName, string IdNumber, string PhoneNationalNumber, Guid DepartmentId, Guid ManagerId)[] Blueprints =
     [
-        (IdHrManager, "EMP-001", IdDeptHr, Guid.Empty),
-        (IdFinanceClerk, "EMP-002", IdDeptFinance, IdHrManager),
-        (IdItAdmin, "EMP-003", IdDeptIt, IdHrManager),
-        (IdLegalCounsel, "EMP-004", IdDeptLegal, IdHrManager),
-        (IdOpsManager, "EMP-005", IdDeptOps, IdHrManager)
+        (IdHrManager, "EMP-001", "aamodhiambo@gmail.com", "Alex", "Odhiambo", "14042262", "798980115", IdDeptHr, Guid.Empty),
+        (IdFinanceClerk, "EMP-002", "allan.alex0803@gmail.com", "Allan", "Alex", "67532424", "700057578", IdDeptFinance, IdHrManager),
+        (IdItAdmin, "EMP-003", "omitolaura469@gmail.com", "Laura", "Omito", "76945774", "719423686", IdDeptIt, IdHrManager)
     ];
 
     public static ICollection<Employee> GetSeedData()
     {
-        Randomizer.Seed = new Random(20250101);
-        var faker = new Faker("en");
-
-        return [.. Blueprints.Select((bp, index) =>
+        return [.. Blueprints.Select(bp =>
         {
-            var firstName = faker.Name.FirstName();
-            var lastName = faker.Name.LastName();
-
-            var email = $"{firstName}.{lastName}.{index + 1}@basetemplate.local".ToLowerInvariant();
-            var idNumber = faker.Random.ReplaceNumbers("########");
-            var phoneNationalNumber = $"7{faker.Random.ReplaceNumbers("########")}";
-            var phoneNumber = $"+254{phoneNationalNumber}";
-
             return CreateSeedEmployee(
                 bp.Id,
                 bp.Number,
-                email,
-                firstName,
-                lastName,
-                idNumber,
+                bp.Email,
+                bp.FirstName,
+                bp.LastName,
+                bp.IdNumber,
                 "+254",
-                phoneNationalNumber,
-                phoneNumber,
+                bp.PhoneNationalNumber,
+                $"+254{bp.PhoneNationalNumber}",
                 bp.DepartmentId,
                 bp.ManagerId,
                 "System",

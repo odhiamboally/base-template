@@ -39,6 +39,7 @@ public static class HrPersistenceDI
 
         services.AddScoped<IDepartmentRepository, HrDepartmentRepository>();
         services.AddScoped<IEmployeeRepository, HrEmployeeRepository>();
+        services.AddScoped<IEmployeeNumberSequenceRepository, EmployeeNumberSequenceRepository>();
         services.AddScoped<IHrUnitOfWork, HrUnitOfWork>();
 
         return services;

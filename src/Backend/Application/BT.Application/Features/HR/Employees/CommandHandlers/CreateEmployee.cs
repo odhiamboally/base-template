@@ -50,27 +50,27 @@ internal sealed class CreateEmployeeCommandHandler(
                 return AppResponse.Failure<EmployeeResponse>("An employee with this email already exists.");
             }
 
-            var employeeNumber = await numberGenerator.GenerateAsync(request.DepartmentId, cancellationToken).ConfigureAwait(false);
-            var phone = PhoneNumberFormatter.Normalize(
-                request.CountryCode,
-                request.PhoneNationalNumber,
-                request.PhoneNumber);
-
-            var entityToCreate = Employee.Create(
-                    employeeNumber,
-                    request.Email,
-                    request.FirstName,
-                    request.LastName,
-                    request.IdNumber,
-                    phone.CountryCode,
-                    phone.NationalNumber,
-                    phone.E164,
-                    request.DepartmentId,
-                    request.ManagerId,
-                    command.User);
-
             var result = await unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
+                var employeeNumber = await numberGenerator.GenerateAsync(request.DepartmentId, cancellationToken).ConfigureAwait(false);
+                var phone = PhoneNumberFormatter.Normalize(
+                    request.CountryCode,
+                    request.PhoneNationalNumber,
+                    request.PhoneNumber);
+
+                var entityToCreate = Employee.Create(
+                        employeeNumber,
+                        request.Email,
+                        request.FirstName,
+                        request.LastName,
+                        request.IdNumber,
+                        phone.CountryCode,
+                        phone.NationalNumber,
+                        phone.E164,
+                        request.DepartmentId,
+                        request.ManagerId,
+                        command.User);
+
                 var createdEmployee = await unitOfWork.EmployeeRepository.CreateAsync(entityToCreate).ConfigureAwait(false);
 
                 return AppResponse.Success(

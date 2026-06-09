@@ -58,7 +58,6 @@ internal sealed class SharedLookupRepository : Repository<BaseLookup>, ILookupRe
         CancellationToken cancellationToken)
     {
         var lookup = CreateLookupInstance(lookupType);
-        lookup.Id = await GetNextIdAsync(lookupType, cancellationToken).ConfigureAwait(false);
         var nextDisplayOrder = displayOrder > 0 ? displayOrder : await GetNextDisplayOrderAsync(lookupType, cancellationToken).ConfigureAwait(false);
         lookup.Update(code, description, nextDisplayOrder);
 
@@ -121,16 +120,6 @@ internal sealed class SharedLookupRepository : Repository<BaseLookup>, ILookupRe
         LookupType.FailedMessageStatus => new FailedMessageStatusLookup(),
         _ => throw new ArgumentOutOfRangeException(nameof(lookupType), lookupType, "Unsupported lookup type.")
     };
-
-    private async Task<int> GetNextIdAsync(LookupType lookupType, CancellationToken cancellationToken)
-    {
-        var currentMax = await GetSet(lookupType)
-            .IgnoreQueryFilters()
-            .MaxAsync(lookup => (int?)lookup.Id, cancellationToken)
-            .ConfigureAwait(false);
-
-        return (currentMax ?? 0) + 1;
-    }
 
     private async Task<int> GetNextDisplayOrderAsync(LookupType lookupType, CancellationToken cancellationToken)
     {

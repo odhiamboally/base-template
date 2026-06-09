@@ -19,6 +19,7 @@ public class HrDBContext(
 ) : DbContext(options)
 {
     public DbSet<Employee> Employees { get; set; }
+    public DbSet<EmployeeNumberSequence> EmployeeNumberSequences { get; set; }
     public DbSet<Department> Departments { get; set; }
 
     private List<IDomainEvent> _collectedDomainEvents = [];
