@@ -6,12 +6,14 @@ using BT.Application.Features.IAM.Users.Mappings;
 using BT.Application.Features.Shared.EmailTemplates.Mappings;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Logging;
+using BT.Infrastructure.Configuration;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
@@ -19,16 +21,15 @@ namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 internal sealed class GetCurrentUser(
     IHttpContextAccessor httpContextAccessor,
     UserManager<AppUser> userManager,
+    IOptions<MfaSettings> mfaSettings,
     ILogger<GetCurrentUser> logger) : IRequestHandler<GetCurrentUserCommand, AppResponse<CurrentUserResponse>>
 {
+    private readonly MfaSettings _mfaSettings = mfaSettings.Value;
+
     public async Task<AppResponse<CurrentUserResponse>> Handle(GetCurrentUserCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            var userName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
-            if (string.IsNullOrWhiteSpace(userName))
-                return AppResponse.Failure<CurrentUserResponse>("User not authenticated");
-
             var userId = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
                 return AppResponse.Failure<CurrentUserResponse>("User not found.");
@@ -53,6 +54,16 @@ internal sealed class GetCurrentUser(
             }
 
             bool? isAuthenticated = httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
+            var permissions = httpContextAccessor.HttpContext?.User.Claims
+                .Where(static claim => string.Equals(claim.Type, "permission", StringComparison.OrdinalIgnoreCase))
+                .Select(static claim => claim.Value)
+                .Where(static value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Order(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? [];
+
+            var sessionId = httpContextAccessor.HttpContext?.User.FindFirstValue("session_id");
+            var mfaEnrollmentRequired = IsMfaEnrollmentRequired(twoFactorEnabled, rolesList);
 
             return AppResponse.Success("CurrentUser", new CurrentUserResponse(
                 userId,
@@ -69,12 +80,25 @@ internal sealed class GetCurrentUser(
                 appUser.Gender.ToDisplayString(),
                 isAuthenticated,
                 lastLoginAt,
-                rolesList));
+                rolesList,
+                permissions,
+                sessionId,
+                mfaEnrollmentRequired));
         }
         catch (Exception ex)
         {
             ServiceLogDefinitions.LogGetCurrentUserError(logger, ex);
             throw;
         }
+    }
+
+    private bool IsMfaEnrollmentRequired(bool twoFactorEnabled, IEnumerable<string> roles)
+    {
+        if (!_mfaSettings.Enabled || !_mfaSettings.EnforceEnrollment || twoFactorEnabled)
+        {
+            return false;
+        }
+
+        return roles.Any(role => _mfaSettings.RequiredRoles.Contains(role, StringComparer.OrdinalIgnoreCase));
     }
 }

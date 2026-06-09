@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using BT.Api.Common.Authorization;
 using BT.Api.Logging;
 using BT.Api.Middleware;
 using BT.Application.Exceptions;
@@ -9,11 +10,13 @@ using BT.Persistence.Features.Shared.DataContext;
 using FluentValidation;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using Serilog.Core;
@@ -40,6 +43,9 @@ internal static class DependencyInjection
         services.AddWebEncoders();
         services.AddHttpClient();
         services.AddHttpContextAccessor();
+        services.AddAuthorization();
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddApiVersioning(config =>
         {
             config.DefaultApiVersion = new ApiVersion(1, 0);
@@ -186,6 +192,11 @@ internal static class DependencyInjection
     public static IServiceCollection ConfigureOutBoxMessagingWithGlobalRetry(this IServiceCollection services, IConfiguration configuration)
     {
         var messagingSettings = configuration.GetSection(MessagingSettings.SectionName).Get<MessagingSettings>() ?? new MessagingSettings();
+        if (!messagingSettings.Enabled)
+        {
+            return services;
+        }
+
         var assembly = typeof(IntegrationEventEmailConsumer<>).Assembly;
 
         services.AddMassTransit(x =>
@@ -287,17 +298,28 @@ internal static class DependencyInjection
 
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
     {
+        var environment = app.ApplicationServices.GetRequiredService<IHostEnvironment>();
+
         return app.Use(async (context, next) =>
             {
                 context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
                 context.Response.Headers.Append("X-Frame-Options", "DENY");
                 context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
                 context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-                context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self';");
+
+                var isScalarPage = environment.IsDevelopment()
+                    && context.Request.Path.StartsWithSegments("/scalar", StringComparison.OrdinalIgnoreCase);
+
+                var contentSecurityPolicy = isScalarPage
+                    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self';"
+                    : "default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self';";
+
+                context.Response.Headers.Append("Content-Security-Policy", contentSecurityPolicy);
 
                 // API-specific headers
                 context.Response.Headers.Append("X-API-Version", "1.0");
                 context.Response.Headers.Append("Cache-Control", "no-cache, no-store, must-revalidate");
+
             await next().ConfigureAwait(false);
         });
     }

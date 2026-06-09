@@ -1,0 +1,124 @@
+@using BT.UI.Blazor.Features.IAM.Users.Models
+@using BT.SharedKernel.Features.IAM.Users.Dtos
+@inject IIamAdminService IamAdminService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="SaveAsync">
+            <DataAnnotationsValidator />
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.FirstName" Label="First Name" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.LastName" Label="Last Name" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Username" Label="Username" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Email" Label="Email" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.PhoneNumber" Label="Phone" Margin="Margin.Dense" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.IdNumber" Label="ID Number" Margin="Margin.Dense" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudSelect @bind-Value="_model.Gender" Label="Gender" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var option in GenderOptions)
+                        {
+                            <MudSelectItem Value="@option">@option</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    @if (ExistingUser is null)
+                    {
+                        <MudSelect @bind-Value="_model.Role" Label="Role" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var role in Roles)
+                            {
+                                <MudSelectItem Value="@role">@role</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudTextField Value="@RoleText" Label="Role" Margin="Margin.Dense" Variant="Variant.Outlined" ReadOnly="true" />
+                    }
+                </MudItem>
+                @if (ExistingUser is null)
+                {
+                    <MudItem xs="12" sm="4"><MudTextField @bind-Value="_model.Password" Label="Initial Password" Margin="Margin.Dense" Variant="Variant.Outlined" Required InputType="InputType.Password" /></MudItem>
+                }
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Size="Size.Small" Class="bt-mud-primary" Disabled="_isSaving" OnClick="SaveAsync">@SaveButtonText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private static readonly string[] GenderOptions = ["Male", "Female", "Other"];
+    private AdminUserFormModel _model = new();
+    private bool _isSaving;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<string> Roles { get; set; } = [];
+
+    [Parameter]
+    public AdminUserListResponse? ExistingUser { get; set; }
+
+    private string SaveButtonText => _isSaving ? "Saving..." : ExistingUser is null ? "Create" : "Update";
+
+    private string RoleText => ExistingUser is null
+        ? _model.Role
+        : ExistingUser.Roles.Count == 0 ? "No roles assigned" : string.Join(", ", ExistingUser.Roles);
+
+    protected override void OnInitialized()
+    {
+        if (ExistingUser is not null)
+        {
+            _model = AdminUserFormModel.From(ExistingUser);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Username)
+            || string.IsNullOrWhiteSpace(_model.Email)
+            || (ExistingUser is null && string.IsNullOrWhiteSpace(_model.Password))
+            || string.IsNullOrWhiteSpace(_model.FirstName)
+            || string.IsNullOrWhiteSpace(_model.LastName))
+        {
+            Snackbar.Add("Name, username, email, and password are required.", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        if (ExistingUser is null)
+        {
+            var createResponse = await IamAdminService.CreateUserAsync(_model.ToRequest());
+            _isSaving = false;
+
+            if (!createResponse.Successful)
+            {
+                Snackbar.Add(createResponse.Message ?? "User creation failed.", Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("User created.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(createResponse.Data));
+            return;
+        }
+
+        var updateResponse = await IamAdminService.UpdateUserAsync(ExistingUser.Id, _model.ToUpdateRequest());
+        _isSaving = false;
+
+        if (!updateResponse.Successful)
+        {
+            Snackbar.Add(updateResponse.Message ?? "User update failed.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("User updated.", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(updateResponse.Data));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

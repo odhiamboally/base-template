@@ -21,11 +21,13 @@ internal abstract class BaseLookupConfiguration<TLookup> : IEntityTypeConfigurat
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        // PK = enum int value — stable, meaningful, no identity column needed.
+        // Lookup IDs are database-generated. Codes carry the stable business meaning.
         builder.HasKey(x => x.Id);
 
-        // Code = enum member name stored by EF's HasConversion<string>().
-        // Unique index ensures the lookup table and the enum stay in 1-to-1 sync.
+        builder.Property(x => x.Id)
+            .ValueGeneratedOnAdd();
+
+        // Code is the stable value used by application logic and dropdown binding.
         builder.Property(x => x.Code)
             .IsRequired()
             .HasMaxLength(100);

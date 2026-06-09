@@ -22,9 +22,8 @@ namespace BT.Domain.Features.Shared.Lookups.Entities;
 ///    that touches every layer.
 /// </para>
 /// <para>
-/// <b>Id</b> maps to the corresponding C# enum's integer value so that the two stay in sync
-/// without any extra mapping logic. Cast the enum to int to get the lookup row:
-/// <code>var id = (int)CustomerStatus.Active;</code>
+/// <b>Id</b> is a database-generated surrogate key. Use <b>Code</b> for stable business
+/// meaning across UI, APIs, and integrations.
 /// </para>
 /// <para>
 /// <b>Code</b> holds the enum member name as a string (e.g. "PendingApproval"). This is what
@@ -34,12 +33,12 @@ namespace BT.Domain.Features.Shared.Lookups.Entities;
 /// </remarks>
 public abstract class BaseLookup : ISoftDeletable
 {
-    /// <summary>Integer value of the corresponding enum member.</summary>
+    /// <summary>Database-generated surrogate key.</summary>
 
     [Key]
     public int Id { get; set; }
 
-    /// <summary>Enum member name — matches what EF stores via HasConversion&lt;string&gt;().</summary>
+    /// <summary>Stable code used by application logic and dropdown binding.</summary>
     public string Code { get; set; } = string.Empty;
 
     /// <summary>Human-readable label shown in the UI.</summary>
@@ -53,11 +52,19 @@ public abstract class BaseLookup : ISoftDeletable
 
     public void MarkAsDeleted(string deletedBy)
     {
-        ArgumentNullException.ThrowIfNull(deletedBy);
+        ArgumentException.ThrowIfNullOrWhiteSpace(deletedBy);
         IsDeleted = true;
         DeletedAt = DateTimeOffset.UtcNow;
         DeletedBy = deletedBy;
+    }
 
+    public void Update(string code, string description, int displayOrder)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+        ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
+        Code = code.Trim();
+        Description = description.Trim();
+        DisplayOrder = displayOrder;
     }
 }

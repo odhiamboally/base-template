@@ -6,6 +6,7 @@ using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.Infrastructure.Extensions;
 using BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
+using BT.Infrastructure.Features.IAM.Users.Seeding;
 using BT.Persistence.Features.IAM.DataContext;
 using BT.Persistence.Features.IAM.Extensions;
 using MediatR;
@@ -25,7 +26,9 @@ public static class IamModuleDI
 
         services.AddIamPersistence(configuration);
 
-        services.AddIdentity<AppUser, IdentityRole>(DependencyInjection.ConfigureIdentityOptions)
+        services.Configure<DevelopmentSeedSettings>(configuration.GetSection(DevelopmentSeedSettings.SectionName));
+
+        services.AddIdentity<AppUser, AppRole>(DependencyInjection.ConfigureIdentityOptions)
             .AddEntityFrameworkStores<IamDBContext>()
             .AddDefaultTokenProviders();
 
@@ -39,6 +42,7 @@ public static class IamModuleDI
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<ISmsComposer, SmsComposer>();
         services.AddScoped<IUserContextService, UserContextService>();
+        services.AddScoped<DevelopmentIdentitySeeder>();
 
         return services;
     }

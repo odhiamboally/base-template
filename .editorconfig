@@ -110,6 +110,17 @@ dotnet_diagnostic.CA5351.severity = warning
 dotnet_diagnostic.CS8602.severity = none
 
 ########################################
+# EF CORE GENERATED MIGRATIONS
+########################################
+
+[**/Migrations/**/*.cs]
+
+# EF migration files are generated artifacts. Keep analyzer pressure on hand-written
+# configuration and domain code, but do not require manual cleanup inside generated migrations.
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA1861.severity = none
+
+########################################
 # 🧱 MAUI / PLATFORM-SPECIFIC EXCEPTIONS
 ########################################
 

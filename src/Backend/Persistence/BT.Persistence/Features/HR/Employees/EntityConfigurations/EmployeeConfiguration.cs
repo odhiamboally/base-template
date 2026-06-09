@@ -32,6 +32,28 @@ internal sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .IsRequired()
             .HasMaxLength(100);
 
+        builder.Property(x => x.IdNumber)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(x => x.Email)
+            .IsRequired()
+            .HasMaxLength(256);
+
+        builder.Property(x => x.CountryCode)
+            .IsRequired()
+            .HasMaxLength(8)
+            .HasDefaultValue("+254");
+
+        builder.Property(x => x.PhoneNationalNumber)
+            .IsRequired()
+            .HasMaxLength(20)
+            .HasDefaultValue(string.Empty);
+
+        builder.Property(x => x.PhoneNumber)
+            .IsRequired()
+            .HasMaxLength(20);
+
         // Audit columns
         builder.Property(x => x.CreatedAt)
             .IsRequired()

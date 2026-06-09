@@ -4,11 +4,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 using System.Text.Json.Serialization;
 
+using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
 
 namespace BT.Domain.Features.IAM.Users.Entities;
 
-public class RefreshToken : BaseEntity
+public class RefreshToken : BaseEntity, ISoftDeletable
 {
 
     public string AppUserId { get; private set; } = string.Empty;
@@ -21,6 +22,9 @@ public class RefreshToken : BaseEntity
     public string? RevokedReason { get; private set; }
     public string? ReplacedByToken { get; private set; }
     public string? TokenFamily { get; private set; } = Guid.CreateVersion7().ToString();
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
 
 
 
@@ -82,6 +86,23 @@ public class RefreshToken : BaseEntity
         RevokedByIp = revokedByIp;
         ReplacedByToken = replacedByToken;
         SetUpdatedInfo(AppUserId);
+    }
+
+    public void MarkAsDeleted(string deletedBy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(deletedBy);
+
+        IsDeleted = true;
+        DeletedAt = DateTimeOffset.UtcNow;
+        DeletedBy = deletedBy;
+
+        if (!IsRevoked)
+        {
+            RevokedAt = DeletedAt;
+            RevokedReason = "Soft deleted";
+        }
+
+        SetUpdatedInfo(deletedBy);
     }
 
     // Navigation

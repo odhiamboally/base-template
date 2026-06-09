@@ -10,7 +10,6 @@ using BT.Domain.Shared.Contracts.Repositories;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
 using BT.Persistence.Features.Shared.DataContext;
-using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -22,13 +21,12 @@ public sealed class SharedUnitOfWork(
     ILookupRepository lookupRepository,
     IEmailTemplateRepository emailTemplateRepository,
     IFailedMessageRepository failedMessageRepository,
-    IPublishEndpoint publishEndpoint,
     IPublisher publisher,
     ILogger<SharedUnitOfWork> logger
 ) : BaseUnitOfWork<SharedDBContext>(context, publisher, logger), ISharedUnitOfWork
 {
     private readonly SharedDBContext _sharedContext = context;
-    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
+    private readonly IPublisher _publisher = publisher;
     private readonly ILogger<SharedUnitOfWork> _logger = logger;
 
     public ILookupRepository LookupRepository { get; } = lookupRepository;
@@ -46,11 +44,11 @@ public sealed class SharedUnitOfWork(
             var domainEvents = _sharedContext.GetCollectedDomainEvents() ?? Array.Empty<IDomainEvent>();
 
             foreach (var domainEvent in domainEvents)
-                await _publishEndpoint.Publish(domainEvent, ct).ConfigureAwait(false);
+                await _publisher.Publish(domainEvent, ct).ConfigureAwait(false);
 
             if (appEvents != null)
                 foreach (var appEvent in appEvents)
-                    await _publishEndpoint.Publish(appEvent, ct).ConfigureAwait(false);
+                    await _publisher.Publish(appEvent, ct).ConfigureAwait(false);
 
             await transaction.CommitAsync(ct).ConfigureAwait(false);
             _sharedContext.ClearCollectedDomainEvents();

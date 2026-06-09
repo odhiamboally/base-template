@@ -1,4 +1,6 @@
 using BT.Application.Features.IAM.Users.Commands;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Domain.Features.IAM.Users.Events;
 using BT.Infrastructure.Logging;
@@ -14,6 +16,8 @@ namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 internal sealed class Logout(
     SignInManager<AppUser> signInManager,
     IHttpContextAccessor httpContextAccessor,
+    ISessionService sessionService,
+    IIamUnitOfWork iamUnitOfWork,
     IPublisher publisher,
     ILogger<Logout> logger) : IRequestHandler<LogoutCommand, AppResponse<bool>>
 {
@@ -22,7 +26,8 @@ internal sealed class Logout(
         try
         {
             var userId = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            var sessionId = httpContextAccessor.HttpContext?.Request.Headers["X-Session-Id"].FirstOrDefault();
+            var sessionId = httpContextAccessor.HttpContext?.Request.Headers["X-Session-Id"].FirstOrDefault()
+                ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("session_id");
 
             ServiceLogDefinitions.LogUserSignedOut(logger, userId ?? string.Empty);
 
@@ -30,6 +35,20 @@ internal sealed class Logout(
 
             if (!string.IsNullOrWhiteSpace(userId))
             {
+                if (!string.IsNullOrWhiteSpace(sessionId))
+                {
+                    await sessionService.RevokeSessionAsync(sessionId).ConfigureAwait(false);
+                }
+
+                await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+                {
+                    await iamUnitOfWork.TokenRepository
+                        .RevokeAllUserTokensAsync(userId, "User signed out", httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString())
+                        .ConfigureAwait(false);
+                    await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+                    return true;
+                }).ConfigureAwait(false);
+
                 await publisher.Publish(new UserLogoutEvent(userId, sessionId), cancellationToken).ConfigureAwait(false);
             }
 

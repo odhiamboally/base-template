@@ -1,0 +1,98 @@
+@page "/iam/verify-2fa"
+@rendermode InteractiveServer
+@using BT.SharedKernel.Features.IAM.Users.Dtos
+@inject IAuthSession AuthSession
+@inject NavigationManager Navigation
+
+<PageTitle>Verify sign in | Base Template</PageTitle>
+
+<section class="auth-shell compact">
+    <div class="auth-copy">
+        <span class="eyebrow">Step-up verification</span>
+        <h1>Enter your authenticator code.</h1>
+        <p>
+            Two-factor verification completes the IAM sign-in cycle and exchanges the temporary login result for a full API access token.
+        </p>
+    </div>
+
+    <div class="auth-card">
+        <EditForm Model="_model" OnValidSubmit="VerifyAsync">
+            <DataAnnotationsValidator />
+
+            <div class="form-stack">
+                <div>
+                    <label for="code">6-digit code</label>
+                    <InputText id="code" class="form-control form-control-lg otp-input" @bind-Value="_model.Code" inputmode="numeric" autocomplete="one-time-code" />
+                    <ValidationMessage For="@(() => _model.Code)" />
+                </div>
+
+                <label class="remember-row">
+                    <InputCheckbox @bind-Value="_model.RememberDevice" />
+                    <span>Trust this device where supported</span>
+                </label>
+
+                @if (!string.IsNullOrWhiteSpace(_message))
+                {
+                    <div class="alert alert-danger" role="alert">@_message</div>
+                }
+
+                <button class="btn btn-bt-primary btn-lg" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Verifying..." : "Verify and continue")
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "userId")]
+    public string? UserId { get; set; }
+
+    private readonly TotpVerificationModel _model = new();
+    private bool _isBusy;
+    private string? _message;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await AuthSession.InitializeAsync();
+
+        _model.UserId = UserId ?? AuthSession.PendingTwoFactorUserId ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(_model.UserId))
+        {
+            Navigation.NavigateTo("/iam/sign-in");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task VerifyAsync()
+    {
+        _isBusy = true;
+        _message = null;
+
+        var request = new VerifyOtpRequest
+        {
+            UserId = _model.UserId,
+            Code = _model.Code,
+            RememberMe = _model.RememberMe,
+            RememberDevice = _model.RememberDevice,
+            DeviceFingerprint = _model.DeviceFingerprint
+        };
+
+        var response = await AuthSession.CompleteTwoFactorAsync(request);
+        _isBusy = false;
+
+        if (!response.Successful)
+        {
+            _message = response.Message ?? "Verification failed.";
+            return;
+        }
+
+        Navigation.NavigateTo("/iam/security");
+    }
+}

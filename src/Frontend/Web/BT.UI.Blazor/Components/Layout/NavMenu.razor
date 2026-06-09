@@ -1,30 +1,103 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">BT.UI.Blazor</a>
+@inject IAuthSession AuthSession
+@inject IIamAdminService IamAdminService
+
+<div class="side-shell">
+    <div class="brand-row">
+        <a class="brand-lockup" href="/dashboard" aria-label="Base Template dashboard">
+            <img src="/custom/images/LLanCore_12.png" alt="LlanCore" />
+        </a>
     </div>
+
+    <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+    <div class="nav-scrollable">
+        <nav class="nav flex-column">
+            @foreach (var menu in SidebarMenus)
+            {
+                if (menu.Key.Equals("solution-overview", StringComparison.OrdinalIgnoreCase))
+                {
+                    <div class="nav-separator"></div>
+                }
+
+                <section class="nav-group">
+                    @RenderMenu(menu)
+                </section>
+            }
+        </nav>
+    </div>
+
+    <UserProfileMenu />
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+@code {
+    private readonly List<MenuResponse> _menus = [];
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+    private IReadOnlyList<MenuResponse> SidebarMenus => _menus.Count == 0 ? FallbackMenus : _menus;
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+    private static IReadOnlyList<MenuResponse> FallbackMenus =>
+    [
+        new(Guid.Empty, null, null, "dashboard", "Dashboard", "Operations dashboard.", "/dashboard", "Dashboard", "Sidebar", null, true, []),
+        new(Guid.Empty, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, true, []),
+        new(Guid.Empty, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, true, [])
+    ];
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
 
+        await AuthSession.InitializeAsync();
+        if (!AuthSession.IsAuthenticated)
+        {
+            return;
+        }
+
+        var response = await IamAdminService.GetNavigationMenusAsync("Sidebar");
+        if (response.Successful && response.Data is not null && response.Data.Count > 0)
+        {
+            _menus.Clear();
+            _menus.AddRange(response.Data);
+            StateHasChanged();
+        }
+    }
+
+    private RenderFragment RenderMenu(MenuResponse menu) => builder =>
+    {
+        var sequence = 0;
+        builder.OpenComponent<NavLink>(sequence++);
+        builder.AddAttribute(sequence++, "class", "nav-link");
+        builder.AddAttribute(sequence++, "href", menu.Url.TrimStart('/'));
+        if (menu.Key.Equals("dashboard", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.AddAttribute(sequence++, "Match", NavLinkMatch.All);
+        }
+
+        builder.AddAttribute(sequence++, "ChildContent", (RenderFragment)(childBuilder =>
+        {
+            var childSequence = 0;
+            childBuilder.OpenComponent<MudIcon>(childSequence++);
+            childBuilder.AddAttribute(childSequence++, "Icon", MenuIconMapper.Resolve(menu.Icon));
+            childBuilder.AddAttribute(childSequence++, "Size", Size.Small);
+            childBuilder.CloseComponent();
+            childBuilder.OpenElement(childSequence++, "span");
+            childBuilder.AddContent(childSequence++, menu.Title);
+            childBuilder.CloseElement();
+        }));
+        builder.CloseComponent();
+
+        if (menu.Children.Count == 0)
+        {
+            return;
+        }
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "nav-children");
+        foreach (var child in menu.Children)
+        {
+            builder.AddContent(sequence++, RenderMenu(child));
+        }
+        builder.CloseElement();
+    };
+}

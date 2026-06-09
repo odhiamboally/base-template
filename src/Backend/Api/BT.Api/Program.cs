@@ -7,6 +7,7 @@ using BT.Infrastructure.Features.Banking.Extensions;
 using BT.Infrastructure.Extensions;
 using BT.Infrastructure.Features.HR.Extensions;
 using BT.Infrastructure.Features.IAM.Extensions;
+using BT.Infrastructure.Features.IAM.Users.Seeding;
 using BT.Persistence.Features.Shared.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -184,6 +185,8 @@ try
             
     var app = builder.Build();
 
+    await app.SeedDevelopmentIdentityAsync().ConfigureAwait(false);
+
     if (app.Environment.IsDevelopment())
     {
         app.UseDeveloperExceptionPage();
@@ -196,10 +199,10 @@ try
 
     app.UseInfrastructureLoggingMiddleware();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-    }
+    // OpenAPI/Scalar mappings are configured below within the Development-only block.
+    // The earlier unconditional mapping caused duplicate endpoints when the detailed
+    // development mappings (with CacheOutput/AllowAnonymous) are also registered.
+    // Keep a single MapOpenApi registration (see the Development block further down).
 
     app.UseSecurityHeaders();
 

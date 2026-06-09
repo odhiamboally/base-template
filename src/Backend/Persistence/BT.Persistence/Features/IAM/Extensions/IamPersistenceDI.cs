@@ -5,9 +5,13 @@ using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.Banking.Customers.Contracts.Repositories;
 using BT.Domain.Features.HR.Employees.Contracts.Repositories;
+using BT.Domain.Features.IAM.Menus.Contracts.Repositories;
+using BT.Domain.Features.IAM.Permissions.Contracts.Repositories;
 using BT.Domain.Features.IAM.Users.Contracts.Repositories;
 using BT.Domain.Shared.Contracts.Repositories;
 using BT.Persistence.Features.IAM.DataContext;
+using BT.Persistence.Features.IAM.Menus.Repositories;
+using BT.Persistence.Features.IAM.Permissions.Repositories;
 using BT.Persistence.Features.IAM.Users.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +35,7 @@ public static class IamPersistenceDI
                 sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
                 sqlOptions.CommandTimeout(30);
                 sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_IAM");
             });
         });
 
@@ -40,6 +45,8 @@ public static class IamPersistenceDI
         services.AddScoped<IAppUserProfileRepository, IamAppUserProfileRepository>();
         services.AddScoped<IAppUserTotpSecretRepository, IamAppUserTotpSecretRepository>();
         services.AddScoped<ITempTotpSecretRepository, IamTempTotpSecretRepository>();
+        services.AddScoped<IPermissionRepository, IamPermissionRepository>();
+        services.AddScoped<IMenuRepository, IamMenuRepository>();
         services.AddScoped<IIamUnitOfWork, IamUnitOfWork>();
 
         return services;

@@ -29,6 +29,13 @@ internal static class DbContextHelper
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = now;
                     entry.Entity.UpdatedBy = userId;
+
+                    if (entry.Entity is ISoftDeletable { IsDeleted: true, DeletedAt: null } softDeleted)
+                    {
+                        softDeleted.DeletedAt = now;
+                        softDeleted.DeletedBy = userId;
+                    }
+
                     break;
                 case EntityState.Deleted:
                     if (entry.Entity is ISoftDeletable sd)

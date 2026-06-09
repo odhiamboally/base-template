@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BT.Api.Common.Controllers;
 
-internal abstract class BaseController : ControllerBase
+public abstract class BaseController : ControllerBase
 {
     protected IActionResult HandleResponse<T>(AppResponse<T> response)
     {
+        ArgumentNullException.ThrowIfNull(response);
+
         if (response.Successful && response.Data != null)
         {
             return Ok(response);

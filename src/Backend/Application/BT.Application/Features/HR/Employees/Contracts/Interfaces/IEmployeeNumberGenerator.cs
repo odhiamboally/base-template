@@ -1,6 +1,6 @@
 namespace BT.Application.Features.HR.Employees.Contracts.Interfaces;
 
-internal interface IEmployeeNumberGenerator
+public interface IEmployeeNumberGenerator
 {
-    Task<string> GenerateAsync(CancellationToken ct = default);
+    Task<string> GenerateAsync(Guid departmentId, CancellationToken ct = default);
 }

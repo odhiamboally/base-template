@@ -62,7 +62,7 @@ internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUnitOfWork,
                 .GetLookupsByTypeAsync(enumValue, cancellationToken)
                 .ConfigureAwait(false);
 
-            var response = lookups.Select(l => new LookupResponse(l.Id, l.Code, l.Description)).ToList();
+            var response = lookups.Select(l => new LookupResponse(l.Id, l.Code, l.Description, l.DisplayOrder)).ToList();
 
             return new AppResponse<IReadOnlyList<LookupResponse>>
             {

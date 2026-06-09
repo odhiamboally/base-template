@@ -1,4 +1,5 @@
 using BT.Domain.Shared.Entities;
+using BT.Api.Common.Controllers;
 using BT.Persistence.Features.Shared.DataContext;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.Lookups.Dtos;
@@ -21,6 +22,7 @@ namespace BT.Tests.Architecture;
 internal static class AssemblyReferences
 {
     internal static readonly Assembly Domain = typeof(BaseEntity).Assembly;
+    internal static readonly Assembly Api = typeof(BaseController).Assembly;
     internal static readonly Assembly Application = Assembly.LoadFrom(
         Path.GetFullPath(Path.Combine(
             FindRepoRoot(),

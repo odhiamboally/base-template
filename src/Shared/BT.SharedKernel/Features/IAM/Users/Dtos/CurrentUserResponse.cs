@@ -15,4 +15,7 @@ public record CurrentUserResponse(
     string Gender,
     bool? IsAuthenticated,
     DateTimeOffset? LastLoginAt,
-    List<string> Roles);
+    List<string> Roles,
+    List<string>? Permissions = null,
+    string? SessionId = null,
+    bool MfaEnrollmentRequired = false);

@@ -14,12 +14,15 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.IAM.Users.Entities;
+using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OtpNet;
 
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
@@ -32,8 +35,13 @@ internal sealed class VerifyTotpCode(
     ICacheService cache,
     IEncryptionService encryptionService,
     IIamUnitOfWork iamUnitOfWork,
+    ISessionService sessionService,
+    IHttpContextAccessor httpContextAccessor,
+    IOptions<JwtSettings> jwtSettings,
     ILogger<VerifyTotpCode> logger) : IRequestHandler<VerifyOtpCommand, AppResponse<VerifyOtpResponse>>
 {
+    private readonly JwtSettings _jwtSettings = jwtSettings.Value;
+
     public async Task<AppResponse<VerifyOtpResponse>> Handle(VerifyOtpCommand command, CancellationToken cancellationToken)
     {
         var request = command.Request;
@@ -85,7 +93,22 @@ internal sealed class VerifyTotpCode(
                 return AppResponse.Failure<VerifyOtpResponse>("Invalid verification code. Please try again.");
             }
 
-            var userClaims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
+            var requestedSessionId = Guid.CreateVersion7();
+            var sessionCreation = await sessionService.CreateSessionAsync(
+                user.Id,
+                requestedSessionId,
+                httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
+                httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
+                request.DeviceFingerprint ?? "unknown").ConfigureAwait(false);
+
+            if (!sessionCreation.Successful || sessionCreation.Data == Guid.Empty)
+            {
+                ServiceLogDefinitions.LogFailedToCreateUserSession(logger, user.Id);
+                return AppResponse.Failure<VerifyOtpResponse>("Could not establish a user session.");
+            }
+
+            var activeSessionId = sessionCreation.Data;
+            var userClaims = await claimsService.GetUserClaimsAsync(user, activeSessionId).ConfigureAwait(false);
             if (!userClaims.Any())
             {
                 return AppResponse.Failure<VerifyOtpResponse>("Could not retrieve user claims");
@@ -94,9 +117,22 @@ internal sealed class VerifyTotpCode(
             var tokenResponse = await jwtService.CreateTokenAsync(userClaims).ConfigureAwait(false);
             var tokenExpiry = jwtService.GetTokenExpiry(tokenResponse);
             var refreshToken = jwtService.CreateRefreshToken();
+            var refreshTokenEntity = BT.Domain.Features.IAM.Users.Entities.RefreshToken.Create(
+                user.Id,
+                refreshToken,
+                DateTimeOffset.UtcNow.AddHours(_jwtSettings.RefreshTokenExpiryHours),
+                user.Id,
+                httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString());
 
             user.RecordSuccessfulLogin();
             await userManager.UpdateAsync(user).ConfigureAwait(false);
+            await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+            {
+                await iamUnitOfWork.TokenRepository.AddRefreshTokenAsync(refreshTokenEntity).ConfigureAwait(false);
+                await iamUnitOfWork.TokenRepository.CleanupExpiredTokensAsync(user.Id).ConfigureAwait(false);
+                await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+                return true;
+            }).ConfigureAwait(false);
 
             if (request.RememberDevice)
                 await signInManager.RememberTwoFactorClientAsync(user).ConfigureAwait(false);
@@ -143,6 +179,7 @@ internal sealed class VerifyTotpCode(
                     tokenResponse,
                     refreshToken ?? string.Empty,
                     user.Id,
+                    activeSessionId.ToString(),
                     true,
                     tokenExpiry,
                     appUserResponse,

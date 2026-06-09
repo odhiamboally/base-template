@@ -280,6 +280,32 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         UpdatedBy = updatedBy;
     }
 
+    public void UpdateAdminProfile(
+        string userName,
+        string email,
+        string firstName,
+        string lastName,
+        string? phoneNumber,
+        string? nationalId,
+        Gender gender,
+        string updatedBy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(updatedBy);
+
+        UserName = userName.Trim();
+        Email = email.Trim();
+        FirstName = firstName.Trim();
+        LastName = lastName.Trim();
+        PhoneNumber = phoneNumber?.Trim();
+        NationalId = nationalId?.Trim() ?? string.Empty;
+        Gender = gender;
+        MarkUpdated(updatedBy);
+    }
+
     public void MarkAsDeleted(string deletedBy)
     {
         ArgumentNullException.ThrowIfNull(deletedBy);

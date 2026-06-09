@@ -31,6 +31,7 @@ public static class BankingPersistenceDI
                 sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
                 sqlOptions.CommandTimeout(30);
                 sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_Banking");
             });
         });
 

@@ -4,6 +4,7 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.HR.Employees.Entities;
+using BT.Domain.Features.HR.Departments.Entities;
 using BT.Domain.Shared.Entities;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
@@ -18,6 +19,8 @@ public class HrDBContext(
 ) : DbContext(options)
 {
     public DbSet<Employee> Employees { get; set; }
+    public DbSet<EmployeeNumberSequence> EmployeeNumberSequences { get; set; }
+    public DbSet<Department> Departments { get; set; }
 
     private List<IDomainEvent> _collectedDomainEvents = [];
     public IReadOnlyList<IDomainEvent>? GetCollectedDomainEvents() => _collectedDomainEvents?.AsReadOnly();

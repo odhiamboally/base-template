@@ -9,7 +9,9 @@ using BT.Application.Features.IAM.Users.Mappings;
 using BT.Application.Features.Shared.EmailTemplates.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.HR.Employees.Entities;
+using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Features.IAM.Users.Entities;
+using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
@@ -18,6 +20,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.ObjectModel;
 using System.IdentityModel.Tokens.Jwt;
@@ -33,8 +36,14 @@ internal sealed class Login(
     IJwtService jwtService,
     IClaimsService claimsService,
     IServiceManager serviceManager,
+    IIamUnitOfWork iamUnitOfWork,
+    IOptions<JwtSettings> jwtSettings,
+    IOptions<MfaSettings> mfaSettings,
     ILogger<Login> logger) : IRequestHandler<LoginCommand, AppResponse<LoginResponse>>
 {
+    private readonly JwtSettings _jwtSettings = jwtSettings.Value;
+    private readonly MfaSettings _mfaSettings = mfaSettings.Value;
+
     public async Task<AppResponse<LoginResponse>> Handle(LoginCommand command, CancellationToken cancellationToken)
     {
         var loginRequest = command.LoginRequest;
@@ -61,13 +70,6 @@ internal sealed class Login(
             {
                 ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Unconfirmed email"));
                 return AppResponse.Failure<LoginResponse>("Please confirm your email before logging in.");
-            }
-
-            var passwordValid = await userManager.CheckPasswordAsync(user, loginRequest.Password).ConfigureAwait(false);
-            if (!passwordValid)
-            {
-                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Invalid password"));
-                return AppResponse.Failure<LoginResponse>("Invalid Employee Number or password.");
             }
 
             var signInResult = await signInManager
@@ -146,6 +148,7 @@ internal sealed class Login(
                     false,
                     tempToken,
                     string.Empty,
+                    null,
                     DateTimeOffset.UtcNow.AddMinutes(10),
                     userInfoWith2FA,
                     tempClaims.ToClaimResponses()));
@@ -171,7 +174,14 @@ internal sealed class Login(
                 return AppResponse.Failure<LoginResponse>("Could not establish a user session.");
             }
 
-            var userClaims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
+            var activeSessionId = sessionCreationResult.Data;
+            if (activeSessionId == Guid.Empty)
+            {
+                ServiceLogDefinitions.LogFailedToCreateUserSession(logger, user.Id);
+                return AppResponse.Failure<LoginResponse>("Could not establish a user session.");
+            }
+
+            var userClaims = await claimsService.GetUserClaimsAsync(user, activeSessionId).ConfigureAwait(false);
             if (!userClaims.Any())
             {
                 ServiceLogDefinitions.LogFailedToGetUserClaims(logger, user.Id);
@@ -192,6 +202,13 @@ internal sealed class Login(
                 return AppResponse.Failure<LoginResponse>("Could not generate refresh token");
             }
 
+            var refreshTokenEntity = BT.Domain.Features.IAM.Users.Entities.RefreshToken.Create(
+                user.Id,
+                refreshToken,
+                DateTimeOffset.UtcNow.AddHours(_jwtSettings.RefreshTokenExpiryHours),
+                user.Id,
+                httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString());
+
             var jwtHandler = new JwtSecurityTokenHandler();
             var jwt = jwtHandler.ReadJwtToken(tokenResponse);
             var tokenExpiry = jwt.ValidTo;
@@ -205,6 +222,7 @@ internal sealed class Login(
 
             var rolesResponse = await userManager.GetRolesAsync(user).ConfigureAwait(false);
             var userRoles = new Collection<string>(rolesResponse.ToList());
+            var mfaEnrollmentRequired = IsMfaEnrollmentRequired(twoFactorEnabled, rolesResponse);
             user.RecordSuccessfulLogin();
             var finalAppUserResponse = appUserResponse with { Roles = userRoles, LastLoginAt = user.LastLoginAt };
 
@@ -220,6 +238,14 @@ internal sealed class Login(
                 .SetAsync(CacheKeys.UserInfo(user.Id), finalAppUserResponse, TimeSpan.FromMinutes(10), cancellationToken)
                 .ConfigureAwait(false);
 
+            await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+            {
+                await iamUnitOfWork.TokenRepository.AddRefreshTokenAsync(refreshTokenEntity).ConfigureAwait(false);
+                await iamUnitOfWork.TokenRepository.CleanupExpiredTokensAsync(user.Id).ConfigureAwait(false);
+                await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+                return true;
+            }).ConfigureAwait(false);
+
             return AppResponse.Success("Login successful", new LoginResponse(
                 user.Id,
                 user.FirstName ?? string.Empty,
@@ -230,14 +256,26 @@ internal sealed class Login(
                 true,
                 tokenResponse,
                 refreshToken,
+                activeSessionId.ToString(),
                 tokenExpiry,
                 finalAppUserResponse,
-                userClaims.ToClaimResponses()));
+                userClaims.ToClaimResponses(),
+                mfaEnrollmentRequired));
         }
         catch (Exception ex)
         {
             ServiceLogDefinitions.LogLoginError(logger, loginRequest.UserName, ex);
             throw;
         }
+    }
+
+    private bool IsMfaEnrollmentRequired(bool twoFactorEnabled, IEnumerable<string> roles)
+    {
+        if (!_mfaSettings.Enabled || !_mfaSettings.EnforceEnrollment || twoFactorEnabled)
+        {
+            return false;
+        }
+
+        return roles.Any(role => _mfaSettings.RequiredRoles.Contains(role, StringComparer.OrdinalIgnoreCase));
     }
 }

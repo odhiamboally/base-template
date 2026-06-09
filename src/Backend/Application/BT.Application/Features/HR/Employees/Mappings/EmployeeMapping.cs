@@ -1,5 +1,6 @@
 using BT.Domain.Features.HR.Employees.Entities;
 using BT.SharedKernel.Features.HR.Employees.Dtos;
+using BT.SharedKernel.Features.Shared.Phone;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,24 +11,31 @@ namespace BT.Application.Features.HR.Employees.Mappings;
 
 public static class EmployeeMapping
 {
-    public static Employee ToEntity(this CreateEmployeeRequest request, string createdBy) 
+    public static Employee ToEntity(this CreateEmployeeRequest request, string generatedNumber, string createdBy) 
     {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
 
+        var phone = PhoneNumberFormatter.Normalize(
+            request.CountryCode,
+            request.PhoneNationalNumber,
+            request.PhoneNumber);
+
         return Employee.Create(
-            request.Number,
+            generatedNumber,
             request.Email,
             request.FirstName,
             request.LastName,
             request.IdNumber,
-            request.PhoneNumber,
+            phone.CountryCode,
+            phone.NationalNumber,
+            phone.E164,
             request.DepartmentId,
             request.ManagerId ?? Guid.Empty,
             createdBy
         );
     }
         
-    public static EmployeeResponse ToEmployeeResponse(this Employee employee)
+    public static EmployeeResponse ToEmployeeResponse(this Employee employee, string departmentName = "", string managerName = "")
     {
         ArgumentNullException.ThrowIfNull(employee, nameof(employee));
 
@@ -35,7 +43,15 @@ public static class EmployeeMapping
             employee.Id,
             $"{employee.FirstName} {employee.LastName}",
             employee.Number,
-            employee.DepartmentId
+            employee.Email,
+            employee.IdNumber,
+            employee.PhoneNumber,
+            employee.DepartmentId,
+            employee.ManagerId,
+            departmentName,
+            managerName,
+            employee.CountryCode,
+            employee.PhoneNationalNumber
         );
     }
        
@@ -44,13 +60,18 @@ public static class EmployeeMapping
             employee.Id,
             $"{employee.FirstName} {employee.LastName}",
             employee.Number,
-            employee.DepartmentId
+            employee.Email,
+            employee.IdNumber,
+            employee.PhoneNumber,
+            employee.DepartmentId,
+            employee.ManagerId,
+            string.Empty,
+            string.Empty,
+            employee.CountryCode,
+            employee.PhoneNationalNumber
         );
 
     public static List<EmployeeResponse> ToEmployeeResponseList(this Collection<Employee> employees) =>
         [.. employees.Select(e => e.ToEmployeeResponse())];
-
-    public static List<Employee> ToEntityList(this Collection<CreateEmployeeRequest> requests, string createdBy) =>
-        [.. requests.Select(r => r.ToEntity(createdBy))];
 
 }

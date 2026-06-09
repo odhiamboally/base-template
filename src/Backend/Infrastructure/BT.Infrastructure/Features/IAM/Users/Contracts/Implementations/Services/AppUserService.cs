@@ -26,7 +26,8 @@ internal sealed class AppUserService(UserManager<AppUser> userManager) : IAppUse
 
     public async Task<bool> DeleteAsync(AppUser appUser)
     {
-        var result = await _userManager.DeleteAsync(appUser).ConfigureAwait(false);
+        appUser.MarkAsDeleted("System");
+        var result = await _userManager.UpdateAsync(appUser).ConfigureAwait(false);
         return result.Succeeded;
     }
 

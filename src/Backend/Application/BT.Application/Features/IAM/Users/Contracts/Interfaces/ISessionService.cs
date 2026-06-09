@@ -11,8 +11,8 @@ public interface ISessionService
 {
     Task<AppResponse<bool>> CheckConcurrentSessionsAsync(string userId);
     Task<AppResponse<bool>> CleanupExpiredSessionsAsync();
-    Task<AppResponse<bool>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent);
-    Task<AppResponse<bool>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent, string deviceFingerprint);
+    Task<AppResponse<Guid>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent);
+    Task<AppResponse<Guid>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent, string deviceFingerprint);
     Task<AppResponse<Collection<AppUserSession>>> GetActiveSessionsAsync(string userId);
     Task<AppResponse<bool>> IsSessionValidAsync(string sessionId, string userId);
     Task<AppResponse<bool>> RevokeSessionAsync(string sessionId);

@@ -1,0 +1,59 @@
+@page "/overview"
+
+<PageTitle>Solution Overview | Base Template</PageTitle>
+
+<section class="overview-page">
+    <div class="overview-hero">
+        <span class="eyebrow">Solution overview</span>
+        <h1>Reusable enterprise base template.</h1>
+        <p>
+            This POC demonstrates a modular monolith foundation with bounded contexts, production-minded security,
+            local developer ergonomics, and a UI-to-API flow ready to grow into real business modules.
+        </p>
+    </div>
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="6" lg="4">
+            <MudPaper Class="overview-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.AccountTree" />
+                <h2>Architecture</h2>
+                <p>Bounded contexts across IAM, Banking, HR, and Shared modules, with feature-first organization in backend and UI.</p>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6" lg="4">
+            <MudPaper Class="overview-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Security" />
+                <h2>Security</h2>
+                <p>ASP.NET Core Identity, JWT-backed API access, local dev admin seed, authenticator-app 2FA, rate limiting, and security headers.</p>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6" lg="4">
+            <MudPaper Class="overview-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Storage" />
+                <h2>Persistence</h2>
+                <p>EF Core contexts per bounded context, explicit entity configurations, migrations, soft-delete guardrails, and context-owned repositories.</p>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6" lg="4">
+            <MudPaper Class="overview-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Hub" />
+                <h2>Integration</h2>
+                <p>Domain/integration event conventions, outbox direction, MassTransit decision point, and background job abstractions.</p>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6" lg="4">
+            <MudPaper Class="overview-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.MonitorHeart" />
+                <h2>Operations</h2>
+                <p>Health checks, Serilog/Seq direction, OpenAPI/Scalar, GitHub Actions guardrails, and local run documentation.</p>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6" lg="4">
+            <MudPaper Class="overview-card" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Web" />
+                <h2>UI Flow</h2>
+                <p>Blazor Web App, MudBlazor shell, HTTP API client boundary, protected token storage, and demo-ready IAM/admin surfaces.</p>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</section>

@@ -15,10 +15,10 @@ namespace BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Service
 
 internal sealed class ClaimsService(
     UserManager<AppUser> userManager,
-    RoleManager<AppUser> roleManager, ILogger<ClaimsService> logger) : IClaimsService
+    RoleManager<AppRole> roleManager, ILogger<ClaimsService> logger) : IClaimsService
 {
     private readonly UserManager<AppUser> _userManager = userManager;
-    private readonly RoleManager<AppUser> _roleManager = roleManager;
+    private readonly RoleManager<AppRole> _roleManager = roleManager;
     private readonly ILogger<ClaimsService> _logger = logger;
 
     public async Task<bool> AddUserClaimAsync(AppUser user, Claim claim)
@@ -44,7 +44,7 @@ internal sealed class ClaimsService(
         }
     }
 
-    public async Task<List<Claim>> GetUserClaimsAsync(AppUser user)
+    public async Task<List<Claim>> GetUserClaimsAsync(AppUser user, Guid? sessionId = null)
     {
         try
         {
@@ -52,13 +52,18 @@ internal sealed class ClaimsService(
             {
                 // Standard Identity
                 new(JwtRegisteredClaimNames.Sub, user.Id),
+                new(ClaimTypes.NameIdentifier, user.Id),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
 
                 new("tenant_id", user.TenantId.ToString()),
                 new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"),
                 new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
+                new("mfa_enrolled", user.TwoFactorEnabled ? "true" : "false"),
             };
+
+            if (sessionId.HasValue && sessionId.Value != Guid.Empty)
+                claims.Add(new("session_id", sessionId.Value.ToString()));
 
             if (user.EmployeeId.HasValue)
                 claims.Add(new("employee_id", user.EmployeeId.Value.ToString()));
@@ -84,9 +89,12 @@ internal sealed class ClaimsService(
                 }
             }
 
-            //claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+            var directClaims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
+            claims.AddRange(directClaims.Where(c => c.Type == "permission"));
 
-            return claims;
+            return [.. claims
+                .GroupBy(static claim => $"{claim.Type}:{claim.Value}", StringComparer.OrdinalIgnoreCase)
+                .Select(static group => group.First())];
         }
         catch (Exception ex)
         {

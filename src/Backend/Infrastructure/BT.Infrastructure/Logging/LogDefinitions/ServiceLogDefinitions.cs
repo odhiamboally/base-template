@@ -199,4 +199,28 @@ internal static partial class ServiceLogDefinitions
 
     [LoggerMessage(EventId = 3471, Level = LogLevel.Error, Message = "Error getting user claims for user {UserId}")]
     public static partial void LogGetUserClaimsError(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 3472, Level = LogLevel.Error, Message = "Development identity seed failed")]
+    public static partial void LogDevelopmentIdentitySeedError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3473, Level = LogLevel.Information, Message = "Development admin user is available: {Email}")]
+    public static partial void LogDevelopmentAdminSeeded(ILogger logger, string email);
+
+    [LoggerMessage(EventId = 3474, Level = LogLevel.Error, Message = "Error deactivating user {UserId}")]
+    public static partial void LogDeactivateUserError(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 3475, Level = LogLevel.Error, Message = "Error creating role {RoleName}")]
+    public static partial void LogRoleCreateError(ILogger logger, string roleName, Exception ex);
+
+    [LoggerMessage(EventId = 3476, Level = LogLevel.Error, Message = "Error updating user {UserId}")]
+    public static partial void LogUpdateUserError(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 3477, Level = LogLevel.Error, Message = "Error updating role {RoleId}")]
+    public static partial void LogRoleUpdateError(ILogger logger, string roleId, Exception ex);
+
+    [LoggerMessage(EventId = 3478, Level = LogLevel.Error, Message = "Error revoking user device {DeviceId}")]
+    public static partial void LogUserDeviceRevokeError(ILogger logger, string deviceId, Exception ex);
+
+    [LoggerMessage(EventId = 3479, Level = LogLevel.Error, Message = "Error deleting role {RoleId}")]
+    public static partial void LogRoleDeleteError(ILogger logger, string roleId, Exception ex);
 }

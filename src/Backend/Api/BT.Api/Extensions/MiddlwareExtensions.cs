@@ -6,6 +6,8 @@ internal static class MiddlwareExtensions
 {
     public static IApplicationBuilder UsePostAuthMiddleware(this IApplicationBuilder builder)
     {
-        return builder.UseMiddleware<SessionValidationMiddleware>();
+        return builder
+            .UseMiddleware<SessionValidationMiddleware>()
+            .UseMiddleware<MfaEnrollmentMiddleware>();
     }
 }
