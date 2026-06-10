@@ -51,7 +51,6 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
             .FirstOrDefaultAsync(rt => rt.Token == token && rt.AppUserId == userId).ConfigureAwait(false);
     }
 
-
     public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
     {
         return await _iamContext.RefreshTokens
@@ -166,10 +165,6 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
         await CleanupExpiredTokensAsync().ConfigureAwait(false);
         var now = DateTimeOffset.UtcNow;
         await _iamContext.RefreshTokens.CountAsync().ConfigureAwait(false);
-        await _iamContext.RefreshTokens.CountAsync(rt => !rt.RevokedAt.HasValue && rt.ExpiresAt > now && !rt.UsedAt.HasValue)
-            .ConfigureAwait(false);
-
-        await _iamContext.RefreshTokens.CountAsync(rt => rt.ExpiresAt <= now).ConfigureAwait(false);
         await _iamContext.RefreshTokens.CountAsync(rt => !rt.RevokedAt.HasValue && rt.ExpiresAt > now && !rt.UsedAt.HasValue)
             .ConfigureAwait(false);
 
