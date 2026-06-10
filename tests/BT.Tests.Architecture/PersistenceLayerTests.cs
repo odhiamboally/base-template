@@ -112,6 +112,33 @@ public sealed class PersistenceLayerTests
             string.Join(", ", entitiesWithoutTenantId));
     }
 
+    [Fact]
+    public void IamTokenRepository_Should_Not_Query_With_Unmapped_RefreshToken_Status_Helpers()
+    {
+        var repositoryPath = Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "Backend",
+            "Persistence",
+            "BT.Persistence",
+            "Features",
+            "IAM",
+            "Users",
+            "Repositories",
+            "IamTokenRepository.cs");
+
+        var source = File.ReadAllText(repositoryPath);
+        var forbiddenMembers = new[] { "IsActive", "IsExpired", "IsRevoked", "IsUsed" };
+        var unsafeMembers = forbiddenMembers
+            .Where(member => source.Contains($".{member}", StringComparison.Ordinal))
+            .ToList();
+
+        unsafeMembers.Should().BeEmpty(
+            because: "RefreshToken status helpers are [NotMapped] convenience properties. " +
+                     "Repository predicates must use mapped columns such as RevokedAt, ExpiresAt, and UsedAt. Found: {0}",
+            string.Join(", ", unsafeMembers));
+    }
+
     private static List<Type> GetDeclaredDbSetEntityTypes() =>
         Types.InAssembly(AssemblyReferences.Persistence)
             .That()
@@ -148,6 +175,24 @@ public sealed class PersistenceLayerTests
                 }
             }
         }
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (current is not null)
+        {
+            if (Directory.Exists(Path.Combine(current.FullName, "src")) &&
+                Directory.Exists(Path.Combine(current.FullName, "tests")))
+            {
+                return current.FullName;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Could not locate repository root from the test output directory.");
     }
 
     // ── DbContexts ────────────────────────────────────────────────────────────
