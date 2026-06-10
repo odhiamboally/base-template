@@ -20,6 +20,11 @@ internal static class DbContextHelper
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
+            if (entityType.ClrType is null || entityType.IsOwned())
+            {
+                continue;
+            }
+
             ApplyQueryFilters(modelBuilder, entityType, context);
             ApplyCursorPagination(modelBuilder, entityType);
         }
@@ -178,7 +183,7 @@ internal static class DbContextHelper
 
             if (tenantId == Guid.Empty)
             {
-                throw new InvalidOperationException($"Cannot save tenant-scoped entity '{entry.Metadata.ClrType.Name}' because no current tenant was resolved.");
+                throw new InvalidOperationException($"Cannot save tenant-scoped entity '{entry.Metadata.Name}' because no current tenant was resolved.");
             }
 
             tenantProperty.CurrentValue = tenantId;

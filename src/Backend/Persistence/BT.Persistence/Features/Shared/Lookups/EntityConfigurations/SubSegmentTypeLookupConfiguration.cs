@@ -16,69 +16,15 @@ internal sealed class SubSegmentTypeLookupConfiguration : BaseLookupConfiguratio
         builder.ToTable("Lkp_SubSegmentTypes");
 
         builder.HasData(
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.Local, 
-                Code = "Local", 
-                Description = "Local", 
-                DisplayOrder = 1 
-            },
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.Multinational, 
-                Code = "Multinational", 
-                Description = "Multinational", 
-                DisplayOrder = 2 
-            },
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.GovernmentOwned, 
-                Code = "GovernmentOwned", 
-                Description = "Government Owned", 
-                DisplayOrder = 3 
-            },
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.Partnership, 
-                Code = "Partnership", 
-                Description = "Partnership", 
-                DisplayOrder = 4 
-            },
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.PrivateLimitedCompany, 
-                Code = "PrivateLimitedCompany", 
-                Description = "Private Limited Company", 
-                DisplayOrder = 5 
-            },
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.PublicLimitedCompany, 
-                Code = "PublicLimitedCompany", 
-                Description = "Public Limited Company", 
-                DisplayOrder = 6 
-            },
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.SoleProprietorship, 
-                Code = "SoleProprietorship", 
-                Description = "Sole Proprietorship", 
-                DisplayOrder = 7 
-            },
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.NGO, 
-                Code = "NGO", 
-                Description = "Non-Governmental Organisation", 
-                DisplayOrder = 8 
-            },
-            new SubSegmentTypeLookup 
-            { 
-                Id = (int)SubSegmentType.Individual, 
-                Code = "Individual", 
-                Description = "Individual", 
-                DisplayOrder = 9 
-            }
+            Row((int)SubSegmentType.Local, "Local", "Local", 1),
+            Row((int)SubSegmentType.Multinational, "Multinational", "Multinational", 2),
+            Row((int)SubSegmentType.GovernmentOwned, "GovernmentOwned", "Government Owned", 3),
+            Row((int)SubSegmentType.Partnership, "Partnership", "Partnership", 4),
+            Row((int)SubSegmentType.PrivateLimitedCompany, "PrivateLimitedCompany", "Private Limited Company", 5),
+            Row((int)SubSegmentType.PublicLimitedCompany, "PublicLimitedCompany", "Public Limited Company", 6),
+            Row((int)SubSegmentType.SoleProprietorship, "SoleProprietorship", "Sole Proprietorship", 7),
+            Row((int)SubSegmentType.NGO, "NGO", "Non-Governmental Organisation", 8),
+            Row((int)SubSegmentType.Individual, "Individual", "Individual", 9)
         );
 
     }

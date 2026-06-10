@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -386,63 +386,63 @@ namespace BT.Persistence.Migrations.Shared
                 keyColumn: "Id",
                 keyValue: 1,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "Lkp_SubSegmentTypes",
                 keyColumn: "Id",
                 keyValue: 2,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "Lkp_SubSegmentTypes",
                 keyColumn: "Id",
                 keyValue: 3,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "Lkp_SubSegmentTypes",
                 keyColumn: "Id",
                 keyValue: 4,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "Lkp_SubSegmentTypes",
                 keyColumn: "Id",
                 keyValue: 5,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "Lkp_SubSegmentTypes",
                 keyColumn: "Id",
                 keyValue: 6,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "Lkp_SubSegmentTypes",
                 keyColumn: "Id",
                 keyValue: 7,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "Lkp_SubSegmentTypes",
                 keyColumn: "Id",
                 keyValue: 8,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "Lkp_SubSegmentTypes",
                 keyColumn: "Id",
                 keyValue: 9,
                 column: "TenantId",
-                value: new Guid("00000000-0000-0000-0000-000000000000"));
+                value: new Guid("0194f700-0000-7000-8000-000000000001"));
 
             migrationBuilder.UpdateData(
                 table: "LookupCatalogTypes",
@@ -686,3 +686,4 @@ namespace BT.Persistence.Migrations.Shared
         }
     }
 }
+

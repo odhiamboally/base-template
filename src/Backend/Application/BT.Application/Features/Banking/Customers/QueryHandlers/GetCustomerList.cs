@@ -72,7 +72,7 @@ internal sealed class GetCustomerListQueryHandler(IBankingUnitOfWork _bankingUni
                 null,
                 null,
                 req.Cursor,
-                pageSize);
+                pageSize + 1);
 
             var totalCount = await _bankingUnitOfWork.CustomerRepository.CountAsync(ct).ConfigureAwait(false);
             var customerEntities = await _bankingUnitOfWork.CustomerRepository.SearchAsync(spec, ct).ConfigureAwait(false);
