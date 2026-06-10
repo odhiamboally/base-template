@@ -1,6 +1,6 @@
 # Base Template - Execution Strategy
 
-> Last updated: 2026-06-03
+> Last updated: 2026-06-10
 >
 > This file explains how to execute `PLAN.md` without jumping between unrelated work.
 > `PLAN.md` defines what the template should become. This file defines sequencing, dependencies, readiness gates, and safe parallel work.
@@ -55,8 +55,9 @@ This is the default execution path unless a blocker forces a dependency detour.
 Current near-term focus:
 
 - Keep the local API and Blazor UI runnable.
-- Finish the Customer reference flow as the pattern for future features.
-- Complete IAM and authorization enough that menu visibility and admin features can be secured properly.
+- Complete the local browser/email IAM smoke test from Visual Studio.
+- Keep the Customer reference flow as the pattern for future features.
+- Continue authorization, menu visibility, and admin features from the completed IAM enterprise baseline.
 
 ---
 
@@ -73,6 +74,9 @@ Current near-term focus:
 | Feature-gated UI | Feature flag abstraction | UI visibility must use the same feature gate model as API/Application. |
 | Endpoint authorization policies | IAM claims and permission model | Policies need known claims/permissions to evaluate. |
 | Audit trail | Current user/context resolution | Audit records must know who performed an action. |
+| Current user audit stamping | IAM current-user resolution, explicit system actor convention | Audit fields must capture the real actor without breaking seeders, background jobs, or integration consumers. |
+| Domain encapsulation hardening | Stable EF mappings, aggregate boundaries, seed/migration confidence | Setter restrictions should be applied per aggregate to avoid broad EF/Identity breakage. |
+| IAM auth integration tests | IAM endpoints, token/session persistence, MFA policy, permission policies | Tests should verify security behavior after the flow is implemented, not before the contracts settle. |
 | Soft delete consistency | EF configurations, repository/UoW conventions | Query filters and delete behavior must be enforced centrally. |
 | Health checks | Dependency configuration | Checks need known SQL, Redis, messaging, Seq, Key Vault, and provider settings. |
 | Observability | Logging conventions, health/dependency map | Traces/metrics/logs need stable operation boundaries. |
@@ -112,7 +116,19 @@ Required before protected admin modules, dynamic menus, and authorization-heavy 
 - Current-user endpoint returns stable user identity, roles, claims, and context links.
 - TOTP setup and verification work.
 - Employee and Customer AppUser links are demonstrable.
-- Critical auth paths have tests or documented manual verification.
+- Grant System Access sends the activation email and refuses duplicate active links.
+- Revoke System Access deactivates the linked account and terminates active sessions/refresh tokens.
+- Account lockout, password policy, session expiry, refresh-token reuse detection, and MFA-required behavior are verified.
+- Critical auth paths have automated tests or documented manual verification.
+- IAM-affecting writes stamp the real current user or an explicit system actor.
+
+Current status:
+
+- Code-level IAM/Auth baseline is complete.
+- Application-level IAM validation is wired.
+- Runtime audit stamping is actor-aware.
+- Unit and architecture guardrails cover the implemented validation, audit, MFA, permission, and API authorization conventions.
+- Final gate item is local browser/email smoke testing.
 
 ### Gate 3 - Customer Reference Flow Ready
 

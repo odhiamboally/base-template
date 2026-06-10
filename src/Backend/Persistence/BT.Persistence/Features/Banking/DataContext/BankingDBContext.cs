@@ -16,6 +16,7 @@ namespace BT.Persistence.Features.Banking.DataContext;
 public class BankingDBContext(
     DbContextOptions<BankingDBContext> options,
     ICurrentTenantProvider? tenantProvider = null,
+    ICurrentActorProvider? actorProvider = null,
     ILogger<BankingDBContext>? logger = null
 ) : DbContext(options), ITenantFilteredDbContext
 {
@@ -48,7 +49,7 @@ public class BankingDBContext(
         {
             var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
             DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System", CurrentTenantId);
+            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);
