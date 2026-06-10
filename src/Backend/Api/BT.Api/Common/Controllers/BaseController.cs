@@ -23,7 +23,7 @@ public abstract class BaseController : ControllerBase
 
         if (!response.Successful)
         {
-            var (statusCode, title) = DetermineErrorType(response.Message ?? string.Empty);
+            var (statusCode, title) = DetermineErrorType(response.ErrorCode, response.Message ?? string.Empty);
 
             problemDetails.Status = statusCode;
             problemDetails.Title = title;
@@ -50,9 +50,24 @@ public abstract class BaseController : ControllerBase
         return NotFound(problemDetails);
     }
 
-    private static (int statusCode, string title) DetermineErrorType(string message)
+    private static (int statusCode, string title) DetermineErrorType(string? errorCode, string message)
     {
-        // You can enhance this logic based on your error message patterns
+        var normalizedErrorCode = errorCode?.Trim().ToUpperInvariant();
+        if (!string.IsNullOrWhiteSpace(normalizedErrorCode))
+        {
+            return normalizedErrorCode switch
+            {
+                "VALIDATION_ERROR" => (StatusCodes.Status400BadRequest, "Validation Error"),
+                "NOT_FOUND" => (StatusCodes.Status404NotFound, "Resource Not Found"),
+                "FORBIDDEN" or "ACCESS_DENIED" => (StatusCodes.Status403Forbidden, "Access Denied"),
+                "CONFLICT" => (StatusCodes.Status409Conflict, "Conflict"),
+                "BUSINESS_RULE" => (StatusCodes.Status422UnprocessableEntity, "Business Rule Violation"),
+                "SERVICE_UNAVAILABLE" => (StatusCodes.Status503ServiceUnavailable, "Service Unavailable"),
+                _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
+            };
+        }
+
+        // Compatibility fallback for older handlers that still return only messages.
         var lowerMessage = message?.ToLowerInvariant() ?? "";
 
         if (lowerMessage.Contains("validation") || lowerMessage.Contains("invalid"))

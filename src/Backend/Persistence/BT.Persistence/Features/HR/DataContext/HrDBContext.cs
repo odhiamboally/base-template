@@ -16,6 +16,7 @@ namespace BT.Persistence.Features.HR.DataContext;
 public class HrDBContext(
     DbContextOptions<HrDBContext> options,
     ICurrentTenantProvider? tenantProvider = null,
+    ICurrentActorProvider? actorProvider = null,
     ILogger<HrDBContext>? logger = null
 ) : DbContext(options), ITenantFilteredDbContext
 {
@@ -46,7 +47,7 @@ public class HrDBContext(
         {
             var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
             DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System", CurrentTenantId);
+            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);

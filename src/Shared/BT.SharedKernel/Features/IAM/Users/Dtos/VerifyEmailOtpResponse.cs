@@ -9,6 +9,7 @@ public sealed record VerifyEmailOtpResponse(
     string Token,
     string RefreshToken,
     string UserId,
+    string? SessionId,
     bool Success,
     DateTimeOffset ExpiresAt,
     AppUserResponse User,

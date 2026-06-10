@@ -5,6 +5,7 @@ using BT.Application.Features.Banking.Customers.Contracts.Interfaces;
 using BT.Application.Features.HR.Employees.Contracts.Implementations;
 using BT.Application.Features.HR.Employees.Contracts.Interfaces;
 using BT.Application.Contracts.Interfaces.Common;
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -35,6 +36,8 @@ public static class DependencyInjection
             cfg.AddOpenBehavior(typeof(CacheInvalidationBehavior<,>));
 
         });
+
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         services.AddScoped<ICustomerNumberGenerator, CustomerNumberGenerator>();
         services.AddScoped<IEmployeeNumberGenerator, EmployeeNumberGenerator>();

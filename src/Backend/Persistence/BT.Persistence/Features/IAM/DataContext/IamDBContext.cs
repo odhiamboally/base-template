@@ -20,6 +20,7 @@ namespace BT.Persistence.Features.IAM.DataContext;
 public class IamDBContext(
     DbContextOptions<IamDBContext> options,
     ICurrentTenantProvider? tenantProvider = null,
+    ICurrentActorProvider? actorProvider = null,
     ILogger<IamDBContext>? logger = null
 ) : IdentityDbContext<AppUser, AppRole, string>(options), ITenantFilteredDbContext
 {
@@ -61,7 +62,7 @@ public class IamDBContext(
         {
             var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
             DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System", CurrentTenantId);
+            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
 
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

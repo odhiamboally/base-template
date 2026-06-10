@@ -19,6 +19,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="9.1.0" />
@@ -31,6 +32,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Backend\Api\BT.Api\BT.Api.csproj" />
+    <ProjectReference Include="..\..\src\Backend\Application\BT.Application\BT.Application.csproj" />
     <ProjectReference Include="..\..\src\Backend\Infrastructure\BT.Infrastructure\BT.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Backend\Persistence\BT.Persistence\BT.Persistence.csproj" />
     <ProjectReference Include="..\..\src\Shared\BT.SharedKernel\BT.SharedKernel.csproj" />

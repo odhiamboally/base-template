@@ -120,6 +120,7 @@ public static class DependencyInjection
 
         services.AddHttpClient<IApiService, ApiService>();
         services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
+        services.AddScoped<ICurrentActorProvider, CurrentActorProvider>();
 
         if (!authProviderSettings.Enabled)
         {

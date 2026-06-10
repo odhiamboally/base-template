@@ -20,4 +20,5 @@ public sealed record VerifyEmailOtpRequest
     public string Purpose { get; init; } = "Login";
     public bool RememberMe { get; init; }
     public bool RememberDevice { get; init; }
+    public string? DeviceFingerprint { get; init; }
 }

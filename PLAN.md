@@ -1,6 +1,6 @@
 # Base Template - Living Architecture And Delivery Plan
 
-> Last updated: 2026-06-06
+> Last updated: 2026-06-10
 >
 > This file is the canonical roadmap for the BaseTemplate solution.
 > Update it at the end of every meaningful architecture, feature, CI/CD, or deployment work session.
@@ -163,6 +163,27 @@ Needs decision:
 - Whether `HireDate` and `PositionId` belong in the lightweight Workforce Identity model or should be removed until a downstream HR module owns them.
 - Whether to introduce Aspire in addition to Docker Compose, or postpone Aspire until local Docker/deployment foundations are stable.
 
+### 3.4 Code Review Findings Intentionally Sequenced
+
+External and AI-assisted reviews should be triaged against the template's architectural direction. Do not accept every suggestion blindly; accept findings that improve correctness, security, maintainability, or production readiness without weakening the agreed structure.
+
+Accepted immediately from the June 2026 review cycle:
+
+- Remove legacy ASP.NET Core 2.x package references from .NET 10 projects.
+- Fix validation pipeline behavior so FluentValidation failures return the expected `AppResponse<T>` result shape.
+- Prefer structured error codes over fragile message matching when shaping API problem responses.
+- Enforce tenant isolation through global query filters, tenant stamping, tenant-safe seeds, and architecture/persistence guardrails.
+- Keep Application code from depending directly on EF Core query extensions where repository/specification abstractions can own persistence details.
+
+Sequenced as focused follow-up work:
+
+- Audit actor stamping must use a current-user/system-actor abstraction instead of placeholders such as `"System"`. This belongs in Phase D because it affects every DbContext, background jobs, seeders, and system operations.
+- Domain setter encapsulation should be hardened gradually per aggregate. Do not perform a broad setter lockdown in one sweep because EF Core, Identity, seed data, and migrations must remain stable.
+- `AppUser : IdentityUser` is an intentional pragmatic choice for this template's IAM module. Revisit only if strict domain purity becomes more valuable than Identity integration simplicity.
+- Test expansion is mandatory, but it should follow IAM and authorization risk priority: login, refresh-token rotation, MFA/TOTP, lockout, permission checks, grant/revoke access, and direct user permission grants.
+
+Rule: if a review finding is deferred, document which phase owns it and why it is safe to defer. Deferred does not mean forgotten.
+
 ---
 
 ## 4. Engineering Conventions
@@ -324,6 +345,7 @@ Status:
 - The auth/token/session spine is hardened.
 - Auth and TOTP API endpoints have been exposed for the existing IAM command handlers.
 - Login and TOTP completion now create a server-side session, place the session id in JWT/current-user responses, persist refresh tokens, and return the session id to the Blazor client.
+- Email OTP login completion now follows the same auth spine as TOTP: it creates a server-side session, places the session id in JWT claims, persists a refresh token, returns the session id, and participates in logout/revoke/session validation.
 - Blazor stores the session id with the access/refresh tokens and sends it as `X-Session-Id` on authenticated API calls.
 - Refresh-token rotation validates the active session, persists the replacement token, marks the old token used, and uses configured refresh-token expiry.
 - Logout revokes the active session and active refresh tokens server-side.
@@ -334,14 +356,26 @@ Status:
 - Employee Grant System Access creates or reactivates the linked AppUser, assigns roles, enforces password change, and sends an activation email through the configured email service.
 - Employee Revoke System Access is exposed as a first-class admin action and deactivates the linked AppUser while terminating active sessions and refresh tokens.
 - Permission authorization and MFA-enrollment middleware are covered by unit tests; API authorization guardrails are covered by architecture tests.
+- IAM command validation is wired in the Application layer for critical auth/admin commands: login, refresh token, reset password, email OTP, TOTP verification, password verification, grant/revoke access, roles, role permissions, user roles, and user permissions.
+- Validation pipeline behavior is unit-tested to return structured `AppResponse<T>` validation failures.
+- Runtime audit stamping now resolves the current actor through `ICurrentActorProvider`; DbContexts fall back to an explicit system actor only when no runtime actor exists, such as design-time or system operations.
+- Audit stamping is unit-tested for create/update actor and tenant stamping.
 - Local SQL Server has the latest IAM migration applied for reference-catalog soft-delete alignment.
-- Remaining manual check is a browser smoke test from Visual Studio: sign in, confirm MFA-required redirect/security page, open Admin Center, verify grant/revoke access, and confirm permitted actions render correctly.
+- Remaining manual check is a browser smoke test from Visual Studio: sign in, confirm MFA-required redirect/security page, open Admin Center, verify grant/revoke access email delivery, revoke access, lockout behavior, refresh-token behavior, and confirm permitted actions render correctly.
+
+Current assessment:
+
+- IAM/Auth enterprise baseline is implemented for local development and PR guardrails.
+- IAM/Auth can be considered code-complete for this phase after the local browser/email smoke test passes.
+- Remaining security checklist work such as passkeys/WebAuthn, Entra ID SSO, CSRF strategy for cookie-authenticated paths, and full OWASP automation belongs to later security/deployment phases, not the core IAM baseline.
 
 Tasks:
 
 - Add `AuthController`.
 - Complete `TotpController`.
 - Expose login, logout, refresh token, create app user, reset password, email OTP, TOTP setup, TOTP verify, current user, OTP status, password verification, employee access grant, customer/user linking, employee/user linking.
+- Keep authenticator-app TOTP as the preferred enterprise MFA method for privileged users.
+- Keep email OTP as an approved fallback/recovery and optional login verification method with the same session/refresh-token lifecycle as TOTP.
 - Confirm JWT claims include EmployeeId, CustomerId, roles, and active context where applicable.
 - Confirm Customer and Employee access flows work end-to-end.
 - Add cookie auth plan for Blazor Server sessions if the web app should use cookie-based auth instead of only JWT storage.
@@ -352,6 +386,8 @@ Tasks:
 - Ensure permission checks can work at API endpoint, Application request, and UI visibility levels.
 - Add tests for role-based, permission-based, and direct user-permission access scenarios.
 - Add integration tests for critical auth flows.
+- Confirm account lockout, password policy, session expiry, refresh-token reuse detection, and MFA-required flows through automated and/or documented smoke tests.
+- Add passkeys/WebAuthn as a future phishing-resistant authentication option after this IAM baseline is smoke-tested.
 
 Done means:
 
@@ -360,6 +396,7 @@ Done means:
 - TOTP is fully usable through API endpoints.
 - Role, permission, policy, and direct user permission checks are demonstrable and enforced.
 - Backend, frontend, unit, architecture, and integration checks are green for the completed IAM slice.
+- Audit fields on IAM-affecting writes capture the real actor or an explicit system actor.
 
 ### Phase B - Complete Exception Handling And Validation
 
@@ -412,6 +449,9 @@ Tasks:
 - Complete audit trail strategy.
 - Decide whether audit trail is column-based only, table-based, event-based, or a hybrid.
 - Ensure audit stamping uses current user context.
+- Add `ICurrentUserContext` or equivalent actor abstraction that can resolve authenticated users, system jobs, seeders, and integration consumers consistently.
+- Replace hardcoded audit actors such as `"System"` with the current actor abstraction.
+- Add tests proving create/update/delete audit fields are stamped correctly for authenticated users and system operations.
 - Strengthen OpenTelemetry traces, metrics, and logs.
 - Add Azure Monitor dashboards and alert plan.
 - Document runbooks for failed deployment, failed message, unhealthy dependency, and rollback.
@@ -438,6 +478,7 @@ Tasks:
 - Add secure logging review to avoid leaking secrets/tokens/PII.
 - Add CSRF strategy for cookie-authenticated UI paths.
 - Add account lockout, password policy, token expiry, refresh-token rotation, and session revocation checks.
+- Add IAM security tests for login failures, lockout, refresh-token reuse, revoked sessions, MFA-required redirects, unauthorized access, forbidden permission checks, and direct user permission grants.
 
 Done means:
 

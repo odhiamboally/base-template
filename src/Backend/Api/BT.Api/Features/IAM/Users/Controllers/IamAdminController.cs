@@ -35,7 +35,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("users.create")]
     public async Task<IActionResult> CreateUser(CreateAppUserRequest request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new CreateAppUserCommand(request, userId)).ConfigureAwait(false));
     }
 
@@ -43,7 +43,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("users.edit")]
     public async Task<IActionResult> UpdateUser(string userId, UpdateAdminUserRequest request)
     {
-        var updatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var updatedBy = GetActorId();
         return HandleResponse(await sender.Send(new UpdateAdminUserCommand(userId, request, updatedBy)).ConfigureAwait(false));
     }
 
@@ -51,7 +51,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("users.deactivate")]
     public async Task<IActionResult> DeactivateUser(string userId, DeactivateUserRequest request)
     {
-        var deactivatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var deactivatedBy = GetActorId();
         return HandleResponse(await sender.Send(new DeactivateAdminUserCommand(userId, request, deactivatedBy)).ConfigureAwait(false));
     }
 
@@ -59,7 +59,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("users.manage_roles")]
     public async Task<IActionResult> GetUserRoles(string userId)
     {
-        var requestedBy = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var requestedBy = GetActorId();
         return HandleResponse(await sender.Send(new GetUserRolesQuery(userId, requestedBy)).ConfigureAwait(false));
     }
 
@@ -69,7 +69,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var updatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var updatedBy = GetActorId();
         return HandleResponse(await sender.Send(new UpdateUserRolesCommand(userId, request, updatedBy)).ConfigureAwait(false));
     }
 
@@ -77,7 +77,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("users.manage_permissions")]
     public async Task<IActionResult> GetUserPermissions(string userId)
     {
-        var requestedBy = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var requestedBy = GetActorId();
         return HandleResponse(await sender.Send(new GetUserPermissionsQuery(userId, requestedBy)).ConfigureAwait(false));
     }
 
@@ -87,7 +87,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var updatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var updatedBy = GetActorId();
         return HandleResponse(await sender.Send(new UpdateUserPermissionsCommand(userId, request, updatedBy)).ConfigureAwait(false));
     }
 
@@ -100,7 +100,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("roles.create")]
     public async Task<IActionResult> CreateRole(CreateRoleRequest request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new CreateRoleCommand(request, userId)).ConfigureAwait(false));
     }
 
@@ -108,7 +108,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("roles.edit")]
     public async Task<IActionResult> UpdateRole(string roleId, UpdateRoleRequest request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new UpdateRoleCommand(roleId, request, userId)).ConfigureAwait(false));
     }
 
@@ -116,7 +116,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("roles.delete")]
     public async Task<IActionResult> DeleteRole(string roleId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new DeleteRoleCommand(roleId, userId)).ConfigureAwait(false));
     }
 
@@ -126,7 +126,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new GrantEmployeeSystemAccessCommand(employeeId, request.Roles, userId)).ConfigureAwait(false));
     }
 
@@ -136,7 +136,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new RevokeEmployeeSystemAccessCommand(employeeId, request, userId)).ConfigureAwait(false));
     }
 
@@ -144,7 +144,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("roles.manage_permissions")]
     public async Task<IActionResult> GetRolePermissions(string roleId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new GetRolePermissionsQuery(roleId, userId)).ConfigureAwait(false));
     }
 
@@ -154,7 +154,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new UpdateRolePermissionsCommand(roleId, request, userId)).ConfigureAwait(false));
     }
 
@@ -162,7 +162,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("roles.manage_permissions")]
     public async Task<IActionResult> SearchPermissions([FromQuery] PermissionSearchRequest request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new SearchPermissionsQuery(request, userId)).ConfigureAwait(false));
     }
 
@@ -182,7 +182,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new CreateReferenceCatalogItemCommand(catalogType, request, userId)).ConfigureAwait(false));
     }
 
@@ -192,7 +192,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new UpdateReferenceCatalogItemCommand(catalogType, id, request, userId)).ConfigureAwait(false));
     }
 
@@ -200,7 +200,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("menus.delete")]
     public async Task<IActionResult> DeleteReferenceCatalogItem(string catalogType, Guid id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new DeleteReferenceCatalogItemCommand(catalogType, id, userId)).ConfigureAwait(false));
     }
 
@@ -208,7 +208,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("roles.manage_permissions")]
     public async Task<IActionResult> GetPermissionById(Guid permissionId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new GetPermissionByIdQuery(permissionId, userId)).ConfigureAwait(false));
     }
 
@@ -218,7 +218,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new CreatePermissionCommand(request, userId)).ConfigureAwait(false));
     }
 
@@ -228,7 +228,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new UpdatePermissionCommand(permissionId, request with { Id = permissionId }, userId)).ConfigureAwait(false));
     }
 
@@ -236,7 +236,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("roles.manage_permissions")]
     public async Task<IActionResult> DeletePermission(Guid permissionId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new DeletePermissionCommand(permissionId, userId)).ConfigureAwait(false));
     }
 
@@ -244,14 +244,14 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("menus.view")]
     public async Task<IActionResult> SearchMenus([FromQuery] MenuSearchRequest request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new SearchMenusQuery(request, userId)).ConfigureAwait(false));
     }
 
     [HttpGet("menus/navigation/{placement}")]
     public async Task<IActionResult> GetNavigationMenus(string placement)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         var permissionKeys = User.Claims
             .Where(static claim => claim.Type == "permission")
             .Select(static claim => claim.Value)
@@ -266,7 +266,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("menus.view")]
     public async Task<IActionResult> GetMenuById(Guid menuId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new GetMenuByIdQuery(menuId, userId)).ConfigureAwait(false));
     }
 
@@ -276,7 +276,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new CreateMenuCommand(request, userId)).ConfigureAwait(false));
     }
 
@@ -286,7 +286,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new UpdateMenuCommand(menuId, request with { Id = menuId }, userId)).ConfigureAwait(false));
     }
 
@@ -294,7 +294,7 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("menus.delete")]
     public async Task<IActionResult> DeleteMenu(Guid menuId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new DeleteMenuCommand(menuId, userId)).ConfigureAwait(false));
     }
 
@@ -307,7 +307,18 @@ public sealed class IamAdminController(ISender sender) : BaseController
     [RequirePermission("users.deactivate")]
     public async Task<IActionResult> RevokeUserDevice(Guid deviceId, RevokeUserDeviceRequest request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "System";
+        var userId = GetActorId();
         return HandleResponse(await sender.Send(new RevokeUserDeviceCommand(deviceId, request, userId)).ConfigureAwait(false));
+    }
+
+    private string GetActorId()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new UnauthorizedAccessException("Authenticated user id was not found.");
+        }
+
+        return userId;
     }
 }
