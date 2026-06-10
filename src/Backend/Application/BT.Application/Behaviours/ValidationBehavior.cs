@@ -45,12 +45,17 @@ public class ValidationBehavior<TRequest, TResponse>
                     .ToDictionary(failureGroup => failureGroup.Key, failureGroup => failureGroup
                     .ToList());
 
-                // Use reflection to call your static ValidationFailure method
-                var method = responseType.GetMethod("ValidationFailure");
+                var method = typeof(AppResponse)
+                    .GetMethods()
+                    .SingleOrDefault(method =>
+                        method.Name == nameof(AppResponse.ValidationFailure) &&
+                        method.IsGenericMethodDefinition &&
+                        method.GetParameters() is [{ ParameterType: var parameterType }] &&
+                        parameterType == typeof(Dictionary<string, List<string>>));
 
                 if (method != null)
                 {
-                    return (TResponse)method.Invoke(null, [validationErrorDict])!;
+                    return (TResponse)method.MakeGenericMethod(resultType).Invoke(null, [validationErrorDict])!;
                 }
             }
 
