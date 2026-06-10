@@ -5,6 +5,7 @@ namespace BT.Persistence.Features.IAM.Permissions.Seeds;
 internal static class PermissionSeed
 {
     private static readonly DateTimeOffset SeedCreatedAt = new(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+    private static readonly Guid SeedTenantId = new("0194f700-0000-7000-8000-000000000001");
 
     internal static IReadOnlyList<Permission> Items =>
     [
@@ -41,6 +42,7 @@ internal static class PermissionSeed
     {
         var permission = Permission.Create(null, context, resource, action, description, "System");
         permission.Id = Guid.Parse(id);
+        permission.TenantId = SeedTenantId;
         permission.CreatedAt = SeedCreatedAt;
         return permission;
     }

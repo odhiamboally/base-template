@@ -25,6 +25,7 @@ public static class EmployeeSeed
 {
     // Fixed seed timestamp — shared by all seed rows for consistency.
     // Must never be changed once the initial migration has been applied.
+    private static readonly Guid BaseTenantId = new("0194f700-0000-7000-8000-000000000001");
     private static readonly DateTimeOffset SeedDate = new(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     // --- Department IDs (Deterministic V7 GUIDs) ---
@@ -111,6 +112,7 @@ public static class EmployeeSeed
         // BaseEntity exposes public setters on Id and CreatedAt specifically to
         // support EF Core materialisation; using them here is intentional.
         employee.Id = id;
+        employee.TenantId = BaseTenantId;
         employee.CreatedAt = createdAt;
 
         return employee;

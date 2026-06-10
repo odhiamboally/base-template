@@ -4,6 +4,7 @@ namespace BT.Persistence.Features.HR.Departments.Seeds;
 
 internal static class DepartmentSeed
 {
+    private static readonly Guid BaseTenantId = new("0194f700-0000-7000-8000-000000000001");
     private static readonly DateTimeOffset SeedDate = new(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     public static IReadOnlyCollection<Department> GetSeedData()
@@ -22,6 +23,7 @@ internal static class DepartmentSeed
     {
         var department = Department.Create(code, name, description, "System");
         department.Id = id;
+        department.TenantId = BaseTenantId;
         department.CreatedAt = SeedDate;
         return department;
     }

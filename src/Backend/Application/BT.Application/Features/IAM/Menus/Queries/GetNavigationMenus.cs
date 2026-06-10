@@ -5,7 +5,6 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Menus.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Menus.Queries;
@@ -27,13 +26,14 @@ internal sealed class GetNavigationMenusQueryHandler(IIamUnitOfWork unitOfWork, 
         try
         {
             var permissionSet = query.PermissionKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var menuQuery = unitOfWork.MenuRepository
-                .FindByCondition(menu => menu.IsActive && menu.Placement == query.Placement)
-                .Where(menu => query.HasFullAccess || menu.RequiredPermissionKey == null || permissionSet.Contains(menu.RequiredPermissionKey));
 
-            var menus = await menuQuery
-                .OrderBy(static menu => menu.Title)
-                .ToListAsync(cancellationToken)
+            var menus = await unitOfWork.MenuRepository
+                .ListAsync(
+                    menus => menus
+                        .Where(menu => menu.IsActive && menu.Placement == query.Placement)
+                        .Where(menu => query.HasFullAccess || menu.RequiredPermissionKey == null || permissionSet.Contains(menu.RequiredPermissionKey))
+                        .OrderBy(static menu => menu.Title),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             return AppResponse.Success<IReadOnlyList<MenuResponse>>(menus.ToTree());

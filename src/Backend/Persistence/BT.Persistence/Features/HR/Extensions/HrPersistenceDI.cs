@@ -26,7 +26,7 @@ public static class HrPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("HrConnection (or DefaultConnection) not found.");
 
-        services.AddDbContextPool<HrDBContext>(options =>
+        services.AddDbContext<HrDBContext>(options =>
         {
             options.UseSqlServer(connectionString, sqlOptions =>
             {

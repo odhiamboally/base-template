@@ -43,7 +43,7 @@ internal sealed class EmployeeNumberSequenceRepository(HrDBContext context) : IE
 
         var resource = new SqlParameter("@resource", SqlDbType.NVarChar, 255)
         {
-            Value = $"hr-employee-number:{departmentId:N}:{year}"
+            Value = $"hr-employee-number:{context.CurrentTenantId:N}:{departmentId:N}:{year}"
         };
 
         await context.Database.ExecuteSqlRawAsync(

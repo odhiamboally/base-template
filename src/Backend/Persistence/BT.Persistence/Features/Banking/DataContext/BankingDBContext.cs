@@ -15,11 +15,13 @@ namespace BT.Persistence.Features.Banking.DataContext;
 
 public class BankingDBContext(
     DbContextOptions<BankingDBContext> options,
+    ICurrentTenantProvider? tenantProvider = null,
     ILogger<BankingDBContext>? logger = null
-) : DbContext(options)
+) : DbContext(options), ITenantFilteredDbContext
 {
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Director> Directors { get; set; }
+    public Guid CurrentTenantId => tenantProvider?.TenantId ?? Guid.Empty;
 
     private List<IDomainEvent> _collectedDomainEvents = [];
     public IReadOnlyList<IDomainEvent>? GetCollectedDomainEvents() => _collectedDomainEvents?.AsReadOnly();
@@ -30,27 +32,14 @@ public class BankingDBContext(
         ArgumentNullException.ThrowIfNull(modelBuilder);
         base.OnModelCreating(modelBuilder);
 
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(DbContextHelper.CreateSoftDeleteFilter(entityType.ClrType));
-
-            if (typeof(ICursorPaginable).IsAssignableFrom(entityType.ClrType))
-            {
-                modelBuilder.Entity(entityType.ClrType).HasKey(nameof(ICursorPaginable.Id));
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasIndex(nameof(ICursorPaginable.CreatedAt), nameof(ICursorPaginable.Id))
-                    .HasDatabaseName($"IX_{entityType.GetTableName()}_CreatedAt_Id");
-            }
-        }
-
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(BankingDBContext).Assembly,
             type => type.Namespace?.StartsWith("BT.Persistence.Features.Banking", StringComparison.Ordinal) == true);
 
         modelBuilder.Entity<Employee>()
             .ToTable("Employees", table => table.ExcludeFromMigrations());
+
+        DbContextHelper.ApplyStandardModelConventions(modelBuilder, this);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -59,7 +48,7 @@ public class BankingDBContext(
         {
             var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
             DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System");
+            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System", CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);

@@ -3,10 +3,10 @@ using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Permissions.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.IAM.Contracts;
+using BT.Domain.Features.IAM.Permissions.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Permissions.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Permissions.Queries;
@@ -32,51 +32,60 @@ internal sealed class SearchPermissionsQueryHandler(IIamUnitOfWork unitOfWork, I
         {
             var request = query.SearchRequest;
             var pageSize = Math.Clamp(request.PageSize, 1, 50);
-            var permissions = unitOfWork.PermissionRepository.FindAll();
 
-            if (!string.IsNullOrWhiteSpace(request.GlobalSearch))
+            IQueryable<Permission> ApplyFilters(IQueryable<Permission> permissions)
             {
-                var search = request.GlobalSearch.Trim();
-                permissions = permissions.Where(permission =>
-                    permission.Key.Contains(search)
-                    || permission.Context.Contains(search)
-                    || permission.Resource.Contains(search)
-                    || permission.Action.Contains(search)
-                    || permission.Description.Contains(search));
+                if (!string.IsNullOrWhiteSpace(request.GlobalSearch))
+                {
+                    var search = request.GlobalSearch.Trim();
+                    permissions = permissions.Where(permission =>
+                        permission.Key.Contains(search)
+                        || permission.Context.Contains(search)
+                        || permission.Resource.Contains(search)
+                        || permission.Action.Contains(search)
+                        || permission.Description.Contains(search));
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.Context))
+                {
+                    permissions = permissions.Where(permission => permission.Context == request.Context);
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.Resource))
+                {
+                    permissions = permissions.Where(permission => permission.Resource == request.Resource);
+                }
+
+                if (request.DepartmentId.HasValue)
+                {
+                    permissions = permissions.Where(permission => permission.DepartmentId == null || permission.DepartmentId == request.DepartmentId.Value);
+                }
+
+                if (request.IsActive.HasValue)
+                {
+                    permissions = permissions.Where(permission => permission.IsActive == request.IsActive.Value);
+                }
+
+                return permissions;
             }
 
-            if (!string.IsNullOrWhiteSpace(request.Context))
+            var totalCount = await unitOfWork.PermissionRepository.CountAsync(ApplyFilters, cancellationToken).ConfigureAwait(false);
+
+            IQueryable<Permission> ApplyPaging(IQueryable<Permission> permissions)
             {
-                permissions = permissions.Where(permission => permission.Context == request.Context);
+                permissions = ApplyFilters(permissions);
+
+                if (request.Cursor.HasValue && request.Cursor != Guid.Empty)
+                {
+                    permissions = permissions.Where(permission => permission.Id.CompareTo(request.Cursor.Value) > 0);
+                }
+
+                return permissions
+                    .OrderBy(static permission => permission.Id)
+                    .Take(pageSize + 1);
             }
 
-            if (!string.IsNullOrWhiteSpace(request.Resource))
-            {
-                permissions = permissions.Where(permission => permission.Resource == request.Resource);
-            }
-
-            if (request.DepartmentId.HasValue)
-            {
-                permissions = permissions.Where(permission => permission.DepartmentId == null || permission.DepartmentId == request.DepartmentId.Value);
-            }
-
-            if (request.IsActive.HasValue)
-            {
-                permissions = permissions.Where(permission => permission.IsActive == request.IsActive.Value);
-            }
-
-            var totalCount = await permissions.CountAsync(cancellationToken).ConfigureAwait(false);
-
-            if (request.Cursor.HasValue && request.Cursor != Guid.Empty)
-            {
-                permissions = permissions.Where(permission => permission.Id.CompareTo(request.Cursor.Value) > 0);
-            }
-
-            var page = await permissions
-                .OrderBy(static permission => permission.Id)
-                .Take(pageSize + 1)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+            var page = await unitOfWork.PermissionRepository.ListAsync(ApplyPaging, cancellationToken).ConfigureAwait(false);
 
             var hasNextPage = page.Count > pageSize;
             if (hasNextPage)

@@ -6,6 +6,8 @@ public sealed class LookupCatalogType : ISoftDeletable
 {
     public int Id { get; set; }
 
+    public Guid TenantId { get; set; }
+
     public string Key { get; set; } = string.Empty;
 
     public string Label { get; set; } = string.Empty;

@@ -17,6 +17,7 @@ public sealed class EmployeeNumberSequence : ISoftDeletable
     }
 
     public Guid Id { get; private set; }
+    public Guid TenantId { get; private set; }
     public Guid DepartmentId { get; private set; }
     public int Year { get; private set; }
     public int LastNumber { get; private set; }

@@ -3,10 +3,10 @@ using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Menus.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.IAM.Contracts;
+using BT.Domain.Features.IAM.Menus.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Menus.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Menus.Queries;
@@ -29,50 +29,59 @@ internal sealed class SearchMenusQueryHandler(IIamUnitOfWork unitOfWork, ILogger
         {
             var request = query.SearchRequest;
             var pageSize = Math.Clamp(request.PageSize, 1, 100);
-            var menus = unitOfWork.MenuRepository.FindAll();
 
-            if (!string.IsNullOrWhiteSpace(request.GlobalSearch))
+            IQueryable<MenuItem> ApplyFilters(IQueryable<MenuItem> menus)
             {
-                var search = request.GlobalSearch.Trim();
-                menus = menus.Where(menu =>
-                    menu.Key.Contains(search)
-                    || menu.Title.Contains(search)
-                    || menu.Description.Contains(search)
-                    || menu.Url.Contains(search));
+                if (!string.IsNullOrWhiteSpace(request.GlobalSearch))
+                {
+                    var search = request.GlobalSearch.Trim();
+                    menus = menus.Where(menu =>
+                        menu.Key.Contains(search)
+                        || menu.Title.Contains(search)
+                        || menu.Description.Contains(search)
+                        || menu.Url.Contains(search));
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.Placement))
+                {
+                    menus = menus.Where(menu => menu.Placement == request.Placement);
+                }
+
+                if (request.ParentId.HasValue)
+                {
+                    menus = menus.Where(menu => menu.ParentId == request.ParentId.Value);
+                }
+
+                if (request.DepartmentId.HasValue)
+                {
+                    menus = menus.Where(menu => menu.DepartmentId == request.DepartmentId.Value);
+                }
+
+                if (request.IsActive.HasValue)
+                {
+                    menus = menus.Where(menu => menu.IsActive == request.IsActive.Value);
+                }
+
+                return menus;
             }
 
-            if (!string.IsNullOrWhiteSpace(request.Placement))
+            var totalCount = await unitOfWork.MenuRepository.CountAsync(ApplyFilters, cancellationToken).ConfigureAwait(false);
+
+            IQueryable<MenuItem> ApplyPaging(IQueryable<MenuItem> menus)
             {
-                menus = menus.Where(menu => menu.Placement == request.Placement);
+                menus = ApplyFilters(menus);
+
+                if (request.Cursor.HasValue && request.Cursor != Guid.Empty)
+                {
+                    menus = menus.Where(menu => menu.Id.CompareTo(request.Cursor.Value) > 0);
+                }
+
+                return menus
+                    .OrderBy(static menu => menu.Id)
+                    .Take(pageSize + 1);
             }
 
-            if (request.ParentId.HasValue)
-            {
-                menus = menus.Where(menu => menu.ParentId == request.ParentId.Value);
-            }
-
-            if (request.DepartmentId.HasValue)
-            {
-                menus = menus.Where(menu => menu.DepartmentId == request.DepartmentId.Value);
-            }
-
-            if (request.IsActive.HasValue)
-            {
-                menus = menus.Where(menu => menu.IsActive == request.IsActive.Value);
-            }
-
-            var totalCount = await menus.CountAsync(cancellationToken).ConfigureAwait(false);
-
-            if (request.Cursor.HasValue && request.Cursor != Guid.Empty)
-            {
-                menus = menus.Where(menu => menu.Id.CompareTo(request.Cursor.Value) > 0);
-            }
-
-            var page = await menus
-                .OrderBy(static menu => menu.Id)
-                .Take(pageSize + 1)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+            var page = await unitOfWork.MenuRepository.ListAsync(ApplyPaging, cancellationToken).ConfigureAwait(false);
 
             var hasNextPage = page.Count > pageSize;
             if (hasNextPage)

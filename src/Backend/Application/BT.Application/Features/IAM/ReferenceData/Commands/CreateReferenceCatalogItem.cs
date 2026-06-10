@@ -6,7 +6,6 @@ using BT.Domain.Features.IAM.ReferenceData.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.ReferenceData.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Commands;
@@ -112,12 +111,12 @@ internal sealed class CreateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
         var normalizedKey = key.Trim();
         return catalogType.ToLowerInvariant() switch
         {
-            ReferenceCatalogTypes.PermissionContexts => await unitOfWork.PermissionContextRepository.FindByCondition(item => item.Key == normalizedKey).AnyAsync(cancellationToken).ConfigureAwait(false),
-            ReferenceCatalogTypes.PermissionResources => await unitOfWork.PermissionResourceRepository.FindByCondition(item => item.ContextKey == (parentKey ?? string.Empty).Trim() && item.Key == normalizedKey.ToLowerInvariant().Replace(' ', '_')).AnyAsync(cancellationToken).ConfigureAwait(false),
-            ReferenceCatalogTypes.PermissionActions => await unitOfWork.PermissionActionRepository.FindByCondition(item => item.Key == normalizedKey.ToLowerInvariant().Replace(' ', '_')).AnyAsync(cancellationToken).ConfigureAwait(false),
-            ReferenceCatalogTypes.MenuPlacements => await unitOfWork.MenuPlacementRepository.FindByCondition(item => item.Key == normalizedKey).AnyAsync(cancellationToken).ConfigureAwait(false),
-            ReferenceCatalogTypes.MenuIcons => await unitOfWork.MenuIconRepository.FindByCondition(item => item.Key == normalizedKey).AnyAsync(cancellationToken).ConfigureAwait(false),
-            ReferenceCatalogTypes.MenuRoutes => await unitOfWork.MenuRouteRepository.FindByCondition(item => item.Key == normalizedKey.ToLowerInvariant().Replace(' ', '-')).AnyAsync(cancellationToken).ConfigureAwait(false),
+            ReferenceCatalogTypes.PermissionContexts => await unitOfWork.PermissionContextRepository.AnyAsync(item => item.Key == normalizedKey, cancellationToken).ConfigureAwait(false),
+            ReferenceCatalogTypes.PermissionResources => await unitOfWork.PermissionResourceRepository.AnyAsync(item => item.ContextKey == (parentKey ?? string.Empty).Trim() && item.Key == normalizedKey.ToLowerInvariant().Replace(' ', '_'), cancellationToken).ConfigureAwait(false),
+            ReferenceCatalogTypes.PermissionActions => await unitOfWork.PermissionActionRepository.AnyAsync(item => item.Key == normalizedKey.ToLowerInvariant().Replace(' ', '_'), cancellationToken).ConfigureAwait(false),
+            ReferenceCatalogTypes.MenuPlacements => await unitOfWork.MenuPlacementRepository.AnyAsync(item => item.Key == normalizedKey, cancellationToken).ConfigureAwait(false),
+            ReferenceCatalogTypes.MenuIcons => await unitOfWork.MenuIconRepository.AnyAsync(item => item.Key == normalizedKey, cancellationToken).ConfigureAwait(false),
+            ReferenceCatalogTypes.MenuRoutes => await unitOfWork.MenuRouteRepository.AnyAsync(item => item.Key == normalizedKey.ToLowerInvariant().Replace(' ', '-'), cancellationToken).ConfigureAwait(false),
             _ => false
         };
     }
@@ -132,8 +131,7 @@ internal sealed class CreateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
             }
 
             var contextExists = await unitOfWork.PermissionContextRepository
-                .FindByCondition(item => item.IsActive && item.Key == request.ParentKey.Trim())
-                .AnyAsync(cancellationToken)
+                .AnyAsync(item => item.IsActive && item.Key == request.ParentKey.Trim(), cancellationToken)
                 .ConfigureAwait(false);
 
             return contextExists ? null : $"Permission context '{request.ParentKey}' is not registered.";
@@ -152,8 +150,7 @@ internal sealed class CreateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
             }
 
             var placementExists = await unitOfWork.MenuPlacementRepository
-                .FindByCondition(item => item.IsActive && item.Key == request.ParentKey.Trim())
-                .AnyAsync(cancellationToken)
+                .AnyAsync(item => item.IsActive && item.Key == request.ParentKey.Trim(), cancellationToken)
                 .ConfigureAwait(false);
 
             return placementExists ? null : $"Menu placement '{request.ParentKey}' is not registered.";

@@ -15,6 +15,9 @@ internal sealed class EmployeeNumberSequenceConfiguration : IEntityTypeConfigura
 
         builder.HasKey(sequence => sequence.Id);
 
+        builder.Property(sequence => sequence.TenantId)
+            .IsRequired();
+
         builder.Property(sequence => sequence.DepartmentId)
             .IsRequired();
 
@@ -38,9 +41,9 @@ internal sealed class EmployeeNumberSequenceConfiguration : IEntityTypeConfigura
             .IsRowVersion()
             .IsRequired();
 
-        builder.HasIndex(sequence => new { sequence.DepartmentId, sequence.Year })
+        builder.HasIndex(sequence => new { sequence.TenantId, sequence.DepartmentId, sequence.Year })
             .IsUnique()
-            .HasDatabaseName("IX_EmployeeNumberSequences_DepartmentId_Year");
+            .HasDatabaseName("UX_EmployeeNumberSequences_TenantId_DepartmentId_Year");
 
         builder.HasOne<Department>()
             .WithMany()

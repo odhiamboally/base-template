@@ -3,10 +3,10 @@ using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.HR.Employees.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.HR.Contracts;
+using BT.Domain.Features.HR.Employees.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Employees.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Employees.QueryHandlers;
@@ -33,42 +33,52 @@ internal sealed class SearchEmployeesQueryHandler(IHrUnitOfWork unitOfWork, ILog
             var request = query.SearchRequest;
             var pageSize = Math.Clamp(request.PageSize, 1, 50);
 
-            var employees = unitOfWork.EmployeeRepository.FindAll();
-
-            if (!string.IsNullOrWhiteSpace(request.GlobalSearch))
+            IQueryable<Employee> ApplyFilters(IQueryable<Employee> employees)
             {
-                var search = request.GlobalSearch.Trim();
-                employees = employees.Where(employee =>
-                    employee.Number.Contains(search)
-                    || employee.FirstName.Contains(search)
-                    || employee.LastName.Contains(search)
-                    || employee.Email.Contains(search)
-                    || employee.PhoneNumber.Contains(search)
-                    || employee.IdNumber.Contains(search));
+                if (!string.IsNullOrWhiteSpace(request.GlobalSearch))
+                {
+                    var search = request.GlobalSearch.Trim();
+                    employees = employees.Where(employee =>
+                        employee.Number.Contains(search)
+                        || employee.FirstName.Contains(search)
+                        || employee.LastName.Contains(search)
+                        || employee.Email.Contains(search)
+                        || employee.PhoneNumber.Contains(search)
+                        || employee.IdNumber.Contains(search));
+                }
+
+                if (request.DepartmentId.HasValue)
+                {
+                    employees = employees.Where(employee => employee.DepartmentId == request.DepartmentId.Value);
+                }
+
+                if (request.ManagerId.HasValue)
+                {
+                    employees = employees.Where(employee => employee.ManagerId == request.ManagerId.Value);
+                }
+
+                return employees;
             }
 
-            if (request.DepartmentId.HasValue)
-            {
-                employees = employees.Where(employee => employee.DepartmentId == request.DepartmentId.Value);
-            }
-
-            if (request.ManagerId.HasValue)
-            {
-                employees = employees.Where(employee => employee.ManagerId == request.ManagerId.Value);
-            }
-
-            var totalCount = await employees.CountAsync(cancellationToken).ConfigureAwait(false);
-
-            if (request.Cursor.HasValue && request.Cursor != Guid.Empty)
-            {
-                employees = employees.Where(employee => employee.Id.CompareTo(request.Cursor.Value) > 0);
-            }
-
-            var page = await employees
-                .OrderBy(static employee => employee.Id)
-                .Take(pageSize + 1)
-                .ToListAsync(cancellationToken)
+            var totalCount = await unitOfWork.EmployeeRepository
+                .CountAsync(ApplyFilters, cancellationToken)
                 .ConfigureAwait(false);
+
+            IQueryable<Employee> ApplyPaging(IQueryable<Employee> employees)
+            {
+                employees = ApplyFilters(employees);
+
+                if (request.Cursor.HasValue && request.Cursor != Guid.Empty)
+                {
+                    employees = employees.Where(employee => employee.Id.CompareTo(request.Cursor.Value) > 0);
+                }
+
+                return employees
+                    .OrderBy(static employee => employee.Id)
+                    .Take(pageSize + 1);
+            }
+
+            var page = await unitOfWork.EmployeeRepository.ListAsync(ApplyPaging, cancellationToken).ConfigureAwait(false);
 
             var hasNextPage = page.Count > pageSize;
             if (hasNextPage)
@@ -83,16 +93,24 @@ internal sealed class SearchEmployeesQueryHandler(IHrUnitOfWork unitOfWork, ILog
                 .Select(static managerId => managerId!.Value)
                 .Distinct()
                 .ToArray();
-            var departments = await unitOfWork.DepartmentRepository
-                .FindByCondition(department => departmentIds.Contains(department.Id))
-                .ToDictionaryAsync(static department => department.Id, static department => department.Name, cancellationToken)
+            var departmentRows = await unitOfWork.DepartmentRepository
+                .ListAsync(
+                    departments => departments
+                        .Where(department => departmentIds.Contains(department.Id))
+                        .Select(static department => new { department.Id, department.Name }),
+                    cancellationToken)
                 .ConfigureAwait(false);
+            var departments = departmentRows.ToDictionary(static department => department.Id, static department => department.Name);
             var managers = managerIds.Length == 0
                 ? new Dictionary<Guid, string>()
-                : await unitOfWork.EmployeeRepository
-                    .FindByCondition(manager => managerIds.Contains(manager.Id))
-                    .ToDictionaryAsync(static manager => manager.Id, static manager => $"{manager.FirstName} {manager.LastName}", cancellationToken)
-                    .ConfigureAwait(false);
+                : (await unitOfWork.EmployeeRepository
+                    .ListAsync(
+                        employees => employees
+                            .Where(manager => managerIds.Contains(manager.Id))
+                            .Select(static manager => new { manager.Id, Name = $"{manager.FirstName} {manager.LastName}" }),
+                        cancellationToken)
+                    .ConfigureAwait(false))
+                    .ToDictionary(static manager => manager.Id, static manager => manager.Name);
 
             var items = page
                 .Select(employee => employee.ToEmployeeResponse(

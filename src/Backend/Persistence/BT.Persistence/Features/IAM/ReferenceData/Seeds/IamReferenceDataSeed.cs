@@ -5,6 +5,7 @@ namespace BT.Persistence.Features.IAM.ReferenceData.Seeds;
 internal static class IamReferenceDataSeed
 {
     private static readonly DateTimeOffset SeedCreatedAt = new(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+    private static readonly Guid SeedTenantId = new("0194f700-0000-7000-8000-000000000001");
 
     internal static IReadOnlyList<PermissionContext> PermissionContexts =>
     [
@@ -79,6 +80,7 @@ internal static class IamReferenceDataSeed
     {
         var item = PermissionContext.Create(key, label, description, "System");
         item.Id = Guid.Parse(id);
+        item.TenantId = SeedTenantId;
         item.CreatedAt = SeedCreatedAt;
         return item;
     }
@@ -87,6 +89,7 @@ internal static class IamReferenceDataSeed
     {
         var item = PermissionResource.Create(key, label, contextKey, description, "System");
         item.Id = Guid.Parse(id);
+        item.TenantId = SeedTenantId;
         item.CreatedAt = SeedCreatedAt;
         return item;
     }
@@ -95,6 +98,7 @@ internal static class IamReferenceDataSeed
     {
         var item = PermissionAction.Create(key, label, description, "System");
         item.Id = Guid.Parse(id);
+        item.TenantId = SeedTenantId;
         item.CreatedAt = SeedCreatedAt;
         return item;
     }
@@ -103,6 +107,7 @@ internal static class IamReferenceDataSeed
     {
         var item = MenuPlacement.Create(key, label, description, "System");
         item.Id = Guid.Parse(id);
+        item.TenantId = SeedTenantId;
         item.CreatedAt = SeedCreatedAt;
         return item;
     }
@@ -111,6 +116,7 @@ internal static class IamReferenceDataSeed
     {
         var item = MenuIcon.Create(key, label, "Approved MudBlazor icon key.", "System");
         item.Id = Guid.Parse(id);
+        item.TenantId = SeedTenantId;
         item.CreatedAt = SeedCreatedAt;
         return item;
     }
@@ -119,6 +125,7 @@ internal static class IamReferenceDataSeed
     {
         var item = MenuRoute.Create(key, label, url, placementKey, "Approved application route.", "System");
         item.Id = Guid.Parse(id);
+        item.TenantId = SeedTenantId;
         item.CreatedAt = SeedCreatedAt;
         return item;
     }

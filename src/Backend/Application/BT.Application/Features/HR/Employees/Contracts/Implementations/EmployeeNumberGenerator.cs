@@ -1,6 +1,5 @@
 using BT.Application.Features.HR.Employees.Contracts.Interfaces;
 using BT.Domain.Features.HR.Contracts;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;

@@ -16,7 +16,6 @@ using BT.Domain.Features.Banking.Customers.Entities;
 using BT.SharedKernel.Features.Banking.Customers.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -63,17 +62,22 @@ internal sealed class GetCustomerListQueryHandler(IBankingUnitOfWork _bankingUni
 
             var pageSize = Math.Clamp(req.PageSize, 1, 50);
 
-            var totalCount = await _bankingUnitOfWork.CustomerRepository.CountAsync(ct).ConfigureAwait(false);
-            var customerEntities = await _bankingUnitOfWork.CustomerRepository
-                .FindAll()
-                .Include(c => c.RelationshipManager)
-                .Where(c => req.Cursor == null || req.Cursor == Guid.Empty || c.Id > req.Cursor)
-                .OrderBy(c => c.Id)
-                .Take(req.PageSize + 1)
-                .ToListAsync(ct)
-                .ConfigureAwait(false);
+            var spec = new CustomerSearchSpec(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                req.Cursor,
+                pageSize + 1);
 
-            var hasNextPage = customerEntities.Count > req.PageSize;
+            var totalCount = await _bankingUnitOfWork.CustomerRepository.CountAsync(ct).ConfigureAwait(false);
+            var customerEntities = await _bankingUnitOfWork.CustomerRepository.SearchAsync(spec, ct).ConfigureAwait(false);
+
+            var hasNextPage = customerEntities.Count > pageSize;
 
             if (hasNextPage)
                 customerEntities.RemoveAt(customerEntities.Count - 1);

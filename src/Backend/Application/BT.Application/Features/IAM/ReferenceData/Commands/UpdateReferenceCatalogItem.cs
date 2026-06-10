@@ -5,7 +5,6 @@ using BT.SharedKernel.Dtos.Common;
 using BT.Domain.Features.IAM.Contracts;
 using BT.SharedKernel.Features.IAM.ReferenceData.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Commands;
@@ -129,8 +128,7 @@ internal sealed class UpdateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
             if (item is not null && !string.Equals(item.ContextKey, command.Request.ParentKey.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 var used = await unitOfWork.PermissionRepository
-                    .FindByCondition(permission => permission.Context == item.ContextKey && permission.Resource == item.Key)
-                    .AnyAsync(cancellationToken)
+                    .AnyAsync(permission => permission.Context == item.ContextKey && permission.Resource == item.Key, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (used)
@@ -140,8 +138,7 @@ internal sealed class UpdateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
             }
 
             var contextExists = await unitOfWork.PermissionContextRepository
-                .FindByCondition(context => context.IsActive && context.Key == command.Request.ParentKey.Trim())
-                .AnyAsync(cancellationToken)
+                .AnyAsync(context => context.IsActive && context.Key == command.Request.ParentKey.Trim(), cancellationToken)
                 .ConfigureAwait(false);
 
             return contextExists ? null : $"Permission context '{command.Request.ParentKey}' is not registered.";
@@ -160,8 +157,7 @@ internal sealed class UpdateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
                     || !string.Equals(item.Url, command.Request.Url.Trim(), StringComparison.OrdinalIgnoreCase)))
             {
                 var used = await unitOfWork.MenuRepository
-                    .FindByCondition(menu => menu.Placement == item.PlacementKey && menu.Url == item.Url)
-                    .AnyAsync(cancellationToken)
+                    .AnyAsync(menu => menu.Placement == item.PlacementKey && menu.Url == item.Url, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (used)
@@ -171,8 +167,7 @@ internal sealed class UpdateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
             }
 
             var placementExists = await unitOfWork.MenuPlacementRepository
-                .FindByCondition(placement => placement.IsActive && placement.Key == command.Request.ParentKey.Trim())
-                .AnyAsync(cancellationToken)
+                .AnyAsync(placement => placement.IsActive && placement.Key == command.Request.ParentKey.Trim(), cancellationToken)
                 .ConfigureAwait(false);
 
             return placementExists ? null : $"Menu placement '{command.Request.ParentKey}' is not registered.";

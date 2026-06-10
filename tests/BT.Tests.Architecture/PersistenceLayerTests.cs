@@ -99,6 +99,19 @@ public sealed class PersistenceLayerTests
             string.Join(", ", hardDeleteOnlyEntities));
     }
 
+    [Fact]
+    public void Declared_DbSet_Entities_Should_Be_Tenant_Scoped()
+    {
+        var entitiesWithoutTenantId = GetDeclaredDbSetEntityTypes()
+            .Where(static t => t.GetProperty("TenantId") is null)
+            .Select(t => t.FullName)
+            .ToList();
+
+        entitiesWithoutTenantId.Should().BeEmpty(
+            because: "persisted bounded-context entities must expose TenantId so DbContext query filters can enforce tenant isolation. Missing: {0}",
+            string.Join(", ", entitiesWithoutTenantId));
+    }
+
     private static List<Type> GetDeclaredDbSetEntityTypes() =>
         Types.InAssembly(AssemblyReferences.Persistence)
             .That()
@@ -184,5 +197,21 @@ public sealed class PersistenceLayerTests
             "HrDBContext",
             "BankingDBContext"
         ], because: "the modular monolith requires one DbContext per bounded context.");
+    }
+
+    [Fact]
+    public void DbContexts_Should_Expose_CurrentTenantId_For_Global_Filters()
+    {
+        var dbContextsWithoutTenantContext = Types.InAssembly(AssemblyReferences.Persistence)
+            .That()
+            .Inherit(typeof(DbContext))
+            .GetTypes()
+            .Where(static t => t.GetProperty("CurrentTenantId") is null)
+            .Select(t => t.FullName)
+            .ToList();
+
+        dbContextsWithoutTenantContext.Should().BeEmpty(
+            because: "DbContexts must expose CurrentTenantId so EF global query filters are tenant-parameterized per request. Missing: {0}",
+            string.Join(", ", dbContextsWithoutTenantContext));
     }
 }

@@ -5,7 +5,6 @@ using BT.Domain.Features.HR.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Employees.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace BT.Application.Features.HR.Employees.QueryHandlers;
 
@@ -30,16 +29,20 @@ internal sealed class GetEmployeeByIdQueryHandler(IHrUnitOfWork unitOfWork)
         var departmentName = employee is null
             ? string.Empty
             : await unitOfWork.DepartmentRepository
-                .FindByCondition(department => department.Id == employee.DepartmentId)
-                .Select(static department => department.Name)
-                .FirstOrDefaultAsync(cancellationToken)
+                .FirstOrDefaultAsync(
+                    departments => departments
+                        .Where(department => department.Id == employee.DepartmentId)
+                        .Select(static department => department.Name),
+                    cancellationToken)
                 .ConfigureAwait(false) ?? string.Empty;
         var managerName = employee?.ManagerId is null
             ? string.Empty
             : await unitOfWork.EmployeeRepository
-                .FindByCondition(manager => manager.Id == employee.ManagerId.Value)
-                .Select(static manager => $"{manager.FirstName} {manager.LastName}")
-                .FirstOrDefaultAsync(cancellationToken)
+                .FirstOrDefaultAsync(
+                    employees => employees
+                        .Where(manager => manager.Id == employee.ManagerId.Value)
+                        .Select(static manager => $"{manager.FirstName} {manager.LastName}"),
+                    cancellationToken)
                 .ConfigureAwait(false) ?? string.Empty;
 
         return employee is null

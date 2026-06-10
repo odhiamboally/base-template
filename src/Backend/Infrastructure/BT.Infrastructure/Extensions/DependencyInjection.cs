@@ -74,6 +74,11 @@ public static class DependencyInjection
             services.Configure<ApiSettings>(configuration.GetSection(ApiSettings.SectionName));
             services.Configure<IamProvisioningSettings>(configuration.GetSection(IamProvisioningSettings.SectionName));
             services.Configure<MfaSettings>(configuration.GetSection(MfaSettings.SectionName));
+            services.AddOptions<TenantSettings>()
+                .Bind(configuration.GetSection(TenantSettings.SectionName))
+                .ValidateDataAnnotations()
+                .Validate(settings => settings.DefaultTenantId != Guid.Empty, "Tenant:DefaultTenantId must be configured.")
+                .ValidateOnStart();
 
             var cacheSettings = configuration.GetSection(CacheSettings.SectionName).Get<CacheSettings>()
                 ?? throw new InvalidOperationException("CacheSettings not found.");
@@ -114,6 +119,7 @@ public static class DependencyInjection
         }
 
         services.AddHttpClient<IApiService, ApiService>();
+        services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
 
         if (!authProviderSettings.Enabled)
         {
