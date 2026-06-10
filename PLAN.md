@@ -345,6 +345,7 @@ Status:
 - The auth/token/session spine is hardened.
 - Auth and TOTP API endpoints have been exposed for the existing IAM command handlers.
 - Login and TOTP completion now create a server-side session, place the session id in JWT/current-user responses, persist refresh tokens, and return the session id to the Blazor client.
+- Email OTP login completion now follows the same auth spine as TOTP: it creates a server-side session, places the session id in JWT claims, persists a refresh token, returns the session id, and participates in logout/revoke/session validation.
 - Blazor stores the session id with the access/refresh tokens and sends it as `X-Session-Id` on authenticated API calls.
 - Refresh-token rotation validates the active session, persists the replacement token, marks the old token used, and uses configured refresh-token expiry.
 - Logout revokes the active session and active refresh tokens server-side.
@@ -366,13 +367,15 @@ Current assessment:
 
 - IAM/Auth enterprise baseline is implemented for local development and PR guardrails.
 - IAM/Auth can be considered code-complete for this phase after the local browser/email smoke test passes.
-- Remaining security checklist work such as Entra ID SSO, CSRF strategy for cookie-authenticated paths, and full OWASP automation belongs to later security/deployment phases, not the core IAM baseline.
+- Remaining security checklist work such as passkeys/WebAuthn, Entra ID SSO, CSRF strategy for cookie-authenticated paths, and full OWASP automation belongs to later security/deployment phases, not the core IAM baseline.
 
 Tasks:
 
 - Add `AuthController`.
 - Complete `TotpController`.
 - Expose login, logout, refresh token, create app user, reset password, email OTP, TOTP setup, TOTP verify, current user, OTP status, password verification, employee access grant, customer/user linking, employee/user linking.
+- Keep authenticator-app TOTP as the preferred enterprise MFA method for privileged users.
+- Keep email OTP as an approved fallback/recovery and optional login verification method with the same session/refresh-token lifecycle as TOTP.
 - Confirm JWT claims include EmployeeId, CustomerId, roles, and active context where applicable.
 - Confirm Customer and Employee access flows work end-to-end.
 - Add cookie auth plan for Blazor Server sessions if the web app should use cookie-based auth instead of only JWT storage.
@@ -384,6 +387,7 @@ Tasks:
 - Add tests for role-based, permission-based, and direct user-permission access scenarios.
 - Add integration tests for critical auth flows.
 - Confirm account lockout, password policy, session expiry, refresh-token reuse detection, and MFA-required flows through automated and/or documented smoke tests.
+- Add passkeys/WebAuthn as a future phishing-resistant authentication option after this IAM baseline is smoke-tested.
 
 Done means:
 

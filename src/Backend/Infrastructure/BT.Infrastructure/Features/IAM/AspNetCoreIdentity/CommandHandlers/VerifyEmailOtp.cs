@@ -1,16 +1,19 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
-using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.SharedKernel.Extensions;
 using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Utilities;
+using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Features.IAM.Users.Entities;
+using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -22,8 +25,14 @@ internal sealed class VerifyEmailOtp(
     IClaimsService claimsService,
     IJwtService jwtService,
     ICacheService cache,
+    IIamUnitOfWork iamUnitOfWork,
+    ISessionService sessionService,
+    IHttpContextAccessor httpContextAccessor,
+    IOptions<JwtSettings> jwtSettings,
     ILogger<VerifyEmailOtp> logger) : IRequestHandler<VerifyEmailOtpCommand, AppResponse<VerifyEmailOtpResponse>>
 {
+    private readonly JwtSettings _jwtSettings = jwtSettings.Value;
+
     public async Task<AppResponse<VerifyEmailOtpResponse>> Handle(VerifyEmailOtpCommand command, CancellationToken ct)
     {
         var req = command.Request;
@@ -64,29 +73,57 @@ internal sealed class VerifyEmailOtp(
                 ServiceLogDefinitions.LogEmailConfirmedViaOtp(logger, user.Id);
             }
             return AppResponse.Success("Email confirmed",
-                new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, true, DateTimeOffset.UtcNow, null!, []));
+                new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, null, true, DateTimeOffset.UtcNow, null!, []));
         }
 
         if (string.Equals(req.Purpose, "PasswordReset", StringComparison.OrdinalIgnoreCase))
         {
             await cache.SetAsync(CacheKeys.PasswordResetVerified(user.Id), true, TimeSpan.FromMinutes(5), ct).ConfigureAwait(false);
             return AppResponse.Success("Code verified",
-                new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, true, DateTimeOffset.UtcNow, null!, []));
+                new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, null, true, DateTimeOffset.UtcNow, null!, []));
         }
 
         if (!string.Equals(req.Purpose, "Login", StringComparison.OrdinalIgnoreCase))
         {
             return AppResponse.Success("Code verified",
-                new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, true, DateTimeOffset.UtcNow, null!, []));
+                new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, null, true, DateTimeOffset.UtcNow, null!, []));
         }
 
-        var claims = await claimsService.GetUserClaimsAsync(user).ConfigureAwait(false);
+        var requestedSessionId = Guid.CreateVersion7();
+        var sessionCreation = await sessionService.CreateSessionAsync(
+            user.Id,
+            requestedSessionId,
+            httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
+            httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
+            string.IsNullOrWhiteSpace(req.DeviceFingerprint) ? "unknown" : req.DeviceFingerprint).ConfigureAwait(false);
+
+        if (!sessionCreation.Successful || sessionCreation.Data == Guid.Empty)
+        {
+            ServiceLogDefinitions.LogFailedToCreateUserSession(logger, user.Id);
+            return AppResponse.Failure<VerifyEmailOtpResponse>("Could not establish a user session.");
+        }
+
+        var activeSessionId = sessionCreation.Data;
+        var claims = await claimsService.GetUserClaimsAsync(user, activeSessionId).ConfigureAwait(false);
         var token = await jwtService.CreateTokenAsync(claims).ConfigureAwait(false);
         var refreshToken = jwtService.CreateRefreshToken();
         var expiry = jwtService.GetTokenExpiry(token);
+        var refreshTokenEntity = BT.Domain.Features.IAM.Users.Entities.RefreshToken.Create(
+            user.Id,
+            refreshToken,
+            DateTimeOffset.UtcNow.AddHours(_jwtSettings.RefreshTokenExpiryHours),
+            user.Id,
+            httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString());
 
         user.RecordSuccessfulLogin();
         await userManager.UpdateAsync(user).ConfigureAwait(false);
+        await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
+        {
+            await iamUnitOfWork.TokenRepository.AddRefreshTokenAsync(refreshTokenEntity).ConfigureAwait(false);
+            await iamUnitOfWork.TokenRepository.CleanupExpiredTokensAsync(user.Id).ConfigureAwait(false);
+            await iamUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
+            return true;
+        }).ConfigureAwait(false);
 
         if (req.RememberDevice) await signInManager.RememberTwoFactorClientAsync(user).ConfigureAwait(false);
         await signInManager.SignInAsync(user, req.RememberMe).ConfigureAwait(false);
@@ -116,6 +153,7 @@ internal sealed class VerifyEmailOtp(
             token,
             refreshToken ?? "",
             user.Id,
+            activeSessionId.ToString(),
             true,
             expiry,
             appUser,
