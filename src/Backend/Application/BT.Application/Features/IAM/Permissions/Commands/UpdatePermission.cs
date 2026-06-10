@@ -6,7 +6,6 @@ using BT.Domain.Features.IAM.Permissions.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Permissions.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Permissions.Commands;
@@ -48,8 +47,7 @@ internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
                 command.UserId);
 
             var duplicate = await unitOfWork.PermissionRepository
-                .FindByCondition(existing => existing.Id != command.Id && existing.Key == draft.Key)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(existing => existing.Id != command.Id && existing.Key == draft.Key, cancellationToken)
                 .ConfigureAwait(false);
 
             if (duplicate)
@@ -92,8 +90,7 @@ internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
         var normalizedContext = context.Trim();
 
         var contextExists = await unitOfWork.PermissionContextRepository
-            .FindByCondition(item => item.IsActive && item.Key == normalizedContext)
-            .AnyAsync(cancellationToken)
+            .AnyAsync(item => item.IsActive && item.Key == normalizedContext, cancellationToken)
             .ConfigureAwait(false);
 
         if (!contextExists)
@@ -102,8 +99,7 @@ internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
         }
 
         var resourceExists = await unitOfWork.PermissionResourceRepository
-            .FindByCondition(item => item.IsActive && item.ContextKey == normalizedContext && item.Key == normalizedResource)
-            .AnyAsync(cancellationToken)
+            .AnyAsync(item => item.IsActive && item.ContextKey == normalizedContext && item.Key == normalizedResource, cancellationToken)
             .ConfigureAwait(false);
 
         if (!resourceExists)
@@ -112,8 +108,7 @@ internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
         }
 
         var actionExists = await unitOfWork.PermissionActionRepository
-            .FindByCondition(item => item.IsActive && item.Key == normalizedAction)
-            .AnyAsync(cancellationToken)
+            .AnyAsync(item => item.IsActive && item.Key == normalizedAction, cancellationToken)
             .ConfigureAwait(false);
 
         return actionExists ? null : $"Permission action '{action}' is not registered.";

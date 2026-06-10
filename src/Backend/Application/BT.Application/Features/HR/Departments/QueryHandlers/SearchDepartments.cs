@@ -3,10 +3,10 @@ using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.HR.Departments.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.HR.Contracts;
+using BT.Domain.Features.HR.Departments.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Departments.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Departments.QueryHandlers;
@@ -32,34 +32,43 @@ internal sealed class SearchDepartmentsQueryHandler(IHrUnitOfWork unitOfWork, IL
         {
             var request = query.SearchRequest;
             var pageSize = Math.Clamp(request.PageSize, 1, 50);
-            var departments = unitOfWork.DepartmentRepository.FindAll();
 
-            if (!string.IsNullOrWhiteSpace(request.GlobalSearch))
+            IQueryable<Department> ApplyFilters(IQueryable<Department> departments)
             {
-                var search = request.GlobalSearch.Trim();
-                departments = departments.Where(department =>
-                    department.Code.Contains(search)
-                    || department.Name.Contains(search)
-                    || department.Description.Contains(search));
+                if (!string.IsNullOrWhiteSpace(request.GlobalSearch))
+                {
+                    var search = request.GlobalSearch.Trim();
+                    departments = departments.Where(department =>
+                        department.Code.Contains(search)
+                        || department.Name.Contains(search)
+                        || department.Description.Contains(search));
+                }
+
+                if (request.IsActive.HasValue)
+                {
+                    departments = departments.Where(department => department.IsActive == request.IsActive.Value);
+                }
+
+                return departments;
             }
 
-            if (request.IsActive.HasValue)
+            var totalCount = await unitOfWork.DepartmentRepository.CountAsync(ApplyFilters, cancellationToken).ConfigureAwait(false);
+
+            IQueryable<Department> ApplyPaging(IQueryable<Department> departments)
             {
-                departments = departments.Where(department => department.IsActive == request.IsActive.Value);
+                departments = ApplyFilters(departments);
+
+                if (request.Cursor.HasValue && request.Cursor != Guid.Empty)
+                {
+                    departments = departments.Where(department => department.Id.CompareTo(request.Cursor.Value) > 0);
+                }
+
+                return departments
+                    .OrderBy(static department => department.Id)
+                    .Take(pageSize + 1);
             }
 
-            var totalCount = await departments.CountAsync(cancellationToken).ConfigureAwait(false);
-
-            if (request.Cursor.HasValue && request.Cursor != Guid.Empty)
-            {
-                departments = departments.Where(department => department.Id.CompareTo(request.Cursor.Value) > 0);
-            }
-
-            var page = await departments
-                .OrderBy(static department => department.Id)
-                .Take(pageSize + 1)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+            var page = await unitOfWork.DepartmentRepository.ListAsync(ApplyPaging, cancellationToken).ConfigureAwait(false);
 
             var hasNextPage = page.Count > pageSize;
             if (hasNextPage)

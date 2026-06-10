@@ -3,7 +3,6 @@ using BT.Application.Utilities;
 using BT.Domain.Features.IAM.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Menus.Commands;
@@ -29,8 +28,7 @@ internal sealed class DeleteMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
             }
 
             var hasChildren = await unitOfWork.MenuRepository
-                .FindByCondition(child => child.ParentId == command.Id)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(child => child.ParentId == command.Id, cancellationToken)
                 .ConfigureAwait(false);
 
             if (hasChildren)

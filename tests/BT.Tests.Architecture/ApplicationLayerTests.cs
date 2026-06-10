@@ -156,6 +156,21 @@ public sealed class ApplicationLayerTests
     }
 
     [Fact]
+    public void Application_Should_Not_Reference_Entity_Framework_Core()
+    {
+        var forbiddenReferences = AssemblyReferences.Application
+            .GetReferencedAssemblies()
+            .Where(reference => reference.Name is not null &&
+                                reference.Name.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal))
+            .Select(reference => reference.Name)
+            .ToList();
+
+        forbiddenReferences.Should().BeEmpty(
+            because: "Application may compose LINQ intent through repository abstractions, but EF Core execution details belong in Persistence. Found: {0}",
+            string.Join(", ", forbiddenReferences));
+    }
+
+    [Fact]
     public void Banking_And_Hr_Write_Commands_Should_Declare_Cache_Invalidation()
     {
         var writeCommandsWithoutInvalidation = Types.InAssembly(AssemblyReferences.Application)

@@ -27,7 +27,7 @@ public static class SharedPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("SharedConnection (or DefaultConnection) not found.");
 
-        services.AddDbContextPool<SharedDBContext>(options =>
+        services.AddDbContext<SharedDBContext>(options =>
         {
             options.UseSqlServer(connectionString, sqlOptions =>
             {

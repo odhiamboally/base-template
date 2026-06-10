@@ -27,14 +27,17 @@ internal abstract class BaseLookupConfiguration<TLookup> : IEntityTypeConfigurat
         builder.Property(x => x.Id)
             .ValueGeneratedOnAdd();
 
+        builder.Property(x => x.TenantId)
+            .IsRequired();
+
         // Code is the stable value used by application logic and dropdown binding.
         builder.Property(x => x.Code)
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.HasIndex(x => x.Code)
+        builder.HasIndex(x => new { x.TenantId, x.Code })
             .IsUnique()
-            .HasDatabaseName($"IX_{typeof(TLookup).Name}_Code");
+            .HasDatabaseName($"UX_{typeof(TLookup).Name}_TenantId_Code");
 
         builder.Property(x => x.Description)
             .IsRequired()
@@ -50,6 +53,7 @@ internal abstract class BaseLookupConfiguration<TLookup> : IEntityTypeConfigurat
         return new TLookup
         {
             Id = id,
+            TenantId = new Guid("0194f700-0000-7000-8000-000000000001"),
             Code = code,
             Description = description,
             DisplayOrder = displayOrder

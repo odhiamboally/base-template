@@ -5,6 +5,7 @@ namespace BT.Persistence.Features.IAM.Menus.Seeds;
 internal static class MenuItemSeed
 {
     private static readonly DateTimeOffset SeedCreatedAt = new(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+    private static readonly Guid SeedTenantId = new("0194f700-0000-7000-8000-000000000001");
 
     private static readonly Guid DashboardId = Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10101");
     private static readonly Guid AdminId = Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10201");
@@ -35,6 +36,7 @@ internal static class MenuItemSeed
     {
         var menu = MenuItem.Create(parentId, departmentId, key, title, description, url, icon, placement, requiredPermissionKey, "System");
         menu.Id = id;
+        menu.TenantId = SeedTenantId;
         menu.CreatedAt = SeedCreatedAt;
         return menu;
     }

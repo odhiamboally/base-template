@@ -24,7 +24,7 @@ public static class BankingPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("BankingConnection (or DefaultConnection) not found.");
 
-        services.AddDbContextPool<BankingDBContext>(options =>
+        services.AddDbContext<BankingDBContext>(options =>
         {
             options.UseSqlServer(connectionString, sqlOptions =>
             {

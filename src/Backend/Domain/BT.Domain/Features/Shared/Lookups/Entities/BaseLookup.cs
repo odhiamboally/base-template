@@ -38,6 +38,8 @@ public abstract class BaseLookup : ISoftDeletable
     [Key]
     public int Id { get; set; }
 
+    public Guid TenantId { get; set; }
+
     /// <summary>Stable code used by application logic and dropdown binding.</summary>
     public string Code { get; set; } = string.Empty;
 

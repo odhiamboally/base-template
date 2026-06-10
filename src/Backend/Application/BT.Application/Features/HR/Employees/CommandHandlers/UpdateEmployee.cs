@@ -6,7 +6,6 @@ using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Employees.Dtos;
 using BT.SharedKernel.Features.Shared.Phone;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Employees.CommandHandlers;
@@ -34,8 +33,7 @@ internal sealed class UpdateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILo
             }
 
             var duplicateEmail = await unitOfWork.EmployeeRepository
-                .FindByCondition(existing => existing.Id != command.Id && existing.Email == request.Email)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(existing => existing.Id != command.Id && existing.Email == request.Email, cancellationToken)
                 .ConfigureAwait(false);
 
             if (duplicateEmail)

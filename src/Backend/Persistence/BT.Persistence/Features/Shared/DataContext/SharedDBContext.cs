@@ -16,8 +16,9 @@ namespace BT.Persistence.Features.Shared.DataContext;
 
 public class SharedDBContext(
     DbContextOptions<SharedDBContext> options,
+    ICurrentTenantProvider? tenantProvider = null,
     ILogger<SharedDBContext>? logger = null
-) : DbContext(options)
+) : DbContext(options), ITenantFilteredDbContext
 {
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<FailedMessage> FailedMessages { get; set; }
@@ -31,6 +32,7 @@ public class SharedDBContext(
     public DbSet<IdentificationTypeLookup> IdentificationTypes { get; set; }
     public DbSet<DirectorRelationTypeLookup> DirectorRelationTypes { get; set; }
     public DbSet<FailedMessageStatusLookup> FailedMessageStatuses { get; set; }
+    public Guid CurrentTenantId => tenantProvider?.TenantId ?? Guid.Empty;
 
     private List<IDomainEvent> _collectedDomainEvents = [];
     public IReadOnlyList<IDomainEvent>? GetCollectedDomainEvents() => _collectedDomainEvents?.AsReadOnly();
@@ -45,24 +47,11 @@ public class SharedDBContext(
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
 
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(DbContextHelper.CreateSoftDeleteFilter(entityType.ClrType));
-
-            if (typeof(ICursorPaginable).IsAssignableFrom(entityType.ClrType))
-            {
-                modelBuilder.Entity(entityType.ClrType).HasKey(nameof(ICursorPaginable.Id));
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasIndex(nameof(ICursorPaginable.CreatedAt), nameof(ICursorPaginable.Id))
-                    .HasDatabaseName($"IX_{entityType.GetTableName()}_CreatedAt_Id");
-            }
-        }
-
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(SharedDBContext).Assembly,
             type => type.Namespace?.StartsWith("BT.Persistence.Features.Shared", StringComparison.Ordinal) == true);
+
+        DbContextHelper.ApplyStandardModelConventions(modelBuilder, this);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -71,7 +60,7 @@ public class SharedDBContext(
         {
             var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
             DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System");
+            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System", CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);

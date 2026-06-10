@@ -30,7 +30,19 @@ public class Repository<T>(DbContext context) : IRepository<T> where T : class
         return entity;
     }
 
+    public virtual async Task<bool> AnyAsync(Expression<Func<T, bool>> expression, CancellationToken ct = default)
+        => await _context.Set<T>().AsNoTracking().AnyAsync(expression, ct).ConfigureAwait(false);
+
     public virtual async Task<int> CountAsync(CancellationToken ct = default) => await _context.Set<T>().CountAsync(ct).ConfigureAwait(false);
+
+    public virtual async Task<int> CountAsync(Expression<Func<T, bool>> expression, CancellationToken ct = default)
+        => await _context.Set<T>().AsNoTracking().CountAsync(expression, ct).ConfigureAwait(false);
+
+    public virtual async Task<int> CountAsync(Func<IQueryable<T>, IQueryable<T>> query, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return await query(_context.Set<T>().AsNoTracking()).CountAsync(ct).ConfigureAwait(false);
+    }
 
     public virtual async Task<int> CountAsync<TCursor>(ISpecification<T, TCursor> spec, CancellationToken ct = default)
     {
@@ -124,6 +136,29 @@ public class Repository<T>(DbContext context) : IRepository<T> where T : class
     {
         return await _context.Set<T>().FindAsync([Id], ct).ConfigureAwait(false);
 
+    }
+
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> expression, CancellationToken ct = default)
+    {
+        return await _context.Set<T>().AsNoTracking().FirstOrDefaultAsync(expression, ct).ConfigureAwait(false);
+    }
+
+    public async Task<TResult?> FirstOrDefaultAsync<TResult>(Func<IQueryable<T>, IQueryable<TResult>> query, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return await query(_context.Set<T>().AsNoTracking()).FirstOrDefaultAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task<List<T>> ListAsync(Func<IQueryable<T>, IQueryable<T>>? query = null, CancellationToken ct = default)
+    {
+        var source = _context.Set<T>().AsNoTracking();
+        return await (query is null ? source : query(source)).ToListAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task<List<TResult>> ListAsync<TResult>(Func<IQueryable<T>, IQueryable<TResult>> query, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return await query(_context.Set<T>().AsNoTracking()).ToListAsync(ct).ConfigureAwait(false);
     }
 
     public async Task<Collection<T>> SearchAsync<TCursor>(ISpecification<T, TCursor> spec, CancellationToken ct = default)

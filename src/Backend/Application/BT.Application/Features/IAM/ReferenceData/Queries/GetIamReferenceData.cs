@@ -4,7 +4,6 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.ReferenceData.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Queries;
@@ -24,42 +23,60 @@ internal sealed class GetIamReferenceDataQueryHandler(IIamUnitOfWork unitOfWork,
     {
         try
         {
-            var contexts = await unitOfWork.PermissionContextRepository.FindByCondition(static item => item.IsActive)
-                .OrderBy(static item => item.Label)
-                .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description))
-                .ToListAsync(cancellationToken)
+            var contexts = await unitOfWork.PermissionContextRepository
+                .ListAsync(
+                    items => items
+                        .Where(static item => item.IsActive)
+                        .OrderBy(static item => item.Label)
+                        .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description)),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
-            var resources = await unitOfWork.PermissionResourceRepository.FindByCondition(static item => item.IsActive)
-                .OrderBy(static item => item.ContextKey)
-                .ThenBy(static item => item.Label)
-                .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description, item.ContextKey))
-                .ToListAsync(cancellationToken)
+            var resources = await unitOfWork.PermissionResourceRepository
+                .ListAsync(
+                    items => items
+                        .Where(static item => item.IsActive)
+                        .OrderBy(static item => item.ContextKey)
+                        .ThenBy(static item => item.Label)
+                        .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description, item.ContextKey)),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
-            var actions = await unitOfWork.PermissionActionRepository.FindByCondition(static item => item.IsActive)
-                .OrderBy(static item => item.Label)
-                .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description))
-                .ToListAsync(cancellationToken)
+            var actions = await unitOfWork.PermissionActionRepository
+                .ListAsync(
+                    items => items
+                        .Where(static item => item.IsActive)
+                        .OrderBy(static item => item.Label)
+                        .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description)),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
-            var placements = await unitOfWork.MenuPlacementRepository.FindByCondition(static item => item.IsActive)
-                .OrderBy(static item => item.Label)
-                .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description))
-                .ToListAsync(cancellationToken)
+            var placements = await unitOfWork.MenuPlacementRepository
+                .ListAsync(
+                    items => items
+                        .Where(static item => item.IsActive)
+                        .OrderBy(static item => item.Label)
+                        .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description)),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
-            var icons = await unitOfWork.MenuIconRepository.FindByCondition(static item => item.IsActive)
-                .OrderBy(static item => item.Label)
-                .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description))
-                .ToListAsync(cancellationToken)
+            var icons = await unitOfWork.MenuIconRepository
+                .ListAsync(
+                    items => items
+                        .Where(static item => item.IsActive)
+                        .OrderBy(static item => item.Label)
+                        .Select(static item => new CatalogOptionResponse(item.Key, item.Label, item.Description)),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
-            var routes = await unitOfWork.MenuRouteRepository.FindByCondition(static item => item.IsActive)
-                .OrderBy(static item => item.PlacementKey)
-                .ThenBy(static item => item.Label)
-                .Select(static item => new CatalogOptionResponse(item.Url, item.Label, item.Description, item.PlacementKey))
-                .ToListAsync(cancellationToken)
+            var routes = await unitOfWork.MenuRouteRepository
+                .ListAsync(
+                    items => items
+                        .Where(static item => item.IsActive)
+                        .OrderBy(static item => item.PlacementKey)
+                        .ThenBy(static item => item.Label)
+                        .Select(static item => new CatalogOptionResponse(item.Url, item.Label, item.Description, item.PlacementKey)),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             var response = new IamReferenceDataResponse(contexts, resources, actions, placements, icons, routes);

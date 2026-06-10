@@ -16,7 +16,6 @@ using BT.SharedKernel.Features.HR.Employees.Dtos;
 using BT.SharedKernel.Features.Shared.Phone;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Employees.CommandHandlers;
@@ -40,8 +39,7 @@ internal sealed class CreateEmployeeCommandHandler(
         try
         {
             var duplicateEmail = await unitOfWork.EmployeeRepository
-                .FindByCondition(e => e.Email == request.Email)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(e => e.Email == request.Email, cancellationToken)
                 .ConfigureAwait(false);
 
             if (duplicateEmail)

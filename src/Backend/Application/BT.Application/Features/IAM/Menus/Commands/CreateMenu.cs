@@ -6,7 +6,6 @@ using BT.Domain.Features.IAM.Menus.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Menus.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Menus.Commands;
@@ -51,8 +50,7 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
             var key = Slugify(request.Title);
             var menu = MenuItem.Create(request.ParentId, request.DepartmentId, key, request.Title, request.Description, request.Url, request.Icon, request.Placement, request.RequiredPermissionKey, command.UserId);
             var duplicate = await unitOfWork.MenuRepository
-                .FindByCondition(existing => existing.Key == menu.Key)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(existing => existing.Key == menu.Key, cancellationToken)
                 .ConfigureAwait(false);
 
             if (duplicate)
@@ -86,8 +84,7 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
         var normalizedPlacement = placement.Trim();
 
         var placementExists = await unitOfWork.MenuPlacementRepository
-            .FindByCondition(item => item.IsActive && item.Key == normalizedPlacement)
-            .AnyAsync(cancellationToken)
+            .AnyAsync(item => item.IsActive && item.Key == normalizedPlacement, cancellationToken)
             .ConfigureAwait(false);
 
         if (!placementExists)
@@ -96,8 +93,7 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
         }
 
         var iconExists = await unitOfWork.MenuIconRepository
-            .FindByCondition(item => item.IsActive && item.Key == icon.Trim())
-            .AnyAsync(cancellationToken)
+            .AnyAsync(item => item.IsActive && item.Key == icon.Trim(), cancellationToken)
             .ConfigureAwait(false);
 
         if (!iconExists)
@@ -107,8 +103,7 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
 
         var routeExists = string.IsNullOrWhiteSpace(url)
             || await unitOfWork.MenuRouteRepository
-                .FindByCondition(item => item.IsActive && item.Url == url.Trim() && item.PlacementKey == normalizedPlacement)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(item => item.IsActive && item.Url == url.Trim() && item.PlacementKey == normalizedPlacement, cancellationToken)
                 .ConfigureAwait(false);
 
         if (!routeExists)
@@ -123,8 +118,7 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
 
         var normalizedPermissionKey = requiredPermissionKey.Trim().ToLowerInvariant();
         var permissionExists = await unitOfWork.PermissionRepository
-            .FindByCondition(item => item.IsActive && item.Key == normalizedPermissionKey)
-            .AnyAsync(cancellationToken)
+            .AnyAsync(item => item.IsActive && item.Key == normalizedPermissionKey, cancellationToken)
             .ConfigureAwait(false);
 
         return permissionExists ? null : $"Required permission '{requiredPermissionKey}' is not registered.";

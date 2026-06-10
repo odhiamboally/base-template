@@ -28,7 +28,7 @@ public static class IamPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("IamConnection (or DefaultConnection) not found.");
 
-        services.AddDbContextPool<IamDBContext>(options =>
+        services.AddDbContext<IamDBContext>(options =>
         {
             options.UseSqlServer(connectionString, sqlOptions =>
             {

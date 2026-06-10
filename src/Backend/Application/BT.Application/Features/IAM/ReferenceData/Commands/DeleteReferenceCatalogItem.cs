@@ -3,7 +3,6 @@ using BT.Application.Utilities;
 using BT.SharedKernel.Dtos.Common;
 using BT.Domain.Features.IAM.Contracts;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Commands;
@@ -114,8 +113,8 @@ internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork un
     {
         var item = await unitOfWork.PermissionContextRepository.FindByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (item is null) return null;
-        var used = await unitOfWork.PermissionRepository.FindByCondition(permission => permission.Context == item.Key).AnyAsync(cancellationToken).ConfigureAwait(false)
-            || await unitOfWork.PermissionResourceRepository.FindByCondition(resource => resource.ContextKey == item.Key).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var used = await unitOfWork.PermissionRepository.AnyAsync(permission => permission.Context == item.Key, cancellationToken).ConfigureAwait(false)
+            || await unitOfWork.PermissionResourceRepository.AnyAsync(resource => resource.ContextKey == item.Key, cancellationToken).ConfigureAwait(false);
         return used ? "This context is used by permissions or resources and cannot be deactivated." : null;
     }
 
@@ -123,7 +122,7 @@ internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork un
     {
         var item = await unitOfWork.PermissionResourceRepository.FindByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (item is null) return null;
-        var used = await unitOfWork.PermissionRepository.FindByCondition(permission => permission.Context == item.ContextKey && permission.Resource == item.Key).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var used = await unitOfWork.PermissionRepository.AnyAsync(permission => permission.Context == item.ContextKey && permission.Resource == item.Key, cancellationToken).ConfigureAwait(false);
         return used ? "This resource is used by permissions and cannot be deactivated." : null;
     }
 
@@ -131,7 +130,7 @@ internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork un
     {
         var item = await unitOfWork.PermissionActionRepository.FindByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (item is null) return null;
-        var used = await unitOfWork.PermissionRepository.FindByCondition(permission => permission.Action == item.Key).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var used = await unitOfWork.PermissionRepository.AnyAsync(permission => permission.Action == item.Key, cancellationToken).ConfigureAwait(false);
         return used ? "This action is used by permissions and cannot be deactivated." : null;
     }
 
@@ -139,8 +138,8 @@ internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork un
     {
         var item = await unitOfWork.MenuPlacementRepository.FindByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (item is null) return null;
-        var used = await unitOfWork.MenuRepository.FindByCondition(menu => menu.Placement == item.Key).AnyAsync(cancellationToken).ConfigureAwait(false)
-            || await unitOfWork.MenuRouteRepository.FindByCondition(route => route.PlacementKey == item.Key).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var used = await unitOfWork.MenuRepository.AnyAsync(menu => menu.Placement == item.Key, cancellationToken).ConfigureAwait(false)
+            || await unitOfWork.MenuRouteRepository.AnyAsync(route => route.PlacementKey == item.Key, cancellationToken).ConfigureAwait(false);
         return used ? "This placement is used by menus or routes and cannot be deactivated." : null;
     }
 
@@ -148,7 +147,7 @@ internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork un
     {
         var item = await unitOfWork.MenuIconRepository.FindByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (item is null) return null;
-        var used = await unitOfWork.MenuRepository.FindByCondition(menu => menu.Icon == item.Key).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var used = await unitOfWork.MenuRepository.AnyAsync(menu => menu.Icon == item.Key, cancellationToken).ConfigureAwait(false);
         return used ? "This icon is used by menus and cannot be deactivated." : null;
     }
 
@@ -156,7 +155,7 @@ internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork un
     {
         var item = await unitOfWork.MenuRouteRepository.FindByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (item is null) return null;
-        var used = await unitOfWork.MenuRepository.FindByCondition(menu => menu.Placement == item.PlacementKey && menu.Url == item.Url).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var used = await unitOfWork.MenuRepository.AnyAsync(menu => menu.Placement == item.PlacementKey && menu.Url == item.Url, cancellationToken).ConfigureAwait(false);
         return used ? "This route is used by menus and cannot be deactivated." : null;
     }
 }

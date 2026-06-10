@@ -19,8 +19,9 @@ namespace BT.Persistence.Features.IAM.DataContext;
 
 public class IamDBContext(
     DbContextOptions<IamDBContext> options,
+    ICurrentTenantProvider? tenantProvider = null,
     ILogger<IamDBContext>? logger = null
-) : IdentityDbContext<AppUser, AppRole, string>(options)
+) : IdentityDbContext<AppUser, AppRole, string>(options), ITenantFilteredDbContext
 {
     public DbSet<AppUserProfile> AppUserProfiles { get; set; }
     public DbSet<AppUserTotpSecret> AppUserTotpSecrets { get; set; }
@@ -36,6 +37,7 @@ public class IamDBContext(
     public DbSet<MenuPlacement> MenuPlacements { get; set; }
     public DbSet<MenuIcon> MenuIcons { get; set; }
     public DbSet<MenuRoute> MenuRoutes { get; set; }
+    public Guid CurrentTenantId => tenantProvider?.TenantId ?? Guid.Empty;
 
     private List<IDomainEvent> _collectedDomainEvents = [];
     public IReadOnlyList<IDomainEvent>? GetCollectedDomainEvents() => _collectedDomainEvents?.AsReadOnly();
@@ -46,24 +48,11 @@ public class IamDBContext(
         ArgumentNullException.ThrowIfNull(builder);
         base.OnModelCreating(builder);
 
-        foreach (var entityType in builder.Model.GetEntityTypes())
-        {
-            if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
-                builder.Entity(entityType.ClrType)
-                    .HasQueryFilter(DbContextHelper.CreateSoftDeleteFilter(entityType.ClrType));
-
-            if (typeof(ICursorPaginable).IsAssignableFrom(entityType.ClrType))
-            {
-                builder.Entity(entityType.ClrType).HasKey(nameof(ICursorPaginable.Id));
-                builder.Entity(entityType.ClrType)
-                    .HasIndex(nameof(ICursorPaginable.CreatedAt), nameof(ICursorPaginable.Id))
-                    .HasDatabaseName($"IX_{entityType.GetTableName()}_CreatedAt_Id");
-            }
-        }
-
         builder.ApplyConfigurationsFromAssembly(
             typeof(IamDBContext).Assembly,
             type => type.Namespace?.StartsWith("BT.Persistence.Features.IAM", StringComparison.Ordinal) == true);
+
+        DbContextHelper.ApplyStandardModelConventions(builder, this);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -72,7 +61,7 @@ public class IamDBContext(
         {
             var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
             DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System");
+            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, "System", CurrentTenantId);
 
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

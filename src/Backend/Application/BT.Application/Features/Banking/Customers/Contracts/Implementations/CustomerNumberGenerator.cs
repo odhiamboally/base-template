@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Data;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
 
 namespace BT.Application.Features.Banking.Customers.Contracts.Implementations;
 

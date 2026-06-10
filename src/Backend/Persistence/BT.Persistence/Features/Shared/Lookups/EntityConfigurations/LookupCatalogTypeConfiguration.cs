@@ -17,13 +17,16 @@ internal sealed class LookupCatalogTypeConfiguration : IEntityTypeConfiguration<
         builder.Property(type => type.Id)
             .ValueGeneratedNever();
 
+        builder.Property(type => type.TenantId)
+            .IsRequired();
+
         builder.Property(type => type.Key)
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.HasIndex(type => type.Key)
+        builder.HasIndex(type => new { type.TenantId, type.Key })
             .IsUnique()
-            .HasDatabaseName("IX_LookupCatalogTypes_Key");
+            .HasDatabaseName("UX_LookupCatalogTypes_TenantId_Key");
 
         builder.Property(type => type.Label)
             .IsRequired()
@@ -52,6 +55,7 @@ internal sealed class LookupCatalogTypeConfiguration : IEntityTypeConfiguration<
         => new()
         {
             Id = id,
+            TenantId = new Guid("0194f700-0000-7000-8000-000000000001"),
             Key = key,
             Label = label,
             Description = description,

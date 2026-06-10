@@ -3,7 +3,6 @@ using BT.Application.Utilities;
 using BT.Domain.Features.HR.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Departments.CommandHandlers;
@@ -30,8 +29,7 @@ internal sealed class DeleteDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
             }
 
             var hasEmployees = await unitOfWork.EmployeeRepository
-                .FindByCondition(employee => employee.DepartmentId == command.Id)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(employee => employee.DepartmentId == command.Id, cancellationToken)
                 .ConfigureAwait(false);
 
             if (hasEmployees)

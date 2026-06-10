@@ -6,7 +6,6 @@ using BT.Domain.Features.HR.Departments.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Departments.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Departments.CommandHandlers;
@@ -29,8 +28,7 @@ internal sealed class CreateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
             var request = command.Request;
             var code = request.Code.Trim().ToUpperInvariant();
             var duplicate = await unitOfWork.DepartmentRepository
-                .FindByCondition(department => department.Code == code)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(department => department.Code == code, cancellationToken)
                 .ConfigureAwait(false);
 
             if (duplicate)

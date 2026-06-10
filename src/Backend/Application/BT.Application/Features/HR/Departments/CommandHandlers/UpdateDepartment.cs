@@ -5,7 +5,6 @@ using BT.Domain.Features.HR.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Departments.Dtos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Departments.CommandHandlers;
@@ -34,8 +33,7 @@ internal sealed class UpdateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
 
             var code = request.Code.Trim().ToUpperInvariant();
             var duplicate = await unitOfWork.DepartmentRepository
-                .FindByCondition(existing => existing.Id != command.Id && existing.Code == code)
-                .AnyAsync(cancellationToken)
+                .AnyAsync(existing => existing.Id != command.Id && existing.Code == code, cancellationToken)
                 .ConfigureAwait(false);
 
             if (duplicate)

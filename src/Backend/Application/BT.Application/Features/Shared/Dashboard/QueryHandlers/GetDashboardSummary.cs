@@ -10,7 +10,6 @@ using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.Dashboard.Dtos;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -43,17 +42,16 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
             var now = DateTimeOffset.UtcNow;
 
             var rows = await _bankingUnitOfWork.CustomerRepository
-                .FindAll()
-                .Select(c => new Row(
-                    c.Status,
-                    c.SegmentType,
-                    c.Type,
-                    c.OpenedOn,
-                    c.RelationshipManager != null
-                        ? $"{c.RelationshipManager.FirstName} {c.RelationshipManager.LastName}"
-                        : null))
-
-                .ToListAsync(ct)
+                .ListAsync(
+                    customers => customers.Select(c => new Row(
+                        c.Status,
+                        c.SegmentType,
+                        c.Type,
+                        c.OpenedOn,
+                        c.RelationshipManager != null
+                            ? $"{c.RelationshipManager.FirstName} {c.RelationshipManager.LastName}"
+                            : null)),
+                    ct)
                 .ConfigureAwait(false);
 
             // ── KPIs ───────────────────────────────────────────────────────────
