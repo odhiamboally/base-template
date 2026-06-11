@@ -52,7 +52,7 @@ public class CustomerSearchSpec : Specification<Customer, Guid>, ICustomerSearch
             //SetCursor(cursor.Value, "Id");
         }
 
-        SetTake(Math.Clamp(pageSize, 1, 50)); // defensive — spec shouldn't trust its caller
+        SetTake(Math.Clamp(pageSize, 1, 51)); // permits pageSize + 1 cursor detection.
         EnableSplitQuery();
     }
 

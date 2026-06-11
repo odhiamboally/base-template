@@ -162,8 +162,7 @@ internal sealed class SessionService(
             }
 
             var session = await _unitOfWork.SessionRepository
-                .FindByCondition(x => x.Id == sessionGuid)
-                .FirstOrDefaultAsync()
+                .GetTrackedByIdAsync(sessionGuid)
                 .ConfigureAwait(false);
 
             if (session == null)

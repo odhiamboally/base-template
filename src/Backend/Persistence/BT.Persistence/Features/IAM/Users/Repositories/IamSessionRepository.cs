@@ -26,6 +26,13 @@ internal sealed class IamSessionRepository : Repository<AppUserSession>, ISessio
             .ToListAsync().ConfigureAwait(false);
     }
 
+    public async Task<AppUserSession?> GetTrackedByIdAsync(Guid sessionId)
+    {
+        return await _iamContext.AppUserSessions
+            .FirstOrDefaultAsync(session => session.Id == sessionId)
+            .ConfigureAwait(false);
+    }
+
     public async Task<AppUserSession?> GetOldestSessionByUserIdAsync(string userId)
     {
         return await _iamContext.AppUserSessions

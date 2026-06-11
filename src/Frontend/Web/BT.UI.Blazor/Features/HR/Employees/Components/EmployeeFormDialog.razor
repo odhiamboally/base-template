@@ -27,7 +27,7 @@
                 </MudItem>
                 <MudItem xs="12" sm="4"><MudTextField @bind-Value="_model.IdNumber" Label="ID Number" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudSelect T="Guid" Value="_model.DepartmentId" ValueChanged="OnDepartmentChangedAsync" Label="Department" Margin="Margin.Dense" Variant="Variant.Outlined" Required>
+                    <MudSelect T="Guid" Value="_model.DepartmentId" ValueChanged="OnDepartmentChangedAsync" Label="Department" Margin="Margin.Dense" Variant="Variant.Outlined" Required Disabled="@(!_departments.Any())" ToStringFunc="DepartmentLabel">
                         @foreach (var department in _departments)
                         {
                             <MudSelectItem T="Guid" Value="@department.Id">@department.Name</MudSelectItem>
@@ -149,6 +149,11 @@
         {
             _model.DepartmentId = _departments[0].Id;
         }
+
+        if (_departments.Count == 0)
+        {
+            Snackbar.Add("No active departments were loaded. Please confirm HR seed data and tenant scope.", Severity.Warning);
+        }
     }
 
     private async Task OnDepartmentChangedAsync(Guid departmentId)
@@ -212,5 +217,16 @@
         return _managers.FirstOrDefault(employee => employee.Id == managerId.Value)?.FullName
             ?? ExistingEmployee?.ManagerName
             ?? "Current manager";
+    }
+
+    private string DepartmentLabel(Guid departmentId)
+    {
+        if (departmentId == Guid.Empty)
+        {
+            return _departments.Count == 0 ? "No departments loaded" : string.Empty;
+        }
+
+        return _departments.FirstOrDefault(department => department.Id == departmentId)?.Name
+            ?? "Unknown department";
     }
 }

@@ -73,7 +73,7 @@ internal sealed class SearchCustomerListQueryHandler(IBankingUnitOfWork _banking
                 status,
                 req.RelationshipManagerId,
                 req.Cursor,
-                pageSize
+                pageSize + 1
 
             );
 
