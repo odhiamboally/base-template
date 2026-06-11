@@ -144,15 +144,18 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
         var cutoffDate = DateTimeOffset.UtcNow.AddDays(-30);
         var now = DateTimeOffset.UtcNow;
 
-        var expiredTokens = await _iamContext.RefreshTokens
+        var query = _iamContext.RefreshTokens
             .Where(rt =>
                 rt.ExpiresAt < now ||
                 rt.CreatedAt < cutoffDate ||
-                (rt.RevokedAt.HasValue && rt.RevokedAt < cutoffDate))
-            .ToListAsync().ConfigureAwait(false);
+                (rt.RevokedAt.HasValue && rt.RevokedAt < cutoffDate));
 
         if (!string.IsNullOrWhiteSpace(userId))
-            expiredTokens = [.. expiredTokens.Where(t => t.AppUserId == userId)];
+        {
+            query = query.Where(t => t.AppUserId == userId);
+        }
+
+        var expiredTokens = await query.ToListAsync().ConfigureAwait(false);
 
         if (expiredTokens.Any())
         {
@@ -163,11 +166,5 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
     public async Task PerformMaintenanceAsync()
     {
         await CleanupExpiredTokensAsync().ConfigureAwait(false);
-        var now = DateTimeOffset.UtcNow;
-        await _iamContext.RefreshTokens.CountAsync().ConfigureAwait(false);
-        await _iamContext.RefreshTokens.CountAsync(rt => !rt.RevokedAt.HasValue && rt.ExpiresAt > now && !rt.UsedAt.HasValue)
-            .ConfigureAwait(false);
-
-        await _iamContext.RefreshTokens.CountAsync(rt => rt.ExpiresAt <= now).ConfigureAwait(false);
     }
 }
