@@ -26,12 +26,9 @@ internal static class MenuIconMapper
     public static string Resolve(string? icon)
     {
         var key = icon?.Trim();
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            return Icons.Material.Filled.Menu;
-        }
-
-        return Options.FirstOrDefault(option => option.Key.Equals(key, StringComparison.OrdinalIgnoreCase))?.Icon
+        return string.IsNullOrWhiteSpace(key)
+            ? Icons.Material.Filled.Menu
+            : Options.FirstOrDefault(option => option.Key.Equals(key, StringComparison.OrdinalIgnoreCase))?.Icon
             ?? (MaterialFilledIcons.Value.TryGetValue(key, out var resolvedIcon) ? resolvedIcon : Icons.Material.Filled.Menu);
     }
 
