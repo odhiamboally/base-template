@@ -1,9 +1,12 @@
 using MudBlazor;
+using System.Reflection;
 
 namespace BT.UI.Blazor.Components.Common;
 
 internal static class MenuIconMapper
 {
+    private static readonly Lazy<Dictionary<string, string>> MaterialFilledIcons = new(BuildMaterialFilledIconMap);
+
     public static IReadOnlyList<MenuIconOption> Options { get; } =
     [
         new("AccountTree", "Account tree", Icons.Material.Filled.AccountTree),
@@ -21,8 +24,30 @@ internal static class MenuIconMapper
     ];
 
     public static string Resolve(string? icon)
-        => Options.FirstOrDefault(option => option.Key.Equals(icon?.Trim(), StringComparison.OrdinalIgnoreCase))?.Icon
-            ?? Icons.Material.Filled.Menu;
+    {
+        var key = icon?.Trim();
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return Icons.Material.Filled.Menu;
+        }
+
+        return Options.FirstOrDefault(option => option.Key.Equals(key, StringComparison.OrdinalIgnoreCase))?.Icon
+            ?? (MaterialFilledIcons.Value.TryGetValue(key, out var resolvedIcon) ? resolvedIcon : Icons.Material.Filled.Menu);
+    }
+
+    private static Dictionary<string, string> BuildMaterialFilledIconMap()
+    {
+        return typeof(Icons.Material.Filled)
+            .GetProperties(BindingFlags.Public | BindingFlags.Static)
+            .Where(static property => property.PropertyType == typeof(string))
+            .Select(static property => new
+            {
+                property.Name,
+                Icon = property.GetValue(null) as string
+            })
+            .Where(static item => !string.IsNullOrWhiteSpace(item.Icon))
+            .ToDictionary(static item => item.Name, static item => item.Icon!, StringComparer.OrdinalIgnoreCase);
+    }
 }
 
 internal sealed record MenuIconOption(string Key, string Label, string Icon);

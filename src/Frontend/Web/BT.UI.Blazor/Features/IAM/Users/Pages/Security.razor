@@ -49,8 +49,8 @@
                     </dl>
                 }
 
-                <MudButton Variant="Variant.Filled" Class="bt-mud-primary" OnClick="StartTotpSetupAsync" Disabled="@_isBusy">
-                    @(_setupInfo is null ? "Set up authenticator app" : "Regenerate setup code")
+                <MudButton Variant="Variant.Filled" Class="bt-mud-primary" OnClick="StartTotpSetupAsync" Disabled="@(_isBusy || IsTotpEnabled)">
+                    @SetupButtonText
                 </MudButton>
             </article>
 
@@ -62,7 +62,9 @@
 
                 @if (_setupInfo is null)
                 {
-                    <p>Start setup to generate a temporary TOTP secret. The secret is only committed after a valid code is verified.</p>
+                    <p>@(IsTotpEnabled
+                            ? "Authenticator-app 2FA is enabled for this account. Disabling or resetting MFA should be handled as a separate audited IAM action."
+                            : "Start setup to generate a temporary TOTP secret. The secret is only committed after a valid code is verified.")</p>
                 }
                 else
                 {
@@ -110,6 +112,12 @@
     private BT.SharedKernel.Features.IAM.Users.Dtos.TwoFactorSetupInfo? _setupInfo;
     private readonly TotpVerificationModel _verification = new();
 
+    private bool IsTotpEnabled => _otpStatus?.IsEnabled == true;
+
+    private string SetupButtonText => IsTotpEnabled
+        ? "Authenticator app enabled"
+        : _setupInfo is null ? "Set up authenticator app" : "Regenerate setup code";
+
     private string DisplayName
     {
         get
@@ -147,6 +155,11 @@
 
     private async Task StartTotpSetupAsync()
     {
+        if (IsTotpEnabled)
+        {
+            return;
+        }
+
         _isBusy = true;
         _isError = false;
         _message = null;

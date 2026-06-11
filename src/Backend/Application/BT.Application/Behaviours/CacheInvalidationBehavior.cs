@@ -1,5 +1,6 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Utilities;
+using BT.Domain.Shared.Contracts.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System;
@@ -30,7 +31,9 @@ namespace BT.Application.Behaviours;
 ///      next read (wrong version in the key) and expire naturally.
 /// </summary>
 public sealed class CacheInvalidationBehavior<TRequest, TResponse>(
-    ICacheService cache, ILogger<CacheInvalidationBehavior<TRequest, TResponse>> logger)
+    ICacheService cache,
+    ICurrentTenantProvider tenantProvider,
+    ILogger<CacheInvalidationBehavior<TRequest, TResponse>> logger)
 
     : IPipelineBehavior<TRequest, TResponse> where TRequest 
     : IRequest<TResponse>, ICacheInvalidatorRequest
@@ -60,13 +63,34 @@ public sealed class CacheInvalidationBehavior<TRequest, TResponse>(
         // ── 2. Version token bumps ─────────────────────────────────────────────
         foreach (var sentinelKey in request.GroupVersionKeysToInvalidate)
         {
-            var newVersion = GenerateVersion();
-            await cache.SetAsync(sentinelKey, newVersion, VersionTtl, cancellationToken).ConfigureAwait(false);
+            await BumpVersionAsync(sentinelKey, cancellationToken).ConfigureAwait(false);
 
-            CacheLogDefinitions.LogCacheBumped(logger, sentinelKey, newVersion);
+            var tenantScopedKey = ToTenantScopedVersionKey(sentinelKey, tenantProvider.TenantId);
+            if (!string.Equals(tenantScopedKey, sentinelKey, StringComparison.OrdinalIgnoreCase))
+            {
+                await BumpVersionAsync(tenantScopedKey, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         return response;
+    }
+
+    private async Task BumpVersionAsync(string sentinelKey, CancellationToken cancellationToken)
+    {
+        var newVersion = GenerateVersion();
+        await cache.SetAsync(sentinelKey, newVersion, VersionTtl, cancellationToken).ConfigureAwait(false);
+
+        CacheLogDefinitions.LogCacheBumped(logger, sentinelKey, newVersion);
+    }
+
+    private static string ToTenantScopedVersionKey(string sentinelKey, Guid tenantId)
+    {
+        if (tenantId == Guid.Empty || !sentinelKey.EndsWith(":version:global", StringComparison.OrdinalIgnoreCase))
+        {
+            return sentinelKey;
+        }
+
+        return $"{sentinelKey[..^":global".Length]}tenant:{tenantId:D}";
     }
 
     private static string GenerateVersion() 
