@@ -122,15 +122,14 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
 
     public async Task<bool> IsTokenActiveAsync(string token)
     {
-        var refreshToken = await FindByCondition(t =>
-            t.Token == token &&
-            t.IsActive &&
-            !t.IsExpired &&
-            !t.IsRevoked &&
-            !t.IsUsed)
+        var now = DateTimeOffset.UtcNow;
+        return await FindByCondition(t =>
+                t.Token == token &&
+                !t.RevokedAt.HasValue &&
+                now < t.ExpiresAt &&
+                !t.UsedAt.HasValue)
             .AsNoTracking()
-            .FirstOrDefaultAsync().ConfigureAwait(false);
-        return refreshToken != null;
+            .AnyAsync().ConfigureAwait(false);
     }
 
     public async Task MarkTokenAsUsedAsync(RefreshToken refreshToken)
@@ -145,15 +144,18 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
         var cutoffDate = DateTimeOffset.UtcNow.AddDays(-30);
         var now = DateTimeOffset.UtcNow;
 
-        var expiredTokens = await _iamContext.RefreshTokens
+        var query = _iamContext.RefreshTokens
             .Where(rt =>
-                (rt.ExpiresAt < now ||
-                 rt.CreatedAt < cutoffDate ||
-                 (rt.IsRevoked && rt.RevokedAt < cutoffDate)))
-            .ToListAsync().ConfigureAwait(false);
+                rt.ExpiresAt < now ||
+                rt.CreatedAt < cutoffDate ||
+                (rt.RevokedAt.HasValue && rt.RevokedAt < cutoffDate));
 
         if (!string.IsNullOrWhiteSpace(userId))
-            expiredTokens = expiredTokens.Where(t => t.AppUserId == userId).ToList();
+        {
+            query = query.Where(t => t.AppUserId == userId);
+        }
+
+        var expiredTokens = await query.ToListAsync().ConfigureAwait(false);
 
         if (expiredTokens.Any())
         {
@@ -164,8 +166,5 @@ internal sealed class IamTokenRepository : Repository<RefreshToken>, ITokenRepos
     public async Task PerformMaintenanceAsync()
     {
         await CleanupExpiredTokensAsync().ConfigureAwait(false);
-        await _iamContext.RefreshTokens.CountAsync().ConfigureAwait(false);
-        await _iamContext.RefreshTokens.CountAsync(rt => rt.IsActive).ConfigureAwait(false);
-        await _iamContext.RefreshTokens.CountAsync(rt => rt.IsExpired).ConfigureAwait(false);
     }
 }
