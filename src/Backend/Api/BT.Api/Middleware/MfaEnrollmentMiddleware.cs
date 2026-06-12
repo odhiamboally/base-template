@@ -1,5 +1,7 @@
 using BT.Infrastructure.Configuration;
 using BT.Api.Logging;
+using BT.Domain.Features.IAM.Users.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text.Json;
@@ -13,11 +15,12 @@ internal sealed class MfaEnrollmentMiddleware(
 {
     private readonly MfaSettings _mfaSettings = mfaSettings.Value;
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context, UserManager<AppUser> userManager)
     {
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(userManager);
 
-        if (!RequiresEnrollmentGate(context))
+        if (!await RequiresEnrollmentGateAsync(context, userManager).ConfigureAwait(false))
         {
             await next(context).ConfigureAwait(false);
             return;
@@ -40,7 +43,7 @@ internal sealed class MfaEnrollmentMiddleware(
         await context.Response.WriteAsync(JsonSerializer.Serialize(response)).ConfigureAwait(false);
     }
 
-    private bool RequiresEnrollmentGate(HttpContext context)
+    private async Task<bool> RequiresEnrollmentGateAsync(HttpContext context, UserManager<AppUser> userManager)
     {
         if (!_mfaSettings.Enabled || !_mfaSettings.EnforceEnrollment)
         {
@@ -62,8 +65,19 @@ internal sealed class MfaEnrollmentMiddleware(
             return false;
         }
 
-        var mfaEnrolled = context.User.FindFirst("mfa_enrolled")?.Value;
-        return !string.Equals(mfaEnrolled, "true", StringComparison.OrdinalIgnoreCase);
+        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return false;
+        }
+
+        var user = await userManager.FindByIdAsync(userId).ConfigureAwait(false);
+        if (user is null)
+        {
+            return true;
+        }
+
+        return !await userManager.GetTwoFactorEnabledAsync(user).ConfigureAwait(false);
     }
 
     private static bool ShouldSkip(PathString path)

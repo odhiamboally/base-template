@@ -14,6 +14,7 @@ using BT.Persistence.Features.IAM.Menus.Repositories;
 using BT.Persistence.Features.IAM.Permissions.Repositories;
 using BT.Persistence.Features.IAM.Users.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -22,7 +23,7 @@ namespace BT.Persistence.Features.IAM.Extensions;
 
 public static class IamPersistenceDI
 {
-    public static IServiceCollection AddIamPersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddIamPersistence(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var connectionString = configuration.GetConnectionString("IamConnection")
             ?? configuration.GetConnectionString("DefaultConnection")
@@ -37,6 +38,12 @@ public static class IamPersistenceDI
                 sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
                 sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_IAM");
             });
+
+            // Enable sensitive data logging only in non-production environments for diagnostics
+            if (environment?.IsDevelopment() == true || environment?.IsStaging() == true)
+            {
+                options.EnableSensitiveDataLogging();
+            }
         });
 
         services.AddScoped<IUserRepository, IamUserRepository>();

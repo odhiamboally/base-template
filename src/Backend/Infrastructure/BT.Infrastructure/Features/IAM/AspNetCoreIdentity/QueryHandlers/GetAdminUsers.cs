@@ -110,6 +110,21 @@ internal sealed class GetAdminUsers(UserManager<AppUser> userManager, IamDBConte
         var pageUsers = await query
             .OrderBy(static user => user.Email)
             .ThenBy(static user => user.Id)
+            .Select(static user => new AdminUserPageRow(
+                user.Id,
+                user.UserName,
+                user.FirstName,
+                user.LastName,
+                user.Email,
+                user.PhoneNumber,
+                user.IsActive,
+                user.EmailConfirmed,
+                user.TwoFactorEnabled,
+                user.RequirePasswordChange,
+                user.CreatedAt,
+                user.LastLoginAt,
+                user.EmployeeId,
+                user.CustomerId))
             .Take(pageSize + 1)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -168,4 +183,20 @@ internal sealed class GetAdminUsers(UserManager<AppUser> userManager, IamDBConte
 
         return AppResponse.Success("Users loaded.", paged);
     }
+
+    private sealed record AdminUserPageRow(
+        string Id,
+        string? UserName,
+        string FirstName,
+        string LastName,
+        string? Email,
+        string? PhoneNumber,
+        bool IsActive,
+        bool EmailConfirmed,
+        bool TwoFactorEnabled,
+        bool RequirePasswordChange,
+        DateTimeOffset CreatedAt,
+        DateTimeOffset? LastLoginAt,
+        Guid? EmployeeId,
+        Guid? CustomerId);
 }

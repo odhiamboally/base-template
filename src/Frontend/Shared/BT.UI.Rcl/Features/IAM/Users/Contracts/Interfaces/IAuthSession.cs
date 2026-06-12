@@ -14,6 +14,7 @@ public interface IAuthSession
     bool MfaEnrollmentRequired { get; }
 
     Task InitializeAsync();
+    Task RefreshAsync();
     Task<AppResponse<LoginResponse>> SignInAsync(LoginRequest request);
     Task<AppResponse<VerifyOtpResponse>> CompleteTwoFactorAsync(VerifyOtpRequest request);
     Task<AppResponse<bool>> SignOutAsync();

@@ -44,15 +44,17 @@ internal sealed class Login(
     private readonly JwtSettings _jwtSettings = jwtSettings.Value;
     private readonly MfaSettings _mfaSettings = mfaSettings.Value;
 
-    public async Task<AppResponse<LoginResponse>> Handle(LoginCommand command, CancellationToken cancellationToken)
-    {
-        var loginRequest = command.LoginRequest;
-
-        try
+        public async Task<AppResponse<LoginResponse>> Handle(LoginCommand command, CancellationToken cancellationToken)
         {
-            var user = await userManager.Users
-                .FirstOrDefaultAsync(u => u.UserName == loginRequest.UserName, cancellationToken)
-                .ConfigureAwait(false);
+            var loginRequest = command.LoginRequest;
+
+            AppUser? user = null;
+
+            try
+            {
+                user = await userManager.Users
+                    .FirstOrDefaultAsync(u => u.UserName == loginRequest.UserName, cancellationToken)
+                    .ConfigureAwait(false);
 
             if (user == null)
             {
@@ -72,8 +74,9 @@ internal sealed class Login(
                 return AppResponse.Failure<LoginResponse>("Please confirm your email before logging in.");
             }
 
+            // Use the username overload to avoid introducing a second tracked AppUser instance
             var signInResult = await signInManager
-                .PasswordSignInAsync(user, loginRequest.Password, loginRequest.RememberMe, true)
+                .PasswordSignInAsync(loginRequest.UserName, loginRequest.Password, loginRequest.RememberMe, true)
                 .ConfigureAwait(false);
 
             if (signInResult.IsLockedOut)
@@ -115,7 +118,11 @@ internal sealed class Login(
                 user.EmployeeId,
                 user.CustomerId);
 
-            if (signInResult.RequiresTwoFactor || twoFactorEnabled)
+            var rememberedTwoFactorClient = twoFactorEnabled
+                && await signInManager.IsTwoFactorClientRememberedAsync(user).ConfigureAwait(false);
+            var requiresTwoFactorChallenge = signInResult.RequiresTwoFactor || (twoFactorEnabled && !rememberedTwoFactorClient);
+
+            if (requiresTwoFactorChallenge)
             {
                 var tempClaims = new List<Claim>
                 {
@@ -223,10 +230,18 @@ internal sealed class Login(
             var rolesResponse = await userManager.GetRolesAsync(user).ConfigureAwait(false);
             var userRoles = new Collection<string>(rolesResponse.ToList());
             var mfaEnrollmentRequired = IsMfaEnrollmentRequired(twoFactorEnabled, rolesResponse);
-            user.RecordSuccessfulLogin();
-            var finalAppUserResponse = appUserResponse with { Roles = userRoles, LastLoginAt = user.LastLoginAt };
+            // Reload the user via UserManager to ensure we operate on the DbContext-tracked instance
+            var trackedUser = await userManager.FindByIdAsync(user.Id).ConfigureAwait(false);
+            if (trackedUser == null)
+            {
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new InvalidOperationException("User disappeared from store before update"));
+                return AppResponse.Failure<LoginResponse>("Could not complete login.");
+            }
 
-            var userUpdateResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
+            trackedUser.RecordSuccessfulLogin();
+            var finalAppUserResponse = appUserResponse with { Roles = userRoles, LastLoginAt = trackedUser.LastLoginAt };
+
+            var userUpdateResult = await userManager.UpdateAsync(trackedUser).ConfigureAwait(false);
             if (!userUpdateResult.Succeeded)
             {
                 var updateError = string.Join("; ", userUpdateResult.Errors.Select(e => e.Description));
@@ -261,6 +276,15 @@ internal sealed class Login(
                 finalAppUserResponse,
                 userClaims.ToClaimResponses(),
                 mfaEnrollmentRequired));
+        }
+        catch (InvalidOperationException ex) when (ex.Message != null && (ex.Message.Contains("already being tracked") || ex.Message.Contains("cannot be tracked")))
+        {
+            // Detailed telemetry for duplicate-tracking EF Core errors
+            var remoteIp = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
+            var userAgent = httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown";
+            ServiceLogDefinitions.LogDuplicateAppUserTracking(logger, ex, user?.Id, loginRequest.UserName, remoteIp, userAgent);
+            ServiceLogDefinitions.LogLoginError(logger, loginRequest.UserName, ex);
+            throw;
         }
         catch (Exception ex)
         {

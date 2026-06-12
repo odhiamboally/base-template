@@ -13,15 +13,12 @@ namespace BT.Infrastructure.Contracts.Implementations.Caching;
 
 internal sealed class HybridCacheService(HybridCache cache, ILogger<HybridCacheService> logger) : ICacheService
 {
-    // HybridCache handles the "Get or Create" logic internally. 
-    // Since your MediatR behavior handles the 'Create' part, we use it for simple retrieval.
-
     private static readonly ActivitySource CacheActivity = new("BT.Cache");
     private static readonly Meter CacheMeter = new("BT.Cache");
     private static readonly Counter<long> CacheHits = CacheMeter.CreateCounter<long>("cache_hits");
     private static readonly Counter<long> CacheMisses = CacheMeter.CreateCounter<long>("cache_misses");
 
-    // Sentinel wrapper to distinguish null vs miss
+    // Sentinel wrapper to distinguish null vs miss for the legacy GetAsync calls
     private sealed record CacheEnvelope<T>(bool HasValue, T? Value);
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
@@ -61,6 +58,53 @@ internal sealed class HybridCacheService(HybridCache cache, ILogger<HybridCacheS
             activity?.SetStatus(ActivityStatusCode.Error);
             activity?.AddException(ex);
             ServiceLogDefinitions.LogCacheOperationError(logger, "GET", key, ex);
+            throw;
+        }
+    }
+
+    public async Task<T> GetOrCreateAsync<T>(
+        string key,
+        Func<CancellationToken, Task<T>> factory,
+        TimeSpan? expiration = null,
+        CancellationToken ct = default)
+    {
+        using var activity = CacheActivity.StartActivity("Cache GET_OR_CREATE");
+
+        activity?.SetTag("cache.key", key);
+        activity?.SetTag("cache.operation", "GET_OR_CREATE");
+        if (expiration.HasValue)
+        {
+            activity?.SetTag("cache.expiration.seconds", expiration.Value.TotalSeconds);
+        }
+
+        var start = Stopwatch.GetTimestamp();
+
+        try
+        {
+            var options = expiration.HasValue
+                ? new HybridCacheEntryOptions
+                {
+                    Expiration = expiration,
+                    LocalCacheExpiration = expiration
+                }
+                : null;
+
+            var result = await cache.GetOrCreateAsync(
+                key,
+                async token => await factory(token).ConfigureAwait(false),
+                options,
+                cancellationToken: ct).ConfigureAwait(false);
+
+            var elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            activity?.SetTag("cache.latency.ms", elapsedMs);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error);
+            activity?.AddException(ex);
+            ServiceLogDefinitions.LogCacheOperationError(logger, "GET_OR_CREATE", key, ex);
             throw;
         }
     }

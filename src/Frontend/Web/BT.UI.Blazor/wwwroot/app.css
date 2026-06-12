@@ -475,6 +475,24 @@ a, .btn-link {
     color: var(--bt-muted);
 }
 
+.profile-upload-control {
+    display: grid;
+    gap: 0.35rem;
+    justify-items: center;
+    width: 100%;
+}
+
+.profile-upload-control input[type="file"] {
+    max-width: 100%;
+    color: var(--bt-muted);
+    font-size: 0.75rem;
+}
+
+.profile-upload-control small {
+    color: var(--bt-muted);
+    font-size: 0.7rem;
+}
+
 .mud-table {
     background: transparent !important;
     font-size: 0.78rem !important;

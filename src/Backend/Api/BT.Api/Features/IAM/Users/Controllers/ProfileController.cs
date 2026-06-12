@@ -1,0 +1,53 @@
+using Asp.Versioning;
+using BT.Api.Common.Controllers;
+using BT.Application.Features.IAM.Users.Commands;
+using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Features.IAM.Users.Dtos;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace BT.Api.Features.IAM.Users.Controllers;
+
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/iam/users/me")]
+[ApiController]
+[Authorize]
+public sealed class ProfileController(ISender sender) : BaseController
+{
+    [HttpPost("profile-picture")]
+    [RequestSizeLimit(2_097_152)]
+    public async Task<IActionResult> UpdateProfilePicture(IFormFile file)
+    {
+        if (file is null)
+        {
+            return BadRequest(AppResponse.Failure<ProfilePictureResponse>("Profile picture is required."));
+        }
+
+        var userId = GetUserId();
+        using var stream = file.OpenReadStream();
+        var response = await sender
+            .Send(new UpdateProfilePictureCommand(
+                userId,
+                stream,
+                file.FileName,
+                file.ContentType,
+                file.Length,
+                userId))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    private string GetUserId()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new UnauthorizedAccessException("Authenticated user id was not found.");
+        }
+
+        return userId;
+    }
+}

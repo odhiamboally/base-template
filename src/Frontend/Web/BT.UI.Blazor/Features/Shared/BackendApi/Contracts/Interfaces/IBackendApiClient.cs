@@ -12,4 +12,12 @@ internal interface IBackendApiClient
         string? unavailableMessage = null,
         string? timeoutMessage = null,
         CancellationToken cancellationToken = default);
+
+    Task<AppResponse<T>> SendMultipartAsync<T>(
+        string endpoint,
+        MultipartFormDataContent content,
+        bool requiresAuthentication = true,
+        string? unavailableMessage = null,
+        string? timeoutMessage = null,
+        CancellationToken cancellationToken = default);
 }

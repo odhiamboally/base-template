@@ -90,7 +90,7 @@ public sealed class CacheInvalidationBehavior<TRequest, TResponse>(
             return sentinelKey;
         }
 
-        return $"{sentinelKey[..^":global".Length]}tenant:{tenantId:D}";
+        return $"{sentinelKey[..^":global".Length]}:tenant:{tenantId:D}";
     }
 
     private static string GenerateVersion() 

@@ -73,6 +73,12 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
         }
     }
 
+    public async Task RefreshAsync()
+    {
+        await RefreshCurrentUserAsync().ConfigureAwait(false);
+        IsInitialized = true;
+    }
+
     public async Task<AppResponse<LoginResponse>> SignInAsync(LoginRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -115,7 +121,8 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
                 response.Data.UserInfo.LastLoginAt,
                 [.. roles],
                 SessionId: response.Data.SessionId,
-                MfaEnrollmentRequired: response.Data.MfaEnrollmentRequired);
+                MfaEnrollmentRequired: response.Data.MfaEnrollmentRequired,
+                ProfilePictureUrl: response.Data.UserInfo.ProfilePictureUrl);
 
             LastError = null;
         }

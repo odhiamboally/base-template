@@ -17,7 +17,8 @@ public sealed class ApiAuthorizationTests
 
     private static readonly string[] ActionsAllowedWithoutPermissionRequirement =
     [
-        "IamAdminController.GetNavigationMenus"
+        "IamAdminController.GetNavigationMenus",
+        "ProfileController.UpdateProfilePicture"
     ];
 
     private static readonly string[] AuthControllerAllowedActions =

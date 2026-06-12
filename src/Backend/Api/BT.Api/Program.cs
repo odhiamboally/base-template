@@ -76,7 +76,7 @@ try
     builder.Services.AddIamModule(builder.Configuration, builder.Environment);
     builder.Services.AddHrModule(builder.Configuration);
     builder.Services.AddBankingModule(builder.Configuration);
-    builder.Services.AddSharedPersistence(builder.Configuration);
+    builder.Services.AddSharedPersistence(builder.Configuration, builder.Environment);
     builder.Services.ConfigureOutBoxMessagingWithGlobalRetry(builder.Configuration);
 
     builder.Services.AddControllers()
@@ -209,6 +209,8 @@ try
     app.UseHttpsRedirection();
 
     app.UseRouting();
+
+    app.UseOutputCache();
 
     app.UseCors(corsPolicy);
 

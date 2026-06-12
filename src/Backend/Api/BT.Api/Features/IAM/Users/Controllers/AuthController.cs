@@ -7,7 +7,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Security.Claims;
 
 namespace BT.Api.Features.IAM.Users.Controllers;
 
@@ -136,16 +135,6 @@ public sealed class AuthController(ISender sender) : BaseController
         return HandleResponse(response);
     }
 
-    private string GetUserId()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new UnauthorizedAccessException("Authenticated user id was not found.");
-        }
-
-        return userId;
-    }
 }
 
 public sealed record LoginApiRequest(

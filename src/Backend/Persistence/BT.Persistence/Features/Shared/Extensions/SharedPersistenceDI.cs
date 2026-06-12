@@ -13,6 +13,7 @@ using BT.Persistence.Features.Shared.EmailTemplates.Repositories;
 using BT.Persistence.Features.Shared.FailedMessages.Repositories;
 using BT.Persistence.Features.Shared.Lookups.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -21,7 +22,7 @@ namespace BT.Persistence.Features.Shared.Extensions;
 
 public static class SharedPersistenceDI
 {
-    public static IServiceCollection AddSharedPersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSharedPersistence(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var connectionString = configuration.GetConnectionString("SharedConnection")
             ?? configuration.GetConnectionString("DefaultConnection")
@@ -36,6 +37,12 @@ public static class SharedPersistenceDI
                 sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
                 sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_Shared");
             });
+
+            // Enable sensitive data logging only in non-production environments for diagnostics
+            if (environment?.IsDevelopment() == true || environment?.IsStaging() == true)
+            {
+                options.EnableSensitiveDataLogging();
+            }
         });
 
         services.AddScoped<ILookupRepository, SharedLookupRepository>();

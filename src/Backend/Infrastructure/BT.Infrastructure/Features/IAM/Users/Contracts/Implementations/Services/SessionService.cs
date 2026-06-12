@@ -278,13 +278,13 @@ internal sealed class SessionService(
 
     public async Task<AppResponse<bool>> IsSessionValidAsync(string sessionId, string userId)
     {
+        if (!Guid.TryParse(sessionId, out var sessionGuid))
+        {
+            return AppResponse.Failure<bool>("Invalid session id");
+        }
+
         try
         {
-            if (!Guid.TryParse(sessionId, out var sessionGuid))
-            {
-                return AppResponse.Failure<bool>("Invalid session id");
-            }
-
             var session = await _unitOfWork.SessionRepository
                 .FindByCondition(s => s.Id == sessionGuid)
                 .FirstOrDefaultAsync()
@@ -300,7 +300,8 @@ internal sealed class SessionService(
                 return AppResponse.Failure<bool>("Session is not active");
             }
 
-            if (session.ExpiresAt <= DateTimeOffset.UtcNow)
+            var now = DateTimeOffset.UtcNow;
+            if (session.ExpiresAt <= now)
             {
                 // Mark as expired
                 session.Expire();
@@ -310,14 +311,36 @@ internal sealed class SessionService(
                 return AppResponse.Failure<bool>("Session has expired");
             }
 
-            session.Touch(_sessionSettings.SlidingExpiration
-                ? DateTimeOffset.UtcNow.AddMinutes(_sessionSettings.SessionTimeoutMinutes)
-                : null);
+            // Optimize database writes: only write back if sliding expiration/access time is at least 1 minute old
+            if (now - session.LastAccessedAt > TimeSpan.FromMinutes(1))
+            {
+                session.Touch(_sessionSettings.SlidingExpiration
+                    ? now.AddMinutes(_sessionSettings.SessionTimeoutMinutes)
+                    : null);
 
-            await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
-            await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+            }
 
             return AppResponse.Success("Session is valid", true);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            ServiceLogDefinitions.LogSessionConcurrencyConflict(_logger, sessionId, ex);
+
+            // Fetch a fresh copy from DB without tracking to verify state
+            var freshSession = await _unitOfWork.SessionRepository
+                .FindByCondition(s => s.Id == sessionGuid)
+                .AsNoTracking()
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+
+            if (freshSession != null && freshSession.IsActive && freshSession.ExpiresAt > DateTimeOffset.UtcNow)
+            {
+                return AppResponse.Success("Session is valid (concurrency resolved)", true);
+            }
+
+            return AppResponse.Failure<bool>("Session has expired or is invalid");
         }
         catch (Exception ex)
         {
@@ -328,13 +351,13 @@ internal sealed class SessionService(
 
     public async Task<AppResponse<bool>> ValidateSessionAsync(string sessionId)
     {
+        if (!Guid.TryParse(sessionId, out var sessionGuid))
+        {
+            return AppResponse.Failure<bool>("Invalid session id");
+        }
+
         try
         {
-            if (!Guid.TryParse(sessionId, out var sessionGuid))
-            {
-                return AppResponse.Failure<bool>("Invalid session id");
-            }
-
             var session = await _unitOfWork.SessionRepository
                 .FindByCondition(s => s.Id == sessionGuid)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
@@ -349,7 +372,8 @@ internal sealed class SessionService(
                 return AppResponse.Failure<bool>("Session is not active");
             }
 
-            if (session.ExpiresAt <= DateTimeOffset.UtcNow)
+            var now = DateTimeOffset.UtcNow;
+            if (session.ExpiresAt <= now)
             {
                 // Mark as expired
                 session.Expire();
@@ -359,14 +383,36 @@ internal sealed class SessionService(
                 return AppResponse.Failure<bool>("Session has expired");
             }
 
-            session.Touch(_sessionSettings.SlidingExpiration
-                ? DateTimeOffset.UtcNow.AddMinutes(_sessionSettings.SessionTimeoutMinutes)
-                : null);
+            // Optimize database writes: only write back if sliding expiration/access time is at least 1 minute old
+            if (now - session.LastAccessedAt > TimeSpan.FromMinutes(1))
+            {
+                session.Touch(_sessionSettings.SlidingExpiration
+                    ? now.AddMinutes(_sessionSettings.SessionTimeoutMinutes)
+                    : null);
 
-            await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
-            await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+            }
 
             return AppResponse.Success("Session is valid", true);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            ServiceLogDefinitions.LogSessionConcurrencyConflict(_logger, sessionId, ex);
+
+            // Fetch a fresh copy from DB without tracking to verify state
+            var freshSession = await _unitOfWork.SessionRepository
+                .FindByCondition(s => s.Id == sessionGuid)
+                .AsNoTracking()
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+
+            if (freshSession != null && freshSession.IsActive && freshSession.ExpiresAt > DateTimeOffset.UtcNow)
+            {
+                return AppResponse.Success("Session is valid (concurrency resolved)", true);
+            }
+
+            return AppResponse.Failure<bool>("Session has expired or is invalid");
         }
         catch (Exception ex)
         {
@@ -374,7 +420,5 @@ internal sealed class SessionService(
             throw;
         }
     }
-
-
 }
 

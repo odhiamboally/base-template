@@ -1,7 +1,10 @@
 @page "/profile"
 @rendermode InteractiveServer
 @inject IAuthSession AuthSession
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Options.IOptions<BT.UI.Blazor.Configuration.BackendApiSettings> ApiOptions
 
 <PageTitle>Profile | Base Template</PageTitle>
 
@@ -27,10 +30,23 @@
             <MudGrid Spacing="3" Class="profile-detail-grid">
                 <MudItem xs="12" md="3">
                     <div class="profile-summary-card embedded">
-                        <MudAvatar Size="Size.Large" Class="profile-avatar-large">@Initials</MudAvatar>
+                        <MudAvatar Size="Size.Large" Class="profile-avatar-large">
+                            @if (ProfilePictureSource is not null)
+                            {
+                                <MudImage Src="@ProfilePictureSource" Alt="@DisplayName" ObjectFit="ObjectFit.Cover" />
+                            }
+                            else
+                            {
+                                @Initials
+                            }
+                        </MudAvatar>
                         <h2>@DisplayName</h2>
                         <span>@(AuthSession.CurrentUser?.Roles.FirstOrDefault() ?? "Signed in")</span>
                         <MudChip T="string" Size="Size.Small" Color="Color.Success">Active</MudChip>
+                        <div class="profile-upload-control">
+                            <InputFile OnChange="OnProfilePictureSelectedAsync" accept="image/jpeg,image/png,image/webp" disabled="@_isUploading" />
+                            <small>JPEG, PNG, or WebP up to 2 MB.</small>
+                        </div>
                     </div>
                 </MudItem>
 
@@ -68,6 +84,8 @@
 
 @code {
     private bool _isReady = true;
+    private bool _isUploading;
+    private const long MaxProfilePictureBytes = 2_097_152;
 
     private string DisplayName
     {
@@ -94,6 +112,22 @@
         }
     }
 
+    private string? ProfilePictureSource
+    {
+        get
+        {
+            var profilePictureUrl = AuthSession.CurrentUser?.ProfilePictureUrl;
+            if (profilePictureUrl is null)
+            {
+                return null;
+            }
+
+            return profilePictureUrl.IsAbsoluteUri
+                ? profilePictureUrl.ToString()
+                : new Uri(new Uri(ApiOptions.Value.BaseUrl), profilePictureUrl.ToString().TrimStart('/')).ToString();
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
@@ -110,5 +144,46 @@
 
         _isReady = true;
         StateHasChanged();
+    }
+
+    private async Task OnProfilePictureSelectedAsync(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        if (file.Size > MaxProfilePictureBytes)
+        {
+            Snackbar.Add("Profile picture must be 2 MB or smaller.", Severity.Warning);
+            return;
+        }
+
+        _isUploading = true;
+        try
+        {
+            await using var stream = file.OpenReadStream(MaxProfilePictureBytes);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+
+            var response = await AuthService.UpdateProfilePictureAsync(
+                memoryStream.ToArray(),
+                file.Name,
+                file.ContentType);
+
+            if (!response.Successful)
+            {
+                Snackbar.Add(response.Message ?? "Profile picture could not be updated.", Severity.Error);
+                return;
+            }
+
+            await AuthSession.RefreshAsync();
+            Snackbar.Add("Profile picture updated.", Severity.Success);
+        }
+        finally
+        {
+            _isUploading = false;
+        }
     }
 }

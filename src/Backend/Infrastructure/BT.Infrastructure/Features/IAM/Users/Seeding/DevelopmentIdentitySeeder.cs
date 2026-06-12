@@ -189,6 +189,12 @@ internal sealed class DevelopmentIdentitySeeder(
         }
     }
 
+    internal static IReadOnlyList<string> GetSeededEmailsForIntegrationTests()
+        => [.. DevelopmentEmployeeUsers.Select(static user => user.Email)];
+
+    internal string GetSeededPasswordForIntegrationTests()
+        => _settings.AdminPassword;
+
     private static string FormatErrors(IdentityResult result)
         => string.Join("; ", result.Errors.Select(error => $"{error.Code}: {error.Description}"));
 

@@ -18,4 +18,5 @@ public record CurrentUserResponse(
     List<string> Roles,
     List<string>? Permissions = null,
     string? SessionId = null,
-    bool MfaEnrollmentRequired = false);
+    bool MfaEnrollmentRequired = false,
+    Uri? ProfilePictureUrl = null);

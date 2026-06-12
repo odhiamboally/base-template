@@ -89,6 +89,15 @@ public sealed class VerifyOtpCommandValidator : AbstractValidator<VerifyOtpComma
     }
 }
 
+public sealed class DisableTotpCommandValidator : AbstractValidator<DisableTotpCommand>
+{
+    public DisableTotpCommandValidator()
+    {
+        RuleFor(command => command.UserId).NotEmpty().MaximumLength(450);
+        RuleFor(command => command.DisabledBy).NotEmpty().MaximumLength(450);
+    }
+}
+
 public sealed class VerifyPasswordCommandValidator : AbstractValidator<VerifyPasswordCommand>
 {
     public VerifyPasswordCommandValidator()

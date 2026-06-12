@@ -10,7 +10,7 @@ using System.Text;
 
 namespace BT.Application.Behaviours;
 
-// <summary>
+/// <summary>
 /// MediatR pipeline behavior that provides transparent read-through caching
 /// for any query implementing <see cref="ICachableRequest"/>.
 ///
@@ -68,27 +68,18 @@ public sealed class CachingBehavior<TRequest, TResponse>(
             cacheKey = CacheKeys.Entity(request.CacheGroup, request.Discriminator);
         }
 
-        // ── 3. Cache hit ────────────────────────────────────────────────────────
-        var cached = await cache.GetAsync<TResponse>(cacheKey, cancellationToken).ConfigureAwait(false);
-        if (cached is not null)
-        {
-            CacheLogDefinitions.LogCacheHit(logger, cacheKey);
-            return cached;
-        }
+        // ── 3. Stampede-Protected Cache Lookup & Execution ─────────────────────
+        var ttl = request.Expiration ?? TimeSpan.FromMinutes(30);
 
-        // ── 4. Cache miss — execute handler ────────────────────────────────────
-        CacheLogDefinitions.LogCacheMiss(logger, cacheKey);
-        var response = await next(cancellationToken).ConfigureAwait(false);
-
-        // ── 5. Store result ────────────────────────────────────────────────────
-        if (response is not null)
-        {
-            var ttl = request.Expiration ?? TimeSpan.FromMinutes(30);
-            await cache.SetAsync(cacheKey, response, ttl, cancellationToken).ConfigureAwait(false);
-            CacheLogDefinitions.LogCacheSet(logger, cacheKey, ttl);
-        }
-
-        return response;
+        return await cache.GetOrCreateAsync(
+            cacheKey,
+            async ct =>
+            {
+                CacheLogDefinitions.LogCacheMiss(logger, cacheKey);
+                return await next(ct).ConfigureAwait(false);
+            },
+            ttl,
+            cancellationToken).ConfigureAwait(false);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────
