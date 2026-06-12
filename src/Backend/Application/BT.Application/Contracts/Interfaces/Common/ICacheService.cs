@@ -42,4 +42,14 @@ public interface ICacheService
     /// Only use when you genuinely need to purge a named subset of entries.
     /// </summary>
     Task RemoveByPrefixAsync(string prefix, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets or creates a cache entry. Uses a factory to fetch data on miss,
+    /// protecting against cache stampedes.
+    /// </summary>
+    Task<T> GetOrCreateAsync<T>(
+        string key,
+        Func<CancellationToken, Task<T>> factory,
+        TimeSpan? expiration = null,
+        CancellationToken ct = default);
 }

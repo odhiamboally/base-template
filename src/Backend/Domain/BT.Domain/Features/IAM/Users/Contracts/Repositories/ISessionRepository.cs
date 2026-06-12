@@ -9,6 +9,7 @@ namespace BT.Domain.Features.IAM.Users.Contracts.Repositories;
 public interface ISessionRepository : IRepository<AppUserSession>
 {
     Task<List<AppUserSession>> GetActiveSessionsByUserIdAsync(string userId);
+    Task<AppUserSession?> GetTrackedByIdAsync(Guid sessionId);
     Task<AppUserSession?> GetOldestSessionByUserIdAsync(string userId);
     Task<List<AppUserSession>> GetExpiredSessionsAsync();
     Task<bool> PurgeOldSessionsAsync(DateTimeOffset retentionLimit);

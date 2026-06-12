@@ -58,6 +58,19 @@ public sealed class TotpController(ISender sender) : BaseController
         return HandleResponse(response);
     }
 
+    [HttpPost("disable")]
+    [Authorize]
+    [EnableRateLimiting("TwoFactorPolicy")]
+    public async Task<IActionResult> Disable()
+    {
+        var userId = GetUserId();
+        var response = await sender
+            .Send(new DisableTotpCommand(userId, userId))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
     [HttpGet("{userId}/status")]
     [Authorize]
     [EnableRateLimiting("TwoFactorPolicy")]

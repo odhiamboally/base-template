@@ -140,6 +140,9 @@ internal static partial class ServiceLogDefinitions
     [LoggerMessage(EventId = 3447, Level = LogLevel.Error, Message = "Error getting OTP status for user: {UserId}")]
     public static partial void LogGetOtpStatusError(ILogger logger, string userId, Exception ex);
 
+    [LoggerMessage(EventId = 3480, Level = LogLevel.Error, Message = "Error disabling TOTP for user: {UserId}")]
+    public static partial void LogTotpDisableError(ILogger logger, string userId, Exception ex);
+
     [LoggerMessage(EventId = 3448, Level = LogLevel.Information, Message = "System access granted to employee {EmployeeId} by {GrantedBy}")]
     public static partial void LogEmployeeSystemAccessGranted(ILogger logger, string employeeId, string grantedBy);
 
@@ -151,6 +154,9 @@ internal static partial class ServiceLogDefinitions
 
     [LoggerMessage(EventId = 3451, Level = LogLevel.Error, Message = "Error during login for User: {UserName}")]
     public static partial void LogLoginError(ILogger logger, string userName, Exception ex);
+
+    [LoggerMessage(EventId = 3453, Level = LogLevel.Error, Message = "Duplicate AppUser tracking detected. UserId={UserId} UserName={UserName} RemoteIp={RemoteIp} UserAgent={UserAgent}")]
+    public static partial void LogDuplicateAppUserTracking(ILogger logger, Exception ex, string? userId, string userName, string remoteIp, string userAgent);
 
     [LoggerMessage(EventId = 3452, Level = LogLevel.Information, Message = "User {UserId} signed out")]
     public static partial void LogUserSignedOut(ILogger logger, string userId);
@@ -223,4 +229,10 @@ internal static partial class ServiceLogDefinitions
 
     [LoggerMessage(EventId = 3479, Level = LogLevel.Error, Message = "Error deleting role {RoleId}")]
     public static partial void LogRoleDeleteError(ILogger logger, string roleId, Exception ex);
+
+    [LoggerMessage(EventId = 3480, Level = LogLevel.Error, Message = "Error updating profile picture for user {UserId}")]
+    public static partial void LogProfilePictureUpdateError(ILogger logger, string userId, Exception ex);
+
+    [LoggerMessage(EventId = 3481, Level = LogLevel.Warning, Message = "Session validation concurrency conflict occurred for session {SessionId}. Checking database status.")]
+    public static partial void LogSessionConcurrencyConflict(ILogger logger, string sessionId, Exception ex);
 }

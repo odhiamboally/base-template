@@ -58,6 +58,54 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
         }
     }
 
+    public async Task<AppResponse<T>> SendMultipartAsync<T>(
+        string endpoint,
+        MultipartFormDataContent content,
+        bool requiresAuthentication = true,
+        string? unavailableMessage = null,
+        string? timeoutMessage = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+        ArgumentNullException.ThrowIfNull(content);
+
+        using var message = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = content
+        };
+
+        if (requiresAuthentication)
+        {
+            var (accessToken, _, sessionId) = await storage.GetAsync().ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                return AppResponse.Failure<T>("Please sign in to continue.");
+            }
+
+            message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                message.Headers.TryAddWithoutValidation("X-Session-Id", sessionId);
+            }
+        }
+
+        try
+        {
+            using var response = await httpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            return await ReadAppResponseAsync<T>(response, endpoint).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            BackendApiLogDefinitions.LogRequestFailed(logger, HttpMethod.Post.Method, endpoint, ex);
+            return AppResponse.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
+        }
+        catch (TaskCanceledException ex)
+        {
+            BackendApiLogDefinitions.LogRequestTimedOut(logger, HttpMethod.Post.Method, endpoint, ex);
+            return AppResponse.Failure<T>(timeoutMessage ?? "The backend service timed out. Please try again.");
+        }
+    }
+
     private static HttpRequestMessage CreateRequest(HttpMethod method, string endpoint, object? request)
         => new(method, endpoint)
         {
@@ -87,9 +135,19 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
     {
         try
         {
-            return await response.Content
-                .ReadFromJsonAsync<AppResponse<T>>(JsonOptions)
-                .ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return null;
+            }
+
+            using var document = JsonDocument.Parse(content);
+            if (!document.RootElement.TryGetProperty("successful", out _))
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<AppResponse<T>>(content, JsonOptions);
         }
         catch (JsonException ex)
         {
@@ -111,7 +169,9 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
             using var document = JsonDocument.Parse(content);
             return TryGetString(document.RootElement, "message")
                 ?? TryGetString(document.RootElement, "title")
+                ?? TryGetString(document.RootElement, "detail")
                 ?? TryGetString(document.RootElement, "error")
+                ?? TryGetSessionInvalidMessage(document.RootElement)
                 ?? TryGetValidationErrors(document.RootElement)
                 ?? "The backend service rejected the request.";
         }
@@ -125,6 +185,20 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
         => element.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String
             ? property.GetString()
             : null;
+
+    private static string? TryGetSessionInvalidMessage(JsonElement element)
+    {
+        var code = TryGetString(element, "code");
+        if (!string.Equals(code, "SESSION_INVALID", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var reason = TryGetString(element, "reason");
+        return string.IsNullOrWhiteSpace(reason)
+            ? "Your session has expired. Please sign in again."
+            : $"Your session has expired: {reason}. Please sign in again.";
+    }
 
     private static string? TryGetValidationErrors(JsonElement element)
     {

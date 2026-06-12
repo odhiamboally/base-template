@@ -1,5 +1,6 @@
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Utilities;
+using BT.Domain.Shared.Contracts.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System;
@@ -9,7 +10,7 @@ using System.Text;
 
 namespace BT.Application.Behaviours;
 
-// <summary>
+/// <summary>
 /// MediatR pipeline behavior that provides transparent read-through caching
 /// for any query implementing <see cref="ICachableRequest"/>.
 ///
@@ -26,7 +27,10 @@ namespace BT.Application.Behaviours;
 ///   whenever a mutation command succeeds, which orphans all versioned entries
 ///   in the group without any key scanning.
 /// </summary>
-public sealed class CachingBehavior<TRequest, TResponse>(ICacheService cache, ILogger<CachingBehavior<TRequest, TResponse>> logger)
+public sealed class CachingBehavior<TRequest, TResponse>(
+    ICacheService cache,
+    ICurrentTenantProvider tenantProvider,
+    ILogger<CachingBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICachableRequest
 {
     // Version tokens live longer than the entries they version.
@@ -49,8 +53,8 @@ public sealed class CachingBehavior<TRequest, TResponse>(ICacheService cache, IL
 
         if (request.IsVersioned)
         {
-            var scope = (request.CacheUserId ?? "global").ToLowerInvariant();
-            var sentinelKey = CacheKeys.GroupVersion(request.CacheGroup, request.CacheUserId);
+            var scope = BuildTenantScope(tenantProvider.TenantId, request.CacheUserId);
+            var sentinelKey = CacheKeys.GroupVersion(request.CacheGroup, scope);
             var versionToken = await ResolveOrCreateVersionAsync(sentinelKey, cancellationToken).ConfigureAwait(false);
 
             cacheKey = CacheKeys.VersionedList(
@@ -64,27 +68,18 @@ public sealed class CachingBehavior<TRequest, TResponse>(ICacheService cache, IL
             cacheKey = CacheKeys.Entity(request.CacheGroup, request.Discriminator);
         }
 
-        // ── 3. Cache hit ────────────────────────────────────────────────────────
-        var cached = await cache.GetAsync<TResponse>(cacheKey, cancellationToken).ConfigureAwait(false);
-        if (cached is not null)
-        {
-            CacheLogDefinitions.LogCacheHit(logger, cacheKey);
-            return cached;
-        }
+        // ── 3. Stampede-Protected Cache Lookup & Execution ─────────────────────
+        var ttl = request.Expiration ?? TimeSpan.FromMinutes(30);
 
-        // ── 4. Cache miss — execute handler ────────────────────────────────────
-        CacheLogDefinitions.LogCacheMiss(logger, cacheKey);
-        var response = await next(cancellationToken).ConfigureAwait(false);
-
-        // ── 5. Store result ────────────────────────────────────────────────────
-        if (response is not null)
-        {
-            var ttl = request.Expiration ?? TimeSpan.FromMinutes(30);
-            await cache.SetAsync(cacheKey, response, ttl, cancellationToken).ConfigureAwait(false);
-            CacheLogDefinitions.LogCacheSet(logger, cacheKey, ttl);
-        }
-
-        return response;
+        return await cache.GetOrCreateAsync(
+            cacheKey,
+            async ct =>
+            {
+                CacheLogDefinitions.LogCacheMiss(logger, cacheKey);
+                return await next(ct).ConfigureAwait(false);
+            },
+            ttl,
+            cancellationToken).ConfigureAwait(false);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -104,4 +99,12 @@ public sealed class CachingBehavior<TRequest, TResponse>(ICacheService cache, IL
 
     private static string GenerateVersion()
         => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+
+    private static string BuildTenantScope(Guid tenantId, string? userId)
+    {
+        var tenantScope = tenantId == Guid.Empty ? "tenant:unknown" : $"tenant:{tenantId:D}";
+        return string.IsNullOrWhiteSpace(userId)
+            ? tenantScope
+            : $"{tenantScope}:user:{userId}";
+    }
 }

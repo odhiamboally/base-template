@@ -35,6 +35,18 @@ builder.Services
     .Validate(settings => Uri.TryCreate(settings.BaseUrl, UriKind.Absolute, out _), "Backend API base URL must be absolute.")
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<SessionLifecycleSettings>()
+    .Bind(builder.Configuration.GetSection(SessionLifecycleSettings.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(
+        settings => settings.WarningBeforeTimeoutMinutes < settings.IdleTimeoutMinutes,
+        "Session lifecycle warning must happen before the idle timeout.")
+    .Validate(
+        settings => settings.KeepAliveIntervalMinutes < settings.IdleTimeoutMinutes,
+        "Session lifecycle keep-alive interval must be shorter than the idle timeout.")
+    .ValidateOnStart();
+
 builder.Services.AddScoped<ITokenStorage, TokenStorage>();
 builder.Services.AddScoped<IAuthSession, AuthSession>();
 builder.Services.AddScoped<IAuthService, AuthService>();

@@ -83,7 +83,8 @@ internal sealed class GetCurrentUser(
                 rolesList,
                 permissions,
                 sessionId,
-                mfaEnrollmentRequired));
+                mfaEnrollmentRequired,
+                appUser.ProfilePictureUrl));
         }
         catch (Exception ex)
         {

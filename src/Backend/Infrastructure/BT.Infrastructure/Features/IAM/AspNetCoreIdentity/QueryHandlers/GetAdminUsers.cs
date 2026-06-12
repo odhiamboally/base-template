@@ -1,5 +1,6 @@
 using BT.Application.Features.IAM.Users.Queries;
 using BT.Domain.Features.IAM.Users.Entities;
+using BT.Persistence.Features.IAM.DataContext;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using MediatR;
@@ -9,7 +10,7 @@ using System.Collections.ObjectModel;
 
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.QueryHandlers;
 
-internal sealed class GetAdminUsers(UserManager<AppUser> userManager)
+internal sealed class GetAdminUsers(UserManager<AppUser> userManager, IamDBContext context)
     : IRequestHandler<GetAdminUsersQuery, AppResponse<PagedResponse<AdminUserListResponse, string>>>
 {
     public async Task<AppResponse<PagedResponse<AdminUserListResponse, string>>> Handle(GetAdminUsersQuery request, CancellationToken cancellationToken)
@@ -75,38 +76,58 @@ internal sealed class GetAdminUsers(UserManager<AppUser> userManager)
             query = query.Where(user => user.CustomerId == req.CustomerId.Value);
         }
 
-        var filteredUsers = await query
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
         if (!string.IsNullOrWhiteSpace(req.Role))
         {
-            var roleFilteredUsers = new List<AppUser>();
-            foreach (var user in filteredUsers)
-            {
-                if (await userManager.IsInRoleAsync(user, req.Role).ConfigureAwait(false))
-                {
-                    roleFilteredUsers.Add(user);
-                }
-            }
-
-            filteredUsers = roleFilteredUsers;
+            var normalizedRole = userManager.NormalizeName(req.Role);
+            query =
+                from user in query
+                join userRole in context.UserRoles.AsNoTracking() on user.Id equals userRole.UserId
+                join role in context.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+                where role.NormalizedName == normalizedRole
+                select user;
         }
 
-        var totalRecords = filteredUsers.Count;
-        var startIndex = string.IsNullOrWhiteSpace(req.Cursor)
-            ? 0
-            : filteredUsers.FindIndex(user => string.Equals(user.Id, req.Cursor, StringComparison.Ordinal)) + 1;
+        var totalRecords = await query.CountAsync(cancellationToken).ConfigureAwait(false);
 
-        if (startIndex < 0)
+        if (!string.IsNullOrWhiteSpace(req.Cursor))
         {
-            startIndex = 0;
+            var cursorUser = await context.Users
+                .AsNoTracking()
+                .Where(user => user.Id == req.Cursor)
+                .Select(user => new { user.Email, user.Id })
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cursorUser is not null)
+            {
+                query = query.Where(user =>
+                    user.Email!.CompareTo(cursorUser.Email) > 0
+                    || (user.Email == cursorUser.Email
+                        && user.Id.CompareTo(cursorUser.Id) > 0));
+            }
         }
 
-        var pageUsers = filteredUsers
-            .Skip(startIndex)
+        var pageUsers = await query
+            .OrderBy(static user => user.Email)
+            .ThenBy(static user => user.Id)
+            .Select(static user => new AdminUserPageRow(
+                user.Id,
+                user.UserName,
+                user.FirstName,
+                user.LastName,
+                user.Email,
+                user.PhoneNumber,
+                user.IsActive,
+                user.EmailConfirmed,
+                user.TwoFactorEnabled,
+                user.RequirePasswordChange,
+                user.CreatedAt,
+                user.LastLoginAt,
+                user.EmployeeId,
+                user.CustomerId))
             .Take(pageSize + 1)
-            .ToList();
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
         var hasNextPage = pageUsers.Count > pageSize;
         if (hasNextPage)
@@ -114,11 +135,27 @@ internal sealed class GetAdminUsers(UserManager<AppUser> userManager)
             pageUsers.RemoveAt(pageUsers.Count - 1);
         }
 
-        var rows = new List<AdminUserListResponse>(pageUsers.Count);
-        foreach (var user in pageUsers)
-        {
-            var roles = await userManager.GetRolesAsync(user).ConfigureAwait(false);
-            rows.Add(new AdminUserListResponse(
+        var pageUserIds = pageUsers.Select(static user => user.Id).ToList();
+        var roleRows = await (
+                from userRole in context.UserRoles.AsNoTracking()
+                join role in context.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+                where pageUserIds.Contains(userRole.UserId)
+                select new { userRole.UserId, role.Name })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var rolesByUser = roleRows
+            .Where(static role => !string.IsNullOrWhiteSpace(role.Name))
+            .GroupBy(static role => role.UserId)
+            .ToDictionary(
+                static group => group.Key,
+                static group => group
+                    .Select(static role => role.Name!)
+                    .Order(StringComparer.OrdinalIgnoreCase)
+                    .ToArray());
+
+        var rows = pageUsers
+            .Select(user => new AdminUserListResponse(
                 user.Id,
                 user.UserName ?? string.Empty,
                 $"{user.FirstName} {user.LastName}".Trim(),
@@ -132,8 +169,8 @@ internal sealed class GetAdminUsers(UserManager<AppUser> userManager)
                 user.LastLoginAt,
                 user.EmployeeId,
                 user.CustomerId,
-                [.. roles.Order(StringComparer.OrdinalIgnoreCase)]));
-        }
+                rolesByUser.GetValueOrDefault(user.Id, [])))
+            .ToList();
 
         var nextCursor = hasNextPage ? rows[^1].Id : null;
         var paged = new PagedResponse<AdminUserListResponse, string>(
@@ -146,4 +183,20 @@ internal sealed class GetAdminUsers(UserManager<AppUser> userManager)
 
         return AppResponse.Success("Users loaded.", paged);
     }
+
+    private sealed record AdminUserPageRow(
+        string Id,
+        string? UserName,
+        string FirstName,
+        string LastName,
+        string? Email,
+        string? PhoneNumber,
+        bool IsActive,
+        bool EmailConfirmed,
+        bool TwoFactorEnabled,
+        bool RequirePasswordChange,
+        DateTimeOffset CreatedAt,
+        DateTimeOffset? LastLoginAt,
+        Guid? EmployeeId,
+        Guid? CustomerId);
 }

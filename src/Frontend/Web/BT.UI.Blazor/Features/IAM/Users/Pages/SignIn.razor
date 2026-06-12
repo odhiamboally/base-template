@@ -118,7 +118,7 @@
                 return;
             }
 
-            Navigation.NavigateTo("/dashboard");
+            Navigation.NavigateTo(AuthSession.MfaEnrollmentRequired ? "/iam/security" : "/dashboard");
         }
         catch (Exception ex)
         {

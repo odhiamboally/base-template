@@ -170,20 +170,51 @@ public class Repository<T>(DbContext context) : IRepository<T> where T : class
 
     public async Task<T> UpdateAsync(T entity)
     {
+        // Try to find an already-tracked instance with the same primary key and merge values
+        var entityType = _context.Model.FindEntityType(typeof(T));
+        var primaryKey = entityType?.FindPrimaryKey();
+
+        if (primaryKey != null)
+        {
+            var keyProperties = primaryKey.Properties;
+
+            var trackedEntry = _context.ChangeTracker
+                .Entries<T>()
+                .FirstOrDefault(e =>
+                {
+                    foreach (var pk in keyProperties)
+                    {
+                        var trackedVal = e.Property(pk.Name).CurrentValue;
+                        var incomingVal = pk.PropertyInfo?.GetValue(entity);
+                        if (!Equals(trackedVal, incomingVal))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+            if (trackedEntry != null)
+            {
+                // Merge incoming values into the tracked instance to avoid duplicate tracking
+                trackedEntry.CurrentValues.SetValues(entity);
+                return trackedEntry.Entity;
+            }
+        }
+
+        // Fallback: safe to attach/update the incoming instance
         _context.Set<T>().Update(entity);
-        //await _context.SaveChangesAsync();
         return entity;
     }
 
-    public async Task<int> UpdateRangeAsync(Collection<T> entities, CancellationToken ct = default)
+    public Task<int> UpdateRangeAsync(Collection<T> entities, CancellationToken ct = default)
     {
         if (entities == null || !entities.Any())
-            return 0;
+            return Task.FromResult(0);
 
         _context.Set<T>().UpdateRange(entities);
-        return await _context.SaveChangesAsync(ct).ConfigureAwait(false);
-
-
+        return Task.FromResult(entities.Count);
     }
 
     

@@ -100,6 +100,13 @@ For list screens and searchable APIs:
 - Keep UI services thin and API-backed.
 - Keep filter names business-friendly, not database-shaped.
 - Use `Any` for existence checks rather than `Count > 0`.
+- Compose on `IQueryable` until tenant, security, status, search, ordering, paging, and projection have all been applied.
+- Do not call `ToListAsync` before applying filters, role/user scope, paging, or projection unless the result is intentionally bounded and documented.
+- Apply user-specific filters such as `UserId`, `TenantId`, role, status, and expiry in the database query, not after materialization.
+- Use `CountAsync` only when the count is returned, logged, or used for a decision; never run count queries and discard the result.
+- For cursor pagination, fetch `pageSize + 1` rows so the API can reliably determine whether a next page exists.
+- Avoid N+1 query patterns. Do not run repository, `UserManager`, or lookup calls per row in a result loop; batch identifiers and map results in memory.
+- Use `AsNoTracking` for read-only queries and tracked queries only when the entity will be mutated in the same unit of work.
 
 The Customer list is the current UI/API reference flow for search, filters, pagination, table actions, dialogs, and confirmation flows.
 
@@ -145,6 +152,9 @@ When adding or reviewing a repository, check:
 - Does it avoid business orchestration?
 - Does it respect soft delete and query filters?
 - Does it avoid committing changes before the Unit of Work?
+- Does it avoid materializing before filtering, paging, or projection?
+- Does it avoid N+1 calls inside result loops?
+- Does every cursor-paged query fetch `pageSize + 1` before trimming the response?
 - Is the repository placed under the correct feature folder?
 
 If the answer is unclear, start with the generic repository and add a concrete method only when the use case proves it needs one.

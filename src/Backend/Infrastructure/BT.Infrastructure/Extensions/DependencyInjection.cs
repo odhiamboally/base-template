@@ -15,6 +15,7 @@ using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Contracts.Implementations.Common;
 using BT.Infrastructure.Contracts.Implementations.Caching;
 using BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Services;
+using BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Storage;
 using BT.Infrastructure.Features.Shared.Notifications.Contracts.Implementations.Services;
 using BT.Infrastructure.Contracts.Interfaces;
 using BT.Infrastructure.Features.Banking.Customers.EmailComposers;
@@ -74,6 +75,14 @@ public static class DependencyInjection
             services.Configure<ApiSettings>(configuration.GetSection(ApiSettings.SectionName));
             services.Configure<IamProvisioningSettings>(configuration.GetSection(IamProvisioningSettings.SectionName));
             services.Configure<MfaSettings>(configuration.GetSection(MfaSettings.SectionName));
+            services
+                .AddOptions<ProfileImageStorageSettings>()
+                .Bind(configuration.GetSection(ProfileImageStorageSettings.SectionName))
+                .ValidateDataAnnotations()
+                .Validate(
+                    settings => string.Equals(settings.Provider, "Local", StringComparison.OrdinalIgnoreCase),
+                    "Only ProfileImageStorage:Provider=Local is currently registered. AzureBlob provider is planned behind the same abstraction.")
+                .ValidateOnStart();
             services.AddOptions<TenantSettings>()
                 .Bind(configuration.GetSection(TenantSettings.SectionName))
                 .ValidateDataAnnotations()
@@ -121,6 +130,7 @@ public static class DependencyInjection
         services.AddHttpClient<IApiService, ApiService>();
         services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
         services.AddScoped<ICurrentActorProvider, CurrentActorProvider>();
+        services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
 
         if (!authProviderSettings.Enabled)
         {
@@ -310,8 +320,6 @@ public static class DependencyInjection
                 }
 
                 return Task.CompletedTask;
-
-
             }
         };
     }
@@ -324,20 +332,27 @@ public static class DependencyInjection
             {
                 options.Configuration = cacheSettings.Azure!.ConnectionString;
             });
+
+            services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
+                StackExchange.Redis.ConnectionMultiplexer.Connect(cacheSettings.Azure!.ConnectionString!));
         }
 
         services.AddHybridCache(options =>
         {
             options.DefaultEntryOptions = new HybridCacheEntryOptions
             {
-                Expiration = TimeSpan.FromHours(1)  
+                Expiration = TimeSpan.FromHours(1)
             };
             options.MaximumPayloadBytes = 1024 * 1024; // 1MB limit for L2
         });
 
         services.AddSingleton<ICacheService, HybridCacheService>();
 
-
+        services.AddOutputCache(options =>
+        {
+            options.AddPolicy("LookupCachePolicy", builder =>
+                builder.Expire(TimeSpan.FromMinutes(5)).Tag("lookups"));
+        });
     }
 
     private static bool IsConfiguredConnectionString(string? connectionString)

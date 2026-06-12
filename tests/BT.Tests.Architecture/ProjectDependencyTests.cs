@@ -41,6 +41,10 @@ public sealed class ProjectDependencyTests
     private const string NsSharedKernel = "BT.SharedKernel";
     private const string NsApi = "BT.Api";
 
+    private static readonly string[] BankingForbiddenDependencies = ["BT.Application.Features.HR", "BT.Application.Features.IAM"];
+    private static readonly string[] HrForbiddenDependencies = ["BT.Application.Features.Banking", "BT.Application.Features.IAM"];
+    private static readonly string[] IamForbiddenDependencies = ["BT.Application.Features.Banking", "BT.Application.Features.HR"];
+
     // ═════════════════════════════════════════════════════════════════════════
     // DOMAIN — depends on nothing
     // ═════════════════════════════════════════════════════════════════════════
@@ -159,6 +163,64 @@ public sealed class ProjectDependencyTests
         types.Should().NotBeEmpty(
             because: "SharedKernel assembly resolved to an empty assembly — " +
                      "check that the anchor type in AssemblyReferences.cs is correct.");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // BOUNDED CONTEXT ISOLATION (Application Layer Features)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Banking_Module_ShouldNot_DependOn_HR_Or_IAM()
+    {
+        var result = Types.InAssembly(AssemblyReferences.Application)
+            .That()
+            .ResideInNamespace("BT.Application.Features.Banking")
+            .ShouldNot()
+            .HaveDependencyOnAny(BankingForbiddenDependencies)
+            .GetResult();
+
+        var failingTypeNames = result.FailingTypes is { Count: > 0 }
+            ? string.Join(", ", result.FailingTypes.Select(t => t.FullName))
+            : string.Empty;
+
+        result.IsSuccessful.Should().BeTrue(
+            because: $"Banking feature module must not depend on HR or IAM modules directly. Failing types: {failingTypeNames}");
+    }
+
+    [Fact]
+    public void HR_Module_ShouldNot_DependOn_Banking_Or_IAM()
+    {
+        var result = Types.InAssembly(AssemblyReferences.Application)
+            .That()
+            .ResideInNamespace("BT.Application.Features.HR")
+            .ShouldNot()
+            .HaveDependencyOnAny(HrForbiddenDependencies)
+            .GetResult();
+
+        var failingTypeNames = result.FailingTypes is { Count: > 0 }
+            ? string.Join(", ", result.FailingTypes.Select(t => t.FullName))
+            : string.Empty;
+
+        result.IsSuccessful.Should().BeTrue(
+            because: $"HR feature module must not depend on Banking or IAM modules directly. Failing types: {failingTypeNames}");
+    }
+
+    [Fact]
+    public void IAM_Module_ShouldNot_DependOn_Banking_Or_HR()
+    {
+        var result = Types.InAssembly(AssemblyReferences.Application)
+            .That()
+            .ResideInNamespace("BT.Application.Features.IAM")
+            .ShouldNot()
+            .HaveDependencyOnAny(IamForbiddenDependencies)
+            .GetResult();
+
+        var failingTypeNames = result.FailingTypes is { Count: > 0 }
+            ? string.Join(", ", result.FailingTypes.Select(t => t.FullName))
+            : string.Empty;
+
+        result.IsSuccessful.Should().BeTrue(
+            because: $"IAM feature module must not depend on Banking or HR modules directly. Failing types: {failingTypeNames}");
     }
 
     // ═════════════════════════════════════════════════════════════════════════

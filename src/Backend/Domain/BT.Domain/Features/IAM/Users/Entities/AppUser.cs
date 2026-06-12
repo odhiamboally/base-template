@@ -280,6 +280,15 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         UpdatedBy = updatedBy;
     }
 
+    public void SetProfilePicture(Uri profilePictureUrl, string updatedBy)
+    {
+        ArgumentNullException.ThrowIfNull(profilePictureUrl);
+        ArgumentException.ThrowIfNullOrWhiteSpace(updatedBy);
+
+        ProfilePictureUrl = profilePictureUrl;
+        MarkUpdated(updatedBy);
+    }
+
     public void UpdateAdminProfile(
         string userName,
         string email,

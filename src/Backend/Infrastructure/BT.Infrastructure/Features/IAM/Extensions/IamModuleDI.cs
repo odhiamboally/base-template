@@ -24,7 +24,7 @@ public static class IamModuleDI
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
 
-        services.AddIamPersistence(configuration);
+        services.AddIamPersistence(configuration, environment);
 
         services.Configure<DevelopmentSeedSettings>(configuration.GetSection(DevelopmentSeedSettings.SectionName));
 

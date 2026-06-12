@@ -1,0 +1,71 @@
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Infrastructure.Configuration;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
+
+namespace BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Storage;
+
+internal sealed class LocalProfilePictureStorage(
+    IWebHostEnvironment environment,
+    IOptions<ProfileImageStorageSettings> options) : IProfilePictureStorage
+{
+    private readonly ProfileImageStorageSettings _settings = options.Value;
+
+    public async Task<Uri> SaveAsync(
+        string userId,
+        Stream content,
+        string fileName,
+        string contentType,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        ArgumentNullException.ThrowIfNull(content);
+
+        var extension = GetSafeExtension(fileName, contentType);
+        var safeUserId = string.Concat(userId.Select(static character =>
+            char.IsLetterOrDigit(character) ? character : '-'));
+        var storedFileName = $"{safeUserId}-{RandomNumberGenerator.GetHexString(12).ToLowerInvariant()}{extension}";
+        var relativeRoot = _settings.LocalRootPath
+            .Trim()
+            .TrimStart('/', '\\')
+            .Replace('/', Path.DirectorySeparatorChar)
+            .Replace('\\', Path.DirectorySeparatorChar);
+        var webRootPath = string.IsNullOrWhiteSpace(environment.WebRootPath)
+            ? Path.Combine(environment.ContentRootPath, "wwwroot")
+            : environment.WebRootPath;
+        var targetDirectory = Path.Combine(webRootPath, relativeRoot);
+
+        Directory.CreateDirectory(targetDirectory);
+
+        var targetPath = Path.Combine(targetDirectory, storedFileName);
+        using var fileStream = File.Create(targetPath);
+        await content.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
+
+        var publicPath = $"{_settings.PublicBasePath.TrimEnd('/')}/{storedFileName}";
+        return new Uri(publicPath, UriKind.Relative);
+    }
+
+    private static string GetSafeExtension(string fileName, string contentType)
+    {
+        var extension = Path.GetExtension(fileName);
+        if (!string.IsNullOrWhiteSpace(extension))
+        {
+            return extension.ToLowerInvariant() switch
+            {
+                ".jpg" or ".jpeg" => ".jpg",
+                ".png" => ".png",
+                ".webp" => ".webp",
+                _ => throw new InvalidOperationException("Unsupported profile image extension.")
+            };
+        }
+
+        return contentType.ToLowerInvariant() switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            _ => throw new InvalidOperationException("Unsupported profile image content type.")
+        };
+    }
+}

@@ -20,10 +20,14 @@
         </header>
 
         <article class="content px-4">
-            @Body
+            <RequireAuthenticated>
+                @Body
+            </RequireAuthenticated>
         </article>
     </main>
 </div>
+
+<SessionLifecycle />
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

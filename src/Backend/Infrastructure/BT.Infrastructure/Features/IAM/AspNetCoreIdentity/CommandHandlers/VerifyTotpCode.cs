@@ -78,7 +78,13 @@ internal sealed class VerifyTotpCode(
                     await iamUnitOfWork.TempTotpSecretRepository.DeleteAsync(tempSecret.Id, cancellationToken).ConfigureAwait(false);
                     await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
-                    await userManager.SetTwoFactorEnabledAsync(user, true).ConfigureAwait(false);
+                    var enableResult = await userManager.SetTwoFactorEnabledAsync(user, true).ConfigureAwait(false);
+                    if (!enableResult.Succeeded)
+                    {
+                        var errors = string.Join("; ", enableResult.Errors.Select(static error => error.Description));
+                        return AppResponse.Failure<VerifyOtpResponse>($"Could not enable two-factor authentication: {errors}");
+                    }
+
                     ServiceLogDefinitions.LogOtpEnabled(logger, user.Id);
                 }
             }

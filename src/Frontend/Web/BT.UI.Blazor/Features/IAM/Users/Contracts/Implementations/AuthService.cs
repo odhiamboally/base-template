@@ -56,6 +56,24 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
     public Task<AppResponse<CurrentUserResponse>> GetCurrentUserAsync()
         => SendWithRefreshAsync<CurrentUserResponse>(HttpMethod.Get, Format(_apiSettings.Endpoints.Iam.Auth.CurrentUser));
 
+    public Task<AppResponse<ProfilePictureResponse>> UpdateProfilePictureAsync(byte[] content, string fileName, string contentType)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+
+        return SendMultipartWithRefreshAsync<ProfilePictureResponse>(
+            Format(_apiSettings.Endpoints.Iam.Auth.UpdateProfilePicture),
+            () =>
+            {
+                var multipart = new MultipartFormDataContent();
+                var fileContent = new ByteArrayContent(content);
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+                multipart.Add(fileContent, "file", fileName);
+                return multipart;
+            });
+    }
+
     public Task<AppResponse<TwoFactorSetupInfo>> InitiateTotpSetupAsync()
         => SendWithRefreshAsync<TwoFactorSetupInfo>(HttpMethod.Post, Format(_apiSettings.Endpoints.Iam.Users.InitiateTotpSetup));
 
@@ -71,6 +89,11 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             unavailableMessage: "The identity service is unavailable. Please try again.",
             timeoutMessage: "The identity service timed out. Please try again.");
     }
+
+    public Task<AppResponse<bool>> DisableTotpAsync()
+        => SendWithRefreshAsync<bool>(
+            HttpMethod.Post,
+            Format(_apiSettings.Endpoints.Iam.Users.DisableTotp));
 
     public Task<AppResponse<OtpStatusResponse>> GetTotpStatusAsync(string userId)
     {
@@ -127,6 +150,47 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             requiresAuthentication: true,
             unavailableMessage: "The identity service is unavailable. Please try again.",
             timeoutMessage: "The identity service timed out. Please try again.");
+
+    private async Task<AppResponse<T>> SendMultipartWithRefreshAsync<T>(
+        string endpoint,
+        Func<MultipartFormDataContent> contentFactory)
+    {
+        using var content = contentFactory();
+        var response = await apiClient.SendMultipartAsync<T>(
+                endpoint,
+                content,
+                requiresAuthentication: true,
+                unavailableMessage: "The identity service is unavailable. Please try again.",
+                timeoutMessage: "The identity service timed out. Please try again.")
+            .ConfigureAwait(false);
+
+        if (response.ErrorCode != HttpStatusCode.Unauthorized.ToString())
+        {
+            return response;
+        }
+
+        var (accessToken, refreshToken, _) = await storage.GetAsync().ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return response;
+        }
+
+        var refreshResponse = await RefreshTokenAsync(new RefreshTokenRequest(accessToken, refreshToken)).ConfigureAwait(false);
+        if (!refreshResponse.Successful)
+        {
+            await storage.ClearAsync().ConfigureAwait(false);
+            return AppResponse.Failure<T>(refreshResponse.Message ?? "Your session has expired. Please sign in again.");
+        }
+
+        using var retryContent = contentFactory();
+        return await apiClient.SendMultipartAsync<T>(
+                endpoint,
+                retryContent,
+                requiresAuthentication: true,
+                unavailableMessage: "The identity service is unavailable. Please try again.",
+                timeoutMessage: "The identity service timed out. Please try again.")
+            .ConfigureAwait(false);
+    }
 
     private string Format(string endpoint, params (string Key, string Value)[] parameters)
         => EndpointFormatter.Format(endpoint, _apiSettings.Version, parameters.ToDictionary(static item => item.Key, static item => item.Value));

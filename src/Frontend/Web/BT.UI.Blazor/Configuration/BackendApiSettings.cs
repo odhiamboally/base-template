@@ -52,6 +52,8 @@ internal sealed class IamAuthEndpointSettings
 
     public string CurrentUser { get; init; } = "api/v{version}/iam/auth/me";
 
+    public string UpdateProfilePicture { get; init; } = "api/v{version}/iam/users/me/profile-picture";
+
     public string Logout { get; init; } = "api/v{version}/iam/auth/logout";
 }
 
@@ -60,6 +62,8 @@ internal sealed class IamUserEndpointSettings
     public string InitiateTotpSetup { get; init; } = "api/v{version}/iam/users/totp/setup";
 
     public string VerifyTotp { get; init; } = "api/v{version}/iam/users/totp/verify";
+
+    public string DisableTotp { get; init; } = "api/v{version}/iam/users/totp/disable";
 
     public string TotpStatus { get; init; } = "api/v{version}/iam/users/totp/{userId}/status";
 }
