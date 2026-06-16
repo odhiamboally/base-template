@@ -12,6 +12,7 @@ This file is the canonical source of truth and working contract for AI coding to
    - `docs/architecture/ui-to-backend-flow.md`
    - `docs/development/environment-configuration-checklist.md`
    - `docs/development/azure-storage-configuration.md`
+   - `docs/development/configuration-code-conventions.md`
 4. Inspect the existing code before proposing or writing changes.
 5. If a convention changes, update this file and the relevant docs in the same PR.
 
@@ -85,6 +86,7 @@ This file is the canonical source of truth and working contract for AI coding to
 ## Azure And Configuration
 
 - Every settings POCO must have a matching JSON/config section.
+- Parse configurable modes, providers, transports, and strategies once into typed values, then use `switch` branches with fail-fast unsupported-value errors.
 - Prefer Azure managed identity in deployed Azure environments.
 - Use connection strings only for local development or controlled non-managed-identity scenarios.
 - Key Vault secret names use double hyphen mapping, for example `Section--Setting`.

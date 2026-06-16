@@ -134,9 +134,14 @@ public static class DependencyInjection
         services.AddScoped<IProfilePictureStorage>(sp =>
         {
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ProfileImageStorageSettings>>().Value;
-            return string.Equals(settings.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase)
-                ? sp.GetRequiredService<AzureBlobProfilePictureStorage>()
-                : sp.GetRequiredService<LocalProfilePictureStorage>();
+            return GetProfileImageStorageProvider(settings) switch
+            {
+                ProfileImageStorageProvider.Local => sp.GetRequiredService<LocalProfilePictureStorage>(),
+                ProfileImageStorageProvider.AzureBlob => sp.GetRequiredService<AzureBlobProfilePictureStorage>(),
+                _ => throw new InvalidOperationException(
+                    $"ProfileImageStorage:Provider '{settings.Provider}' is not supported. " +
+                    "Supported values: Local, AzureBlob.")
+            };
         });
 
         if (!authProviderSettings.Enabled)
@@ -144,9 +149,11 @@ public static class DependencyInjection
             return services;
         }
 
-        if (!string.Equals(authProviderSettings.Provider, "AspNetCoreIdentity", StringComparison.OrdinalIgnoreCase))
+        if (GetAuthProvider(authProviderSettings) is not AuthProvider.AspNetCoreIdentity)
         {
-            throw new InvalidOperationException($"Unsupported AuthProvider: {authProviderSettings.Provider}");
+            throw new InvalidOperationException(
+                $"AuthProvider:Provider '{authProviderSettings.Provider}' is not supported. " +
+                "Supported values: AspNetCoreIdentity.");
         }
 
         services.AddScoped<IEmailService, FluentMailService>();
@@ -372,19 +379,48 @@ public static class DependencyInjection
 
     private static bool IsValidProfileImageStorageProvider(ProfileImageStorageSettings settings)
     {
-        if (string.Equals(settings.Provider, "Local", StringComparison.OrdinalIgnoreCase))
+        return GetProfileImageStorageProvider(settings) switch
         {
-            return true;
-        }
+            ProfileImageStorageProvider.Local => true,
+            ProfileImageStorageProvider.AzureBlob => IsAzureBlobProfileImageStorageConfigured(settings),
+            _ => false
+        };
+    }
 
-        if (!string.Equals(settings.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
+    private static bool IsAzureBlobProfileImageStorageConfigured(ProfileImageStorageSettings settings)
+    {
         return !string.IsNullOrWhiteSpace(settings.AzureBlob.ContainerUri) ||
             (!string.IsNullOrWhiteSpace(settings.AzureBlob.ConnectionString) &&
              !string.IsNullOrWhiteSpace(settings.AzureBlob.ContainerName));
+    }
+
+    private static ProfileImageStorageProvider GetProfileImageStorageProvider(ProfileImageStorageSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Provider))
+        {
+            return ProfileImageStorageProvider.Local;
+        }
+
+        return settings.Provider.Trim() switch
+        {
+            var provider when provider.Equals("Local", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.Local,
+            var provider when provider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.AzureBlob,
+            _ => ProfileImageStorageProvider.Invalid
+        };
+    }
+
+    private static AuthProvider GetAuthProvider(AuthProviderSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Provider))
+        {
+            return AuthProvider.AspNetCoreIdentity;
+        }
+
+        return settings.Provider.Trim() switch
+        {
+            var provider when provider.Equals("AspNetCoreIdentity", StringComparison.OrdinalIgnoreCase) => AuthProvider.AspNetCoreIdentity,
+            _ => AuthProvider.Invalid
+        };
     }
 
     private static void ConfigureSerilogEnrichers(IServiceCollection services)
@@ -596,7 +632,18 @@ public static class DependencyInjection
         return app;
     }
 
+    private enum AuthProvider
+    {
+        AspNetCoreIdentity,
+        Invalid
+    }
 
+    private enum ProfileImageStorageProvider
+    {
+        Local,
+        AzureBlob,
+        Invalid
+    }
 }
 
 

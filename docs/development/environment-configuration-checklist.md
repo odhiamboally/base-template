@@ -117,6 +117,7 @@ Grant these roles before testing Azure-backed local development or App Service d
 
 When checking screenshots or app settings, verify:
 
+- Mode/provider/transport settings use supported values exactly: `DataProtection__KeyEncryptionMode` = `Auto`, `KeyVault`, `Certificate`, or `None`; `ProfileImageStorage__Provider` = `Local` or `AzureBlob`; `Messaging__Transport` = `RabbitMq` or `AzureServiceBus`.
 - `DataProtection__BlobKeyUri` points to the `dataprotection-keys` container and a blob name such as `keyring.xml`.
 - `DataProtection__KeyEncryptionMode` is `KeyVault` or `Auto` for Azure.
 - `DataProtection__KeyVaultKeyIdentifier` points to a Key Vault key version, not a secret or certificate.
