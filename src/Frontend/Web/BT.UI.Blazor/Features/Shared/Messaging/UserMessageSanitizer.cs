@@ -1,11 +1,17 @@
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace BT.UI.Blazor.Features.Shared.Messaging;
 
 internal static class UserMessageSanitizer
 {
     public static bool IsDevelopment { get; set; }
+
+    private static readonly Regex GuidRegex = new(
+        @"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100));
 
     private static readonly string[] SensitiveFragments =
     [
@@ -74,17 +80,5 @@ internal static class UserMessageSanitizer
            || message.Contains("https://", StringComparison.OrdinalIgnoreCase);
 
     private static bool ContainsGuidPattern(string message)
-    {
-        if (string.IsNullOrWhiteSpace(message)) return false;
-
-        int hyphensCount = 0;
-        for (int i = 0; i < message.Length; i++)
-        {
-            if (message[i] == '-')
-            {
-                hyphensCount++;
-            }
-        }
-        return hyphensCount >= 4;
-    }
+        => !string.IsNullOrWhiteSpace(message) && GuidRegex.IsMatch(message);
 }

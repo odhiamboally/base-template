@@ -120,11 +120,11 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
         {
             return appResponse with
             {
-                Message = UserMessageSanitizer.NormalizeNullable(
-                    appResponse.Message,
-                    response.IsSuccessStatusCode
-                        ? "Operation completed."
-                        : "The request could not be completed. Please try again or contact support if the problem persists."),
+                Message = response.IsSuccessStatusCode
+                    ? UserMessageSanitizer.NormalizeNullable(appResponse.Message, "Operation completed.")
+                    : UserMessageSanitizer.Normalize(
+                        appResponse.Message,
+                        "The request could not be completed. Please try again or contact support if the problem persists."),
                 ErrorCode = appResponse.ErrorCode ?? (response.IsSuccessStatusCode ? null : response.StatusCode.ToString())
             };
         }

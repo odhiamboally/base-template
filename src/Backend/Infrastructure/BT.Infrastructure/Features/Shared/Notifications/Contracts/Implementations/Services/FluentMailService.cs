@@ -23,11 +23,18 @@ internal sealed class FluentMailService(IOptions<EmailSettings> options, ILogger
             ArgumentNullException.ThrowIfNull(sendEmailRequest);
 
             if (string.IsNullOrWhiteSpace(sendEmailRequest.To))
-                throw new ArgumentException("Recipient email is required");
+            {
+                return AppResponse.Failure<SendEmailResponse>("Recipient email is required.");
+            }
+
+            if (!MailboxAddress.TryParse(sendEmailRequest.To, out var toAddress))
+            {
+                return AppResponse.Failure<SendEmailResponse>("The recipient email address is invalid.");
+            }
 
             using var message = new MimeMessage();
             message.From.Add(new MailboxAddress(_settings.DisplayName, _settings.FromAddress));
-            message.To.Add(MailboxAddress.Parse(sendEmailRequest.To));
+            message.To.Add(toAddress);
             message.Subject = sendEmailRequest.Subject ?? string.Empty;
             message.Body = new BodyBuilder
             {

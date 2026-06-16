@@ -25,6 +25,11 @@ internal sealed class ApiExceptionHandler : IExceptionHandler
             Instance = httpContext.Request.Path,
         };
 
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
+        {
+            return true;
+        }
+
         switch (exception)
         {
             case AuthenticationException:
@@ -117,6 +122,13 @@ internal sealed class ApiExceptionHandler : IExceptionHandler
                 {
                     problemDetails.Extensions["errors"] = customException.ErrorMessages;
                 }
+                break;
+
+            case TimeoutException:
+            case OperationCanceledException:
+                status = (int)HttpStatusCode.GatewayTimeout;
+                title = "Gateway Timeout";
+                detail = "The request timed out while waiting for a downstream service. Please try again.";
                 break;
 
             case HttpRequestException:
