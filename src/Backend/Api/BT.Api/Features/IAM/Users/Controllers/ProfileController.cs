@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BT.Api.Common.Controllers;
 using BT.Application.Features.IAM.Users.Commands;
+using BT.Application.Features.IAM.Users.Queries;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using MediatR;
@@ -38,6 +39,22 @@ public sealed class ProfileController(ISender sender) : BaseController
             .ConfigureAwait(false);
 
         return HandleResponse(response);
+    }
+
+    [HttpGet("profile-picture/content")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> GetProfilePicture()
+    {
+        var response = await sender
+            .Send(new GetCurrentUserProfilePictureQuery(GetUserId()))
+            .ConfigureAwait(false);
+
+        if (!response.Successful || response.Data is null)
+        {
+            return HandleResponse(response);
+        }
+
+        return File(response.Data.Content, response.Data.ContentType, enableRangeProcessing: true);
     }
 
     private string GetUserId()

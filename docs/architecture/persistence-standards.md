@@ -112,7 +112,20 @@ The Customer list is the current UI/API reference flow for search, filters, pagi
 
 ---
 
-## 6. Soft Delete Standard
+## 6. Audit Actor Standard
+
+Audit fields must capture a stable actor identifier, not a display name or free-text label.
+
+- Use the authenticated user id for user-driven changes.
+- Use an explicit system actor id only for bootstrap, background, or startup work where no human user exists.
+- Do not write labels such as `DevelopmentSeed` into `CreatedBy`, `UpdatedBy`, `ActivatedBy`, `DeactivatedBy`, or `DeletedBy`.
+- Creation fields are normally immutable after insert; development fixture seeders may normalize bad historical seed values.
+- Access lifecycle methods must stamp both lifecycle fields and update fields. For example, grant access sets `ActivatedAt`, `ActivatedBy`, `UpdatedAt`, and `UpdatedBy`, and clears stale deactivation metadata.
+- Revoke/deactivate flows must set `DeactivatedAt`, `DeactivatedBy`, `DeactivationReason`, `UpdatedAt`, and `UpdatedBy`.
+
+---
+
+## 7. Soft Delete Standard
 
 Entities that represent business data or audit-relevant records should support soft delete unless there is a clear reason not to.
 
@@ -127,7 +140,7 @@ Delete actions exposed to users should normally be soft deletes.
 
 ---
 
-## 7. Accepted Exceptions
+## 8. Accepted Exceptions
 
 Some repositories are expected to be less thin because their persistence behavior is not generic.
 
@@ -141,7 +154,7 @@ Even for accepted exceptions, the repository should still avoid unnecessary `Sav
 
 ---
 
-## 8. Review Checklist
+## 9. Review Checklist
 
 When adding or reviewing a repository, check:
 

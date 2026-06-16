@@ -158,7 +158,7 @@ internal sealed class VerifyTotpCode(
                 user.NationalId,
                 user.Email ?? string.Empty,
                 user.Gender.ToDisplayString(),
-                user.ProfilePictureUrl,
+                ProfilePictureUrlMapping.ToCurrentUserRoute(user.ProfilePictureUrl),
                 user.IsActive,
                 twoFactorEnabled,
                 user.RequirePasswordChange,

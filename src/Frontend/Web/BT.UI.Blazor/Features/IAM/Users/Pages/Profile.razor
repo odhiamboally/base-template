@@ -142,6 +142,13 @@
             return;
         }
 
+        if (AuthSession.MfaEnrollmentRequired)
+        {
+            Snackbar.Add("Two-factor authentication setup is required before you can manage your profile.", Severity.Warning);
+            Navigation.NavigateTo("/iam/security");
+            return;
+        }
+
         _isReady = true;
         StateHasChanged();
     }

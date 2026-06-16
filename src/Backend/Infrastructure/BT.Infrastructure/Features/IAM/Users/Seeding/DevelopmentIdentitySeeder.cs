@@ -16,6 +16,8 @@ internal sealed class DevelopmentIdentitySeeder(
     IOptions<DevelopmentSeedSettings> options,
     ILogger<DevelopmentIdentitySeeder> logger)
 {
+    private const string BootstrapSeedActorId = "00000000-0000-0000-0000-000000000001";
+
     private readonly DevelopmentSeedSettings _settings = options.Value;
     private static readonly Guid EmployeeAlexId = new("0194f800-0000-7000-8000-000000000001");
     private static readonly Guid EmployeeAllanId = new("0194f800-0000-7000-8000-000000000002");
@@ -69,6 +71,8 @@ internal sealed class DevelopmentIdentitySeeder(
 
     private async Task SeedDevelopmentEmployeeUsersAsync(CancellationToken cancellationToken)
     {
+        string? bootstrapAdminUserId = null;
+
         foreach (var employeeUser in DevelopmentEmployeeUsers)
         {
             var user = await userManager.Users
@@ -78,7 +82,9 @@ internal sealed class DevelopmentIdentitySeeder(
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            if (user is null)
+            var createdNewUser = user is null;
+
+            if (createdNewUser)
             {
                 user = AppUser.CreateForEmployee(
                     _settings.TenantId,
@@ -89,10 +95,24 @@ internal sealed class DevelopmentIdentitySeeder(
                     employeeUser.Email,
                     employeeUser.PhoneNumber,
                     employeeUser.NationalId,
-                    "DevelopmentSeed");
+                    bootstrapAdminUserId ?? BootstrapSeedActorId);
+            }
 
-                ApplyDevelopmentUserState(user, employeeUser);
+            user = user ?? throw new InvalidOperationException($"Failed to resolve development user '{employeeUser.Email}'.");
 
+            if (employeeUser.IsBootstrapAdmin)
+            {
+                bootstrapAdminUserId = user.Id;
+            }
+
+            var seedActorId = employeeUser.IsBootstrapAdmin
+                ? user.Id
+                : bootstrapAdminUserId ?? BootstrapSeedActorId;
+
+            ApplyDevelopmentUserState(user, employeeUser, _settings.TenantId, seedActorId, createdNewUser);
+
+            if (createdNewUser)
+            {
                 var createResult = await userManager.CreateAsync(user, _settings.AdminPassword).ConfigureAwait(false);
                 if (!createResult.Succeeded)
                 {
@@ -101,8 +121,6 @@ internal sealed class DevelopmentIdentitySeeder(
             }
             else
             {
-                ApplyDevelopmentUserState(user, employeeUser);
-
                 var updateResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
                 if (!updateResult.Succeeded)
                 {
@@ -118,9 +136,18 @@ internal sealed class DevelopmentIdentitySeeder(
         }
     }
 
-    private static void ApplyDevelopmentUserState(AppUser user, DevelopmentEmployeeUser employeeUser)
+    private static void ApplyDevelopmentUserState(
+        AppUser user,
+        DevelopmentEmployeeUser employeeUser,
+        Guid tenantId,
+        string seedActorId,
+        bool createdNewUser)
     {
-        user.TenantId = new Guid("0194f700-0000-7000-8000-000000000001");
+        ArgumentException.ThrowIfNullOrWhiteSpace(seedActorId);
+
+        var now = DateTimeOffset.UtcNow;
+
+        user.TenantId = tenantId;
         user.EmployeeId = employeeUser.EmployeeId;
         user.CustomerId = null;
         user.UserName = employeeUser.Email;
@@ -131,18 +158,59 @@ internal sealed class DevelopmentIdentitySeeder(
         user.PhoneNumber = employeeUser.PhoneNumber;
         user.EmailConfirmed = true;
         user.PhoneNumberConfirmed = true;
-        user.IsActive = employeeUser.IsBootstrapAdmin;
-        user.RequirePasswordChange = !employeeUser.IsBootstrapAdmin;
-        user.ActivatedAt = employeeUser.IsBootstrapAdmin ? DateTimeOffset.UtcNow : null;
-        user.ActivatedBy = employeeUser.IsBootstrapAdmin ? "DevelopmentSeed" : null;
-        user.DeactivatedAt = employeeUser.IsBootstrapAdmin ? null : DateTimeOffset.UtcNow;
-        user.DeactivatedBy = employeeUser.IsBootstrapAdmin ? null : "DevelopmentSeed";
-        user.DeactivationReason = employeeUser.IsBootstrapAdmin ? null : "Seeded inactive so Grant Access can be tested.";
         user.IsDeleted = false;
         user.DeletedAt = null;
         user.DeletedBy = null;
-        user.UpdatedAt = DateTimeOffset.UtcNow;
-        user.UpdatedBy = "DevelopmentSeed";
+
+        user.CreatedBy = employeeUser.IsBootstrapAdmin ? user.Id : seedActorId;
+
+        if (createdNewUser)
+        {
+            user.IsActive = employeeUser.IsBootstrapAdmin;
+            user.RequirePasswordChange = !employeeUser.IsBootstrapAdmin;
+            user.ActivatedAt = employeeUser.IsBootstrapAdmin ? now : null;
+            user.ActivatedBy = employeeUser.IsBootstrapAdmin ? user.Id : null;
+            user.DeactivatedAt = employeeUser.IsBootstrapAdmin ? null : now;
+            user.DeactivatedBy = employeeUser.IsBootstrapAdmin ? null : seedActorId;
+            user.DeactivationReason = employeeUser.IsBootstrapAdmin
+                ? null
+                : "Seeded inactive so Grant Access can be tested.";
+        }
+        else
+        {
+            NormalizeDevelopmentLifecycle(user, employeeUser, seedActorId);
+        }
+
+        user.UpdatedAt = now;
+        user.UpdatedBy = seedActorId;
+    }
+
+    private static void NormalizeDevelopmentLifecycle(
+        AppUser user,
+        DevelopmentEmployeeUser employeeUser,
+        string seedActorId)
+    {
+        if (user.IsActive)
+        {
+            user.DeactivatedAt = null;
+            user.DeactivatedBy = null;
+            user.DeactivationReason = null;
+            user.ActivatedBy = user.ActivatedBy == "DevelopmentSeed"
+                ? seedActorId
+                : user.ActivatedBy;
+            return;
+        }
+
+        user.DeactivatedBy = user.DeactivatedBy == "DevelopmentSeed"
+            ? seedActorId
+            : user.DeactivatedBy;
+
+        if (!employeeUser.IsBootstrapAdmin || !string.IsNullOrWhiteSpace(user.DeactivatedBy))
+        {
+            return;
+        }
+
+        user.DeactivatedBy = seedActorId;
     }
 
     private async Task EnsureAdminRoleAsync(AppUser user)

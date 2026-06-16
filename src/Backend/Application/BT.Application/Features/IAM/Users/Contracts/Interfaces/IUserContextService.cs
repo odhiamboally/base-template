@@ -13,9 +13,4 @@ public interface IUserContextService
     /// </summary>
     UserIdentityContext GetCurrentContext();
 
-    /// <summary>
-    /// Switches the active context for dual-role users.
-    /// Triggers claim refresh (re-issue token or update session cookie).
-    /// </summary>
-    Task SwitchContextAsync(string context, CancellationToken ct = default);
 }

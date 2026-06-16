@@ -1,6 +1,6 @@
 # Base Template - Execution Strategy
 
-> Last updated: 2026-06-10
+> Last updated: 2026-06-12
 >
 > This file explains how to execute `PLAN.md` without jumping between unrelated work.
 > `PLAN.md` defines what the template should become. This file defines sequencing, dependencies, readiness gates, and safe parallel work.
@@ -54,10 +54,11 @@ This is the default execution path unless a blocker forces a dependency detour.
 
 Current near-term focus:
 
-- Keep the local API and Blazor UI runnable.
-- Complete the local browser/email IAM smoke test from Visual Studio.
-- Keep the Customer reference flow as the pattern for future features.
-- Continue authorization, menu visibility, and admin features from the completed IAM enterprise baseline.
+- Keep the local API and Blazor UI runnable from Visual Studio.
+- Certify the IAM/Auth baseline with local browser/email smoke testing.
+- Close platform storage hardening: profile media provider configuration and Data Protection key persistence.
+- Reconcile API security, exception propagation, validation coverage, MassTransit/outbox, and health checks before moving into deployment work.
+- Keep the Customer reference flow as the pattern for future feature slices.
 
 ---
 
@@ -250,10 +251,38 @@ At the end of a session:
 
 Recommended immediate order:
 
-1. Finish Customer CRUD reference flow completely.
-2. Apply the proven UI/API/service conventions to Employees, Users, Roles, and Permissions.
-3. Complete IAM authorization model: roles, permissions, policies, direct user grants.
-4. Add feature flag abstraction.
-5. Replace static admin/menu definitions with backend-provided permission-aware menu data.
-6. Complete remaining reusable platform services: profile media storage abstraction, health/security/observability, feature flags, background jobs, and deployment hardening.
-7. Move product-specific work such as SACCO loans, KYC/CRB, AML, payroll, or full HR into downstream solutions cloned from BaseTemplate.
+1. Certify Phase 1: IAM/Auth and local UI/API smoke testing.
+2. Certify Phase 2: platform storage, cache, exception, validation, and messaging hardening.
+3. Certify Phase 3: health checks, observability, API security/deprecation/throttling, and operational diagnostics.
+4. Certify Phase 4: CI/CD deployment readiness, migration bundles, Docker local platform, and Azure App Service release flow.
+5. Move product-specific work such as SACCO loans, KYC/CRB, AML, payroll, or full HR into downstream solutions cloned from BaseTemplate.
+
+---
+
+## 10. Phase Register
+
+Use this register as the working execution checklist. A phase is not considered closed until its gate is tested, documented, and committed.
+
+| Phase | Status | Scope | Gate |
+| --- | --- | --- | --- |
+| Phase 1 - IAM/Auth Enterprise Baseline | Implemented, needs final smoke certification | Login, refresh, logout, sessions, lockout, TOTP MFA setup/disable, admin MFA enforcement, grant/revoke system access, current user, profile picture upload, inactivity warning | Browser smoke: login, MFA challenge/setup/disable, grant email, revoke access, refresh, logout, session timeout |
+| Phase 2 - Platform Storage, Cache, Exceptions, Validation, Messaging | In progress | Azure Blob profile storage, Data Protection Blob/Key Vault keys, HybridCache/output cache, ProblemDetails propagation, FluentValidation coverage, MassTransit outbox | Build/test plus targeted smoke for profile upload, error messages, lookup cache, outbox publish |
+| Phase 3 - API Security And Operational Readiness | Pending | security headers, CORS, rate limiting policies, API version/deprecation headers, deep health checks, PII log masking, correlated tracing, dependency vulnerability hygiene | Health endpoints prove SQL/Redis/bus/Key Vault; logs are safe; API communicates deprecation/throttling clearly; package advisories are resolved or explicitly risk-accepted |
+| Phase 4 - Deployment And Release Engineering | Pending | efbundle migration pipeline, Docker Compose, GitHub Actions release, Azure App Service deployment slots, Key Vault wiring, rollback notes | CI builds/test/releases, migration bundle generated, Azure deploy smoke passes |
+| Phase 5 - Template Extensibility | Pending | feature flags, permission-aware dynamic menus, SignalR baseline, reporting abstraction, payment gateway abstractions, RCL consolidation | Feature gates and dynamic menus fail closed; reusable examples exist without domain-specific SACCO logic |
+
+---
+
+## 11. Phase Closure Checklist
+
+Before we move from one phase to another:
+
+- Confirm the phase scope has no known runtime dummy/fake implementation.
+- Confirm settings POCOs have matching JSON sections.
+- Confirm user-facing errors are meaningful and backend exception details are not leaked.
+- Confirm source-generated logging exists for catches and important failure paths.
+- Run relevant build, unit, architecture, and integration tests.
+- Run local browser smoke where the phase affects UI/auth.
+- Update `PLAN.md` and this strategy file.
+- Create a concise commit message and PR.
+- Tell the user explicitly that the phase is ready to move forward.

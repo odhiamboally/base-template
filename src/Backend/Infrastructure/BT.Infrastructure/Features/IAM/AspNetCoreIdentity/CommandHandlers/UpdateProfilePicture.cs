@@ -1,5 +1,6 @@
 using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Application.Features.IAM.Users.Mappings;
 using BT.Domain.Features.IAM.Users.Entities;
 using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Logging;
@@ -52,7 +53,9 @@ internal sealed class UpdateProfilePicture(
                 return AppResponse.Failure<ProfilePictureResponse>($"Profile picture could not be updated: {errors}");
             }
 
-            return AppResponse.Success("Profile picture updated.", new ProfilePictureResponse(profilePictureUrl));
+            return AppResponse.Success(
+                "Profile picture updated.",
+                new ProfilePictureResponse(ProfilePictureUrlMapping.ToCurrentUserRoute(profilePictureUrl)!));
         }
         catch (Exception ex)
         {

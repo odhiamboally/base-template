@@ -70,7 +70,7 @@ try
     });
 
     // ── Services ─────────────────────────────────────────────────────────────
-    builder.Services.AddApiServices(builder.Configuration);
+    builder.Services.AddApiServices(builder.Configuration, builder.Environment);
     builder.Services.AddApplicationServices(builder.Configuration);
     builder.Services.AddSharedInfrastructure(builder.Configuration, builder.Environment);
     builder.Services.AddIamModule(builder.Configuration, builder.Environment);

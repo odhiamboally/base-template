@@ -103,9 +103,9 @@
             _model.PhoneNationalNumber = phone.NationalNumber;
             _model.PhoneNumber = phone.E164;
         }
-        catch (ArgumentException ex)
+        catch (ArgumentException)
         {
-            Snackbar.Add(ex.Message, Severity.Warning);
+            Snackbar.Add("Enter a valid phone number for the selected country.", Severity.Warning);
             return;
         }
 

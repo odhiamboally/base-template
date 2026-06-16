@@ -35,6 +35,6 @@ internal sealed class IPAddressEnricher : ILogEventEnricher
         var forwarded = context?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(forwarded))
             logEvent.AddPropertyIfAbsent(propertyFactory.CreateProperty("X-Forwarded-For", forwarded));
-    }
+      }
 }
 

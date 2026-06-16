@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\BT.SharedKernel.Validation\BT.SharedKernel.Validation.csproj" />
     <ProjectReference Include="..\..\..\Shared\BT.SharedKernel\BT.SharedKernel.csproj" />
     <ProjectReference Include="..\..\Domain\BT.Domain\BT.Domain.csproj" />
   </ItemGroup>

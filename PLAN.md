@@ -82,15 +82,17 @@ All query records, command records, validators, mapping profiles, and handlers f
 - **Profile Image Storage:** User profile pictures are supported through `IProfilePictureStorage`; local development stores files under API static assets, while Azure Blob can be added behind the same abstraction during cloud hardening.
 - **Architecture Tests:** Guardrails built enforcing that all Queries declare cache strategies and all Banking/HR write commands declare cache invalidation.
 
-### 3.2 Areas That Must Still Be Completed
-- **HybridCache Stampede Protection Fix:** Refactor `ICacheService` to leverage native `GetOrCreateAsync` factories to enable stampede prevention (request coalescing) and avoid negative cache envelope pollution.
-- **Output Caching & Edge Headers:** Set up HTTP Output Cache middleware for static lookup data.
-- **ASP.NET Data Protection API Hardening:** Configure Key Vault and Blob Storage key persistence for horizontal scaling.
+### 3.2 Areas That Must Still Be Completed Or Certified
+- **Platform Storage Certification:** Profile image storage now supports local and Azure Blob providers behind `IProfilePictureStorage`; Data Protection supports local keys plus Azure Blob/Key Vault configuration. The remaining gate is local build plus Azure configuration smoke once cloud resources are ready.
+- **HybridCache Certification:** Query caching and output caching are wired; complete the remaining review for native `GetOrCreateAsync` usage, negative-cache behavior, and Redis-backed multi-node invalidation.
+- **MassTransit/Outbox Certification:** RabbitMQ and Azure Service Bus transports are configurable and MassTransit EF Outbox is registered. The remaining gate is an end-to-end publish/consume smoke with outbox persistence and transport-specific health checks.
+- **Exception And Validation Coverage:** ProblemDetails and frontend parsing are in place. The remaining gate is validator coverage review for command/request DTOs and tests proving backend validation messages surface cleanly in Blazor.
+- **API Security And Lifecycle:** Security headers, rate limiting, CORS, JWT, permission policies, and API versioning are present. The remaining gate is deprecation policy, throttle response consistency, CSRF stance, and operational tests.
 - **Production Migrations:** Build a pipeline using `efbundle` to execute schema changes safely during deployments instead of using `db.Database.Migrate()` on startup.
 - **Dynamic Navigation Maturity:** Dynamic menu/catalog management exists; continue tightening permission filtering, tenant/department scope rules, and client-facing administration workflows as feature modules grow.
-- **observability & Health Checks:** Wire deep, operational health checks for SQL, Redis, Service Bus, and Key Vault.
+- **Observability & Health Checks:** Wire deep, operational health checks for SQL, Redis, Service Bus, and Key Vault.
 - **Production Smoke Testing:** Run the full local smoke cycle against real SMTP/user-secrets/Key Vault settings before promoting to Azure deployment work.
-- **Local Platform:** Wire a comprehensive `docker-compose` environment for SQL Server, Redis, Seq, RabbitMQ, and LocalStorage.
+- **Local Platform:** Wire a comprehensive `docker-compose` environment for SQL Server, Redis, Seq, RabbitMQ, and local storage alternatives.
 
 ---
 
@@ -139,46 +141,62 @@ EventIds are structured by architectural layer to simplify searching in logs:
 
 ```
   ┌──────────────────────────────────────────────────────────┐
-  │ PHASE A - Caching & Modular Monolith Hardening           │
+  │ PHASE 1 - IAM/Auth Enterprise Baseline                   │
   └──────────────────────────┬───────────────────────────────┘
                              ▼
   ┌──────────────────────────────────────────────────────────┐
-  │ PHASE B - Operational Observability & Health Checks      │
+  │ PHASE 2 - Platform Storage, Cache, Validation, Messaging │
   └──────────────────────────┬───────────────────────────────┘
                              ▼
   ┌──────────────────────────────────────────────────────────┐
-  │ PHASE C - CI/CD Pipelines & Zero-Downtime Deployments    │
+  │ PHASE 3 - API Security & Operational Readiness           │
   └──────────────────────────┬───────────────────────────────┘
                              ▼
   ┌──────────────────────────────────────────────────────────┐
-  │ PHASE D - UI Completion, Dynamic Menus & Payments        │
+  │ PHASE 4 - CI/CD Pipelines & Azure Deployment             │
+  └──────────────────────────┬───────────────────────────────┘
+                             ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │ PHASE 5 - Template Extensibility                         │
   └──────────────────────────────────────────────────────────┘
 ```
 
-### Phase A - Caching & Modular Monolith Hardening
-*Goal: Harden cache performance and block module coupling in the logical monolith.*
-- [ ] **Harden HybridCacheService:** Refactor `ICacheService` and `CachingBehavior` to use `GetOrCreateAsync` with the handler delegate instead of dummy envelopes, restoring stampede protection.
-- [ ] **Enable Redis L1 Eviction Bus:** Configure StackExchange.Redis ConnectionMultiplexer as the backplane for HybridCache L1 invalidation broadcasting.
-- [ ] **Add Namespace Dependency Tests:** Introduce namespace checks in NetArchTest to assert that Banking, HR, IAM, and Shared application feature slices cannot cross-reference.
-- [ ] **Configure Output Caching:** Register output caching middleware in `BT.Api` and apply caching to lookup controllers.
+### Phase 1 - IAM/Auth Enterprise Baseline
+*Goal: certify identity, authentication, authorization, MFA, sessions, and local UI/API smoke testing.*
+- [~] **IAM/Auth Baseline:** Login, refresh, logout, server-side sessions, lockout, TOTP MFA, admin MFA enforcement, grant/revoke access, current-user, profile picture upload, and inactivity warning are implemented.
+- [ ] **Local Smoke Certification:** Complete browser/email smoke testing for login, MFA challenge/setup/disable, grant access email, revoke access, refresh, logout, and session timeout.
 
-### Phase B - Operational Observability & Health Checks
+### Phase 2 - Platform Storage, Cache, Validation, Messaging
+*Goal: harden shared platform services before deployment work.*
+- [~] **Harden HybridCacheService:** Query caching is wired; certify `GetOrCreateAsync` behavior and remove any remaining dummy/negative cache paths that can pollute cache state.
+- [~] **Enable Redis L1 Eviction Bus:** Redis distributed cache and `IConnectionMultiplexer` registration exist; certify multi-node invalidation behavior explicitly.
+- [x] **Add Namespace Dependency Tests:** NetArchTest blocks cross-bounded-context namespace references.
+- [x] **Configure Output Caching:** `AddOutputCache`, `UseOutputCache`, and lookup endpoint policies are registered.
+- [~] **Profile Media Storage:** Local and Azure Blob profile picture providers exist behind `IProfilePictureStorage`; certify Azure settings with real storage.
+- [~] **Validation Coverage:** Shared DTO validators and Application write-command validators are being expanded for admin/customer/employee/reference flows.
+- [~] **MassTransit/Outbox:** RabbitMQ/Azure Service Bus switching and EF outbox are wired; certify transport-specific publish/consume and health behavior.
+
+### Phase 3 - API Security And Operational Readiness
 *Goal: Ensure the system can be monitored, scaled, and diagnosed under load.*
 - [ ] **Deep Health Checks:** Replace basic TCP check endpoints with active health checks testing actual database write, cache set, service bus connection, and Key Vault secret retrieval.
-- [ ] **Configure ASP.NET Data Protection:** Register Azure Blob Storage and Key Vault encryption for Data Protection keys.
+- [~] **Configure ASP.NET Data Protection:** Local file/DPAPI and Azure Blob/Key Vault settings are wired; certify with Azure resources.
 - [ ] **PII Log Sanitization:** Implement Serilog destructuring policies to mask passwords, MFA codes, and personal identifiers.
 - [ ] **Correlated Tracing:** Ensure OpenTelemetry trace context propagates across Blazor client HTTP requests -> API gateways -> MediatR pipelines -> EF Core.
+- [ ] **API Lifecycle:** Define deprecation headers, throttle response consistency, and API security policy tests.
 
-### Phase C - CI/CD Pipelines & Zero-Downtime Deployments
+### Phase 4 - CI/CD Pipelines & Azure Deployment
 *Goal: Establish secure, repeatable deployment guardrails without manual steps.*
 - [ ] **efbundle Migration Pipeline:** Configure GitHub Actions to compile and run EF Core migration bundles against SQL Server during the release pipeline.
 - [ ] **Docker Local Platform:** Finalize `docker-compose` to run SQL Server, Redis, RabbitMQ, and Seq in one command.
 - [ ] **Azure Deployment Workflows:** Wire Blue/Green deployment slot switches for API services in GitHub Actions.
 
-### Phase D - UI Completion, Dynamic Menus & Payments
-*Goal: Complete frontend integration, dynamic navigation, and payments.*
+### Phase 5 - Template Extensibility
+*Goal: complete reusable extension points without adding product-specific SACCO/domain features to the template.*
 - [ ] **Dynamic Permissions-Based Menus:** Implement backend menu/module API that constructs the UI layout based on user permissions, roles, and active feature flags.
 - [ ] **MudBlazor UI Shell:** Implement responsive theme, layouts, and auth pages in the Shared Razor Class Library (RCL).
+- [ ] **Feature Flags:** Add a generic feature-flag abstraction usable from API/Application/UI.
+- [ ] **SignalR Baseline:** Add authenticated hub structure and conventions.
+- [ ] **Reporting Baseline:** Add QuestPDF/reporting abstraction without product-specific reports.
 - [ ] **Payment Gateway Integrations:** Write clean Stripe and Mpesa integrations behind a unified `IPaymentGateway` interface.
 
 ---

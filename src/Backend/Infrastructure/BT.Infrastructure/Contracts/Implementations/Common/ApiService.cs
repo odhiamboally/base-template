@@ -317,7 +317,7 @@ internal sealed class ApiService : IApiService
         catch (Exception ex)
         {
             HttpClientLogDefinitions.LogExternalApiError(_logger, "GET", endpoint, ex);
-            return AppResponse.Failure<PagedResponse<TResponse, TCursor>>(ex.Message);
+            return AppResponse.Failure<PagedResponse<TResponse, TCursor>>("The external service could not complete the request. Please try again.");
         }
 
     }
@@ -354,7 +354,7 @@ internal sealed class ApiService : IApiService
         catch (Exception ex)
         {
             HttpClientLogDefinitions.LogExternalApiError(_logger, "GET", endpoint, ex);
-            return AppResponse.Failure<PagedResponse<TResponse, TCursor>>(ex.Message);
+            return AppResponse.Failure<PagedResponse<TResponse, TCursor>>("The external service could not complete the request. Please try again.");
         }
     }
 

@@ -1,5 +1,6 @@
 @page "/iam/security"
 @rendermode InteractiveServer
+@using BT.UI.Blazor.Features.Shared.Messaging
 @inject IAuthSession AuthSession
 @inject IAuthService AuthService
 @inject IAuthenticatorQrCodeService QrCodeService
@@ -198,7 +199,7 @@
         if (!response.Successful || response.Data is null)
         {
             _isError = true;
-            _message = response.Message ?? "Could not start two-factor setup.";
+            _message = UserMessageSanitizer.Normalize(response.Message, "Could not start two-factor setup.");
             return;
         }
 
@@ -233,7 +234,7 @@
         if (!response.Successful)
         {
             _isError = true;
-            _message = response.Message ?? "Could not enable two-factor authentication.";
+            _message = UserMessageSanitizer.Normalize(response.Message, "Could not enable two-factor authentication.");
             return;
         }
 
@@ -280,7 +281,7 @@
         if (!response.Successful)
         {
             _isError = true;
-            _message = response.Message ?? "Could not disable authenticator-app 2FA.";
+            _message = UserMessageSanitizer.Normalize(response.Message, "Could not disable authenticator-app 2FA.");
             return;
         }
 

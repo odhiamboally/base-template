@@ -84,7 +84,7 @@ internal sealed class GetCurrentUser(
                 permissions,
                 sessionId,
                 mfaEnrollmentRequired,
-                appUser.ProfilePictureUrl));
+                ProfilePictureUrlMapping.ToCurrentUserRoute(appUser.ProfilePictureUrl)));
         }
         catch (Exception ex)
         {

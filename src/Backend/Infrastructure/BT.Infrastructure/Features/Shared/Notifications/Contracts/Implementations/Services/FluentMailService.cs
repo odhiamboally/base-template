@@ -1,18 +1,21 @@
 using BT.SharedKernel.Features.Shared.Notifications.Dtos;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
+using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
-using FluentEmail.Core;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using Microsoft.Extensions.Options;
+using MimeKit;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace BT.Infrastructure.Features.Shared.Notifications.Contracts.Implementations.Services;
 
-internal sealed class FluentMailService(IFluentEmail _fluentEmail, ILogger<FluentMailService> _logger) : IEmailService
+internal sealed class FluentMailService(IOptions<EmailSettings> options, ILogger<FluentMailService> logger) : IEmailService
 {
+    private readonly EmailSettings _settings = options.Value;
+
     public async Task<AppResponse<SendEmailResponse>> SendEmailAsync(SendEmailRequest sendEmailRequest, CancellationToken cancellationToken)
     {
         try
@@ -22,40 +25,50 @@ internal sealed class FluentMailService(IFluentEmail _fluentEmail, ILogger<Fluen
             if (string.IsNullOrWhiteSpace(sendEmailRequest.To))
                 throw new ArgumentException("Recipient email is required");
 
-            var email = _fluentEmail
-                .To(sendEmailRequest.To)
-                .Subject(sendEmailRequest.Subject ?? string.Empty)
-                .Body(sendEmailRequest.Body ?? string.Empty, true); // true = HTML
-
-            var result = await email.SendAsync(cancellationToken).ConfigureAwait(false);
-
-            if (result.Successful)
+            using var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_settings.DisplayName, _settings.FromAddress));
+            message.To.Add(MailboxAddress.Parse(sendEmailRequest.To));
+            message.Subject = sendEmailRequest.Subject ?? string.Empty;
+            message.Body = new BodyBuilder
             {
-                ServiceLogDefinitions.LogEmailSent(_logger, sendEmailRequest.To);
+                HtmlBody = sendEmailRequest.Body ?? string.Empty
+            }.ToMessageBody();
 
-                return AppResponse.Success("Email sent successfully",
-                    new SendEmailResponse(
-                        Guid.NewGuid().ToString(),
-                        DateTimeOffset.UtcNow,
-                        sendEmailRequest.To,
-                        sendEmailRequest.Subject ?? string.Empty)
-                    );
-            }
-            else
+            using var smtpClient = new SmtpClient();
+            var socketOptions = GetSocketOptions(_settings);
+
+            await smtpClient.ConnectAsync(_settings.Host, _settings.Port, socketOptions, cancellationToken).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(_settings.Username))
             {
-                var errorMessage = string.Join(", ", result.ErrorMessages);
-                ServiceLogDefinitions.LogFailedToSendEmail(_logger, sendEmailRequest.To, errorMessage);
-
-                return AppResponse.Failure<SendEmailResponse>($"Failed to send email: {errorMessage}");
+                await smtpClient.AuthenticateAsync(_settings.Username, _settings.Password, cancellationToken).ConfigureAwait(false);
             }
+
+            var messageId = await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            await smtpClient.DisconnectAsync(true, cancellationToken).ConfigureAwait(false);
+
+            ServiceLogDefinitions.LogEmailSent(logger, sendEmailRequest.To);
+
+            return AppResponse.Success("Email sent successfully",
+                new SendEmailResponse(
+                    string.IsNullOrWhiteSpace(messageId) ? Guid.NewGuid().ToString() : messageId,
+                    DateTimeOffset.UtcNow,
+                    sendEmailRequest.To,
+                    sendEmailRequest.Subject ?? string.Empty)
+                );
         }
         catch (Exception ex)
         {
-            ServiceLogDefinitions.LogErrorSendingEmail(_logger, sendEmailRequest?.To ?? string.Empty, ex);
-            throw;
+            ServiceLogDefinitions.LogErrorSendingEmail(logger, sendEmailRequest?.To ?? string.Empty, ex);
+            return AppResponse.Failure<SendEmailResponse>("Email could not be sent. Please verify SMTP configuration and try again.");
         }
     }
 
-
-
+    private static SecureSocketOptions GetSocketOptions(EmailSettings settings)
+    {
+        return !settings.EnableSsl
+            ? SecureSocketOptions.None
+            : settings.Port == 465
+            ? SecureSocketOptions.SslOnConnect
+            : SecureSocketOptions.StartTls;
+    }
 }

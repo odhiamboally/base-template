@@ -64,7 +64,8 @@ internal sealed class Login(
 
             if (!user.IsActive || user.IsDeleted)
             {
-                throw new AuthenticationException("User account is disabled.");
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("User account is disabled"));
+                return AppResponse.Failure<LoginResponse>("This account is inactive. Please contact support.");
             }
 
             var emailConfirmed = await userManager.IsEmailConfirmedAsync(user).ConfigureAwait(false);
@@ -107,7 +108,7 @@ internal sealed class Login(
                 user.NationalId,
                 user.Email ?? string.Empty,
                 user.Gender.ToDisplayString(),
-                user.ProfilePictureUrl,
+                ProfilePictureUrlMapping.ToCurrentUserRoute(user.ProfilePictureUrl),
                 true,
                 twoFactorEnabled,
                 user.RequirePasswordChange,

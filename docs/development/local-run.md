@@ -65,7 +65,7 @@ The bounded contexts share the same local database, but each context has its own
 
 When `BT.Api` starts in Development, it seeds Identity roles and this local admin user:
 
-- Username: `admin@basetemplate.local`
+- Username: `aamodhiambo@gmail.com`
 - Password: `Admin@12345`
 - Role: `System Administrator`
 

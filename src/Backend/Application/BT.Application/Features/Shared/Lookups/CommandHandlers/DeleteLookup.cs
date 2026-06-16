@@ -39,7 +39,8 @@ internal sealed class DeleteLookupCommandHandler(ISharedUnitOfWork unitOfWork, I
         }
         catch (KeyNotFoundException ex)
         {
-            return AppResponse.Failure<bool>(ex.Message);
+            LogDefinitions.LogPipelineException(logger, nameof(DeleteLookupCommandHandler), ex);
+            return AppResponse.Failure<bool>("The lookup record could not be found.");
         }
         catch (Exception ex)
         {

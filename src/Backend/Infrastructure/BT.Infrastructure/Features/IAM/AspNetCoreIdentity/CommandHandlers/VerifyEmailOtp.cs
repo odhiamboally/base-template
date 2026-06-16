@@ -2,6 +2,7 @@ using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.SharedKernel.Extensions;
 using BT.Application.Features.IAM.Users.Commands;
+using BT.Application.Features.IAM.Users.Mappings;
 using BT.Application.Utilities;
 using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Features.IAM.Users.Entities;
@@ -134,7 +135,7 @@ internal sealed class VerifyEmailOtp(
         var appUser = new AppUserResponse(
             user.Id, user.UserName ?? "", user.FirstName, user.LastName,
             $"{user.FirstName} {user.LastName}".Trim(), user.PhoneNumber, user.NationalId,
-            user.Email ?? "", user.Gender.ToDisplayString(), user.ProfilePictureUrl,
+            user.Email ?? "", user.Gender.ToDisplayString(), ProfilePictureUrlMapping.ToCurrentUserRoute(user.ProfilePictureUrl),
             user.IsActive, twoFactor, user.RequirePasswordChange, user.CreatedAt,
             user.LastLoginAt, [.. roles], user.TenantId, user.EmployeeId, user.CustomerId);
 

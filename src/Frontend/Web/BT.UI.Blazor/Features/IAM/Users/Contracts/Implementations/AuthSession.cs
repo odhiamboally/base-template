@@ -1,5 +1,6 @@
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
+using BT.UI.Blazor.Features.Shared.Messaging;
 using BT.UI.Blazor.Logging;
 using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 
@@ -200,11 +201,7 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
     }
 
     private static string GetMeaningfulMessage(string? message, string fallback)
-    {
-        return string.IsNullOrWhiteSpace(message) || string.Equals(message, "Operation Successful", StringComparison.OrdinalIgnoreCase)
-            ? fallback
-            : message;
-    }
+        => UserMessageSanitizer.Normalize(message, fallback);
 
     public void Dispose()
     {

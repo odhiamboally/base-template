@@ -1,0 +1,12 @@
+namespace BT.Api.Configuration;
+
+internal sealed class DataProtectionSettings
+{
+    public const string SectionName = "DataProtection";
+
+    public string? KeysPath { get; init; }
+    public string? BlobKeyUri { get; init; }
+    public string? KeyVaultKeyIdentifier { get; init; }
+    public string? CertificateThumbprint { get; init; }
+    public string KeyEncryptionMode { get; init; } = "Auto";
+}
