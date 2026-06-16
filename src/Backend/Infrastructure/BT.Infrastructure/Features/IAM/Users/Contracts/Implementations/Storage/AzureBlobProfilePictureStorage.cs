@@ -1,0 +1,137 @@
+using Azure.Identity;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
+
+namespace BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Storage;
+
+internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorageSettings> options) : IProfilePictureStorage
+{
+    private readonly ProfileImageStorageSettings _settings = options.Value;
+
+    public async Task<Uri> SaveAsync(
+        string userId,
+        Stream content,
+        string fileName,
+        string contentType,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        ArgumentNullException.ThrowIfNull(content);
+
+        var extension = GetSafeExtension(fileName, contentType);
+        var safeUserId = string.Concat(userId.Select(static character =>
+            char.IsLetterOrDigit(character) ? character : '-'));
+        var blobPrefix = _settings.AzureBlob.BlobPrefix.Trim().Trim('/');
+        var storedFileName = $"{RandomNumberGenerator.GetHexString(12).ToLowerInvariant()}{extension}";
+        var blobName = string.IsNullOrWhiteSpace(blobPrefix)
+            ? $"{safeUserId}/{storedFileName}"
+            : $"{blobPrefix}/{safeUserId}/{storedFileName}";
+        var container = CreateContainerClient(_settings.AzureBlob);
+
+        await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        var blob = container.GetBlobClient(blobName);
+        await blob.UploadAsync(
+            content,
+            new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = contentType,
+                    CacheControl = "public, max-age=31536000, immutable"
+                }
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        return blob.Uri;
+    }
+
+    public async Task<ProfilePictureFile?> OpenReadAsync(
+        Uri profilePictureUri,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(profilePictureUri);
+
+        if (!profilePictureUri.IsAbsoluteUri)
+        {
+            return null;
+        }
+
+        var container = CreateContainerClient(_settings.AzureBlob);
+        var blobName = GetBlobName(profilePictureUri, container.Uri);
+        if (string.IsNullOrWhiteSpace(blobName))
+        {
+            return null;
+        }
+
+        var blob = container.GetBlobClient(blobName);
+        if (!await blob.ExistsAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        var download = await blob.DownloadStreamingAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        var contentType = string.IsNullOrWhiteSpace(download.Value.Details.ContentType)
+            ? "application/octet-stream"
+            : download.Value.Details.ContentType;
+        var fileName = Path.GetFileName(blobName);
+
+        return new ProfilePictureFile(download.Value.Content, contentType, fileName);
+    }
+
+    private static BlobContainerClient CreateContainerClient(AzureBlobProfileImageStorageSettings settings)
+    {
+        if (!string.IsNullOrWhiteSpace(settings.ContainerUri))
+        {
+            return new BlobContainerClient(new Uri(settings.ContainerUri), new DefaultAzureCredential());
+        }
+
+        if (!string.IsNullOrWhiteSpace(settings.ConnectionString) &&
+            !string.IsNullOrWhiteSpace(settings.ContainerName))
+        {
+            return new BlobContainerClient(settings.ConnectionString, settings.ContainerName);
+        }
+
+        throw new InvalidOperationException(
+            "ProfileImageStorage:AzureBlob requires either ContainerUri for managed identity or ConnectionString plus ContainerName.");
+    }
+
+    private static string? GetBlobName(Uri profilePictureUri, Uri containerUri)
+    {
+        var containerPrefix = containerUri.ToString().TrimEnd('/') + "/";
+        var profilePictureUrl = profilePictureUri.ToString();
+        if (!profilePictureUrl.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return Uri.UnescapeDataString(profilePictureUrl[containerPrefix.Length..]);
+    }
+
+    private static string GetSafeExtension(string fileName, string contentType)
+    {
+        var extension = Path.GetExtension(fileName);
+        if (!string.IsNullOrWhiteSpace(extension))
+        {
+            return extension.ToLowerInvariant() switch
+            {
+                ".jpg" or ".jpeg" => ".jpg",
+                ".png" => ".png",
+                ".webp" => ".webp",
+                _ => throw new InvalidOperationException("Unsupported profile image extension.")
+            };
+        }
+
+        return contentType.ToLowerInvariant() switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            _ => throw new InvalidOperationException("Unsupported profile image content type.")
+        };
+    }
+}

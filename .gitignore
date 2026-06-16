@@ -421,3 +421,4 @@ FodyWeavers.xsd
 # Local machine artifacts
 /.appdata/
 /.dotnet-home/
+src/Backend/Api/BT.Api/temp-keys/

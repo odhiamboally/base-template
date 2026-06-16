@@ -24,4 +24,14 @@ public sealed class ProfileImageStorageSettings
         "image/png",
         "image/webp"
     ];
+
+    public AzureBlobProfileImageStorageSettings AzureBlob { get; init; } = new();
+}
+
+public sealed class AzureBlobProfileImageStorageSettings
+{
+    public string? ContainerUri { get; init; }
+    public string? ConnectionString { get; init; }
+    public string? ContainerName { get; init; }
+    public string BlobPrefix { get; init; } = "profile-images";
 }

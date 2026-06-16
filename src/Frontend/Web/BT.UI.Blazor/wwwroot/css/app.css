@@ -188,12 +188,16 @@ a, .btn-link {
 }
 
 .auth-card {
+    min-width: 0;
+    overflow: hidden;
     padding: clamp(1.25rem, 4vw, 2rem);
+    width: 100%;
 }
 
 .form-stack {
     display: grid;
     gap: 1rem;
+    min-width: 0;
 }
 
 .form-stack label,
@@ -205,6 +209,14 @@ a, .btn-link {
 
 .form-control {
     border-color: var(--bt-line);
+    max-width: 100%;
+    width: 100%;
+}
+
+.auth-card .alert,
+.auth-card .btn,
+.auth-card .form-control {
+    box-sizing: border-box;
 }
 
 .remember-row {

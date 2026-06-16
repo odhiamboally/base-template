@@ -1,39 +1,50 @@
 using Asp.Versioning;
+
+using Azure.Identity;
+using Azure.Storage.Blobs;
+
 using BT.Api.Common.Authorization;
+using BT.Api.Configuration;
 using BT.Api.Logging;
 using BT.Api.Middleware;
 using BT.Application.Exceptions;
 using BT.Domain.Exceptions;
 using BT.Infrastructure.Configuration;
+using BT.Infrastructure.Logging;
 using BT.Infrastructure.Messaging.Consumers;
 using BT.Persistence.Features.Shared.DataContext;
+
 using FluentValidation;
+
 using MassTransit;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Http.Resilience;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.IdentityModel.Tokens;
+
 using Serilog.Core;
 using Serilog.Events;
+
 using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.RateLimiting;
-using BT.Infrastructure.Logging;
 
 namespace BT.Api.Extensions;
 
-internal static class DependencyInjection
+internal static partial class DependencyInjection
 {
-    public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var assembly = typeof(Program).Assembly;
 
@@ -55,7 +66,7 @@ internal static class DependencyInjection
         });
 
         ConfigureHttpResilience(services, configuration);
-        ConfigureDataProtection(services, configuration);
+        ConfigureDataProtection(services, configuration, environment);
         ConfigureCustomRateLimiting(services);
 
         services.AddValidatorsFromAssembly(assembly);
@@ -78,29 +89,110 @@ internal static class DependencyInjection
 
     }
 
-    private static void ConfigureDataProtection(IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureDataProtection(IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
-        var dataProtection = services.AddDataProtection()
-            .SetApplicationName("LlanCore.BaseTemplate.API");
+        services.Configure<DataProtectionSettings>(configuration.GetSection(DataProtectionSettings.SectionName));
 
-        var keysPath = configuration["DataProtection:KeysPath"];
-        if (!string.IsNullOrWhiteSpace(keysPath))
+        var dpSettings = configuration.GetSection(DataProtectionSettings.SectionName).Get<DataProtectionSettings>();
+
+        var dataProtectionBuilder = services.AddDataProtection()
+            .SetApplicationName("LlanCore.BT");
+
+        if (!string.IsNullOrWhiteSpace(dpSettings?.BlobKeyUri))
         {
-            var directoryInfo = new DirectoryInfo(keysPath);
-            if (!directoryInfo.Exists)
-            {
-                directoryInfo.Create();
-            }
-
-            dataProtection.PersistKeysToFileSystem(directoryInfo);
+            var blobClient = new BlobClient(new Uri(dpSettings.BlobKeyUri), new DefaultAzureCredential());
+            dataProtectionBuilder.PersistKeysToAzureBlobStorage(blobClient);
         }
 
-        if (OperatingSystem.IsWindows())
+        ConfigureDataProtectionKeyEncryption(dataProtectionBuilder, dpSettings);
+
+        // If no blob configured, fall back to a local filesystem path for development
+        if (string.IsNullOrWhiteSpace(dpSettings?.BlobKeyUri))
         {
-            dataProtection.ProtectKeysWithDpapi();
+            var keysPath = !string.IsNullOrWhiteSpace(dpSettings?.KeysPath)
+                ? dpSettings.KeysPath
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BTApi", "DataProtection-Keys");
+
+            Directory.CreateDirectory(keysPath);
+            dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+        }
+
+    }
+
+    private static void ConfigureDataProtectionKeyEncryption(IDataProtectionBuilder dataProtectionBuilder, DataProtectionSettings? settings)
+    {
+        var mode = string.IsNullOrWhiteSpace(settings?.KeyEncryptionMode) ? "Auto" : settings.KeyEncryptionMode.Trim();
+
+        if (mode.Equals("None", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (mode.Equals("KeyVault", StringComparison.OrdinalIgnoreCase) ||
+            (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(settings?.KeyVaultKeyIdentifier)))
+        {
+            if (string.IsNullOrWhiteSpace(settings?.KeyVaultKeyIdentifier))
+            {
+                throw new InvalidOperationException("DataProtection:KeyVaultKeyIdentifier is required when DataProtection:KeyEncryptionMode is KeyVault.");
+            }
+
+            dataProtectionBuilder.ProtectKeysWithAzureKeyVault(new Uri(settings.KeyVaultKeyIdentifier), new DefaultAzureCredential());
+            return;
+        }
+
+        if (mode.Equals("Certificate", StringComparison.OrdinalIgnoreCase) ||
+            (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(settings?.CertificateThumbprint)))
+        {
+            if (string.IsNullOrWhiteSpace(settings?.CertificateThumbprint))
+            {
+                throw new InvalidOperationException("DataProtection:CertificateThumbprint is required when DataProtection:KeyEncryptionMode is Certificate.");
+            }
+
+            ProtectDataProtectionKeysWithCertificate(dataProtectionBuilder, settings.CertificateThumbprint);
+            return;
+        }
+
+        if (!mode.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("DataProtection:KeyEncryptionMode must be Auto, KeyVault, Certificate, or None.");
         }
     }
 
+    private static void ProtectDataProtectionKeysWithCertificate(
+        IDataProtectionBuilder dataProtectionBuilder,
+        string certificateThumbprint)
+    {
+        var thumbprint = certificateThumbprint.Replace(" ", string.Empty);
+        var logger = NullLoggerFactory.Instance.CreateLogger("DataProtection");
+
+        using var store = new System.Security.Cryptography.X509Certificates.X509Store(
+            System.Security.Cryptography.X509Certificates.StoreName.My,
+            System.Security.Cryptography.X509Certificates.StoreLocation.CurrentUser);
+
+        store.Open(System.Security.Cryptography.X509Certificates.OpenFlags.ReadOnly);
+        var cert = store.Certificates
+            .Find(System.Security.Cryptography.X509Certificates.X509FindType.FindByThumbprint, thumbprint, validOnly: false)
+            .OfType<System.Security.Cryptography.X509Certificates.X509Certificate2>()
+            .FirstOrDefault();
+        store.Close();
+
+        if (cert is null)
+        {
+            DataProtectionLogging.CertificateNotFound(logger, thumbprint);
+            throw new InvalidOperationException($"Data Protection certificate '{thumbprint}' was not found in CurrentUser/My.");
+        }
+
+        if (!cert.HasPrivateKey)
+        {
+            DataProtectionLogging.CertificateNoPrivateKey(logger, thumbprint);
+            throw new InvalidOperationException($"Data Protection certificate '{thumbprint}' does not include a private key.");
+        }
+
+        dataProtectionBuilder.ProtectKeysWithCertificate(cert);
+        DataProtectionLogging.CertificateLoaded(logger, thumbprint);
+    }
     private static void ConfigureCustomRateLimiting(IServiceCollection services)
     {
         services.AddRateLimiter(options =>

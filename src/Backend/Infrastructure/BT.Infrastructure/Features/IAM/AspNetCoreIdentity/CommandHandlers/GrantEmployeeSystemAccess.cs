@@ -28,6 +28,13 @@ internal sealed class GrantEmployeeSystemAccess(
 
         try
         {
+            var temporaryPassword = provisioningOptions.Value.TemporaryPassword;
+            if (string.IsNullOrWhiteSpace(temporaryPassword))
+            {
+                return AppResponse.Failure<bool>(
+                    "IAM provisioning is not configured. Set IamProvisioning:TemporaryPassword via user secrets, environment variables, or Key Vault.");
+            }
+
             var user = await userManager.Users
                 .SingleOrDefaultAsync(u => u.EmployeeId == command.EmployeeId, ct)
                 .ConfigureAwait(false);
@@ -59,13 +66,6 @@ internal sealed class GrantEmployeeSystemAccess(
 
                 user.EmailConfirmed = true;
 
-                var temporaryPassword = provisioningOptions.Value.TemporaryPassword;
-                if (string.IsNullOrWhiteSpace(temporaryPassword))
-                {
-                    return AppResponse.Failure<bool>(
-                        "IAM provisioning is not configured. Set IamProvisioning:TemporaryPassword via user secrets, environment variables, or Key Vault.");
-                }
-
                 var createResult = await userManager.CreateAsync(user, temporaryPassword).ConfigureAwait(false);
                 if (!createResult.Succeeded)
                 {
@@ -81,12 +81,24 @@ internal sealed class GrantEmployeeSystemAccess(
                     "This employee is already linked to an active IAM account. Use Manage Roles or Revoke Access instead.");
             }
 
+            if (!createdNewUser)
+            {
+                var passwordResetResult = await ResetTemporaryPasswordForReactivationAsync(user, temporaryPassword)
+                    .ConfigureAwait(false);
+                if (!passwordResetResult.Succeeded)
+                {
+                    return AppResponse.Failure<bool>(passwordResetResult.Errors.First().Description);
+                }
+            }
+
             user.GrantAccess(command.GrantedBy, command.Roles);
+            user.EmailConfirmed = true;
 
             var updateResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
             if (!updateResult.Succeeded)
                 return AppResponse.Failure<bool>(updateResult.Errors.First().Description);
 
+            var rolesAdded = Array.Empty<string>();
             if (command.Roles.Any())
             {
                 var existingRoles = await userManager.GetRolesAsync(user).ConfigureAwait(false);
@@ -99,23 +111,27 @@ internal sealed class GrantEmployeeSystemAccess(
                     var roleResult = await userManager.AddToRolesAsync(user, rolesToAdd).ConfigureAwait(false);
                     if (!roleResult.Succeeded)
                         return AppResponse.Failure<bool>(roleResult.Errors.First().Description);
+
+                    rolesAdded = rolesToAdd;
                 }
             }
 
             var emailResponse = await SendActivationEmailAsync(user, provisioningOptions.Value, createdNewUser, ct)
                 .ConfigureAwait(false);
+            if (!emailResponse.Successful)
+            {
+                await RollBackActivationAsync(user, rolesAdded, command.GrantedBy).ConfigureAwait(false);
+                return AppResponse.Failure<bool>("System access was not granted because the activation email could not be sent. Please verify email settings and try again.");
+            }
+
             if (logger.IsEnabled(LogLevel.Information))
             {
                 ServiceLogDefinitions.LogEmployeeSystemAccessGranted(logger, employeeId, command.GrantedBy);
             }
 
-            var message = emailResponse.Successful
-                ? createdNewUser
-                    ? "IAM account created, linked to the employee, activated, roles assigned, and activation email sent."
-                    : "Existing IAM account reactivated, roles assigned, and activation email sent."
-                : createdNewUser
-                    ? $"IAM account created, linked to the employee, activated, and roles assigned; however, the activation email could not be sent: {emailResponse.Message}"
-                    : $"Existing IAM account reactivated and roles assigned; however, the activation email could not be sent: {emailResponse.Message}";
+            var message = createdNewUser
+                ? "IAM account created, linked to the employee, activated, roles assigned, and activation email sent."
+                : "Existing IAM account reactivated, roles assigned, and activation email sent.";
 
             return AppResponse.Success(message, true);
         }
@@ -124,6 +140,30 @@ internal sealed class GrantEmployeeSystemAccess(
             ServiceLogDefinitions.LogGrantEmployeeSystemAccessError(logger, employeeId, ex);
             throw;
         }
+    }
+
+    private async Task<IdentityResult> ResetTemporaryPasswordForReactivationAsync(
+        AppUser user,
+        string temporaryPassword)
+    {
+        var resetToken = await userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
+        var resetResult = await userManager.ResetPasswordAsync(user, resetToken, temporaryPassword).ConfigureAwait(false);
+        if (!resetResult.Succeeded)
+        {
+            return resetResult;
+        }
+
+        user.RequirePasswordChange = true;
+        user.PasswordLastChanged = null;
+        user.ResetFailedLoginAttempts();
+
+        var failedCountResult = await userManager.ResetAccessFailedCountAsync(user).ConfigureAwait(false);
+        if (!failedCountResult.Succeeded)
+        {
+            return failedCountResult;
+        }
+
+        return await userManager.SetLockoutEndDateAsync(user, null).ConfigureAwait(false);
     }
 
     private Task<AppResponse<SendEmailResponse>> SendActivationEmailAsync(
@@ -157,5 +197,33 @@ internal sealed class GrantEmployeeSystemAccess(
             Subject = subject,
             Body = body
         }, ct);
+    }
+
+    private async Task RollBackActivationAsync(AppUser user, string[] rolesAdded, string changedBy)
+    {
+        if (rolesAdded.Length > 0)
+        {
+            var roleRemovalResult = await userManager.RemoveFromRolesAsync(user, rolesAdded).ConfigureAwait(false);
+            if (!roleRemovalResult.Succeeded)
+            {
+                ServiceLogDefinitions.LogGrantEmployeeSystemAccessError(
+                    logger,
+                    user.EmployeeId?.ToString() ?? user.Id,
+                    new InvalidOperationException(string.Join("; ", roleRemovalResult.Errors.Select(error => error.Description))));
+            }
+        }
+
+        if (user.IsActive)
+        {
+            user.RevokeAccess(changedBy, "Activation email could not be sent.");
+            var revokeResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
+            if (!revokeResult.Succeeded)
+            {
+                ServiceLogDefinitions.LogGrantEmployeeSystemAccessError(
+                    logger,
+                    user.EmployeeId?.ToString() ?? user.Id,
+                    new InvalidOperationException(string.Join("; ", revokeResult.Errors.Select(error => error.Description))));
+            }
+        }
     }
 }

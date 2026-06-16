@@ -3,6 +3,7 @@
 @layout AuthLayout
 @rendermode InteractiveServer
 @using BT.SharedKernel.Features.IAM.Users.Dtos
+@using BT.UI.Blazor.Features.Shared.Messaging
 @inject IAuthSession AuthSession
 @inject NavigationManager Navigation
 @inject ILogger<SignIn> Logger
@@ -58,7 +59,7 @@
 
         <div class="dev-hint">
             <span>Local development admin</span>
-            <code>admin@basetemplate.local</code>
+            <code>aamodhiambo@gmail.com</code>
         </div>
     </div>
 </section>
@@ -141,6 +142,6 @@
             return fallback;
         }
 
-        return message;
+        return UserMessageSanitizer.Normalize(message, fallback);
     }
 }

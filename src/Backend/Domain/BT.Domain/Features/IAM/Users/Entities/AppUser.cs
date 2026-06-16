@@ -266,12 +266,14 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         ResetFailedLoginAttempts();
     }
 
-    public void CompletePasswordReset()
+    public void CompletePasswordReset(string updatedBy)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(updatedBy);
+
         ResetFailedLoginAttempts();
         PasswordLastChanged = DateTimeOffset.UtcNow;
         RequirePasswordChange = false;
-        UpdatedAt = DateTimeOffset.UtcNow;
+        MarkUpdated(updatedBy);
     }
 
     public void MarkUpdated(string? updatedBy = null)
@@ -338,12 +340,21 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
 
     public void GrantAccess(string grantedBy, IEnumerable<string> defaultRoles)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(grantedBy);
+
         if (IsActive)
             throw new DomainException("User account is already active.");
 
+        var now = DateTimeOffset.UtcNow;
+
         IsActive = true;
-        ActivatedAt = DateTimeOffset.UtcNow;
+        ActivatedAt = now;
         ActivatedBy = grantedBy;
+        UpdatedAt = now;
+        UpdatedBy = grantedBy;
+        DeactivatedAt = null;
+        DeactivatedBy = null;
+        DeactivationReason = null;
         RequirePasswordChange = true; // Force password set on first login
 
         RaiseDomainEvent(new AppUserAccessGrantedEvent(Id, EmployeeId, CustomerId, grantedBy));
@@ -351,13 +362,20 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
 
     public void RevokeAccess(string revokedBy, string reason)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(revokedBy);
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+
         if (!IsActive)
             throw new DomainException("User account is already inactive.");
 
+        var now = DateTimeOffset.UtcNow;
+
         IsActive = false;
-        DeactivatedAt = DateTimeOffset.UtcNow;
+        DeactivatedAt = now;
         DeactivatedBy = revokedBy;
         DeactivationReason = reason;
+        UpdatedAt = now;
+        UpdatedBy = revokedBy;
 
         RaiseDomainEvent(new AppUserAccessRevokedEvent(Id, EmployeeId, CustomerId, revokedBy, reason));
     }

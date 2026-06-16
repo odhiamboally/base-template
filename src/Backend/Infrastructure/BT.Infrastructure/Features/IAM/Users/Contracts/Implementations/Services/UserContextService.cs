@@ -16,10 +16,4 @@ internal sealed class UserContextService(IHttpContextAccessor httpContextAccesso
             ? throw new UnauthorizedAccessException("User is not authenticated.")
             : UserIdentityContext.FromClaims(user);
     }
-
-    public Task SwitchContextAsync(string context, CancellationToken ct = default)
-    {
-        // re-issue token with updated active_context claim
-        throw new NotImplementedException();
-    }
 }

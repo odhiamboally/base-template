@@ -138,7 +138,7 @@ internal sealed class CreateCustomerCommandHandler(
         catch (ArgumentException ex)
         {
             LogDefinitions.LogCustomerCreateValidationFailed(_logger, ex);
-            return AppResponse.Failure<CustomerResponse>(ex.Message);
+            return AppResponse.Failure<CustomerResponse>("Customer details are invalid. Please review the form and try again.");
         }
         catch (Exception ex)
         {

@@ -28,7 +28,6 @@ using BT.Application.Features.Banking.Customers.IntegrationEvents;
 using BT.Application.Features.HR.Employees.IntegrationEvents;
 using BT.Application.Features.IAM.Users.IntegrationEvents;
 using FluentValidation;
-using FluentEmail.MailKitSmtp;
 using MailKit.Net.Smtp;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -80,8 +79,8 @@ public static class DependencyInjection
                 .Bind(configuration.GetSection(ProfileImageStorageSettings.SectionName))
                 .ValidateDataAnnotations()
                 .Validate(
-                    settings => string.Equals(settings.Provider, "Local", StringComparison.OrdinalIgnoreCase),
-                    "Only ProfileImageStorage:Provider=Local is currently registered. AzureBlob provider is planned behind the same abstraction.")
+                    IsValidProfileImageStorageProvider,
+                    "ProfileImageStorage:Provider must be Local or AzureBlob, and AzureBlob requires ContainerUri or ConnectionString plus ContainerName.")
                 .ValidateOnStart();
             services.AddOptions<TenantSettings>()
                 .Bind(configuration.GetSection(TenantSettings.SectionName))
@@ -130,7 +129,15 @@ public static class DependencyInjection
         services.AddHttpClient<IApiService, ApiService>();
         services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
         services.AddScoped<ICurrentActorProvider, CurrentActorProvider>();
-        services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
+        services.AddScoped<LocalProfilePictureStorage>();
+        services.AddScoped<AzureBlobProfilePictureStorage>();
+        services.AddScoped<IProfilePictureStorage>(sp =>
+        {
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ProfileImageStorageSettings>>().Value;
+            return string.Equals(settings.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase)
+                ? sp.GetRequiredService<AzureBlobProfilePictureStorage>()
+                : sp.GetRequiredService<LocalProfilePictureStorage>();
+        });
 
         if (!authProviderSettings.Enabled)
         {
@@ -363,6 +370,23 @@ public static class DependencyInjection
             !connectionString.Contains("set_via", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsValidProfileImageStorageProvider(ProfileImageStorageSettings settings)
+    {
+        if (string.Equals(settings.Provider, "Local", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!string.Equals(settings.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return !string.IsNullOrWhiteSpace(settings.AzureBlob.ContainerUri) ||
+            (!string.IsNullOrWhiteSpace(settings.AzureBlob.ConnectionString) &&
+             !string.IsNullOrWhiteSpace(settings.AzureBlob.ContainerName));
+    }
+
     private static void ConfigureSerilogEnrichers(IServiceCollection services)
     {
         services.AddSingleton<ILogEventEnricher, CorrelationIdEnricher>();
@@ -403,6 +427,7 @@ public static class DependencyInjection
         IWebHostEnvironment environment, 
         ObservabilitySettings observabilitySettings)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(observabilitySettings, nameof(observabilitySettings));
         if (!observabilitySettings.Enabled)
         {
@@ -410,13 +435,19 @@ public static class DependencyInjection
         }
 
         var connectionString = observabilitySettings.AzureMonitor.ConnectionString;
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            connectionString =
+                configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] ??
+                configuration["ApplicationInsights:ConnectionString"];
+        }
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             Console.WriteLine(
                 "[WARN] Observability:AzureMonitor:ConnectionString not configured. " +
                 "OpenTelemetry export to Azure Monitor is disabled. " +
-                "Ensure Key Vault secret 'Observability--AzureMonitor--ConnectionString' is set.");
+                "Set 'Observability--AzureMonitor--ConnectionString', 'ApplicationInsights--ConnectionString', or App Service 'APPLICATIONINSIGHTS_CONNECTION_STRING'.");
 
             return services;
         }
@@ -487,26 +518,11 @@ public static class DependencyInjection
 
     private static void ConfigureMailKitWithSmtp(IServiceCollection services, IConfiguration configuration)
     {
-        var emailSettings = configuration.GetSection(EmailSettings.SectionName).Get<EmailSettings>()
-            ?? throw new InvalidOperationException("EmailSettings section not found in configuration");
-
         services
             .AddOptions<EmailSettings>()
             .Bind(configuration.GetSection(EmailSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
-
-        services
-            .AddFluentEmail(emailSettings.FromAddress, emailSettings.DisplayName)
-            .AddMailKitSender(new SmtpClientOptions
-            {
-                Server = emailSettings.Host,
-                Port = emailSettings.Port,
-                User = emailSettings.Username,
-                Password = emailSettings.Password,
-                UseSsl = emailSettings.EnableSsl,
-                RequiresAuthentication = !string.IsNullOrWhiteSpace(emailSettings.Username)
-            });
 
         services.AddTransient<ISmtpClient, SmtpClient>();
     }

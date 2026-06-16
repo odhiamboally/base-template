@@ -3,6 +3,9 @@ using BT.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using System.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 using DataAnnotationsValidationException = System.ComponentModel.DataAnnotations.ValidationException;
@@ -22,8 +25,37 @@ internal sealed class ApiExceptionHandler : IExceptionHandler
             Instance = httpContext.Request.Path,
         };
 
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
+        {
+            return true;
+        }
+
         switch (exception)
         {
+            case AuthenticationException:
+                status = (int)HttpStatusCode.Unauthorized;
+                title = "Authentication Failed";
+                detail = "We could not sign you in. Please check your account status or contact support.";
+                break;
+
+            case UnauthorizedAccessException:
+                status = (int)HttpStatusCode.Forbidden;
+                title = "Forbidden";
+                detail = "You are not authorized to perform this action.";
+                break;
+
+            case SecurityException:
+                status = (int)HttpStatusCode.Forbidden;
+                title = "Security Check Failed";
+                detail = "A security check prevented this action. Please contact support if this seems wrong.";
+                break;
+
+            case CryptographicException:
+                status = (int)HttpStatusCode.ServiceUnavailable;
+                title = "Security Service Unavailable";
+                detail = "A security service is temporarily unavailable. Please try again.";
+                break;
+
             case ServiceUnavailableException:
                 status = (int)HttpStatusCode.ServiceUnavailable;
                 title = "Service Unavailable";
@@ -92,10 +124,17 @@ internal sealed class ApiExceptionHandler : IExceptionHandler
                 }
                 break;
 
+            case TimeoutException:
+            case OperationCanceledException:
+                status = (int)HttpStatusCode.GatewayTimeout;
+                title = "Gateway Timeout";
+                detail = "The request timed out while waiting for a downstream service. Please try again.";
+                break;
+
             case HttpRequestException:
                 status = (int)HttpStatusCode.ServiceUnavailable;
                 title = "Service Unavailable";
-                detail = exception.Message;
+                detail = "A downstream service is temporarily unavailable. Please try again.";
                 break;
 
             default:

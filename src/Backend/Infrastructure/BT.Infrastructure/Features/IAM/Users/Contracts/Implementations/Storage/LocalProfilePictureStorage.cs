@@ -1,6 +1,7 @@
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 
@@ -44,6 +45,57 @@ internal sealed class LocalProfilePictureStorage(
 
         var publicPath = $"{_settings.PublicBasePath.TrimEnd('/')}/{storedFileName}";
         return new Uri(publicPath, UriKind.Relative);
+    }
+
+    public Task<ProfilePictureFile?> OpenReadAsync(
+        Uri profilePictureUri,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(profilePictureUri);
+
+        if (profilePictureUri.IsAbsoluteUri)
+        {
+            return Task.FromResult<ProfilePictureFile?>(null);
+        }
+
+        var publicBasePath = _settings.PublicBasePath.TrimEnd('/');
+        var relativeUri = profilePictureUri.ToString();
+        if (!relativeUri.StartsWith(publicBasePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult<ProfilePictureFile?>(null);
+        }
+
+        var fileName = Path.GetFileName(relativeUri);
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return Task.FromResult<ProfilePictureFile?>(null);
+        }
+
+        var relativeRoot = _settings.LocalRootPath
+            .Trim()
+            .TrimStart('/', '\\')
+            .Replace('/', Path.DirectorySeparatorChar)
+            .Replace('\\', Path.DirectorySeparatorChar);
+        var webRootPath = string.IsNullOrWhiteSpace(environment.WebRootPath)
+            ? Path.Combine(environment.ContentRootPath, "wwwroot")
+            : environment.WebRootPath;
+        var targetDirectory = Path.GetFullPath(Path.Combine(webRootPath, relativeRoot));
+        var targetPath = Path.GetFullPath(Path.Combine(targetDirectory, fileName));
+
+        if (!targetPath.StartsWith(targetDirectory, StringComparison.OrdinalIgnoreCase) ||
+            !File.Exists(targetPath))
+        {
+            return Task.FromResult<ProfilePictureFile?>(null);
+        }
+
+        var contentTypeProvider = new FileExtensionContentTypeProvider();
+        if (!contentTypeProvider.TryGetContentType(targetPath, out var contentType))
+        {
+            contentType = "application/octet-stream";
+        }
+
+        var stream = File.OpenRead(targetPath);
+        return Task.FromResult<ProfilePictureFile?>(new ProfilePictureFile(stream, contentType, fileName));
     }
 
     private static string GetSafeExtension(string fileName, string contentType)

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using BT.SharedKernel.Dtos.Common;
 using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Interfaces;
+using BT.UI.Blazor.Features.Shared.Messaging;
 using BT.UI.Blazor.Logging;
 using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 
@@ -119,12 +120,21 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
         {
             return appResponse with
             {
+                Message = response.IsSuccessStatusCode
+                    ? UserMessageSanitizer.NormalizeNullable(appResponse.Message, "Operation completed.")
+                    : UserMessageSanitizer.Normalize(
+                        appResponse.Message,
+                        "The request could not be completed. Please try again or contact support if the problem persists."),
                 ErrorCode = appResponse.ErrorCode ?? (response.IsSuccessStatusCode ? null : response.StatusCode.ToString())
             };
         }
 
         return AppResponse.Failure<T>(
-            response.IsSuccessStatusCode ? "The backend service returned an empty response." : await ReadErrorMessageAsync(response).ConfigureAwait(false))
+            response.IsSuccessStatusCode
+                ? "The backend service returned an empty response."
+                : UserMessageSanitizer.Normalize(
+                    await ReadErrorMessageAsync(response).ConfigureAwait(false),
+                    "The request could not be completed. Please try again or contact support if the problem persists."))
             with
             {
                 ErrorCode = response.StatusCode.ToString()
@@ -168,8 +178,8 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
         {
             using var document = JsonDocument.Parse(content);
             return TryGetString(document.RootElement, "message")
-                ?? TryGetString(document.RootElement, "title")
                 ?? TryGetString(document.RootElement, "detail")
+                ?? TryGetString(document.RootElement, "title")
                 ?? TryGetString(document.RootElement, "error")
                 ?? TryGetSessionInvalidMessage(document.RootElement)
                 ?? TryGetValidationErrors(document.RootElement)
@@ -177,7 +187,9 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
         }
         catch (JsonException)
         {
-            return content.Length <= 200 ? content : "The backend service rejected the request.";
+            return content.Length <= 200
+                ? UserMessageSanitizer.Normalize(content, "The backend service rejected the request.")
+                : "The backend service rejected the request.";
         }
     }
 

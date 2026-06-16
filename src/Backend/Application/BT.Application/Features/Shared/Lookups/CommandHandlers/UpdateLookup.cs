@@ -40,7 +40,8 @@ internal sealed class UpdateLookupCommandHandler(ISharedUnitOfWork unitOfWork, I
         }
         catch (KeyNotFoundException ex)
         {
-            return AppResponse.Failure<LookupResponse>(ex.Message);
+            LogDefinitions.LogPipelineException(logger, nameof(UpdateLookupCommandHandler), ex);
+            return AppResponse.Failure<LookupResponse>("The lookup record could not be found.");
         }
         catch (Exception ex)
         {

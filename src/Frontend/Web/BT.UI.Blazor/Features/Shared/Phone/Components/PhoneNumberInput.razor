@@ -80,9 +80,9 @@
                 var phone = PhoneNumberFormatter.Normalize(CountryCode, NationalNumber, E164);
                 return $"{_selectedCountry.Flag} {phone.E164}";
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                return ex.Message;
+                return "Enter a valid phone number for the selected country.";
             }
         }
     }

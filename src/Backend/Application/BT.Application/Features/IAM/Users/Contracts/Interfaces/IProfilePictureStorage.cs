@@ -8,4 +8,13 @@ public interface IProfilePictureStorage
         string fileName,
         string contentType,
         CancellationToken cancellationToken = default);
+
+    Task<ProfilePictureFile?> OpenReadAsync(
+        Uri profilePictureUri,
+        CancellationToken cancellationToken = default);
 }
+
+public sealed record ProfilePictureFile(
+    Stream Content,
+    string ContentType,
+    string FileName);

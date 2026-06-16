@@ -335,12 +335,9 @@ internal sealed class SessionService(
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
 
-            if (freshSession != null && freshSession.IsActive && freshSession.ExpiresAt > DateTimeOffset.UtcNow)
-            {
-                return AppResponse.Success("Session is valid (concurrency resolved)", true);
-            }
-
-            return AppResponse.Failure<bool>("Session has expired or is invalid");
+            return freshSession != null && freshSession.IsActive && freshSession.ExpiresAt > DateTimeOffset.UtcNow
+                ? AppResponse.Success("Session is valid (concurrency resolved)", true)
+                : AppResponse.Failure<bool>("Session has expired or is invalid");
         }
         catch (Exception ex)
         {
