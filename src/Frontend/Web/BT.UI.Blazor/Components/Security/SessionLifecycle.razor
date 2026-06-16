@@ -106,7 +106,21 @@
             return;
         }
 
-        await AuthSession.InitializeAsync();
+        try
+        {
+            await AuthSession.InitializeAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // JS interop or circuit unavailable; skip session check.
+            return;
+        }
+        catch (JSDisconnectedException ex)
+        {
+            SessionLifecycleLogDefinitions.LogSessionCheckFailed(Logger, ex);
+            return;
+        }
+
         if (!AuthSession.IsAuthenticated)
         {
             return;
@@ -165,7 +179,21 @@
     private async Task KeepSessionAliveAsync()
     {
         _lastKeepAliveUtc = DateTimeOffset.UtcNow;
-        await AuthSession.RefreshAsync();
+        try
+        {
+            await AuthSession.RefreshAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // JS interop / protected storage call was canceled. Skip keep-alive.
+            return;
+        }
+        catch (JSDisconnectedException ex)
+        {
+            // JS runtime disconnected; log and skip further refresh attempts in this tick.
+            SessionLifecycleLogDefinitions.LogSessionCheckFailed(Logger, ex);
+            return;
+        }
 
         if (!AuthSession.IsAuthenticated)
         {

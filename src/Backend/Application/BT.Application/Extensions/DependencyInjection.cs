@@ -1,4 +1,5 @@
 using BT.Application.Behaviours;
+using BT.Application.Configuration;
 using BT.Application.Contracts.Implementations.Common;
 using BT.Application.Features.Banking.Customers.Contracts.Implementations;
 using BT.Application.Features.Banking.Customers.Contracts.Interfaces;
@@ -19,16 +20,28 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
-        RegisterApplicationServices(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+        RegisterApplicationServices(services, configuration);
         return services;
     }
 
-    private static void RegisterApplicationServices(IServiceCollection services)
+    private static void RegisterApplicationServices(IServiceCollection services, IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+        services.Configure<MediatRSettings>(configuration.GetSection(MediatRSettings.SectionName));
+
+        var mediatrSettings = configuration.GetSection(MediatRSettings.SectionName).Get<MediatRSettings>() ?? new MediatRSettings();
+        var licenseKey = mediatrSettings.LicenseKey;
+        if (string.IsNullOrWhiteSpace(licenseKey))
+        {
+            licenseKey = "your-community-license-key-here";
+        }
+
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-
+            cfg.LicenseKey = licenseKey;
             cfg.AddOpenBehavior(typeof(ExceptionHandlingBehavior<,>));
             cfg.AddOpenBehavior(typeof(LoggingBehaviour<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
@@ -44,8 +57,4 @@ public static class DependencyInjection
         services.AddScoped<IServiceManager, ServiceManager>();
 
     }
-
-
-
-
 }

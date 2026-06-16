@@ -59,6 +59,8 @@ using System.Text;
 using System.Text.Json;
 using Twilio;
 using BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
+using Microsoft.Azure.StackExchangeRedis;
+using StackExchange.Redis;
 
 namespace BT.Infrastructure.Extensions;
 
@@ -340,7 +342,51 @@ public static class DependencyInjection
 
     private static void ConfigureDistributedCache(IServiceCollection services, IConfiguration configuration, CacheSettings cacheSettings)
     {
-        if (IsConfiguredConnectionString(cacheSettings.Azure?.ConnectionString))
+        if (cacheSettings.Azure != null && cacheSettings.Azure.UseEntraId)
+        {
+            var connectionString = cacheSettings.Azure.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException("CacheSettings:Azure:ConnectionString is required when UseEntraId is enabled.");
+            }
+
+            services.AddStackExchangeRedisCache(options =>
+            {
+                var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(connectionString);
+                configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
+                configOptions.Password = null; // Clear password to ensure Entra ID token auth is preferred
+
+                var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
+                if (!string.IsNullOrWhiteSpace(cacheSettings.Azure.PrincipalId))
+                {
+                    credentialOptions.ManagedIdentityClientId = cacheSettings.Azure.PrincipalId;
+                }
+
+                configOptions.ConfigureForAzureWithTokenCredentialAsync(
+                    new Azure.Identity.DefaultAzureCredential(credentialOptions)).GetAwaiter().GetResult();
+
+                options.ConfigurationOptions = configOptions;
+            });
+
+            services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
+            {
+                var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(connectionString);
+                configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
+                configOptions.Password = null; // Clear password to ensure Entra ID token auth is preferred
+
+                var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
+                if (!string.IsNullOrWhiteSpace(cacheSettings.Azure.PrincipalId))
+                {
+                    credentialOptions.ManagedIdentityClientId = cacheSettings.Azure.PrincipalId;
+                }
+
+                configOptions.ConfigureForAzureWithTokenCredentialAsync(
+                    new Azure.Identity.DefaultAzureCredential(credentialOptions)).GetAwaiter().GetResult();
+
+                return StackExchange.Redis.ConnectionMultiplexer.Connect(configOptions);
+            });
+        }
+        else if (IsConfiguredConnectionString(cacheSettings.Azure?.ConnectionString))
         {
             services.AddStackExchangeRedisCache(options =>
             {

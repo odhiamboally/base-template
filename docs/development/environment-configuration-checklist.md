@@ -37,11 +37,12 @@ Never commit real passwords, account keys, connection strings, API keys, or temp
 | Data Protection key ring | Azure Blob Storage | `DataProtection:BlobKeyUri` | Implemented |
 | Data Protection key encryption | Azure Key Vault key | `DataProtection:KeyEncryptionMode`, `DataProtection:KeyVaultKeyIdentifier` | Implemented |
 | Profile images | Azure Blob Storage | `ProfileImageStorage:Provider`, `ProfileImageStorage:AzureBlob:ContainerUri` | Implemented |
+| UI-to-API calls | Blazor `HttpClient` | `BackendApi:BaseUrl`, `BackendApi:TransientRetryCount`, `BackendApi:TransientRetryDelayMilliseconds` | Implemented |
 | Secret loading | Azure Key Vault | `KeyVault:Uri` | Implemented |
 | App hosting | Azure App Service | App settings and managed identity | Ready for deployment work |
 | Observability | Application Insights / Azure Monitor | `Observability:AzureMonitor:ConnectionString`, `ApplicationInsights:ConnectionString`, or `APPLICATIONINSIGHTS_CONNECTION_STRING` | Implemented with fallbacks |
 | Messaging | Azure Service Bus | `Messaging:Transport`, `Messaging:AzureServiceBus:ConnectionString` | Implemented, needs production smoke test |
-| Caching | Azure Cache for Redis | `CacheSettings:Azure:ConnectionString` | Config shape exists, needs full production smoke test |
+| Caching | Azure Cache for Redis | Blazor: `CacheSettings:ConnectionString`, `CacheSettings:UseEntraId` <br> API: `CacheSettings:Azure:ConnectionString`, `CacheSettings:Azure:UseEntraId` | Config shape exists, supporting standard Connection Strings or passwordless Entra ID auth. |
 
 ## Recommended Local Setup
 
@@ -61,6 +62,9 @@ For local-only development, leave these values empty so the app uses filesystem/
 dotnet user-secrets remove "DataProtection:BlobKeyUri" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets remove "DataProtection:KeyVaultKeyIdentifier" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "ProfileImageStorage:Provider" "Local" --project src\Backend\Api\BT.Api\BT.Api.csproj
+# For Local Redis (Docker)
+dotnet user-secrets set "CacheSettings:Azure:ConnectionString" "localhost:6379" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "CacheSettings:Azure:UseEntraId" "false" --project src\Backend\Api\BT.Api\BT.Api.csproj
 ```
 
 ## Recommended Azure-Backed Local Setup
@@ -90,6 +94,20 @@ DataProtection__KeyVaultKeyIdentifier=https://<vault>.vault.azure.net/keys/<key>
 ProfileImageStorage__Provider=AzureBlob
 ProfileImageStorage__AzureBlob__ContainerUri=https://<storage-account>.blob.core.windows.net/profile-images
 ProfileImageStorage__AzureBlob__BlobPrefix=profile-images
+
+# Redis Cache - Option 1: Access Keys (Standard)
+CacheSettings__ConnectionString=your-redis-name.redis.cache.windows.net:6380,password=PRIMARY_ACCESS_KEY,ssl=True,abortConnect=False
+CacheSettings__UseEntraId=false
+CacheSettings__Azure__ConnectionString=your-redis-name.redis.cache.windows.net:6380,password=PRIMARY_ACCESS_KEY,ssl=True,abortConnect=False
+CacheSettings__Azure__UseEntraId=false
+
+# Redis Cache - Option 2: Microsoft Entra ID (Passwordless / Managed Identity)
+CacheSettings__ConnectionString=your-redis-name.redis.cache.windows.net:6380,ssl=True,abortConnect=False
+CacheSettings__UseEntraId=true
+CacheSettings__PrincipalId=<User-Assigned-Identity-Client-ID-Or-Leave-Blank-For-System-Assigned>
+CacheSettings__Azure__ConnectionString=your-redis-name.redis.cache.windows.net:6380,ssl=True,abortConnect=False
+CacheSettings__Azure__UseEntraId=true
+CacheSettings__Azure__PrincipalId=<User-Assigned-Identity-Client-ID-Or-Leave-Blank-For-System-Assigned>
 ```
 
 Optional observability keys:
@@ -112,6 +130,7 @@ Grant these roles before testing Azure-backed local development or App Service d
 - Developer user or App Service managed identity: `Key Vault Crypto User` on the Data Protection key.
 - Developer user who creates keys: `Key Vault Crypto Officer` or `Key Vault Administrator`.
 - App Service: system-assigned managed identity enabled.
+- Developer user or App Service managed identity (when UseEntraId=true): `Redis Data Contributor` (or `Redis Data Owner`) role on the Azure Cache for Redis instance.
 
 ## Current Configuration Review Rules
 
@@ -123,14 +142,15 @@ When checking screenshots or app settings, verify:
 - `DataProtection__KeyVaultKeyIdentifier` points to a Key Vault key version, not a secret or certificate.
 - `DataProtection__CertificateThumbprint` is empty unless deliberately using certificate mode.
 - `ProfileImageStorage__Provider` is `AzureBlob` when testing Azure profile image uploads.
-- `ProfileImageStorage__AzureBlob__ContainerUri` points to the private `profile-images` container.
 - `ConnectionStrings--DefaultConnection` exists in Key Vault or `ConnectionStrings__DefaultConnection` exists in App Service.
+- Cache settings: If `UseEntraId` / `Azure__UseEntraId` is `true`, ensure the connection string does not contain a password and has RESP3 enabled. If using a User-Assigned Managed Identity, `PrincipalId` / `Azure__PrincipalId` must specify its Client ID.
 - `JwtSettings--Secret` or `JwtSettings--SecretKey` exists in Key Vault.
 - Email credentials exist and `EmailSettings:FromAddress` is allowed by the SMTP provider.
 
 ## Troubleshooting
 
 - If sign-in shows “The identity service is unavailable,” first confirm the API is running and the UI `BackendApi:BaseUrl` points at the API URL.
+- If the first sign-in click fails after starting from Visual Studio but the second succeeds, check whether the API was still warming up. The UI retries transport-level API failures using `BackendApi:TransientRetryCount` and `BackendApi:TransientRetryDelayMilliseconds`; backend logs should still be reviewed if retries are frequent.
 - If sign-in fails with a Data Protection `403`, the identity used by the app lacks `Storage Blob Data Contributor` for the key-ring blob/container.
 - If Data Protection fails with Key Vault authorization errors, the identity lacks `Key Vault Crypto User` for the key.
 - If profile upload succeeds visually but no blob appears, confirm the backend response succeeded, `ProfileImageStorage:Provider=AzureBlob`, and the current user has completed required MFA enrollment.

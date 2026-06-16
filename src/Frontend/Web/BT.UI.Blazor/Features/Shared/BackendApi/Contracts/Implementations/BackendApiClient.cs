@@ -6,12 +6,19 @@ using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Interfaces;
 using BT.UI.Blazor.Features.Shared.Messaging;
 using BT.UI.Blazor.Logging;
 using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
+using BT.UI.Blazor.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Implementations;
 
-internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage storage, ILogger<BackendApiClient> logger) : IBackendApiClient
+internal sealed class BackendApiClient(
+    HttpClient httpClient,
+    ITokenStorage storage,
+    IOptions<BackendApiSettings> apiSettings,
+    ILogger<BackendApiClient> logger) : IBackendApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly BackendApiSettings _apiSettings = apiSettings.Value;
 
     public async Task<AppResponse<T>> SendAsync<T>(
         HttpMethod method,
@@ -25,38 +32,56 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
         ArgumentNullException.ThrowIfNull(method);
         ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
 
-        using var message = CreateRequest(method, endpoint, request);
-
+        string? accessToken = null;
+        string? sessionId = null;
         if (requiresAuthentication)
         {
-            var (accessToken, _, sessionId) = await storage.GetAsync().ConfigureAwait(false);
+            (accessToken, _, sessionId) = await storage.GetAsync().ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(accessToken))
             {
                 return AppResponse.Failure<T>("Please sign in to continue.");
             }
+        }
 
-            message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            if (!string.IsNullOrWhiteSpace(sessionId))
+        var maxAttempts = Math.Max(1, _apiSettings.TransientRetryCount + 1);
+        var delay = TimeSpan.FromMilliseconds(_apiSettings.TransientRetryDelayMilliseconds);
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            using var message = CreateRequest(method, endpoint, request);
+
+            if (requiresAuthentication)
             {
-                message.Headers.TryAddWithoutValidation("X-Session-Id", sessionId);
+                message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                if (!string.IsNullOrWhiteSpace(sessionId))
+                {
+                    message.Headers.TryAddWithoutValidation("X-Session-Id", sessionId);
+                }
+            }
+
+            try
+            {
+                using var response = await httpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
+                return await ReadAppResponseAsync<T>(response, endpoint).ConfigureAwait(false);
+            }
+            catch (HttpRequestException ex) when (ShouldRetryTransportFailure(attempt, maxAttempts, cancellationToken))
+            {
+                BackendApiLogDefinitions.LogRequestRetrying(logger, method.Method, endpoint, attempt, maxAttempts, (int)delay.TotalMilliseconds, ex);
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            }
+            catch (HttpRequestException ex)
+            {
+                BackendApiLogDefinitions.LogRequestFailed(logger, method.Method, endpoint, ex);
+                return AppResponse.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
+            }
+            catch (TaskCanceledException ex)
+            {
+                BackendApiLogDefinitions.LogRequestTimedOut(logger, method.Method, endpoint, ex);
+                return AppResponse.Failure<T>(timeoutMessage ?? "The backend service timed out. Please try again.");
             }
         }
 
-        try
-        {
-            using var response = await httpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            return await ReadAppResponseAsync<T>(response, endpoint).ConfigureAwait(false);
-        }
-        catch (HttpRequestException ex)
-        {
-            BackendApiLogDefinitions.LogRequestFailed(logger, method.Method, endpoint, ex);
-            return AppResponse.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
-        }
-        catch (TaskCanceledException ex)
-        {
-            BackendApiLogDefinitions.LogRequestTimedOut(logger, method.Method, endpoint, ex);
-            return AppResponse.Failure<T>(timeoutMessage ?? "The backend service timed out. Please try again.");
-        }
+        return AppResponse.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
     }
 
     public async Task<AppResponse<T>> SendMultipartAsync<T>(
@@ -112,6 +137,9 @@ internal sealed class BackendApiClient(HttpClient httpClient, ITokenStorage stor
         {
             Content = request is null ? null : JsonContent.Create(request, options: JsonOptions)
         };
+
+    private static bool ShouldRetryTransportFailure(int attempt, int maxAttempts, CancellationToken cancellationToken)
+        => attempt < maxAttempts && !cancellationToken.IsCancellationRequested;
 
     private async Task<AppResponse<T>> ReadAppResponseAsync<T>(HttpResponseMessage response, string endpoint)
     {
