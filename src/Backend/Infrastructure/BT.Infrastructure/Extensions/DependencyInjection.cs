@@ -61,6 +61,7 @@ using Twilio;
 using BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 using Microsoft.Azure.StackExchangeRedis;
 using StackExchange.Redis;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 
 namespace BT.Infrastructure.Extensions;
 
@@ -350,24 +351,6 @@ public static class DependencyInjection
                 throw new InvalidOperationException("CacheSettings:Azure:ConnectionString is required when UseEntraId is enabled.");
             }
 
-            services.AddStackExchangeRedisCache(options =>
-            {
-                var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(connectionString);
-                configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
-                configOptions.Password = null; // Clear password to ensure Entra ID token auth is preferred
-
-                var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
-                if (!string.IsNullOrWhiteSpace(cacheSettings.Azure.PrincipalId))
-                {
-                    credentialOptions.ManagedIdentityClientId = cacheSettings.Azure.PrincipalId;
-                }
-
-                configOptions.ConfigureForAzureWithTokenCredentialAsync(
-                    new Azure.Identity.DefaultAzureCredential(credentialOptions)).GetAwaiter().GetResult();
-
-                options.ConfigurationOptions = configOptions;
-            });
-
             services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
             {
                 var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(connectionString);
@@ -385,16 +368,27 @@ public static class DependencyInjection
 
                 return StackExchange.Redis.ConnectionMultiplexer.Connect(configOptions);
             });
+
+            services.AddStackExchangeRedisCache(options => { });
+
+            services.AddOptions<RedisCacheOptions>()
+                .Configure<StackExchange.Redis.IConnectionMultiplexer>((options, multiplexer) =>
+                {
+                    options.ConnectionMultiplexerFactory = () => Task.FromResult(multiplexer);
+                });
         }
         else if (IsConfiguredConnectionString(cacheSettings.Azure?.ConnectionString))
         {
-            services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = cacheSettings.Azure!.ConnectionString;
-            });
-
             services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
                 StackExchange.Redis.ConnectionMultiplexer.Connect(cacheSettings.Azure!.ConnectionString!));
+
+            services.AddStackExchangeRedisCache(options => { });
+
+            services.AddOptions<RedisCacheOptions>()
+                .Configure<StackExchange.Redis.IConnectionMultiplexer>((options, multiplexer) =>
+                {
+                    options.ConnectionMultiplexerFactory = () => Task.FromResult(multiplexer);
+                });
         }
 
         services.AddHybridCache(options =>

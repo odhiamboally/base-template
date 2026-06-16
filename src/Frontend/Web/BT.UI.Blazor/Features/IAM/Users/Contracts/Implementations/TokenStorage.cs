@@ -45,9 +45,9 @@ internal sealed class TokenStorage(ProtectedLocalStorage storage, IServerTokenSt
 
             return result;
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is OperationCanceledException or Microsoft.JSInterop.JSDisconnectedException or InvalidOperationException)
         {
-            // JS interop / ProtectedLocalStorage call was canceled (renderer/circuit unavailable).
+            // JS interop / ProtectedLocalStorage call was canceled or unavailable.
             // Fall back to server-side token store if available.
             if (serverStore is not null)
             {
@@ -67,7 +67,7 @@ internal sealed class TokenStorage(ProtectedLocalStorage storage, IServerTokenSt
             await storage.SetAsync(RefreshKey, refreshToken ?? "").ConfigureAwait(false);
             await storage.SetAsync(SessionKey, sessionId ?? "").ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is OperationCanceledException or Microsoft.JSInterop.JSDisconnectedException or InvalidOperationException)
         {
             // Ignore; will save to server store below if available.
         }

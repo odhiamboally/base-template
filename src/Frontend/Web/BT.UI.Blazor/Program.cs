@@ -73,21 +73,24 @@ if (useDistributedTokenStore)
     {
         builder.Services.AddStackExchangeRedisCache(options =>
         {
-            var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnection);
-            configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
-            configOptions.Password = null; // Clear password to ensure Entra ID token auth is preferred
-
-            var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
-            if (!string.IsNullOrWhiteSpace(cacheSettings.PrincipalId))
-            {
-                credentialOptions.ManagedIdentityClientId = cacheSettings.PrincipalId;
-            }
-
-            configOptions.ConfigureForAzureWithTokenCredentialAsync(
-                new Azure.Identity.DefaultAzureCredential(credentialOptions)).GetAwaiter().GetResult();
-
-            options.ConfigurationOptions = configOptions;
             options.InstanceName = "bt-ui:";
+            options.ConnectionMultiplexerFactory = async () =>
+            {
+                var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnection);
+                configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
+                configOptions.Password = null; // Clear password to ensure Entra ID token auth is preferred
+
+                var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
+                if (!string.IsNullOrWhiteSpace(cacheSettings.PrincipalId))
+                {
+                    credentialOptions.ManagedIdentityClientId = cacheSettings.PrincipalId;
+                }
+
+                await configOptions.ConfigureForAzureWithTokenCredentialAsync(
+                    new Azure.Identity.DefaultAzureCredential(credentialOptions)).ConfigureAwait(false);
+
+                return await StackExchange.Redis.ConnectionMultiplexer.ConnectAsync(configOptions).ConfigureAwait(false);
+            };
         });
     }
     else

@@ -58,7 +58,7 @@ internal sealed class DistributedTokenStore : IServerTokenStore
         var json = JsonSerializer.Serialize(dto, JsonOptions);
         var options = new DistributedCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = DefaultExpiration
+            SlidingExpiration = DefaultExpiration
         };
 
         await _cache.SetStringAsync(_instanceKey, json, options).ConfigureAwait(false);
