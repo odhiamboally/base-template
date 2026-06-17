@@ -121,43 +121,86 @@ internal static partial class DependencyInjection
 
     private static void ConfigureDataProtectionKeyEncryption(IDataProtectionBuilder dataProtectionBuilder, DataProtectionSettings? settings)
     {
-        var mode = string.IsNullOrWhiteSpace(settings?.KeyEncryptionMode) ? "Auto" : settings.KeyEncryptionMode.Trim();
+        var mode = GetKeyEncryptionMode(settings);
 
-        if (mode.Equals("None", StringComparison.OrdinalIgnoreCase))
+        switch (mode)
         {
+            case KeyEncryptionMode.None:
+                return;
+
+            case KeyEncryptionMode.KeyVault:
+                ConfigureKeyVaultEncryption(dataProtectionBuilder, settings);
+                return;
+
+            case KeyEncryptionMode.Certificate:
+                ConfigureCertificateEncryption(dataProtectionBuilder, settings);
+                return;
+
+            case KeyEncryptionMode.Auto:
+                ConfigureAutoEncryption(dataProtectionBuilder, settings);
+                return;
+
+            case KeyEncryptionMode.Invalid:
+            default:
+                throw new InvalidOperationException(
+                    $"DataProtection:KeyEncryptionMode '{settings?.KeyEncryptionMode}' is not supported. " +
+                    "Supported values: Auto, KeyVault, Certificate, None.");
+        }
+    }
+
+    private static KeyEncryptionMode GetKeyEncryptionMode(DataProtectionSettings? settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings?.KeyEncryptionMode))
+        {
+            return KeyEncryptionMode.Auto;
+        }
+
+        return settings.KeyEncryptionMode.Trim() switch
+        {
+            var mode when mode.Equals("Auto", StringComparison.OrdinalIgnoreCase) => KeyEncryptionMode.Auto,
+            var mode when mode.Equals("None", StringComparison.OrdinalIgnoreCase) => KeyEncryptionMode.None,
+            var mode when mode.Equals("KeyVault", StringComparison.OrdinalIgnoreCase) => KeyEncryptionMode.KeyVault,
+            var mode when mode.Equals("Certificate", StringComparison.OrdinalIgnoreCase) => KeyEncryptionMode.Certificate,
+            _ => KeyEncryptionMode.Invalid
+        };
+    }
+
+    private static void ConfigureAutoEncryption(IDataProtectionBuilder dataProtectionBuilder, DataProtectionSettings? settings)
+    {
+        if (!string.IsNullOrWhiteSpace(settings?.KeyVaultKeyIdentifier))
+        {
+            ConfigureKeyVaultEncryption(dataProtectionBuilder, settings);
             return;
         }
 
-        if (mode.Equals("KeyVault", StringComparison.OrdinalIgnoreCase) ||
-            (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase) &&
-                !string.IsNullOrWhiteSpace(settings?.KeyVaultKeyIdentifier)))
+        if (!string.IsNullOrWhiteSpace(settings?.CertificateThumbprint))
         {
-            if (string.IsNullOrWhiteSpace(settings?.KeyVaultKeyIdentifier))
-            {
-                throw new InvalidOperationException("DataProtection:KeyVaultKeyIdentifier is required when DataProtection:KeyEncryptionMode is KeyVault.");
-            }
+            ConfigureCertificateEncryption(dataProtectionBuilder, settings);
+        }
+    }
 
-            dataProtectionBuilder.ProtectKeysWithAzureKeyVault(new Uri(settings.KeyVaultKeyIdentifier), new DefaultAzureCredential());
-            return;
+    private static void ConfigureKeyVaultEncryption(IDataProtectionBuilder dataProtectionBuilder, DataProtectionSettings? settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings?.KeyVaultKeyIdentifier))
+        {
+            throw new InvalidOperationException(
+                "DataProtection:KeyVaultKeyIdentifier is required when DataProtection:KeyEncryptionMode is KeyVault.");
         }
 
-        if (mode.Equals("Certificate", StringComparison.OrdinalIgnoreCase) ||
-            (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase) &&
-                !string.IsNullOrWhiteSpace(settings?.CertificateThumbprint)))
-        {
-            if (string.IsNullOrWhiteSpace(settings?.CertificateThumbprint))
-            {
-                throw new InvalidOperationException("DataProtection:CertificateThumbprint is required when DataProtection:KeyEncryptionMode is Certificate.");
-            }
+        dataProtectionBuilder.ProtectKeysWithAzureKeyVault(
+            new Uri(settings.KeyVaultKeyIdentifier),
+            new DefaultAzureCredential());
+    }
 
-            ProtectDataProtectionKeysWithCertificate(dataProtectionBuilder, settings.CertificateThumbprint);
-            return;
+    private static void ConfigureCertificateEncryption(IDataProtectionBuilder dataProtectionBuilder, DataProtectionSettings? settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings?.CertificateThumbprint))
+        {
+            throw new InvalidOperationException(
+                "DataProtection:CertificateThumbprint is required when DataProtection:KeyEncryptionMode is Certificate.");
         }
 
-        if (!mode.Equals("Auto", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("DataProtection:KeyEncryptionMode must be Auto, KeyVault, Certificate, or None.");
-        }
+        ProtectDataProtectionKeysWithCertificate(dataProtectionBuilder, settings.CertificateThumbprint);
     }
 
     private static void ProtectDataProtectionKeysWithCertificate(
@@ -307,85 +350,109 @@ internal static partial class DependencyInjection
             x.AddConsumers(assembly);
 
             // Global retry configuration
-            if (string.Equals(messagingSettings.Transport, "AzureServiceBus", StringComparison.OrdinalIgnoreCase))
+            var messagingTransport = GetMessagingTransport(messagingSettings);
+            switch (messagingTransport)
             {
-                x.UsingAzureServiceBus((context, cfg) =>
-                {
-                    var connectionString = messagingSettings.AzureServiceBus.ConnectionString;
-                    if (string.IsNullOrWhiteSpace(connectionString))
-                        throw new InvalidOperationException("Messaging:AzureServiceBus:ConnectionString is required when Messaging:Transport is AzureServiceBus");
-
-                    cfg.Host(connectionString);
-
-                    cfg.UseMessageRetry(r =>
+                case MessagingTransport.AzureServiceBus:
+                    x.UsingAzureServiceBus((context, cfg) =>
                     {
-                        r.Exponential
-                        (
-                            retryLimit: 5,
-                            minInterval: TimeSpan.FromSeconds(2),
-                            maxInterval: TimeSpan.FromMinutes(2),
-                            intervalDelta: TimeSpan.FromSeconds(10)
-                        );
+                        var connectionString = messagingSettings.AzureServiceBus.ConnectionString;
+                        if (string.IsNullOrWhiteSpace(connectionString))
+                            throw new InvalidOperationException("Messaging:AzureServiceBus:ConnectionString is required when Messaging:Transport is AzureServiceBus");
 
-                        r.Handle<EmailServiceException>();
-                        r.Handle<TimeoutException>();
-                        r.Handle<HttpRequestException>();
-                        r.Handle<SqlException>();
+                        cfg.Host(connectionString);
 
-                        r.Ignore<ArgumentException>();
-                        r.Ignore<InvalidEmailAddressException>();
-                        r.Ignore<DomainException>();
-                    });
-
-                    cfg.ConfigureEndpoints(context);
-                    cfg.UseMessageScope(context);
-                    cfg.UseConsumeFilter(typeof(LoggingConsumeFilter<>), context);
-                    cfg.ConnectConsumerConfigurationObserver(new ConsumerLoggingObserver());
-                });
-            }
-            else
-            {
-                x.UsingRabbitMq((context, cfg) =>
-                {
-                    cfg.Host(
-                        messagingSettings.RabbitMq.Host,
-                        messagingSettings.RabbitMq.VirtualHost,
-                        h =>
+                        cfg.UseMessageRetry(r =>
                         {
-                            h.Username(messagingSettings.RabbitMq.Username);
-                            h.Password(messagingSettings.RabbitMq.Password);
+                            r.Exponential
+                            (
+                                retryLimit: 5,
+                                minInterval: TimeSpan.FromSeconds(2),
+                                maxInterval: TimeSpan.FromMinutes(2),
+                                intervalDelta: TimeSpan.FromSeconds(10)
+                            );
+
+                            r.Handle<EmailServiceException>();
+                            r.Handle<TimeoutException>();
+                            r.Handle<HttpRequestException>();
+                            r.Handle<SqlException>();
+
+                            r.Ignore<ArgumentException>();
+                            r.Ignore<InvalidEmailAddressException>();
+                            r.Ignore<DomainException>();
                         });
 
-                    cfg.UseMessageRetry(r =>
-                    {
-                        r.Exponential
-                        (
-                            retryLimit: 5,
-                            minInterval: TimeSpan.FromSeconds(2),
-                            maxInterval: TimeSpan.FromMinutes(2),
-                            intervalDelta: TimeSpan.FromSeconds(10)
-                        );
-
-                        r.Handle<EmailServiceException>();
-                        r.Handle<TimeoutException>();
-                        r.Handle<HttpRequestException>();
-                        r.Handle<SqlException>();
-                        r.Handle<RabbitMqConnectionException>();
-
-                        r.Ignore<ArgumentException>();
-                        r.Ignore<InvalidEmailAddressException>();
-                        r.Ignore<DomainException>();
+                        cfg.ConfigureEndpoints(context);
+                        cfg.UseMessageScope(context);
+                        cfg.UseConsumeFilter(typeof(LoggingConsumeFilter<>), context);
+                        cfg.ConnectConsumerConfigurationObserver(new ConsumerLoggingObserver());
                     });
+                    break;
 
-                    cfg.ConfigureEndpoints(context);
-                    cfg.UseMessageScope(context);
-                    cfg.UseConsumeFilter(typeof(LoggingConsumeFilter<>), context);
-                    cfg.ConnectConsumerConfigurationObserver(new ConsumerLoggingObserver());
-                });
+                case MessagingTransport.RabbitMq:
+                    x.UsingRabbitMq((context, cfg) =>
+                    {
+                        cfg.Host(
+                            messagingSettings.RabbitMq.Host,
+                            messagingSettings.RabbitMq.VirtualHost,
+                            h =>
+                            {
+                                h.Username(messagingSettings.RabbitMq.Username);
+                                h.Password(messagingSettings.RabbitMq.Password);
+                            });
+
+                        cfg.UseMessageRetry(r =>
+                        {
+                            r.Exponential
+                            (
+                                retryLimit: 5,
+                                minInterval: TimeSpan.FromSeconds(2),
+                                maxInterval: TimeSpan.FromMinutes(2),
+                                intervalDelta: TimeSpan.FromSeconds(10)
+                            );
+
+                            r.Handle<EmailServiceException>();
+                            r.Handle<TimeoutException>();
+                            r.Handle<HttpRequestException>();
+                            r.Handle<SqlException>();
+                            r.Handle<RabbitMqConnectionException>();
+
+                            r.Ignore<ArgumentException>();
+                            r.Ignore<InvalidEmailAddressException>();
+                            r.Ignore<DomainException>();
+                        });
+
+                        cfg.ConfigureEndpoints(context);
+                        cfg.UseMessageScope(context);
+                        cfg.UseConsumeFilter(typeof(LoggingConsumeFilter<>), context);
+                        cfg.ConnectConsumerConfigurationObserver(new ConsumerLoggingObserver());
+                    });
+                    break;
+
+                case MessagingTransport.Invalid:
+                default:
+                    throw new InvalidOperationException(
+                        $"Messaging:Transport '{messagingSettings.Transport}' is not supported. " +
+                        "Supported values: RabbitMq, AzureServiceBus.");
             }
         });
 
         return services;
+    }
+
+    private static MessagingTransport GetMessagingTransport(MessagingSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Transport))
+        {
+            return MessagingTransport.RabbitMq;
+        }
+
+        return settings.Transport.Trim() switch
+        {
+            var transport when transport.Equals("RabbitMq", StringComparison.OrdinalIgnoreCase) => MessagingTransport.RabbitMq,
+            var transport when transport.Equals("AzureServiceBus", StringComparison.OrdinalIgnoreCase) => MessagingTransport.AzureServiceBus,
+            _ => MessagingTransport.Invalid
+        };
     }
 
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
@@ -416,4 +483,19 @@ internal static partial class DependencyInjection
         });
     }
 
+    private enum KeyEncryptionMode
+    {
+        Auto,
+        None,
+        KeyVault,
+        Certificate,
+        Invalid
+    }
+
+    private enum MessagingTransport
+    {
+        RabbitMq,
+        AzureServiceBus,
+        Invalid
+    }
 }

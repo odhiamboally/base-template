@@ -9,3 +9,8 @@ Describe the user-facing or architecture-facing outcome in one or two sentences.
 ## Notes
 - Call out dependencies, follow-up work, migrations, feature flags, secrets, rollout concerns, or known limitations.
 - If there are no special notes, write `None`.
+
+## Agent/Convention Checklist
+- [ ] I read `AGENTS.md` before making code changes.
+- [ ] I updated `AGENTS.md` and related docs if this PR changes a convention.
+- [ ] No secrets, local scratch files, or direct blob URLs are included.

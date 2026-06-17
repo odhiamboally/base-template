@@ -13,6 +13,12 @@ internal sealed class BackendApiSettings
     [Required]
     public string Version { get; init; } = "1";
 
+    [Range(0, 5)]
+    public int TransientRetryCount { get; init; } = 2;
+
+    [Range(50, 5_000)]
+    public int TransientRetryDelayMilliseconds { get; init; } = 250;
+
     [Required]
     public BackendApiEndpoints Endpoints { get; init; } = new();
 }

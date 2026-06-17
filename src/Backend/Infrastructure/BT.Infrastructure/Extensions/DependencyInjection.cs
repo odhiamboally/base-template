@@ -59,6 +59,9 @@ using System.Text;
 using System.Text.Json;
 using Twilio;
 using BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
+using Microsoft.Azure.StackExchangeRedis;
+using StackExchange.Redis;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 
 namespace BT.Infrastructure.Extensions;
 
@@ -134,9 +137,14 @@ public static class DependencyInjection
         services.AddScoped<IProfilePictureStorage>(sp =>
         {
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ProfileImageStorageSettings>>().Value;
-            return string.Equals(settings.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase)
-                ? sp.GetRequiredService<AzureBlobProfilePictureStorage>()
-                : sp.GetRequiredService<LocalProfilePictureStorage>();
+            return GetProfileImageStorageProvider(settings) switch
+            {
+                ProfileImageStorageProvider.Local => sp.GetRequiredService<LocalProfilePictureStorage>(),
+                ProfileImageStorageProvider.AzureBlob => sp.GetRequiredService<AzureBlobProfilePictureStorage>(),
+                _ => throw new InvalidOperationException(
+                    $"ProfileImageStorage:Provider '{settings.Provider}' is not supported. " +
+                    "Supported values: Local, AzureBlob.")
+            };
         });
 
         if (!authProviderSettings.Enabled)
@@ -144,9 +152,11 @@ public static class DependencyInjection
             return services;
         }
 
-        if (!string.Equals(authProviderSettings.Provider, "AspNetCoreIdentity", StringComparison.OrdinalIgnoreCase))
+        if (GetAuthProvider(authProviderSettings) is not AuthProvider.AspNetCoreIdentity)
         {
-            throw new InvalidOperationException($"Unsupported AuthProvider: {authProviderSettings.Provider}");
+            throw new InvalidOperationException(
+                $"AuthProvider:Provider '{authProviderSettings.Provider}' is not supported. " +
+                "Supported values: AspNetCoreIdentity.");
         }
 
         services.AddScoped<IEmailService, FluentMailService>();
@@ -333,15 +343,52 @@ public static class DependencyInjection
 
     private static void ConfigureDistributedCache(IServiceCollection services, IConfiguration configuration, CacheSettings cacheSettings)
     {
-        if (IsConfiguredConnectionString(cacheSettings.Azure?.ConnectionString))
+        if (cacheSettings.Azure != null && cacheSettings.Azure.UseEntraId)
         {
-            services.AddStackExchangeRedisCache(options =>
+            var connectionString = cacheSettings.Azure.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                options.Configuration = cacheSettings.Azure!.ConnectionString;
-            });
+                throw new InvalidOperationException("CacheSettings:Azure:ConnectionString is required when UseEntraId is enabled.");
+            }
 
             services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
+            {
+                var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(connectionString);
+                configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
+                configOptions.Password = null; // Clear password to ensure Entra ID token auth is preferred
+
+                var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
+                if (!string.IsNullOrWhiteSpace(cacheSettings.Azure.PrincipalId))
+                {
+                    credentialOptions.ManagedIdentityClientId = cacheSettings.Azure.PrincipalId;
+                }
+
+                configOptions.ConfigureForAzureWithTokenCredentialAsync(
+                    new Azure.Identity.DefaultAzureCredential(credentialOptions)).GetAwaiter().GetResult();
+
+                return StackExchange.Redis.ConnectionMultiplexer.Connect(configOptions);
+            });
+
+            services.AddStackExchangeRedisCache(options => { });
+
+            services.AddOptions<RedisCacheOptions>()
+                .Configure<StackExchange.Redis.IConnectionMultiplexer>((options, multiplexer) =>
+                {
+                    options.ConnectionMultiplexerFactory = () => Task.FromResult(multiplexer);
+                });
+        }
+        else if (IsConfiguredConnectionString(cacheSettings.Azure?.ConnectionString))
+        {
+            services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
                 StackExchange.Redis.ConnectionMultiplexer.Connect(cacheSettings.Azure!.ConnectionString!));
+
+            services.AddStackExchangeRedisCache(options => { });
+
+            services.AddOptions<RedisCacheOptions>()
+                .Configure<StackExchange.Redis.IConnectionMultiplexer>((options, multiplexer) =>
+                {
+                    options.ConnectionMultiplexerFactory = () => Task.FromResult(multiplexer);
+                });
         }
 
         services.AddHybridCache(options =>
@@ -372,19 +419,48 @@ public static class DependencyInjection
 
     private static bool IsValidProfileImageStorageProvider(ProfileImageStorageSettings settings)
     {
-        if (string.Equals(settings.Provider, "Local", StringComparison.OrdinalIgnoreCase))
+        return GetProfileImageStorageProvider(settings) switch
         {
-            return true;
-        }
+            ProfileImageStorageProvider.Local => true,
+            ProfileImageStorageProvider.AzureBlob => IsAzureBlobProfileImageStorageConfigured(settings),
+            _ => false
+        };
+    }
 
-        if (!string.Equals(settings.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
+    private static bool IsAzureBlobProfileImageStorageConfigured(ProfileImageStorageSettings settings)
+    {
         return !string.IsNullOrWhiteSpace(settings.AzureBlob.ContainerUri) ||
             (!string.IsNullOrWhiteSpace(settings.AzureBlob.ConnectionString) &&
              !string.IsNullOrWhiteSpace(settings.AzureBlob.ContainerName));
+    }
+
+    private static ProfileImageStorageProvider GetProfileImageStorageProvider(ProfileImageStorageSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Provider))
+        {
+            return ProfileImageStorageProvider.Local;
+        }
+
+        return settings.Provider.Trim() switch
+        {
+            var provider when provider.Equals("Local", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.Local,
+            var provider when provider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.AzureBlob,
+            _ => ProfileImageStorageProvider.Invalid
+        };
+    }
+
+    private static AuthProvider GetAuthProvider(AuthProviderSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Provider))
+        {
+            return AuthProvider.AspNetCoreIdentity;
+        }
+
+        return settings.Provider.Trim() switch
+        {
+            var provider when provider.Equals("AspNetCoreIdentity", StringComparison.OrdinalIgnoreCase) => AuthProvider.AspNetCoreIdentity,
+            _ => AuthProvider.Invalid
+        };
     }
 
     private static void ConfigureSerilogEnrichers(IServiceCollection services)
@@ -596,7 +672,18 @@ public static class DependencyInjection
         return app;
     }
 
+    private enum AuthProvider
+    {
+        AspNetCoreIdentity,
+        Invalid
+    }
 
+    private enum ProfileImageStorageProvider
+    {
+        Local,
+        AzureBlob,
+        Invalid
+    }
 }
 
 
