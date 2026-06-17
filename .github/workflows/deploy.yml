@@ -73,8 +73,8 @@ jobs:
           ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=BT;User Id=sa;Password=Password123!;TrustServerCertificate=True;"
           CacheSettings__ConnectionString: "localhost:6379"
 
-      - name: Install dotnet-ef tool
-        run: dotnet tool install --global dotnet-ef --version 10.0.*
+      - name: Restore dotnet tools
+        run: dotnet tool restore
 
       - name: Publish API
         run: dotnet publish src/Backend/Api/BT.Api/BT.Api.csproj --configuration Release --no-restore --no-build --output ./publish-api
