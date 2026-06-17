@@ -1,0 +1,96 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore BaseTemplate.sln
+
+      - name: Build Solution
+        run: dotnet build BaseTemplate.sln --configuration Release --no-restore
+
+      - name: Run Architecture Tests
+        run: dotnet test tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj --configuration Release --no-restore --no-build
+
+      - name: Run Unit Tests
+        run: dotnet test tests/BT.Tests.Unit/BT.Tests.Unit.csproj --configuration Release --no-restore --no-build
+
+      - name: Run Integration Tests
+        run: dotnet test tests/BT.Tests.Integration/BT.Tests.Integration.csproj --configuration Release --no-restore --no-build
+
+      - name: Publish API
+        run: dotnet publish src/Backend/Api/BT.Api/BT.Api.csproj --configuration Release --no-restore --no-build --output ./publish-api
+
+      - name: Publish Blazor UI
+        run: dotnet publish src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj --configuration Release --no-restore --no-build --output ./publish-ui
+
+      - name: Upload API Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-app
+          path: ./publish-api
+
+      - name: Upload UI Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-app
+          path: ./publish-ui
+
+  deploy-api:
+    name: Deploy API to Azure
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download API Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: api-app
+          path: ./api-app
+
+      - name: Deploy to Azure Web App (API)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'basetemplate-api'
+          publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
+          package: ./api-app
+
+  deploy-ui:
+    name: Deploy UI to Azure
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download UI Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-app
+          path: ./ui-app
+
+      - name: Deploy to Azure Web App (UI)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'basetemplate-ui'
+          publish-profile: ${{ secrets.AZURE_UI_PUBLISH_PROFILE }}
+          package: ./ui-app

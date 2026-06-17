@@ -147,6 +147,20 @@ When checking screenshots or app settings, verify:
 - `JwtSettings--Secret` or `JwtSettings--SecretKey` exists in Key Vault.
 - Email credentials exist and `EmailSettings:FromAddress` is allowed by the SMTP provider.
 
+## CI/CD Pipeline and Deployments
+
+BaseTemplate includes an automated CI/CD pipeline in `.github/workflows/deploy.yml` that handles compiling, testing, and deploying both the backend API and the frontend Blazor UI to Azure App Services on pushes or merges to the `main` branch.
+
+### Deployment Prerequisites
+
+1. **Configure Repository Secrets in GitHub**:
+   - `AZURE_API_PUBLISH_PROFILE`: The Publish Profile XML content for your backend API App Service.
+   - `AZURE_UI_PUBLISH_PROFILE`: The Publish Profile XML content for your frontend Blazor UI App Service.
+   *(Retrieve these profiles by navigating to the App Service page in the Azure portal, clicking **Overview**, and selecting **Get publish profile**.)*
+
+2. **Align App Service Names**:
+   - In `.github/workflows/deploy.yml`, verify that `app-name` in the `deploy-api` and `deploy-ui` jobs match the actual App Service resource names configured in your Azure subscription (e.g. `basetemplate-api` and `basetemplate-ui`).
+
 ## Troubleshooting
 
 - If sign-in shows “The identity service is unavailable,” first confirm the API is running and the UI `BackendApi:BaseUrl` points at the API URL.
