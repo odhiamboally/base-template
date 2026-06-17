@@ -76,7 +76,7 @@ if (useDistributedTokenStore)
             options.InstanceName = "bt-ui:";
             options.ConnectionMultiplexerFactory = async () =>
             {
-                var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnection);
+                var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnection!);
                 configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
                 configOptions.Password = null; // Clear password to ensure Entra ID token auth is preferred
 

@@ -74,7 +74,9 @@ jobs:
           CacheSettings__ConnectionString: "localhost:6379"
 
       - name: Install dotnet-ef tool
-        run: dotnet tool install --global dotnet-ef --version 10.0.*
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.*
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Publish API
         run: dotnet publish src/Backend/Api/BT.Api/BT.Api.csproj --configuration Release --no-restore --no-build --output ./publish-api
