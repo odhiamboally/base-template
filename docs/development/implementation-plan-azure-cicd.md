@@ -19,10 +19,13 @@ We will introduce a new deployment workflow in `.github/workflows/` and ensure o
 
 ### [CI/CD Workflow]
 
-#### [NEW] [deploy.yml](file:///e:/Repos/BaseTemplate/.github/workflows/deploy.yml)
+#### [NEW] [deploy.yml](../../.github/workflows/deploy.yml)
 Create a new GitHub Actions workflow that:
 - Triggers on `push` (or merge) to the `main` branch, or manually via `workflow_dispatch`.
+- Runs on a high-efficiency Linux agent (`ubuntu-latest`).
+- Establishes Redis and Microsoft SQL Server service containers for integration tests.
 - Restores, builds, and runs unit, integration, and architecture tests in `Release` configuration.
+- Installs the `dotnet-ef` tool and compiles self-contained migration bundles (`efbundle`) for `linux-x64` for all four database contexts (`IamDBContext`, `HrDBContext`, `SharedDBContext`, and `BankingDBContext`), placing them in the published API artifacts directory.
 - Publishes the compiled artifacts for the API and UI.
 - Deploys both applications to Azure App Services using `azure/webapps-deploy@v3`.
 
@@ -43,9 +46,28 @@ permissions:
 jobs:
   build-and-test:
     name: Build & Test
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: 'Password123!'
+        ports:
+          - 1433:1433
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,9 +91,22 @@ jobs:
 
       - name: Run Integration Tests
         run: dotnet test tests/BT.Tests.Integration/BT.Tests.Integration.csproj --configuration Release --no-restore --no-build
+        env:
+          ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=BT;User Id=sa;Password=Password123!;TrustServerCertificate=True;"
+          CacheSettings__ConnectionString: "localhost:6379"
+
+      - name: Install dotnet-ef tool
+        run: dotnet tool install --global dotnet-ef --version 10.0.*
 
       - name: Publish API
         run: dotnet publish src/Backend/Api/BT.Api/BT.Api.csproj --configuration Release --no-restore --no-build --output ./publish-api
+
+      - name: Build EF Core Migration Bundles
+        run: |
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context IamDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-iam --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context HrDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-hr --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context SharedDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-shared --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context BankingDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-banking --configuration Release
 
       - name: Publish Blazor UI
         run: dotnet publish src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj --configuration Release --no-restore --no-build --output ./publish-ui
@@ -87,49 +122,13 @@ jobs:
         with:
           name: ui-app
           path: ./publish-ui
-
-  deploy-api:
-    name: Deploy API to Azure
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download API Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: api-app
-          path: ./api-app
-
-      - name: Deploy to Azure Web App (API)
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'basetemplate-api' # Placeholder: User's API App Service name
-          publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
-          package: ./api-app
-
-  deploy-ui:
-    name: Deploy UI to Azure
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download UI Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ui-app
-          path: ./ui-app
-
-      - name: Deploy to Azure Web App (UI)
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'basetemplate-ui' # Placeholder: User's UI App Service name
-          publish-profile: ${{ secrets.AZURE_UI_PUBLISH_PROFILE }}
-          package: ./ui-app
 ```
 
 ---
 
 ### [Documentation Updates]
 
-#### [MODIFY] [environment-configuration-checklist.md](file:///e:/Repos/BaseTemplate/docs/development/environment-configuration-checklist.md)
+#### [MODIFY] [environment-configuration-checklist.md](environment-configuration-checklist.md)
 Update the configuration documentation to detail:
 - Production environment configurations.
 - Mapping connection strings and secrets to Azure App Service settings or Key Vault.
@@ -140,9 +139,7 @@ Update the configuration documentation to detail:
 
 ### Automated Verification
 - Run a syntax check on the YAML workflow syntax.
-- Verify that `dotnet publish` executes successfully for both projects locally under `Release` configuration:
-  - `dotnet publish src/Backend/Api/BT.Api/BT.Api.csproj --configuration Release`
-  - `dotnet publish src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj --configuration Release`
+- Verify that `dotnet publish` executes successfully for both projects locally under `Release` configuration.
 
 ### Manual Verification
 - After push/merge to `main`, check the GitHub Actions tab to confirm the workflow starts, restores, builds, runs tests, publishes artifacts, and initiates deployment to the designated App Services.
