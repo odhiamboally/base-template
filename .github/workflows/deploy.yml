@@ -45,11 +45,21 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore dependencies
-        run: dotnet restore BaseTemplate.sln
+      - name: Restore projects
+        run: |
+          dotnet restore src/Backend/Api/BT.Api/BT.Api.csproj
+          dotnet restore src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj
+          dotnet restore tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj
+          dotnet restore tests/BT.Tests.Unit/BT.Tests.Unit.csproj
+          dotnet restore tests/BT.Tests.Integration/BT.Tests.Integration.csproj
 
-      - name: Build Solution
-        run: dotnet build BaseTemplate.sln --configuration Release --no-restore
+      - name: Build projects
+        run: |
+          dotnet build src/Backend/Api/BT.Api/BT.Api.csproj --configuration Release --no-restore
+          dotnet build src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj --configuration Release --no-restore
+          dotnet build tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj --configuration Release --no-restore
+          dotnet build tests/BT.Tests.Unit/BT.Tests.Unit.csproj --configuration Release --no-restore
+          dotnet build tests/BT.Tests.Integration/BT.Tests.Integration.csproj --configuration Release --no-restore
 
       - name: Run Architecture Tests
         run: dotnet test tests/BT.Tests.Architecture/BT.Tests.Architecture.csproj --configuration Release --no-restore --no-build
