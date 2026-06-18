@@ -85,6 +85,8 @@ jobs:
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context HrDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-hr --configuration Release
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context SharedDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-shared --configuration Release
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context BankingDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-banking --configuration Release
+        env:
+          ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=BT;User Id=sa;Password=Password123!;TrustServerCertificate=True;"
 
       - name: Publish Blazor UI
         run: dotnet publish src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj --configuration Release --no-restore --no-build --output ./publish-ui
