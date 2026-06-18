@@ -12,7 +12,10 @@ public class SharedDBContextFactory : IDesignTimeDbContextFactory<SharedDBContex
         var optionsBuilder = new DbContextOptionsBuilder<SharedDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "SharedConnection");
 
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+        });
         return new SharedDBContext(optionsBuilder.Options);
     }
 }
