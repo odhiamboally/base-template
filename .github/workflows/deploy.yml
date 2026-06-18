@@ -121,10 +121,12 @@ jobs:
           chmod +x ./api-app/efbundle-shared
           chmod +x ./api-app/efbundle-banking
           
-          ./api-app/efbundle-iam --connection "${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
-          ./api-app/efbundle-hr --connection "${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
-          ./api-app/efbundle-shared --connection "${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
-          ./api-app/efbundle-banking --connection "${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
+          ./api-app/efbundle-iam --connection "$CONNECTION_STRING"
+          ./api-app/efbundle-hr --connection "$CONNECTION_STRING"
+          ./api-app/efbundle-shared --connection "$CONNECTION_STRING"
+          ./api-app/efbundle-banking --connection "$CONNECTION_STRING"
+        env:
+          CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
 
   deploy-api:
     name: Deploy API to Azure
