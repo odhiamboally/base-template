@@ -71,6 +71,7 @@ This file is the canonical source of truth and working contract for AI coding to
 - Administrative endpoints require permission-based authorization, not only `[Authorize]`.
 - Admin MFA enforcement is intentional; non-admin MFA can be policy-driven.
 - Session lifecycle must expire cleanly, warn before timeout, and avoid stale UI state.
+- Blazor tokens use protected browser storage with a circuit-scoped in-memory fallback; do not mirror bearer or refresh tokens into Redis.
 - Profile images are private assets. Use API-mediated access, not direct public blob URLs.
 - Local secrets belong in `dotnet user-secrets`; production secrets belong in Azure Key Vault/App Service configuration.
 - Never commit secrets, connection strings, app passwords, tokens, private keys, or local temp files.
@@ -89,6 +90,7 @@ This file is the canonical source of truth and working contract for AI coding to
 - Parse configurable modes, providers, transports, and strategies once into typed values, then use `switch` branches with fail-fast unsupported-value errors.
 - Keep technical configuration enums in the owning layer; reserve Domain enums for business language and invariants.
 - Prefer Azure managed identity in deployed Azure environments.
+- GitHub Actions authenticates to Azure through OIDC workload identity federation; do not add publish profiles or long-lived Azure client secrets to deployment workflows.
 - Use connection strings only for local development or controlled non-managed-identity scenarios.
 - Key Vault secret names use double hyphen mapping, for example `Section--Setting`.
 - Environment variables use double underscore mapping, for example `Section__Setting`.

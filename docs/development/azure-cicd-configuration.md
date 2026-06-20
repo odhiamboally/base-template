@@ -1,0 +1,141 @@
+# Azure CI/CD Configuration
+
+This guide configures the BaseTemplate GitHub Actions deployment pipeline to use Microsoft Entra workload identity federation (OIDC). GitHub receives short-lived Azure credentials for each workflow run; no client secret or App Service publish profile is stored in GitHub.
+
+## Identity Boundaries
+
+BaseTemplate deliberately uses two identities:
+
+- **GitHub deployment identity:** runs EF migration bundles, manages the temporary Azure SQL firewall rule, and deploys the API/UI packages.
+- **App Service managed identity:** is used by the deployed application at runtime for Key Vault, Blob Storage, Redis, SQL, and other Azure services.
+
+Do not assume the App Service managed identity is available on a GitHub-hosted runner. It is scoped to the App Service resource.
+
+## 1. Create The GitHub Deployment Identity
+
+In the Azure portal:
+
+1. Open **Microsoft Entra ID**.
+2. Open **App registrations** and select **New registration**.
+3. Name it, for example, `github-basetemplate-production`.
+4. Leave the redirect URI empty and complete the registration.
+5. Record the **Application (client) ID** and **Directory (tenant) ID**.
+6. Open **Certificates & secrets** -> **Federated credentials** -> **Add credential**.
+7. Choose **GitHub Actions deploying Azure resources**.
+8. Select the repository owner and repository.
+9. Set **Entity type** to `Environment`.
+10. Set the environment name to `production`.
+
+The environment name must match `environment: production` in `.github/workflows/deploy.yml`.
+
+## 2. Assign Azure RBAC Roles
+
+Assign the deployment identity only the roles needed by the workflow:
+
+- On each target App Service: `Website Contributor`.
+- On the Azure SQL logical server: `SQL Server Contributor` so the workflow can create and remove its temporary firewall rule.
+- If package deployment needs access to other deployment resources, grant the narrowest resource-scoped role that satisfies it.
+
+Avoid subscription-wide `Contributor` unless it is a temporary bootstrap measure.
+
+## 3. Create The Azure SQL Database User
+
+Configure a Microsoft Entra administrator for the Azure SQL logical server, then connect to the target database using that administrator and run:
+
+```sql
+CREATE USER [github-basetemplate-production] FROM EXTERNAL PROVIDER;
+ALTER ROLE db_ddladmin ADD MEMBER [github-basetemplate-production];
+ALTER ROLE db_datareader ADD MEMBER [github-basetemplate-production];
+ALTER ROLE db_datawriter ADD MEMBER [github-basetemplate-production];
+```
+
+The user name normally matches the app registration display name. If duplicate display names exist in the tenant, use the Azure SQL `WITH OBJECT_ID` form supported by your server version or rename the registration to a unique value.
+
+`db_ddladmin`, `db_datareader`, and `db_datawriter` are the baseline migration permissions. Review generated migrations before release and tighten permissions further if organizational policy requires a custom migration role.
+
+## 4. Configure The GitHub Environment
+
+In GitHub, open **Settings** -> **Environments** -> **production**.
+
+Add these environment variables:
+
+| Variable | Example | Purpose |
+| --- | --- | --- |
+| `AZURE_CLIENT_ID` | Application client ID | OIDC deployment identity |
+| `AZURE_TENANT_ID` | Entra tenant ID | OIDC tenant |
+| `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | Deployment subscription |
+| `AZURE_RESOURCE_GROUP` | `rg-llancore-prod` | Resource group containing Azure SQL |
+| `AZURE_SQL_SERVER_NAME` | `bt-prod-sqlserver` | SQL logical server name without `.database.windows.net` |
+| `AZURE_SQL_NETWORK_MODE` | `PublicRunner` | `PublicRunner` or `PrivateRunner` migration networking strategy |
+| `AZURE_API_APP_NAME` | `base-template-api-dev` | Exact API App Service resource name |
+| `AZURE_UI_APP_NAME` | `base-template-web-dev` | Exact UI App Service resource name |
+
+Add this environment secret:
+
+| Secret | Value |
+| --- | --- |
+| `AZURE_SQL_CONNECTION_STRING` | Passwordless Azure SQL connection string shown below |
+
+Recommended connection string:
+
+```text
+Server=tcp:<sql-server>.database.windows.net,1433;Initial Catalog=<database>;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Default;
+```
+
+The connection string contains no password. `azure/login@v2` establishes the GitHub identity, and `DefaultAzureCredential` resolves the Azure CLI credential created by that login.
+
+Add required reviewers to the `production` environment if deployment approval is required.
+
+## 5. Azure SQL Networking
+
+The workflow supports two explicit networking modes:
+
+- `PublicRunner`: GitHub-hosted runner using a temporary `/32` Azure SQL firewall rule.
+- `PrivateRunner`: self-hosted runner with private network access; no firewall rule is created.
+
+In `PublicRunner` mode the workflow:
+
+1. Discovering the GitHub runner's public IP.
+2. Creating a narrowly scoped temporary server firewall rule.
+3. Running all four migration bundles.
+4. Removing the firewall rule with `if: always()`.
+
+The deployment identity therefore needs `SQL Server Contributor` on the logical server.
+
+For a private-endpoint-only production architecture, replace the GitHub-hosted migration job with a self-hosted runner inside the Azure virtual network. Do not enable broad public access merely to make CI pass.
+
+## 6. Migration Bundle Behavior
+
+The workflow:
+
+- Builds self-contained Linux migration bundles for IAM, HR, Shared, and Banking.
+- Passes the Azure SQL connection string explicitly to each bundle.
+- Retries bundle execution while a serverless Azure SQL database resumes.
+- Uses a separate migrations history table for each context:
+  - `__EFMigrationsHistory_IAM`
+  - `__EFMigrationsHistory_HR`
+  - `__EFMigrationsHistory_Shared`
+  - `__EFMigrationsHistory_Banking`
+
+Migration retries are safe because EF migration bundles are idempotent with respect to their migrations history table. Generated migrations must still be reviewed for operations that are not transaction-safe.
+
+## 7. Deployment Behavior
+
+The API and UI deployment jobs authenticate independently with OIDC because each GitHub job runs on a fresh runner. `azure/webapps-deploy@v3` then deploys to the App Service names supplied by GitHub environment variables.
+
+The old publish-profile secrets are no longer required:
+
+- `AZURE_API_PUBLISH_PROFILE`
+- `AZURE_UI_PUBLISH_PROFILE`
+
+Remove them after the first successful OIDC deployment.
+
+## Troubleshooting
+
+- `DefaultAzureCredential failed`: confirm `azure/login@v2` succeeded and the federated credential subject targets the `production` GitHub environment.
+- `Login failed for user <token-identified principal>`: create the deployment identity as a contained user in the target Azure SQL database and grant migration roles.
+- SQL error `40613`: the database is unavailable or resuming. The workflow retries; inspect Azure SQL status if all retries fail.
+- Azure SQL Free Limit databases enforce auto-pause and do not allow `AutoPauseDelay=-1`. Keep migration retries for this tier. Move a real production workload to a paid always-on/serverless configuration when cold-start latency is unacceptable.
+- SQL firewall denial: confirm public network access is enabled for this workflow model and that the deployment identity has `SQL Server Contributor`.
+- `Resource ... not found` during deployment: verify `AZURE_API_APP_NAME`, `AZURE_UI_APP_NAME`, subscription, and tenant values.
+- OIDC subject mismatch: the federated credential must target environment `production`, not a branch subject, because the workflow jobs use a GitHub environment.

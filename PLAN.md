@@ -186,7 +186,7 @@ EventIds are structured by architectural layer to simplify searching in logs:
 
 ### Phase 4 - CI/CD Pipelines & Azure Deployment
 *Goal: Establish secure, repeatable deployment guardrails without manual steps.*
-- [ ] **efbundle Migration Pipeline:** Configure GitHub Actions to compile and run EF Core migration bundles against SQL Server during the release pipeline.
+- [~] **efbundle Migration Pipeline:** GitHub Actions compiles context-specific EF migration bundles and executes them through OIDC with Azure SQL wake-up retries and temporary runner firewall access. The remaining gate is the first successful Azure migration/deployment smoke.
 - [ ] **Docker Local Platform:** Finalize `docker-compose` to run SQL Server, Redis, RabbitMQ, and Seq in one command.
 - [ ] **Azure Deployment Workflows:** Wire Blue/Green deployment slot switches for API services in GitHub Actions.
 

@@ -42,7 +42,7 @@ Never commit real passwords, account keys, connection strings, API keys, or temp
 | App hosting | Azure App Service | App settings and managed identity | Ready for deployment work |
 | Observability | Application Insights / Azure Monitor | `Observability:AzureMonitor:ConnectionString`, `ApplicationInsights:ConnectionString`, or `APPLICATIONINSIGHTS_CONNECTION_STRING` | Implemented with fallbacks |
 | Messaging | Azure Service Bus | `Messaging:Transport`, `Messaging:AzureServiceBus:ConnectionString` | Implemented, needs production smoke test |
-| Caching | Azure Cache for Redis | Blazor: `CacheSettings:ConnectionString`, `CacheSettings:UseEntraId` <br> API: `CacheSettings:Azure:ConnectionString`, `CacheSettings:Azure:UseEntraId` | Config shape exists, supporting standard Connection Strings or passwordless Entra ID auth. |
+| Caching | Azure Cache for Redis | API: `CacheSettings:Azure:ConnectionString`, `CacheSettings:Azure:UseEntraId` | Config shape exists, supporting standard connection strings or passwordless Entra ID auth. |
 
 ## Recommended Local Setup
 
@@ -96,15 +96,10 @@ ProfileImageStorage__AzureBlob__ContainerUri=https://<storage-account>.blob.core
 ProfileImageStorage__AzureBlob__BlobPrefix=profile-images
 
 # Redis Cache - Option 1: Access Keys (Standard)
-CacheSettings__ConnectionString=your-redis-name.redis.cache.windows.net:6380,password=PRIMARY_ACCESS_KEY,ssl=True,abortConnect=False
-CacheSettings__UseEntraId=false
 CacheSettings__Azure__ConnectionString=your-redis-name.redis.cache.windows.net:6380,password=PRIMARY_ACCESS_KEY,ssl=True,abortConnect=False
 CacheSettings__Azure__UseEntraId=false
 
 # Redis Cache - Option 2: Microsoft Entra ID (Passwordless / Managed Identity)
-CacheSettings__ConnectionString=your-redis-name.redis.cache.windows.net:6380,ssl=True,abortConnect=False
-CacheSettings__UseEntraId=true
-CacheSettings__PrincipalId=<User-Assigned-Identity-Client-ID-Or-Leave-Blank-For-System-Assigned>
 CacheSettings__Azure__ConnectionString=your-redis-name.redis.cache.windows.net:6380,ssl=True,abortConnect=False
 CacheSettings__Azure__UseEntraId=true
 CacheSettings__Azure__PrincipalId=<User-Assigned-Identity-Client-ID-Or-Leave-Blank-For-System-Assigned>
@@ -143,23 +138,22 @@ When checking screenshots or app settings, verify:
 - `DataProtection__CertificateThumbprint` is empty unless deliberately using certificate mode.
 - `ProfileImageStorage__Provider` is `AzureBlob` when testing Azure profile image uploads.
 - `ConnectionStrings--DefaultConnection` exists in Key Vault or `ConnectionStrings__DefaultConnection` exists in App Service.
-- Cache settings: If `UseEntraId` / `Azure__UseEntraId` is `true`, ensure the connection string does not contain a password and has RESP3 enabled. If using a User-Assigned Managed Identity, `PrincipalId` / `Azure__PrincipalId` must specify its Client ID.
+- Cache settings: If `CacheSettings:Azure:UseEntraId` is `true`, ensure the API connection string does not contain a password and has RESP3 enabled. For a user-assigned managed identity, `CacheSettings:Azure:PrincipalId` must contain its client ID.
 - `JwtSettings--Secret` or `JwtSettings--SecretKey` exists in Key Vault.
 - Email credentials exist and `EmailSettings:FromAddress` is allowed by the SMTP provider.
 
 ## CI/CD Pipeline and Deployments
 
-BaseTemplate includes an automated CI/CD pipeline in `.github/workflows/deploy.yml` that handles compiling, testing, and deploying both the backend API and the frontend Blazor UI to Azure App Services on pushes or merges to the `main` branch.
+BaseTemplate includes an automated CI/CD pipeline in `.github/workflows/deploy.yml` that handles compiling, testing, migrating Azure SQL, and deploying both the backend API and frontend Blazor UI to Azure App Services on pushes or merges to `main`.
 
 ### Deployment Prerequisites
 
-1. **Configure Repository Secrets in GitHub**:
-   - `AZURE_API_PUBLISH_PROFILE`: The Publish Profile XML content for your backend API App Service.
-   - `AZURE_UI_PUBLISH_PROFILE`: The Publish Profile XML content for your frontend Blazor UI App Service.
-   *(Retrieve these profiles by navigating to the App Service page in the Azure portal, clicking **Overview**, and selecting **Get publish profile**.)*
+1. Configure the `production` GitHub environment and Microsoft Entra OIDC federation.
+2. Create the GitHub deployment identity as an Azure SQL contained user with migration permissions.
+3. Add the required Azure resource-name variables and passwordless SQL connection-string secret.
+4. Keep the App Service managed identities configured separately for runtime Azure access.
 
-2. **Align App Service Names**:
-   - In `.github/workflows/deploy.yml`, verify that `app-name` in the `deploy-api` and `deploy-ui` jobs match the actual App Service resource names configured in your Azure subscription (e.g. `basetemplate-api` and `basetemplate-ui`).
+Follow [Azure CI/CD Configuration](azure-cicd-configuration.md) for the complete portal, GitHub, SQL, RBAC, networking, and troubleshooting steps.
 
 ## Troubleshooting
 
@@ -169,3 +163,4 @@ BaseTemplate includes an automated CI/CD pipeline in `.github/workflows/deploy.y
 - If Data Protection fails with Key Vault authorization errors, the identity lacks `Key Vault Crypto User` for the key.
 - If profile upload succeeds visually but no blob appears, confirm the backend response succeeded, `ProfileImageStorage:Provider=AzureBlob`, and the current user has completed required MFA enrollment.
 - If old package errors mention `FluentEmail.MailKit`, clean stale build output and rebuild; source code should no longer reference FluentEmail.
+- If migration bundles report `DefaultAzureCredential failed`, GitHub OIDC is missing or its federated subject does not match the `production` environment. App Service managed identity is not available to a GitHub-hosted runner.

@@ -12,7 +12,9 @@ public class IamDbContextFactory : IDesignTimeDbContextFactory<IamDBContext>
         var optionsBuilder = new DbContextOptionsBuilder<IamDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "IamConnection");
 
-        optionsBuilder.UseSqlServer(connectionString, DesignTimeConfigurationFactory.ConfigureSqlServer);
+        optionsBuilder.UseSqlServer(
+            connectionString,
+            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_IAM"));
         return new IamDBContext(optionsBuilder.Options);
     }
 }
