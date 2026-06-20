@@ -12,10 +12,7 @@ public class IamDbContextFactory : IDesignTimeDbContextFactory<IamDBContext>
         var optionsBuilder = new DbContextOptionsBuilder<IamDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "IamConnection");
 
-        optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
-        {
-            sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
-        });
+        optionsBuilder.UseSqlServer(connectionString, DesignTimeConfigurationFactory.ConfigureSqlServer);
         return new IamDBContext(optionsBuilder.Options);
     }
 }
