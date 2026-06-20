@@ -12,7 +12,7 @@ public class IamDbContextFactory : IDesignTimeDbContextFactory<IamDBContext>
         var optionsBuilder = new DbContextOptionsBuilder<IamDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "IamConnection");
 
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseSqlServer(connectionString, DesignTimeConfigurationFactory.ConfigureSqlServer);
         return new IamDBContext(optionsBuilder.Options);
     }
 }

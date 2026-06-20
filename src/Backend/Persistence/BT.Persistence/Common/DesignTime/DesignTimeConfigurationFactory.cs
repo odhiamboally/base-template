@@ -36,6 +36,11 @@ internal static class DesignTimeConfigurationFactory
         return connectionString;
     }
 
+    public static void ConfigureSqlServer(Microsoft.EntityFrameworkCore.Infrastructure.SqlServerDbContextOptionsBuilder sqlOptions)
+    {
+        sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+    }
+
     private static string GetUserSecretsPath()
     {
         var applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);

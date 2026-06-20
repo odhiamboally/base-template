@@ -120,13 +120,30 @@ jobs:
           chmod +x ./api-app/efbundle-hr
           chmod +x ./api-app/efbundle-shared
           chmod +x ./api-app/efbundle-banking
-          
-          ./api-app/efbundle-iam --connection "$CONNECTION_STRING"
-          ./api-app/efbundle-hr --connection "$CONNECTION_STRING"
-          ./api-app/efbundle-shared --connection "$CONNECTION_STRING"
-          ./api-app/efbundle-banking --connection "$CONNECTION_STRING"
+
+          # Fail fast if the connection string secret is not provided
+          if [ -z "$ConnectionStrings__DefaultConnection" ]; then
+            echo "ERROR: ConnectionStrings__DefaultConnection is not set. Ensure AZURE_SQL_CONNECTION_STRING secret is configured."
+            exit 1
+          fi
+
+          # Execute migration bundles. Pass the connection string explicitly as a
+          # fallback argument; factories in this repo prefer environment keys, so
+          # the env vars set below will be used by DesignTimeConfigurationFactory.
+          ./api-app/efbundle-iam --connection "$ConnectionStrings__DefaultConnection"
+          ./api-app/efbundle-hr --connection "$ConnectionStrings__DefaultConnection"
+          ./api-app/efbundle-shared --connection "$ConnectionStrings__DefaultConnection"
+          ./api-app/efbundle-banking --connection "$ConnectionStrings__DefaultConnection"
         env:
-          CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          # Provide the actual SQL connection string for each context name the
+          # design-time factories look up (IamConnection, HrConnection,
+          # SharedConnection, BankingConnection). Also keep DefaultConnection as
+          # a fallback.
+          ConnectionStrings__IamConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__HrConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__SharedConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__BankingConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__DefaultConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
 
   deploy-api:
     name: Deploy API to Azure

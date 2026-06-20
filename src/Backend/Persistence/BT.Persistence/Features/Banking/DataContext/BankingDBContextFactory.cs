@@ -12,7 +12,7 @@ public class BankingDBContextFactory : IDesignTimeDbContextFactory<BankingDBCont
         var optionsBuilder = new DbContextOptionsBuilder<BankingDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "BankingConnection");
 
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseSqlServer(connectionString, DesignTimeConfigurationFactory.ConfigureSqlServer);
         return new BankingDBContext(optionsBuilder.Options);
     }
 }

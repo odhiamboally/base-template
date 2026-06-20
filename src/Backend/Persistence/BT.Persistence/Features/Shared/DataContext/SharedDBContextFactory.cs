@@ -12,7 +12,7 @@ public class SharedDBContextFactory : IDesignTimeDbContextFactory<SharedDBContex
         var optionsBuilder = new DbContextOptionsBuilder<SharedDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "SharedConnection");
 
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseSqlServer(connectionString, DesignTimeConfigurationFactory.ConfigureSqlServer);
         return new SharedDBContext(optionsBuilder.Options);
     }
 }
