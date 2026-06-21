@@ -107,6 +107,10 @@ jobs:
     name: Run DB Migrations
     needs: build-and-test
     runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Download API Artifacts
         uses: actions/download-artifact@v4
@@ -114,41 +118,137 @@ jobs:
           name: api-app
           path: ./api-app
 
-      - name: Execute Migration Bundles
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate migration configuration
+        shell: bash
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_SQL_NETWORK_MODE: ${{ vars.AZURE_SQL_NETWORK_MODE }}
+          AZURE_SQL_SERVER_NAME: ${{ vars.AZURE_SQL_SERVER_NAME }}
+          AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
         run: |
+          set -euo pipefail
+
+          required_values=(
+            AZURE_SQL_NETWORK_MODE
+            AZURE_SQL_CONNECTION_STRING
+          )
+
+          for name in "${required_values[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "ERROR: ${name} is not configured for the production GitHub environment."
+              exit 1
+            fi
+          done
+
+          case "$AZURE_SQL_NETWORK_MODE" in
+            PublicRunner)
+              for name in AZURE_RESOURCE_GROUP AZURE_SQL_SERVER_NAME; do
+                if [ -z "${!name:-}" ]; then
+                  echo "ERROR: ${name} is required when AZURE_SQL_NETWORK_MODE is PublicRunner."
+                  exit 1
+                fi
+              done
+              ;;
+            PrivateRunner)
+              ;;
+            *)
+              echo "ERROR: AZURE_SQL_NETWORK_MODE must be PublicRunner or PrivateRunner."
+              exit 1
+              ;;
+          esac
+
+      - name: Allow this runner through the Azure SQL firewall
+        if: vars.AZURE_SQL_NETWORK_MODE == 'PublicRunner'
+        id: sql-firewall
+        shell: bash
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_SQL_SERVER_NAME: ${{ vars.AZURE_SQL_SERVER_NAME }}
+        run: |
+          set -euo pipefail
+
+          runner_ip="$(curl --fail --silent --show-error https://api.ipify.org)"
+          rule_name="github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          az sql server firewall-rule create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --server "$AZURE_SQL_SERVER_NAME" \
+            --name "$rule_name" \
+            --start-ip-address "$runner_ip" \
+            --end-ip-address "$runner_ip" \
+            --output none
+
+          echo "rule_name=$rule_name" >> "$GITHUB_OUTPUT"
+
+      - name: Execute Migration Bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+
           chmod +x ./api-app/efbundle-iam
           chmod +x ./api-app/efbundle-hr
           chmod +x ./api-app/efbundle-shared
           chmod +x ./api-app/efbundle-banking
 
-          # Fail fast if the connection string secret is not provided
-          if [ -z "$ConnectionStrings__DefaultConnection" ]; then
-            echo "ERROR: ConnectionStrings__DefaultConnection is not set. Ensure AZURE_SQL_CONNECTION_STRING secret is configured."
-            exit 1
-          fi
+          run_bundle() {
+            local bundle="$1"
+            local max_attempts=6
+            local delay_seconds=10
 
-          # Execute migration bundles. Pass the connection string explicitly as a
-          # fallback argument; factories in this repo prefer environment keys, so
-          # the env vars set below will be used by DesignTimeConfigurationFactory.
-          ./api-app/efbundle-iam --connection "$ConnectionStrings__DefaultConnection"
-          ./api-app/efbundle-hr --connection "$ConnectionStrings__DefaultConnection"
-          ./api-app/efbundle-shared --connection "$ConnectionStrings__DefaultConnection"
-          ./api-app/efbundle-banking --connection "$ConnectionStrings__DefaultConnection"
+            for attempt in $(seq 1 "$max_attempts"); do
+              echo "Running ${bundle} migration bundle (attempt ${attempt}/${max_attempts})..."
+
+              if "./api-app/${bundle}" --connection "$AZURE_SQL_CONNECTION_STRING"; then
+                return 0
+              fi
+
+              if [ "$attempt" -eq "$max_attempts" ]; then
+                echo "ERROR: ${bundle} migration bundle failed after ${max_attempts} attempts."
+                return 1
+              fi
+
+              echo "Azure SQL may still be resuming. Retrying in ${delay_seconds} seconds..."
+              sleep "$delay_seconds"
+              delay_seconds=$((delay_seconds * 2))
+            done
+          }
+
+          run_bundle efbundle-iam
+          run_bundle efbundle-hr
+          run_bundle efbundle-shared
+          run_bundle efbundle-banking
         env:
-          # Provide the actual SQL connection string for each context name the
-          # design-time factories look up (IamConnection, HrConnection,
-          # SharedConnection, BankingConnection). Also keep DefaultConnection as
-          # a fallback.
-          ConnectionStrings__IamConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__HrConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__SharedConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__BankingConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__DefaultConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+
+      - name: Remove temporary Azure SQL firewall rule
+        if: always() && vars.AZURE_SQL_NETWORK_MODE == 'PublicRunner' && steps.sql-firewall.outputs.rule_name != ''
+        shell: bash
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_SQL_SERVER_NAME: ${{ vars.AZURE_SQL_SERVER_NAME }}
+          FIREWALL_RULE_NAME: ${{ steps.sql-firewall.outputs.rule_name }}
+        run: |
+          az sql server firewall-rule delete \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --server "$AZURE_SQL_SERVER_NAME" \
+            --name "$FIREWALL_RULE_NAME" \
+            --output none
 
   deploy-api:
     name: Deploy API to Azure
     needs: [build-and-test, run-migrations]
     runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Download API Artifacts
         uses: actions/download-artifact@v4
@@ -156,17 +256,27 @@ jobs:
           name: api-app
           path: ./api-app
 
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
       - name: Deploy to Azure Web App (API)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'basetemplate-api'
-          publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
+          app-name: ${{ vars.AZURE_API_APP_NAME }}
           package: ./api-app
 
   deploy-ui:
     name: Deploy UI to Azure
     needs: [build-and-test, run-migrations]
     runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Download UI Artifacts
         uses: actions/download-artifact@v4
@@ -174,9 +284,15 @@ jobs:
           name: ui-app
           path: ./ui-app
 
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
       - name: Deploy to Azure Web App (UI)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'basetemplate-ui'
-          publish-profile: ${{ secrets.AZURE_UI_PUBLISH_PROFILE }}
+          app-name: ${{ vars.AZURE_UI_APP_NAME }}
           package: ./ui-app

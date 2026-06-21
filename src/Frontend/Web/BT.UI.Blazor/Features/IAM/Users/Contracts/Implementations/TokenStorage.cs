@@ -1,11 +1,18 @@
 using BT.UI.Blazor.Features.IAM.Users.Contracts.Interfaces;
 using BT.UI.Blazor.Features.IAM.Users.Implementations;
+using BT.UI.Blazor.Logging;
 using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.JSInterop;
+
+using System.Security.Cryptography;
 
 namespace BT.UI.Blazor.Features.IAM.Users.Contracts.Implementations;
 
-internal sealed class TokenStorage(ProtectedLocalStorage storage, IServerTokenStore? serverStore) : ITokenStorage
+internal sealed class TokenStorage(
+    ProtectedLocalStorage storage,
+    IServerTokenStore serverStore,
+    ILogger<TokenStorage> logger) : ITokenStorage
 {
     private const string AccessKey = "auth.access_token";
     private const string RefreshKey = "auth.refresh_token";
@@ -13,16 +20,27 @@ internal sealed class TokenStorage(ProtectedLocalStorage storage, IServerTokenSt
 
     public async Task<bool> ClearAsync()
     {
-        await storage.DeleteAsync(AccessKey).ConfigureAwait(false);
-        await storage.DeleteAsync(RefreshKey).ConfigureAwait(false);
-        await storage.DeleteAsync(SessionKey).ConfigureAwait(false);
-        if (serverStore is not null)
+        var browserCleared = false;
+        try
         {
-            await serverStore.ClearAsync().ConfigureAwait(false);
+            await storage.DeleteAsync(AccessKey).ConfigureAwait(false);
+            await storage.DeleteAsync(RefreshKey).ConfigureAwait(false);
+            await storage.DeleteAsync(SessionKey).ConfigureAwait(false);
+            browserCleared = true;
         }
-        return true;
+        catch (Exception ex) when (IsBrowserStorageUnavailable(ex))
+        {
+            TokenStorageLogDefinitions.LogBrowserStorageClearUnavailable(logger, ex);
+        }
+        catch (Exception ex)
+        {
+            TokenStorageLogDefinitions.LogBrowserStorageClearUnavailable(logger, ex);
+        }
 
+        var serverCleared = await serverStore.ClearAsync().ConfigureAwait(false);
+        return browserCleared || serverCleared;
     }
+
     public async Task<(string? AccessToken, string? RefreshToken, string? SessionId)> GetAsync()
     {
         try
@@ -30,53 +48,55 @@ internal sealed class TokenStorage(ProtectedLocalStorage storage, IServerTokenSt
             var access = await storage.GetAsync<string>(AccessKey).ConfigureAwait(false);
             var refresh = await storage.GetAsync<string>(RefreshKey).ConfigureAwait(false);
             var session = await storage.GetAsync<string>(SessionKey).ConfigureAwait(false);
+            
             var result = (
-                access.Success ? access.Value : null, 
-                refresh.Success ? refresh.Value : null,
-                session.Success ? session.Value : null
-                
-                );                  
-                    
-            // Mirror to server store if available so background tasks can read tokens when JS is unavailable.
-            if (serverStore is not null)
+                AccessToken: access.Success ? access.Value : null,
+                RefreshToken: refresh.Success ? refresh.Value : null,
+                SessionId: session.Success ? session.Value : null);
+
+            if (HasAnyValue(result))
             {
-                await serverStore.SaveAsync(result.Item1, result.Item2, result.Item3).ConfigureAwait(false);
+                await serverStore.SaveAsync(result.AccessToken, result.RefreshToken, result.SessionId).ConfigureAwait(false);
+                return result;
             }
 
-            return result;
+            return await serverStore.GetAsync().ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is OperationCanceledException or Microsoft.JSInterop.JSDisconnectedException or InvalidOperationException)
+        catch (Exception ex) when (IsBrowserStorageUnavailable(ex))
         {
-            // JS interop / ProtectedLocalStorage call was canceled or unavailable.
-            // Fall back to server-side token store if available.
-            if (serverStore is not null)
-            {
-                return await serverStore.GetAsync().ConfigureAwait(false);
-            }
-
-            return (null, null, null);
+            TokenStorageLogDefinitions.LogBrowserStorageReadUnavailable(logger, ex);
+            return await serverStore.GetAsync().ConfigureAwait(false);
         }
-
     }
 
     public async Task<bool> SaveAsync(string? accessToken, string? refreshToken, string? sessionId)
     {
+        var browserSaved = false;
         try
         {
             await storage.SetAsync(AccessKey, accessToken ?? "").ConfigureAwait(false);
             await storage.SetAsync(RefreshKey, refreshToken ?? "").ConfigureAwait(false);
             await storage.SetAsync(SessionKey, sessionId ?? "").ConfigureAwait(false);
+            browserSaved = true;
         }
-        catch (Exception ex) when (ex is OperationCanceledException or Microsoft.JSInterop.JSDisconnectedException or InvalidOperationException)
+        catch (Exception ex) when (IsBrowserStorageUnavailable(ex))
         {
-            // Ignore; will save to server store below if available.
+            TokenStorageLogDefinitions.LogBrowserStorageWriteUnavailable(logger, ex);
         }
 
-        if (serverStore is not null)
-        {
-            await serverStore.SaveAsync(accessToken, refreshToken, sessionId).ConfigureAwait(false);
-        }
-
-        return true;
+        var serverSaved = await serverStore.SaveAsync(accessToken, refreshToken, sessionId).ConfigureAwait(false);
+        return browserSaved || serverSaved;
     }
+
+    private static bool HasAnyValue((string? AccessToken, string? RefreshToken, string? SessionId) tokens)
+        => !string.IsNullOrWhiteSpace(tokens.AccessToken)
+            || !string.IsNullOrWhiteSpace(tokens.RefreshToken)
+            || !string.IsNullOrWhiteSpace(tokens.SessionId);
+
+    private static bool IsBrowserStorageUnavailable(Exception exception)
+        => exception is 
+        OperationCanceledException or 
+        JSDisconnectedException or 
+        InvalidOperationException or
+        CryptographicException;
 }

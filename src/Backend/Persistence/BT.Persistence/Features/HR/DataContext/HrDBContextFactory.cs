@@ -12,7 +12,9 @@ public class HrDBContextFactory : IDesignTimeDbContextFactory<HrDBContext>
         var optionsBuilder = new DbContextOptionsBuilder<HrDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "HrConnection");
 
-        optionsBuilder.UseSqlServer(connectionString, DesignTimeConfigurationFactory.ConfigureSqlServer);
+        optionsBuilder.UseSqlServer(
+            connectionString,
+            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_HR"));
         return new HrDBContext(optionsBuilder.Options);
     }
 }

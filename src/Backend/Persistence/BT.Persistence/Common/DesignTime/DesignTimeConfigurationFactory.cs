@@ -36,9 +36,15 @@ internal static class DesignTimeConfigurationFactory
         return connectionString;
     }
 
-    public static void ConfigureSqlServer(Microsoft.EntityFrameworkCore.Infrastructure.SqlServerDbContextOptionsBuilder sqlOptions)
+    public static void ConfigureSqlServer(
+        Microsoft.EntityFrameworkCore.Infrastructure.SqlServerDbContextOptionsBuilder sqlOptions,
+        string migrationsHistoryTable)
     {
+        ArgumentNullException.ThrowIfNull(sqlOptions);
+        ArgumentException.ThrowIfNullOrWhiteSpace(migrationsHistoryTable);
+
         sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+        sqlOptions.MigrationsHistoryTable(migrationsHistoryTable);
     }
 
     private static string GetUserSecretsPath()
