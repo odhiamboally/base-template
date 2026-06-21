@@ -5,6 +5,8 @@ using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.JSInterop;
 
+using System.Security.Cryptography;
+
 namespace BT.UI.Blazor.Features.IAM.Users.Contracts.Implementations;
 
 internal sealed class TokenStorage(
@@ -30,6 +32,10 @@ internal sealed class TokenStorage(
         {
             TokenStorageLogDefinitions.LogBrowserStorageClearUnavailable(logger, ex);
         }
+        catch (Exception ex)
+        {
+            TokenStorageLogDefinitions.LogBrowserStorageClearUnavailable(logger, ex);
+        }
 
         var serverCleared = await serverStore.ClearAsync().ConfigureAwait(false);
         return browserCleared || serverCleared;
@@ -42,14 +48,15 @@ internal sealed class TokenStorage(
             var access = await storage.GetAsync<string>(AccessKey).ConfigureAwait(false);
             var refresh = await storage.GetAsync<string>(RefreshKey).ConfigureAwait(false);
             var session = await storage.GetAsync<string>(SessionKey).ConfigureAwait(false);
+            
             var result = (
-                access.Success ? access.Value : null, 
-                refresh.Success ? refresh.Value : null,
-                session.Success ? session.Value : null);
+                AccessToken: access.Success ? access.Value : null,
+                RefreshToken: refresh.Success ? refresh.Value : null,
+                SessionId: session.Success ? session.Value : null);
 
             if (HasAnyValue(result))
             {
-                await serverStore.SaveAsync(result.Item1, result.Item2, result.Item3).ConfigureAwait(false);
+                await serverStore.SaveAsync(result.AccessToken, result.RefreshToken, result.SessionId).ConfigureAwait(false);
                 return result;
             }
 
@@ -87,5 +94,9 @@ internal sealed class TokenStorage(
             || !string.IsNullOrWhiteSpace(tokens.SessionId);
 
     private static bool IsBrowserStorageUnavailable(Exception exception)
-        => exception is OperationCanceledException or JSDisconnectedException or InvalidOperationException;
+        => exception is 
+        OperationCanceledException or 
+        JSDisconnectedException or 
+        InvalidOperationException or
+        CryptographicException;
 }
