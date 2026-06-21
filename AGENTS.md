@@ -11,6 +11,7 @@ This file is the canonical source of truth and working contract for AI coding to
    - `docs/architecture/persistence-standards.md`
    - `docs/architecture/ui-to-backend-flow.md`
    - `docs/development/environment-configuration-checklist.md`
+   - `docs/development/local-platform.md`
    - `docs/development/azure-storage-configuration.md`
    - `docs/development/configuration-code-conventions.md`
 4. Inspect the existing code before proposing or writing changes.
@@ -95,6 +96,7 @@ This file is the canonical source of truth and working contract for AI coding to
 - Key Vault secret names use double hyphen mapping, for example `Section--Setting`.
 - Environment variables use double underscore mapping, for example `Section__Setting`.
 - Keep Azure setup notes in `docs/development/azure-storage-configuration.md` and the checklist in `docs/development/environment-configuration-checklist.md`.
+- Run application hosts from Visual Studio and local infrastructure through `ops/local/docker-compose.yml`; do not replace or remove Azure production provider configuration when adding local providers.
 
 ## Workflow Rules
 

@@ -26,6 +26,7 @@ public sealed class ProfileImageStorageSettings
     ];
 
     public AzureBlobProfileImageStorageSettings AzureBlob { get; init; } = new();
+    public AzureBlobProfileImageStorageSettings Azurite { get; init; } = new();
 }
 
 public sealed class AzureBlobProfileImageStorageSettings

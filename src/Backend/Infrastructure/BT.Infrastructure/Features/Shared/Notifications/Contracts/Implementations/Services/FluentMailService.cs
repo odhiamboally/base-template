@@ -45,7 +45,7 @@ internal sealed class FluentMailService(IOptions<EmailSettings> options, ILogger
             var socketOptions = GetSocketOptions(_settings);
 
             await smtpClient.ConnectAsync(_settings.Host, _settings.Port, socketOptions, cancellationToken).ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(_settings.Username))
+            if (_settings.UseAuthentication && !string.IsNullOrWhiteSpace(_settings.Username))
             {
                 await smtpClient.AuthenticateAsync(_settings.Username, _settings.Password, cancellationToken).ConfigureAwait(false);
             }

@@ -41,8 +41,8 @@ Never commit real passwords, account keys, connection strings, API keys, or temp
 | Secret loading | Azure Key Vault | `KeyVault:Uri` | Implemented |
 | App hosting | Azure App Service | App settings and managed identity | Ready for deployment work |
 | Observability | Application Insights / Azure Monitor | `Observability:AzureMonitor:ConnectionString`, `ApplicationInsights:ConnectionString`, or `APPLICATIONINSIGHTS_CONNECTION_STRING` | Implemented with fallbacks |
-| Messaging | Azure Service Bus | `Messaging:Transport`, `Messaging:AzureServiceBus:ConnectionString` | Implemented, needs production smoke test |
-| Caching | Azure Cache for Redis | API: `CacheSettings:Azure:ConnectionString`, `CacheSettings:Azure:UseEntraId` | Config shape exists, supporting standard connection strings or passwordless Entra ID auth. |
+| Messaging | RabbitMQ locally; Azure Service Bus in Azure | `Messaging:Transport`, provider-specific settings | Implemented; local Compose smoke remains |
+| Caching | Redis locally; Azure Managed Redis in Azure | `CacheSettings:Provider`, provider-specific settings | Implemented with memory fallback and managed-identity support |
 
 ## Recommended Local Setup
 
@@ -62,10 +62,11 @@ For local-only development, leave these values empty so the app uses filesystem/
 dotnet user-secrets remove "DataProtection:BlobKeyUri" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets remove "DataProtection:KeyVaultKeyIdentifier" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "ProfileImageStorage:Provider" "Local" --project src\Backend\Api\BT.Api\BT.Api.csproj
-# For Local Redis (Docker)
-dotnet user-secrets set "CacheSettings:Azure:ConnectionString" "localhost:6379" --project src\Backend\Api\BT.Api\BT.Api.csproj
-dotnet user-secrets set "CacheSettings:Azure:UseEntraId" "false" --project src\Backend\Api\BT.Api\BT.Api.csproj
+# For local Redis, prefer the setup script because it generates matching ignored credentials.
+./scripts/setup-local-platform.ps1
 ```
+
+Azure deployment is intentionally gated by the GitHub repository variable `AZURE_DEPLOYMENT_ENABLED`. Leave it unset or `false` while Azure is unavailable; set it to `true` only after completing the production Azure checklist.
 
 ## Recommended Azure-Backed Local Setup
 
@@ -96,10 +97,12 @@ ProfileImageStorage__AzureBlob__ContainerUri=https://<storage-account>.blob.core
 ProfileImageStorage__AzureBlob__BlobPrefix=profile-images
 
 # Redis Cache - Option 1: Access Keys (Standard)
+CacheSettings__Provider=AzureManagedRedis
 CacheSettings__Azure__ConnectionString=your-redis-name.redis.cache.windows.net:6380,password=PRIMARY_ACCESS_KEY,ssl=True,abortConnect=False
 CacheSettings__Azure__UseEntraId=false
 
 # Redis Cache - Option 2: Microsoft Entra ID (Passwordless / Managed Identity)
+CacheSettings__Provider=AzureManagedRedis
 CacheSettings__Azure__ConnectionString=your-redis-name.redis.cache.windows.net:6380,ssl=True,abortConnect=False
 CacheSettings__Azure__UseEntraId=true
 CacheSettings__Azure__PrincipalId=<User-Assigned-Identity-Client-ID-Or-Leave-Blank-For-System-Assigned>
@@ -131,7 +134,7 @@ Grant these roles before testing Azure-backed local development or App Service d
 
 When checking screenshots or app settings, verify:
 
-- Mode/provider/transport settings use supported values exactly: `DataProtection__KeyEncryptionMode` = `Auto`, `KeyVault`, `Certificate`, or `None`; `ProfileImageStorage__Provider` = `Local` or `AzureBlob`; `Messaging__Transport` = `RabbitMq` or `AzureServiceBus`.
+- Mode/provider/transport settings use supported values exactly: `DataProtection__KeyEncryptionMode` = `Auto`, `KeyVault`, `Certificate`, or `None`; `ProfileImageStorage__Provider` = `Local` or `AzureBlob`; `Messaging__Transport` = `RabbitMq` or `AzureServiceBus`; `CacheSettings__Provider` = `Auto`, `Memory`, `Redis`, or `AzureManagedRedis`.
 - `DataProtection__BlobKeyUri` points to the `dataprotection-keys` container and a blob name such as `keyring.xml`.
 - `DataProtection__KeyEncryptionMode` is `KeyVault` or `Auto` for Azure.
 - `DataProtection__KeyVaultKeyIdentifier` points to a Key Vault key version, not a secret or certificate.

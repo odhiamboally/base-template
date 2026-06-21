@@ -83,7 +83,7 @@ public static class DependencyInjection
                 .ValidateDataAnnotations()
                 .Validate(
                     IsValidProfileImageStorageProvider,
-                    "ProfileImageStorage:Provider must be Local or AzureBlob, and AzureBlob requires ContainerUri or ConnectionString plus ContainerName.")
+                    "ProfileImageStorage:Provider must be Local, Azurite, or AzureBlob. Blob providers require ContainerUri or ConnectionString plus ContainerName.")
                 .ValidateOnStart();
             services.AddOptions<TenantSettings>()
                 .Bind(configuration.GetSection(TenantSettings.SectionName))
@@ -140,10 +140,11 @@ public static class DependencyInjection
             return GetProfileImageStorageProvider(settings) switch
             {
                 ProfileImageStorageProvider.Local => sp.GetRequiredService<LocalProfilePictureStorage>(),
+                ProfileImageStorageProvider.Azurite => sp.GetRequiredService<AzureBlobProfilePictureStorage>(),
                 ProfileImageStorageProvider.AzureBlob => sp.GetRequiredService<AzureBlobProfilePictureStorage>(),
                 _ => throw new InvalidOperationException(
                     $"ProfileImageStorage:Provider '{settings.Provider}' is not supported. " +
-                    "Supported values: Local, AzureBlob.")
+                    "Supported values: Local, Azurite, AzureBlob.")
             };
         });
 
@@ -343,52 +344,36 @@ public static class DependencyInjection
 
     private static void ConfigureDistributedCache(IServiceCollection services, IConfiguration configuration, CacheSettings cacheSettings)
     {
-        if (cacheSettings.Azure != null && cacheSettings.Azure.UseEntraId)
+        var provider = GetCacheProvider(cacheSettings);
+
+        switch (provider)
         {
-            var connectionString = cacheSettings.Azure.ConnectionString;
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new InvalidOperationException("CacheSettings:Azure:ConnectionString is required when UseEntraId is enabled.");
-            }
+            case CacheProvider.Memory:
+                services.AddDistributedMemoryCache();
+                break;
 
-            services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
-            {
-                var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(connectionString);
-                configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
-                configOptions.Password = null; // Clear password to ensure Entra ID token auth is preferred
+            case CacheProvider.Redis:
+                ValidateConnectionString(cacheSettings.Redis?.ConnectionString, "Redis");
+                RegisterRedisCache(services, cacheSettings.Redis?.ConnectionString!);
+                break;
 
-                var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
-                if (!string.IsNullOrWhiteSpace(cacheSettings.Azure.PrincipalId))
+            case CacheProvider.AzureManagedRedis:
+                ValidateConnectionString(cacheSettings.Azure?.ConnectionString, "AzureManagedRedis");
+                if (cacheSettings.Azure?.UseEntraId == true)
                 {
-                    credentialOptions.ManagedIdentityClientId = cacheSettings.Azure.PrincipalId;
+                    RegisterAzureManagedRedisWithEntraId(services, cacheSettings.Azure);
                 }
-
-                configOptions.ConfigureForAzureWithTokenCredentialAsync(
-                    new Azure.Identity.DefaultAzureCredential(credentialOptions)).GetAwaiter().GetResult();
-
-                return StackExchange.Redis.ConnectionMultiplexer.Connect(configOptions);
-            });
-
-            services.AddStackExchangeRedisCache(options => { });
-
-            services.AddOptions<RedisCacheOptions>()
-                .Configure<StackExchange.Redis.IConnectionMultiplexer>((options, multiplexer) =>
+                else
                 {
-                    options.ConnectionMultiplexerFactory = () => Task.FromResult(multiplexer);
-                });
-        }
-        else if (IsConfiguredConnectionString(cacheSettings.Azure?.ConnectionString))
-        {
-            services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
-                StackExchange.Redis.ConnectionMultiplexer.Connect(cacheSettings.Azure!.ConnectionString!));
+                    RegisterRedisCache(services, cacheSettings.Azure!.ConnectionString!);
+                }
+                break;
 
-            services.AddStackExchangeRedisCache(options => { });
-
-            services.AddOptions<RedisCacheOptions>()
-                .Configure<StackExchange.Redis.IConnectionMultiplexer>((options, multiplexer) =>
-                {
-                    options.ConnectionMultiplexerFactory = () => Task.FromResult(multiplexer);
-                });
+            case CacheProvider.Invalid:
+            default:
+                throw new InvalidOperationException(
+                    $"CacheSettings:Provider '{cacheSettings.Provider}' is not supported. " +
+                    "Supported values: Auto, Memory, Redis, AzureManagedRedis.");
         }
 
         services.AddHybridCache(options =>
@@ -409,6 +394,49 @@ public static class DependencyInjection
         });
     }
 
+    private static void RegisterRedisCache(IServiceCollection services, string connectionString)
+    {
+        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
+            StackExchange.Redis.ConnectionMultiplexer.Connect(connectionString));
+
+        RegisterStackExchangeRedisCache(services);
+    }
+
+    private static void RegisterAzureManagedRedisWithEntraId(
+        IServiceCollection services,
+        AzureCacheSettings settings)
+    {
+        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
+        {
+            var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(settings.ConnectionString!);
+            configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
+            configOptions.Password = null;
+
+            var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
+            if (!string.IsNullOrWhiteSpace(settings.PrincipalId))
+            {
+                credentialOptions.ManagedIdentityClientId = settings.PrincipalId;
+            }
+
+            configOptions.ConfigureForAzureWithTokenCredentialAsync(
+                new Azure.Identity.DefaultAzureCredential(credentialOptions)).GetAwaiter().GetResult();
+
+            return StackExchange.Redis.ConnectionMultiplexer.Connect(configOptions);
+        });
+
+        RegisterStackExchangeRedisCache(services);
+    }
+
+    private static void RegisterStackExchangeRedisCache(IServiceCollection services)
+    {
+        services.AddStackExchangeRedisCache(options => { });
+        services.AddOptions<RedisCacheOptions>()
+            .Configure<StackExchange.Redis.IConnectionMultiplexer>((options, multiplexer) =>
+            {
+                options.ConnectionMultiplexerFactory = () => Task.FromResult(multiplexer);
+            });
+    }
+
     private static bool IsConfiguredConnectionString(string? connectionString)
     {
         return !string.IsNullOrWhiteSpace(connectionString) &&
@@ -417,11 +445,48 @@ public static class DependencyInjection
             !connectionString.Contains("set_via", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static CacheProvider GetCacheProvider(CacheSettings settings)
+    {
+        var configuredProvider = settings.Provider?.Trim() ?? "Auto";
+        if (configuredProvider.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+        {
+            if (IsConfiguredConnectionString(settings.Azure?.ConnectionString))
+            {
+                return CacheProvider.AzureManagedRedis;
+            }
+
+            return IsConfiguredConnectionString(settings.Redis.ConnectionString)
+                ? CacheProvider.Redis
+                : CacheProvider.Memory;
+        }
+
+        return configuredProvider switch
+        {
+            var provider when provider.Equals("Memory", StringComparison.OrdinalIgnoreCase) => CacheProvider.Memory,
+            var provider when provider.Equals("Redis", StringComparison.OrdinalIgnoreCase) &&
+                              IsConfiguredConnectionString(settings.Redis.ConnectionString) => CacheProvider.Redis,
+            var provider when provider.Equals("AzureManagedRedis", StringComparison.OrdinalIgnoreCase) &&
+                              IsConfiguredConnectionString(settings.Azure?.ConnectionString) => CacheProvider.AzureManagedRedis,
+            _ => CacheProvider.Invalid
+        };
+    }
+
+    private static void ValidateConnectionString(string? connectionString, string providerName)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString) ||
+            connectionString.Equals("SET_VIA_USER_SECRETS", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"Configuration Error: The connection string for provider '{providerName}' is missing or has a placeholder value.");
+        }
+    }
+
     private static bool IsValidProfileImageStorageProvider(ProfileImageStorageSettings settings)
     {
         return GetProfileImageStorageProvider(settings) switch
         {
             ProfileImageStorageProvider.Local => true,
+            ProfileImageStorageProvider.Azurite => IsBlobProfileImageStorageConfigured(settings.Azurite),
             ProfileImageStorageProvider.AzureBlob => IsAzureBlobProfileImageStorageConfigured(settings),
             _ => false
         };
@@ -429,9 +494,14 @@ public static class DependencyInjection
 
     private static bool IsAzureBlobProfileImageStorageConfigured(ProfileImageStorageSettings settings)
     {
-        return !string.IsNullOrWhiteSpace(settings.AzureBlob.ContainerUri) ||
-            (!string.IsNullOrWhiteSpace(settings.AzureBlob.ConnectionString) &&
-             !string.IsNullOrWhiteSpace(settings.AzureBlob.ContainerName));
+        return IsBlobProfileImageStorageConfigured(settings.AzureBlob);
+    }
+
+    private static bool IsBlobProfileImageStorageConfigured(AzureBlobProfileImageStorageSettings settings)
+    {
+        return !string.IsNullOrWhiteSpace(settings.ContainerUri) ||
+            (!string.IsNullOrWhiteSpace(settings.ConnectionString) &&
+             !string.IsNullOrWhiteSpace(settings.ContainerName));
     }
 
     private static ProfileImageStorageProvider GetProfileImageStorageProvider(ProfileImageStorageSettings settings)
@@ -444,6 +514,7 @@ public static class DependencyInjection
         return settings.Provider.Trim() switch
         {
             var provider when provider.Equals("Local", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.Local,
+            var provider when provider.Equals("Azurite", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.Azurite,
             var provider when provider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.AzureBlob,
             _ => ProfileImageStorageProvider.Invalid
         };
@@ -681,7 +752,16 @@ public static class DependencyInjection
     private enum ProfileImageStorageProvider
     {
         Local,
+        Azurite,
         AzureBlob,
+        Invalid
+    }
+
+    private enum CacheProvider
+    {
+        Memory,
+        Redis,
+        AzureManagedRedis,
         Invalid
     }
 }
