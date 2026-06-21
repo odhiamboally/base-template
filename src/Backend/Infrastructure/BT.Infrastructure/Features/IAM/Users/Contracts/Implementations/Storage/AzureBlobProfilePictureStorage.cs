@@ -13,9 +13,9 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
     private readonly ProfileImageStorageSettings _settings = options.Value;
 
     private AzureBlobProfileImageStorageSettings ActiveStorageSettings =>
-        _settings.Provider.Equals("Azurite", StringComparison.OrdinalIgnoreCase)
-            ? _settings.Azurite
-            : _settings.AzureBlob;
+    string.Equals(_settings.Provider, "Azurite", StringComparison.OrdinalIgnoreCase)
+        ? _settings.Azurite
+        : _settings.AzureBlob;
 
     public async Task<Uri> SaveAsync(
         string userId,

@@ -13,8 +13,14 @@ $envFile = Join-Path $repoRoot 'ops/local/.env'
 $apiProject = Join-Path $repoRoot 'src/Backend/Api/BT.Api/BT.Api.csproj'
 
 function New-LocalSecret {
-    $bytes = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(24)
-    return [Convert]::ToHexString($bytes)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $bytes = New-Object byte[] 24
+        $rng.GetBytes($bytes)
+        return [BitConverter]::ToString($bytes).Replace("-", "")
+    } finally {
+        $rng.Dispose()
+    }
 }
 
 function Read-EnvironmentFile([string]$path) {
@@ -39,7 +45,7 @@ if (-not (Test-Path -LiteralPath $envFile)) {
         "REDIS_PASSWORD=$redisPassword"
         'REDIS_HOST_PORT=6380'
         "MSSQL_SA_PASSWORD=$sqlPassword"
-    ) | Set-Content -LiteralPath $envFile -Encoding utf8
+    ) | Set-Content -LiteralPath $envFile -Encoding ascii
 }
 
 $environment = Read-EnvironmentFile $envFile

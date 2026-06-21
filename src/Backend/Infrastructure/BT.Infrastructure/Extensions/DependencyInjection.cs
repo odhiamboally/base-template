@@ -353,10 +353,12 @@ public static class DependencyInjection
                 break;
 
             case CacheProvider.Redis:
-                RegisterRedisCache(services, cacheSettings.Redis.ConnectionString!);
+                ValidateConnectionString(cacheSettings.Redis?.ConnectionString, "Redis");
+                RegisterRedisCache(services, cacheSettings.Redis?.ConnectionString!);
                 break;
 
             case CacheProvider.AzureManagedRedis:
+                ValidateConnectionString(cacheSettings.Azure?.ConnectionString, "AzureManagedRedis");
                 if (cacheSettings.Azure?.UseEntraId == true)
                 {
                     RegisterAzureManagedRedisWithEntraId(services, cacheSettings.Azure);
@@ -467,6 +469,16 @@ public static class DependencyInjection
                               IsConfiguredConnectionString(settings.Azure?.ConnectionString) => CacheProvider.AzureManagedRedis,
             _ => CacheProvider.Invalid
         };
+    }
+
+    private static void ValidateConnectionString(string? connectionString, string providerName)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString) ||
+            connectionString.Equals("SET_VIA_USER_SECRETS", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"Configuration Error: The connection string for provider '{providerName}' is missing or has a placeholder value.");
+        }
     }
 
     private static bool IsValidProfileImageStorageProvider(ProfileImageStorageSettings settings)
