@@ -110,7 +110,9 @@ The workflow:
 
 - Builds self-contained Linux migration bundles for IAM, HR, Shared, and Banking.
 - Passes the Azure SQL connection string explicitly to each bundle.
+- Exposes that same secret through the context-specific `ConnectionStrings__*` environment keys. EF constructs each design-time `DbContext` before processing the bundle's `--connection` override, so both forms are required.
 - Retries bundle execution while a serverless Azure SQL database resumes.
+- Fails immediately when a bundle reports a deterministic missing-connection configuration error instead of treating it as an Azure SQL wake-up delay.
 - Uses a separate migrations history table for each context:
   - `__EFMigrationsHistory_IAM`
   - `__EFMigrationsHistory_HR`
@@ -137,5 +139,6 @@ Remove them after the first successful OIDC deployment.
 - SQL error `40613`: the database is unavailable or resuming. The workflow retries; inspect Azure SQL status if all retries fail.
 - Azure SQL Free Limit databases enforce auto-pause and do not allow `AutoPauseDelay=-1`. Keep migration retries for this tier. Move a real production workload to a paid always-on/serverless configuration when cold-start latency is unacceptable.
 - SQL firewall denial: confirm public network access is enabled for this workflow model and that the deployment identity has `SQL Server Contributor`.
+- `A valid connection string was not found`: confirm the migration step maps `AZURE_SQL_CONNECTION_STRING` to `ConnectionStrings__IamConnection`, `ConnectionStrings__HrConnection`, `ConnectionStrings__SharedConnection`, `ConnectionStrings__BankingConnection`, and `ConnectionStrings__DefaultConnection`. The explicit `--connection` argument alone is not available early enough for design-time context construction.
 - `Resource ... not found` during deployment: verify `AZURE_API_APP_NAME`, `AZURE_UI_APP_NAME`, subscription, and tenant values.
 - OIDC subject mismatch: the federated credential must target environment `production`, not a branch subject, because the workflow jobs use a GitHub environment.

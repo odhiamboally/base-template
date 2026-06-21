@@ -201,13 +201,24 @@ jobs:
             local bundle="$1"
             local max_attempts=6
             local delay_seconds=10
+            local log_file
 
             for attempt in $(seq 1 "$max_attempts"); do
               echo "Running ${bundle} migration bundle (attempt ${attempt}/${max_attempts})..."
+              log_file="$(mktemp)"
 
-              if "./api-app/${bundle}" --connection "$AZURE_SQL_CONNECTION_STRING"; then
+              if "./api-app/${bundle}" --connection "$AZURE_SQL_CONNECTION_STRING" 2>&1 | tee "$log_file"; then
+                rm -f "$log_file"
                 return 0
               fi
+
+              if grep -q "A valid connection string was not found" "$log_file"; then
+                echo "ERROR: ${bundle} could not resolve its design-time connection string. This is a deterministic configuration failure and will not be retried."
+                rm -f "$log_file"
+                return 1
+              fi
+
+              rm -f "$log_file"
 
               if [ "$attempt" -eq "$max_attempts" ]; then
                 echo "ERROR: ${bundle} migration bundle failed after ${max_attempts} attempts."
@@ -226,6 +237,11 @@ jobs:
           run_bundle efbundle-banking
         env:
           AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__IamConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__HrConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__SharedConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__BankingConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__DefaultConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
 
       - name: Remove temporary Azure SQL firewall rule
         if: always() && vars.AZURE_SQL_NETWORK_MODE == 'PublicRunner' && steps.sql-firewall.outputs.rule_name != ''
