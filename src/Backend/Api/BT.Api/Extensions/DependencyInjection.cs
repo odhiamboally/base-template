@@ -98,24 +98,20 @@ internal static partial class DependencyInjection
         var dataProtectionBuilder = services.AddDataProtection()
             .SetApplicationName("LlanCore.BT");
 
-        if (!string.IsNullOrWhiteSpace(dpSettings?.BlobKeyUri))
+        if (dpSettings?.UseExternalKeyStore == true && !string.IsNullOrWhiteSpace(dpSettings.BlobKeyUri))
         {
             var blobClient = new BlobClient(new Uri(dpSettings.BlobKeyUri), new DefaultAzureCredential());
             dataProtectionBuilder.PersistKeysToAzureBlobStorage(blobClient);
+            ConfigureDataProtectionKeyEncryption(dataProtectionBuilder, dpSettings);
+            return;
         }
 
-        ConfigureDataProtectionKeyEncryption(dataProtectionBuilder, dpSettings);
+        var keysPath = !string.IsNullOrWhiteSpace(dpSettings?.KeysPath)
+            ? dpSettings.KeysPath
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BTApi", "DataProtection-Keys");
 
-        // If no blob configured, fall back to a local filesystem path for development
-        if (string.IsNullOrWhiteSpace(dpSettings?.BlobKeyUri))
-        {
-            var keysPath = !string.IsNullOrWhiteSpace(dpSettings?.KeysPath)
-                ? dpSettings.KeysPath
-                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BTApi", "DataProtection-Keys");
-
-            Directory.CreateDirectory(keysPath);
-            dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
-        }
+        Directory.CreateDirectory(keysPath);
+        dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
     }
 

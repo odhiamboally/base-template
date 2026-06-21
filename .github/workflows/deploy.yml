@@ -14,6 +14,7 @@ permissions:
 jobs:
   build-and-test:
     name: Build & Test
+    if: vars.AZURE_DEPLOYMENT_ENABLED == 'true'
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

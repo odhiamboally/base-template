@@ -286,6 +286,7 @@ catch (Exception ex) when (ex is not HostAbortedException)
     // HostAbortedException is thrown intentionally during EF migration tooling runs —
     // do not log it as a fatal crash.
     Log.Fatal(ex, "Application terminated unexpectedly");
+    Environment.ExitCode = 1;
 }
 finally
 {

@@ -1,37 +1,37 @@
 # Local Run Guide
 
-This guide is for running the solution locally from Visual Studio before Docker and Azure deployment are added.
+This guide is for running the solution locally from Visual Studio with repeatable Docker-hosted infrastructure dependencies.
 
 ## Current Local Strategy
 
-Use locally installed services first:
+Run application code from Visual Studio:
 
-- SQL Server through SSMS.
-- Seq at `http://localhost:5341`.
-- Visual Studio launch profiles for the API and UI.
+- `BT.Api`
+- `BT.UI.Blazor`
+- EF migrations and debugging
 
-Docker is intentionally postponed until the application is working locally. Docker will later become the repeatable dependency setup for new machines and CI/CD environments.
+Run RabbitMQ, Redis, Mailpit, and Azurite through `ops/local/docker-compose.yml`. SQL Server and Seq remain optional Compose profiles because developers may already have them installed.
+
+See [Local Platform](local-platform.md) and run:
+
+```powershell
+./scripts/setup-local-platform.ps1
+```
 
 ## Development Toggles
 
 The Development environment disables infrastructure that should not block basic local API/UI work:
 
-- `Messaging:Enabled = false`
+- `Messaging:Enabled = true`
 - `BackgroundJobs:Enabled = false`
 - `Observability:Enabled = false`
 - `DevelopmentSeed:Enabled = true`
 
 Production defaults keep these capabilities enabled unless explicitly configured otherwise.
 
-## Why Messaging Is Disabled Locally
+## Messaging Transport
 
-The solution currently references MassTransit v9 packages. MassTransit v9 requires a runtime license. To keep local development moving, Development disables the bus and uses a no-op integration event publisher.
-
-Before production messaging is finalized, decide one of these paths:
-
-- provide a MassTransit v9 license
-- downgrade to the latest acceptable MassTransit v8 line
-- replace direct MassTransit usage with an internal abstraction over native broker clients
+Development uses RabbitMQ. Azure production uses Azure Service Bus. Both use the same MassTransit consumers and EF outbox registration. BaseTemplate pins Apache-2.0-licensed MassTransit `8.5.10`, which targets .NET 10; the commercial v9 dependency was intentionally removed from the reusable template.
 
 ## Required User Secrets
 
@@ -98,5 +98,4 @@ See `docs/architecture/ui-to-backend-flow.md` for the rule of thumb and the trad
 ## Current Known Local Gaps
 
 - Quartz tables are not created yet, so background jobs stay disabled in Development.
-- Messaging is disabled in Development until the MassTransit licensing decision is made.
 - The MediatR package currently emits a development/test license warning. This is not blocking local development, but production licensing or replacement must be decided later.

@@ -85,14 +85,14 @@ All query records, command records, validators, mapping profiles, and handlers f
 ### 3.2 Areas That Must Still Be Completed Or Certified
 - **Platform Storage Certification:** Profile image storage now supports local and Azure Blob providers behind `IProfilePictureStorage`; Data Protection supports local keys plus Azure Blob/Key Vault configuration. The remaining gate is local build plus Azure configuration smoke once cloud resources are ready.
 - **HybridCache Certification:** Query caching and output caching are wired; complete the remaining review for native `GetOrCreateAsync` usage, negative-cache behavior, and Redis-backed multi-node invalidation.
-- **MassTransit/Outbox Certification:** RabbitMQ and Azure Service Bus transports are configurable and MassTransit EF Outbox is registered. The remaining gate is an end-to-end publish/consume smoke with outbox persistence and transport-specific health checks.
+- **MassTransit/Outbox Certification:** RabbitMQ and Azure Service Bus transports are configurable and MassTransit EF Outbox is registered. Real RabbitMQ EF-outbox-to-consumer delivery is certified by `scripts/test-local-messaging.ps1`; Azure Service Bus transport certification remains cloud-dependent.
 - **Exception And Validation Coverage:** ProblemDetails and frontend parsing are in place. The remaining gate is validator coverage review for command/request DTOs and tests proving backend validation messages surface cleanly in Blazor.
 - **API Security And Lifecycle:** Security headers, rate limiting, CORS, JWT, permission policies, and API versioning are present. The remaining gate is deprecation policy, throttle response consistency, CSRF stance, and operational tests.
 - **Production Migrations:** Build a pipeline using `efbundle` to execute schema changes safely during deployments instead of using `db.Database.Migrate()` on startup.
 - **Dynamic Navigation Maturity:** Dynamic menu/catalog management exists; continue tightening permission filtering, tenant/department scope rules, and client-facing administration workflows as feature modules grow.
 - **Observability & Health Checks:** Wire deep, operational health checks for SQL, Redis, Service Bus, and Key Vault.
 - **Production Smoke Testing:** Run the full local smoke cycle against real SMTP/user-secrets/Key Vault settings before promoting to Azure deployment work.
-- **Local Platform:** Wire a comprehensive `docker-compose` environment for SQL Server, Redis, Seq, RabbitMQ, and local storage alternatives.
+- **Local Platform Certification:** Docker Compose now defines RabbitMQ, Redis, Mailpit, and Azurite, with optional SQL Server and Seq. Real RabbitMQ outbox delivery is certified; complete Redis cache behavior smoke before certifying the phase.
 
 ---
 
@@ -174,7 +174,7 @@ EventIds are structured by architectural layer to simplify searching in logs:
 - [x] **Configure Output Caching:** `AddOutputCache`, `UseOutputCache`, and lookup endpoint policies are registered.
 - [~] **Profile Media Storage:** Local and Azure Blob profile picture providers exist behind `IProfilePictureStorage`; certify Azure settings with real storage.
 - [~] **Validation Coverage:** Shared DTO validators and Application write-command validators are being expanded for admin/customer/employee/reference flows.
-- [~] **MassTransit/Outbox:** RabbitMQ/Azure Service Bus switching and EF outbox are wired; certify transport-specific publish/consume and health behavior.
+- [~] **MassTransit/Outbox:** RabbitMQ/Azure Service Bus switching and EF outbox are wired; RabbitMQ publish/consume and health behavior are certified locally, while Azure Service Bus certification remains cloud-dependent.
 
 ### Phase 3 - API Security And Operational Readiness
 *Goal: Ensure the system can be monitored, scaled, and diagnosed under load.*

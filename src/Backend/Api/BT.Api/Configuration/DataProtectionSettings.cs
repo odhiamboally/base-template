@@ -9,4 +9,5 @@ internal sealed class DataProtectionSettings
     public string? KeyVaultKeyIdentifier { get; init; }
     public string? CertificateThumbprint { get; init; }
     public string KeyEncryptionMode { get; init; } = "Auto";
+    public bool UseExternalKeyStore { get; init; } = true;
 }

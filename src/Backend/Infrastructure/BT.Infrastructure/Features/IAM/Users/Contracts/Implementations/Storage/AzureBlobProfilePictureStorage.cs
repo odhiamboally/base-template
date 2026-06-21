@@ -12,6 +12,11 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
 {
     private readonly ProfileImageStorageSettings _settings = options.Value;
 
+    private AzureBlobProfileImageStorageSettings ActiveStorageSettings =>
+        _settings.Provider.Equals("Azurite", StringComparison.OrdinalIgnoreCase)
+            ? _settings.Azurite
+            : _settings.AzureBlob;
+
     public async Task<Uri> SaveAsync(
         string userId,
         Stream content,
@@ -25,12 +30,13 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
         var extension = GetSafeExtension(fileName, contentType);
         var safeUserId = string.Concat(userId.Select(static character =>
             char.IsLetterOrDigit(character) ? character : '-'));
-        var blobPrefix = _settings.AzureBlob.BlobPrefix.Trim().Trim('/');
+        var storageSettings = ActiveStorageSettings;
+        var blobPrefix = storageSettings.BlobPrefix.Trim().Trim('/');
         var storedFileName = $"{RandomNumberGenerator.GetHexString(12).ToLowerInvariant()}{extension}";
         var blobName = string.IsNullOrWhiteSpace(blobPrefix)
             ? $"{safeUserId}/{storedFileName}"
             : $"{blobPrefix}/{safeUserId}/{storedFileName}";
-        var container = CreateContainerClient(_settings.AzureBlob);
+        var container = CreateContainerClient(storageSettings);
 
         await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -61,7 +67,7 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
             return null;
         }
 
-        var container = CreateContainerClient(_settings.AzureBlob);
+        var container = CreateContainerClient(ActiveStorageSettings);
         var blobName = GetBlobName(profilePictureUri, container.Uri);
         if (string.IsNullOrWhiteSpace(blobName))
         {
@@ -97,7 +103,7 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
         }
 
         throw new InvalidOperationException(
-            "ProfileImageStorage:AzureBlob requires either ContainerUri for managed identity or ConnectionString plus ContainerName.");
+            "Profile image blob storage requires either ContainerUri for managed identity or ConnectionString plus ContainerName.");
     }
 
     private static string? GetBlobName(Uri profilePictureUri, Uri containerUri)
