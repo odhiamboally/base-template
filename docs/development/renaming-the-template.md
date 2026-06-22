@@ -4,10 +4,12 @@ Rename a cloned repository before its first application run or deployment:
 
 ```powershell
 cd E:\Repos\BaseTemplate
-.\scripts\rename-template.ps1 -NewName Bumure -NamespacePrefix Bumure
+.\scripts\rename-template.ps1 -NewName InsurHub -NamespacePrefix IH
 ```
 
-Use `-WhatIf` first to preview changes. The script updates product-name variants in text files, optionally changes the `BT` namespace prefix, and renames matching files and folders. It skips Git metadata, generated build output, logs, dependencies, and `ops/local/.env`.
+This produces project and namespace names such as `IH.Domain`, `IH.Application`, and `IH.Api`. `NewName` is the product identity; `NamespacePrefix` is the short technical prefix and is required so the script never guesses an acronym incorrectly.
+
+Use `-WhatIf` first to preview changes. The script updates product-name variants in text files, changes dotted `BT` technical prefixes, handles the known compact `BTApi` local-data path, and renames matching files and folders. It deliberately does not replace every standalone `BT`, because `BT` is also valid unrelated data such as Bhutan's ISO country code. It skips Git metadata, generated build output, logs, dependencies, and `ops/local/.env`.
 
 After the script runs:
 

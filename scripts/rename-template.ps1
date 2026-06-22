@@ -4,8 +4,9 @@ param(
     [ValidatePattern('^[A-Za-z][A-Za-z0-9 ]*$')]
     [string]$NewName,
 
-    [ValidatePattern('^[A-Za-z][A-Za-z0-9]*$')]
-    [string]$NamespacePrefix = 'BT'
+    [Parameter(Mandatory)]
+    [ValidatePattern('^[A-Z][A-Z0-9]*$')]
+    [string]$NamespacePrefix
 )
 
 $ErrorActionPreference = 'Stop'
@@ -47,9 +48,10 @@ function Get-ReplacedText([string]$value) {
     $updated = $updated.Replace('base-template', $kebabName)
     $updated = $updated.Replace('basetemplate', $lowerCompactName)
 
-    if ($NamespacePrefix -ne 'BT') {
-        $updated = $updated.Replace('BT.', "$NamespacePrefix.")
-    }
+    # Replace only technical prefix forms. A global standalone-BT replacement
+    # would corrupt legitimate values such as Bhutan's ISO country code, "BT".
+    $updated = $updated -creplace '(?<![A-Za-z0-9_])BT(?=\.)', $NamespacePrefix
+    $updated = $updated.Replace('BTApi', "${NamespacePrefix}Api")
 
     return $updated
 }
