@@ -33,6 +33,12 @@ public sealed class ConfigurationIdentityTests
 
     private static string ReadDataProtectionApplicationName(string path)
     {
+        var options = new JsonDocumentOptions
+        {
+            AllowTrailingCommas = true,
+            CommentHandling = JsonCommentHandling.Skip
+        };
+
         using var document = JsonDocument.Parse(File.ReadAllText(path));
         return document.RootElement
             .GetProperty("DataProtection")

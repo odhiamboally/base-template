@@ -1,0 +1,1 @@
+Requesting file contents of Program.cs and DataProtectionSettings.cs to inspect AddDataProtection configuration.
