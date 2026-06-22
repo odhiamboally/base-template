@@ -169,7 +169,7 @@ try
                     """,
                 Contact = new()
                 {
-                    Name = "LlanCore Support",
+                    Name = "BaseTemplate Support",
                     Email = "support@unsacco.org",
                 }
             };

@@ -91,12 +91,20 @@ internal static partial class DependencyInjection
 
     private static void ConfigureDataProtection(IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
-        services.Configure<DataProtectionSettings>(configuration.GetSection(DataProtectionSettings.SectionName));
+        services.AddOptions<DataProtectionSettings>()
+            .Bind(configuration.GetSection(DataProtectionSettings.SectionName))
+            .Validate(
+                settings => !string.IsNullOrWhiteSpace(settings.ApplicationName),
+                "DataProtection:ApplicationName is required and must remain stable after protected data has been issued.")
+            .ValidateOnStart();
 
         var dpSettings = configuration.GetSection(DataProtectionSettings.SectionName).Get<DataProtectionSettings>();
+        var applicationName = string.IsNullOrWhiteSpace(dpSettings?.ApplicationName)
+            ? "BaseTemplate"
+            : dpSettings.ApplicationName.Trim();
 
         var dataProtectionBuilder = services.AddDataProtection()
-            .SetApplicationName("LlanCore.BT");
+            .SetApplicationName(applicationName);
 
         if (dpSettings?.UseExternalKeyStore == true && !string.IsNullOrWhiteSpace(dpSettings.BlobKeyUri))
         {
@@ -112,6 +120,11 @@ internal static partial class DependencyInjection
 
         Directory.CreateDirectory(keysPath);
         dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+
+        if (OperatingSystem.IsWindows())
+        {
+            dataProtectionBuilder.ProtectKeysWithDpapi();
+        }
 
     }
 

@@ -13,6 +13,8 @@ BaseTemplate uses Azure platform services for these concerns:
 
 Keep Data Protection keys and profile images in separate blob containers.
 
+`DataProtection:ApplicationName` is the application discriminator embedded in Data Protection purpose chains. It must remain stable across local runs, deployments, and slots whenever existing cookies, TOTP secrets, or protected tokens must remain readable. The unrenamed template uses `BaseTemplate`. Rename it before the cloned application first runs; changing it after protected data exists is a security-data migration, not a branding change.
+
 ## Recommended Containers
 
 Create these blob containers in the storage account:
@@ -161,6 +163,7 @@ ProfileImageStorage__AzureBlob__ContainerUri=https://<storage-account>.blob.core
 ProfileImageStorage__AzureBlob__BlobPrefix=profile-images
 DataProtection__BlobKeyUri=https://<storage-account>.blob.core.windows.net/dataprotection-keys/keyring.xml
 DataProtection__KeyEncryptionMode=KeyVault
+DataProtection__ApplicationName=BaseTemplate
 DataProtection__KeyVaultKeyIdentifier=https://<key-vault-name>.vault.azure.net/keys/<key-name>/<key-version>
 ```
 

@@ -20,8 +20,10 @@ This file is the canonical source of truth and working contract for AI coding to
 ## Project Identity
 
 - Repo: `odhiamboally/base-template`
-- Product: LlanCore BaseTemplate
+- Product: BaseTemplate
 - Root namespace prefix: `BT`
+- Rename a clone with `scripts/rename-template.ps1` before its first run or deployment.
+- After protected data has been issued, `DataProtection:ApplicationName` is immutable without an explicit migration or security reset.
 - Target framework: `.NET 10`
 - Architecture: modular monolith with Clean Architecture boundaries and bounded-context feature folders.
 - Current bounded contexts: `IAM`, `Banking`, `HR`, and `Shared`.

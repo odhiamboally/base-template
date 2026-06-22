@@ -23,6 +23,8 @@ Avoid creating a custom environment name such as `Native` unless we have a clear
 
 Never commit real passwords, account keys, connection strings, API keys, or temporary provisioning passwords.
 
+`DataProtection:ApplicationName` is a cryptographic compatibility identifier, not a display label. Rename the template before its first run, then keep this value stable after protected cookies, TOTP secrets, or tokens have been issued. A later change requires an explicit key/ciphertext migration or security reset plan.
+
 ## Naming Rules
 
 - .NET configuration sections use `:` locally, for example `DataProtection:BlobKeyUri`.
@@ -89,6 +91,7 @@ In Azure App Service:
 ```text
 ASPNETCORE_ENVIRONMENT=Production
 KeyVault__Uri=https://<vault>.vault.azure.net/
+DataProtection__ApplicationName=BaseTemplate
 DataProtection__KeyEncryptionMode=KeyVault
 DataProtection__BlobKeyUri=https://<storage-account>.blob.core.windows.net/dataprotection-keys/keyring.xml
 DataProtection__KeyVaultKeyIdentifier=https://<vault>.vault.azure.net/keys/<key>/<version>
@@ -136,6 +139,7 @@ When checking screenshots or app settings, verify:
 
 - Mode/provider/transport settings use supported values exactly: `DataProtection__KeyEncryptionMode` = `Auto`, `KeyVault`, `Certificate`, or `None`; `ProfileImageStorage__Provider` = `Local` or `AzureBlob`; `Messaging__Transport` = `RabbitMq` or `AzureServiceBus`; `CacheSettings__Provider` = `Auto`, `Memory`, `Redis`, or `AzureManagedRedis`.
 - `DataProtection__BlobKeyUri` points to the `dataprotection-keys` container and a blob name such as `keyring.xml`.
+- `DataProtection__ApplicationName` is identical across every instance and deployment slot and remains unchanged after protected data is issued.
 - `DataProtection__KeyEncryptionMode` is `KeyVault` or `Auto` for Azure.
 - `DataProtection__KeyVaultKeyIdentifier` points to a Key Vault key version, not a secret or certificate.
 - `DataProtection__CertificateThumbprint` is empty unless deliberately using certificate mode.

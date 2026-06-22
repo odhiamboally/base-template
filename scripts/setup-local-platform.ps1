@@ -62,11 +62,11 @@ foreach ($key in $requiredKeys) {
 }
 
 $volumeNames = @(
-    'llancore-basetemplate_rabbitmq-data',
-    'llancore-basetemplate_redis-data',
-    'llancore-basetemplate_seq-data',
-    'llancore-basetemplate_azurite-data',
-    'llancore-basetemplate_sqlserver-data'
+    'basetemplate_rabbitmq-data',
+    'basetemplate_redis-data',
+    'basetemplate_seq-data',
+    'basetemplate_azurite-data',
+    'basetemplate_sqlserver-data'
 )
 foreach ($volumeName in $volumeNames) {
     & docker volume inspect $volumeName *> $null
