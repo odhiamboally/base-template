@@ -1,4 +1,4 @@
-name: cg-llancore-basetemplate
+name: cg-basetemplate
 
 services:
   rabbitmq:
@@ -88,17 +88,17 @@ services:
 
 volumes:
   rabbitmq-data:
-    name: llancore-basetemplate_rabbitmq-data
+    name: basetemplate_rabbitmq-data
     external: true
   redis-data:
-    name: llancore-basetemplate_redis-data
+    name: basetemplate_redis-data
     external: true
   seq-data:
-    name: llancore-basetemplate_seq-data
+    name: basetemplate_seq-data
     external: true
   azurite-data:
-    name: llancore-basetemplate_azurite-data
+    name: basetemplate_azurite-data
     external: true
   sqlserver-data:
-    name: llancore-basetemplate_sqlserver-data
+    name: basetemplate_sqlserver-data
     external: true

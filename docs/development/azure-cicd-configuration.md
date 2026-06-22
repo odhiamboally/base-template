@@ -64,7 +64,7 @@ Add these environment variables:
 | `AZURE_CLIENT_ID` | Application client ID | OIDC deployment identity |
 | `AZURE_TENANT_ID` | Entra tenant ID | OIDC tenant |
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | Deployment subscription |
-| `AZURE_RESOURCE_GROUP` | `rg-llancore-prod` | Resource group containing Azure SQL |
+| `AZURE_RESOURCE_GROUP` | `rg-basetemplate-prod` | Resource group containing Azure SQL |
 | `AZURE_SQL_SERVER_NAME` | `bt-prod-sqlserver` | SQL logical server name without `.database.windows.net` |
 | `AZURE_SQL_NETWORK_MODE` | `PublicRunner` | `PublicRunner` or `PrivateRunner` migration networking strategy |
 | `AZURE_API_APP_NAME` | `base-template-api-dev` | Exact API App Service resource name |

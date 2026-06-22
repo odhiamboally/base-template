@@ -2,9 +2,9 @@
 
 BaseTemplate runs application code from Visual Studio and runs replaceable infrastructure dependencies in Docker. This preserves normal .NET debugging while making a new developer machine reproducible.
 
-Docker Desktop groups these services under the Compose project name `cg-llancore-basetemplate`. The `cg-` prefix identifies the row as a container group rather than an individual service.
+Docker Desktop groups these services under the Compose project name `cg-basetemplate`. The `cg-` prefix identifies the row as a container group rather than an individual service.
 
-Data volumes retain stable `llancore-basetemplate_*` names independently of the group label. The setup script creates missing volumes and reuses existing ones, allowing container-group renames and container recreation without abandoning local data.
+Data volumes retain stable `basetemplate_*` names independently of the group label. The setup script creates missing volumes and reuses existing ones, allowing container-group renames and container recreation without abandoning local data.
 
 ## Runtime Boundary
 

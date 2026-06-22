@@ -4,6 +4,7 @@ internal sealed class DataProtectionSettings
 {
     public const string SectionName = "DataProtection";
 
+    public string ApplicationName { get; init; } = "BaseTemplate";
     public string? KeysPath { get; init; }
     public string? BlobKeyUri { get; init; }
     public string? KeyVaultKeyIdentifier { get; init; }

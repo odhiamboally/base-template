@@ -22,7 +22,7 @@ internal sealed class InitiateTotpSetupCommandHandler(
     IIamUnitOfWork iamUnitOfWork,
     ILogger<InitiateTotpSetupCommandHandler> logger) : IRequestHandler<InitiateTotpSetupCommand, AppResponse<TwoFactorSetupInfo>>
 {
-    private const string TotpIssuer = "LlanCore.BaseTemplate.API";
+    private const string TotpIssuer = "BaseTemplate.API";
 
     public async Task<AppResponse<TwoFactorSetupInfo>> Handle(InitiateTotpSetupCommand command, CancellationToken cancellationToken)
     {
