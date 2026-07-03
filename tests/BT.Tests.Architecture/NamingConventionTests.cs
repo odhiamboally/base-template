@@ -1,9 +1,11 @@
 using FluentAssertions;
 using FluentValidation;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NetArchTest.Rules;
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace BT.Tests.Architecture;
 
@@ -13,10 +15,6 @@ namespace BT.Tests.Architecture;
 /// </summary>
 public sealed class NamingConventionTests
 {
-    private static readonly Regex PublicTopLevelTypeRegex = new(
-        @"^\s*public\s+(?:(?:sealed|abstract|static|partial|readonly)\s+)*(?:(?:record\s+(?:class\s+|struct\s+)?)|class\s+|struct\s+|interface\s+|enum\s+)(?<name>[A-Za-z_][A-Za-z0-9_]*)",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
     // ── Interfaces ────────────────────────────────────────────────────────────
 
     [Fact]
@@ -184,21 +182,10 @@ public sealed class NamingConventionTests
             .Select(path => new
             {
                 Path = path,
-                Types = File.ReadLines(path)
-                    .Select((line, index) => new { Line = index + 1, Match = PublicTopLevelTypeRegex.Match(line) })
-                    .Where(item => item.Match.Success)
-                    .Select(item => new
-                    {
-                        item.Line,
-                        Name = item.Match.Groups["name"].Value,
-                    })
-                    .ToList(),
+                Types = GetPublicTopLevelTypes(path),
             })
             .Where(file => file.Types.Count > 1 ||
-                           file.Types.Any(type => !string.Equals(
-                               type.Name,
-                               Path.GetFileNameWithoutExtension(file.Path),
-                               StringComparison.Ordinal)))
+                           file.Types.Any(type => !IsExpectedTypeFileName(file.Path, type)))
             .Select(file =>
             {
                 var relativePath = Path.GetRelativePath(AssemblyReferences.RepoRoot, file.Path);
@@ -212,6 +199,55 @@ public sealed class NamingConventionTests
             string.Join(Environment.NewLine, violations));
     }
 
+    private static List<PublicTopLevelType> GetPublicTopLevelTypes(string path)
+    {
+        var sourceText = File.ReadAllText(path);
+        var syntaxTree = CSharpSyntaxTree.ParseText(sourceText, path: path);
+        var root = syntaxTree.GetCompilationUnitRoot();
+
+        return root
+            .DescendantNodes(static node => node is CompilationUnitSyntax or BaseNamespaceDeclarationSyntax)
+            .Where(static node => node.Parent is CompilationUnitSyntax or BaseNamespaceDeclarationSyntax)
+            .Select(TryCreatePublicTopLevelType)
+            .Where(static type => type is not null)
+            .Select(static type => type!)
+            .ToList();
+    }
+
+    private static PublicTopLevelType? TryCreatePublicTopLevelType(SyntaxNode node)
+    {
+        return node switch
+        {
+            BaseTypeDeclarationSyntax typeDeclaration when IsPublic(typeDeclaration.Modifiers) =>
+                new PublicTopLevelType(
+                    typeDeclaration.Identifier.ValueText,
+                    GetLine(typeDeclaration),
+                    IsPartial(typeDeclaration.Modifiers)),
+
+            BaseNamespaceDeclarationSyntax => null,
+            CompilationUnitSyntax => null,
+            _ => null
+        };
+    }
+
+    private static bool IsExpectedTypeFileName(string path, PublicTopLevelType type)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(path);
+
+        return string.Equals(type.Name, fileName, StringComparison.Ordinal) ||
+               (type.IsPartial &&
+                fileName.StartsWith($"{type.Name}.", StringComparison.Ordinal));
+    }
+
+    private static bool IsPublic(SyntaxTokenList modifiers) =>
+        modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PublicKeyword));
+
+    private static bool IsPartial(SyntaxTokenList modifiers) =>
+        modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword));
+
+    private static int GetLine(SyntaxNode node) =>
+        node.SyntaxTree.GetLineSpan(node.Span).StartLinePosition.Line + 1;
+
     private static bool IsAuthoredSourceFile(string path)
     {
         var directorySeparator = Path.DirectorySeparatorChar.ToString();
@@ -224,4 +260,6 @@ public sealed class NamingConventionTests
                !path.EndsWith(".xaml.cs", StringComparison.OrdinalIgnoreCase) &&
                !path.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase);
     }
+
+    private sealed record PublicTopLevelType(string Name, int Line, bool IsPartial);
 }

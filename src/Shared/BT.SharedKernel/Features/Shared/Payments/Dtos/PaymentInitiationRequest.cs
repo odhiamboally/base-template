@@ -6,4 +6,5 @@ public sealed record PaymentInitiationRequest(
     string Description,
     string CustomerReference,
     string CallbackUrl,
-    string? PayerPhoneNumber = null);
+    string? PayerPhoneNumber = null,
+    string? Provider = null);

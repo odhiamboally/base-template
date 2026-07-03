@@ -83,7 +83,7 @@ Every public top-level type must live in its own file named after that type. Thi
 - **Audit Actor Stamping:** Persistence audit fields use the current actor provider where available and fall back to `System` only for background/startup work.
 - **Profile Image Storage:** User profile pictures are supported through `IProfilePictureStorage`; local development stores files under API static assets, while Azure Blob/Azurite providers are available behind the same abstraction for cloud and local-platform hardening.
 - **Provider-Based Email Delivery:** Production email is no longer SMTP-driven. Local development uses Mailpit capture, while production uses provider API mode (`SendGrid`) through typed `EmailSettings`.
-- **Operational API Baseline:** OutputCache, response compression, configurable fixed-window rate limiting, SignalR hub registration, deep health-check endpoints, feature flags, QuestPDF reporting abstraction, and payment gateway abstraction with NoOp/Stripe/M-Pesa provider selection are wired.
+- **Operational API Baseline:** OutputCache, response compression, configurable fixed-window rate limiting, SignalR hub registration, deep health-check endpoints, feature flags, QuestPDF reporting abstraction, and payment gateway abstraction with per-request NoOp/Stripe/M-Pesa provider routing are wired.
 - **Architecture Tests:** Guardrails built enforcing that all Queries declare cache strategies and all Banking/HR write commands declare cache invalidation.
 
 ### 3.2 Areas That Must Still Be Completed Or Certified
@@ -204,7 +204,7 @@ EventIds are structured by architectural layer to simplify searching in logs:
 - [x] **Feature Flags:** Generic fail-closed feature-flag abstraction is registered with configuration-backed evaluation.
 - [x] **SignalR Baseline:** Authenticated notification hub structure and tenant grouping convention are registered.
 - [x] **Reporting Baseline:** QuestPDF reporting abstraction is registered without product-specific reports.
-- [~] **Payment Gateway Integrations:** `IPaymentGateway` abstraction plus NoOp, Stripe Checkout, and M-Pesa STK/query adapters are registered. Remaining certification is real-provider credentials, callback smoke tests, idempotency, reconciliation, and provider-specific operational runbooks.
+- [~] **Payment Gateway Integrations:** `IPaymentGateway` abstraction plus NoOp, Stripe Checkout, M-Pesa STK/query adapters, and per-request provider routing are registered. Remaining certification is real-provider credentials, callback smoke tests, idempotency, reconciliation, and provider-specific operational runbooks.
 - [~] **Entra ID SSO:** OIDC scheme and typed configuration are registered. Remaining IAM work is the AppUser linking/token issuance callback flow and UI entry point.
 - [ ] **Passkeys/WebAuthn:** Add passkey registration/authentication ceremonies, credential storage, browser challenge flow, and recovery policy.
 

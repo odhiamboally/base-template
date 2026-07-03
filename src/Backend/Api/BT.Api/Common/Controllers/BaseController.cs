@@ -76,26 +76,6 @@ public abstract class BaseController : ControllerBase
 
         if (error.Type == ErrorType.Validation)
         {
-            var errors = error.ValidationErrors is null
-                ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]>(error.ValidationErrors);
-
-            var validationProblem = new ValidationProblemDetails(errors)
-            {
-                Status = statusCode,
-                Title = title,
-                Detail = error.Message,
-                Type = ToProblemType(error.Code),
-                Instance = HttpContext.Request.Path.Value
-            };
-
-            AddDiagnostics(validationProblem, error);
-
-            return StatusCode(statusCode, validationProblem);
-        }
-
-        if (error.Type == ErrorType.Validation)
-        {
             var validationErrors = error.ValidationErrors is null
                 ? new Dictionary<string, string[]>()
                 : new Dictionary<string, string[]>(error.ValidationErrors);

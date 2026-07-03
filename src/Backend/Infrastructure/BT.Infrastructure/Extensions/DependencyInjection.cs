@@ -161,18 +161,7 @@ public static class DependencyInjection
         services.AddScoped<NoOpPaymentGateway>();
         services.AddScoped<StripePaymentGateway>();
         services.AddScoped<MpesaPaymentGateway>();
-        services.AddScoped<IPaymentGateway>(sp =>
-        {
-            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PaymentSettings>>().Value;
-            return GetPaymentProvider(settings) switch
-            {
-                PaymentProvider.NoOp => sp.GetRequiredService<NoOpPaymentGateway>(),
-                PaymentProvider.Stripe => sp.GetRequiredService<StripePaymentGateway>(),
-                PaymentProvider.Mpesa => sp.GetRequiredService<MpesaPaymentGateway>(),
-                _ => throw new InvalidOperationException(
-                    $"Payments:Provider '{settings.Provider}' is not supported. Supported values: NoOp, Stripe, Mpesa.")
-            };
-        });
+        services.AddScoped<IPaymentGateway, RoutedPaymentGateway>();
         services.AddScoped<LocalProfilePictureStorage>();
         services.AddScoped<AzureBlobProfilePictureStorage>();
         services.AddScoped<IProfilePictureStorage>(sp =>
@@ -764,24 +753,17 @@ public static class DependencyInjection
 
     private static bool IsValidEmailProvider(EmailSettings settings)
     {
-        if (settings is null)
-        {
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(settings.FromAddress))
-        {
-            return false;
-        }
-
-        return GetEmailProvider(settings) switch
-        {
-            EmailProvider.NoOp => true,
-            EmailProvider.LocalMailpit => !string.IsNullOrWhiteSpace(settings.LocalMailpit.Host) &&
-                settings.LocalMailpit.Port > 0,
-            EmailProvider.SendGrid => !string.IsNullOrWhiteSpace(settings.SendGrid.Endpoint),
-            _ => false
-        };
+        return settings is not null && (string.IsNullOrWhiteSpace(settings.FromAddress)
+            ? false
+            : GetEmailProvider(settings) switch
+              {
+                  EmailProvider.NoOp => true,
+                  EmailProvider.LocalMailpit => !string.IsNullOrWhiteSpace(settings.LocalMailpit.Host) &&
+                      settings.LocalMailpit.Port > 0,
+                  EmailProvider.SendGrid => !string.IsNullOrWhiteSpace(settings.SendGrid.Endpoint) &&
+                      Uri.TryCreate(settings.SendGrid.Endpoint, UriKind.Absolute, out _),
+                  _ => false
+              });
     }
 
     private static bool IsValidFeatureFlagProvider(FeatureFlagSettings settings)
@@ -798,7 +780,7 @@ public static class DependencyInjection
 
     private static bool IsValidPaymentProvider(PaymentSettings settings) =>
         settings is not null &&
-        GetPaymentProvider(settings) is not PaymentProvider.Invalid;
+        PaymentProviderParser.Parse(settings.Provider) is not PaymentProviderKind.Invalid;
 
     private static bool IsValidEntraIdSettings(EntraIdSettings settings)
     {
@@ -1025,27 +1007,4 @@ public static class DependencyInjection
         Invalid
     }
 
-    private static PaymentProvider GetPaymentProvider(PaymentSettings settings)
-    {
-        if (string.IsNullOrWhiteSpace(settings.Provider))
-        {
-            return PaymentProvider.NoOp;
-        }
-
-        return settings.Provider.Trim() switch
-        {
-            var provider when provider.Equals("NoOp", StringComparison.OrdinalIgnoreCase) => PaymentProvider.NoOp,
-            var provider when provider.Equals("Stripe", StringComparison.OrdinalIgnoreCase) => PaymentProvider.Stripe,
-            var provider when provider.Equals("Mpesa", StringComparison.OrdinalIgnoreCase) => PaymentProvider.Mpesa,
-            _ => PaymentProvider.Invalid
-        };
-    }
-
-    private enum PaymentProvider
-    {
-        NoOp,
-        Stripe,
-        Mpesa,
-        Invalid
-    }
 }

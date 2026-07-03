@@ -120,6 +120,7 @@ internal sealed class MpesaPaymentGateway(
 
     public async Task<AppResponse<PaymentStatusResponse>> GetStatusAsync(
         string paymentReference,
+        string? provider = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(paymentReference);

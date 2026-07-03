@@ -11,5 +11,6 @@ public interface IPaymentGateway
 
     Task<AppResponse<PaymentStatusResponse>> GetStatusAsync(
         string paymentReference,
+        string? provider = null,
         CancellationToken cancellationToken = default);
 }

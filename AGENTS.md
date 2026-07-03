@@ -49,6 +49,7 @@ This file is the canonical source of truth and working contract for AI coding to
 - Do not leak exception type names, stack traces, provider errors, connection strings, or internal IDs into user-facing messages.
 - All user-facing errors from the UI must be sanitized through the shared messaging pattern.
 - Provider-specific integration DTOs belong beside the provider adapter. Shared contracts should stay provider-neutral and should not expose Stripe, M-Pesa, Azure, or other provider wire payloads.
+- When a capability supports multiple runtime providers per operation, use a router/factory over isolated provider adapters. Do not make one provider adapter understand another provider's DTOs, credentials, or callbacks.
 
 ## Persistence Rules
 

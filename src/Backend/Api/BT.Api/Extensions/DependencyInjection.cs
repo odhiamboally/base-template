@@ -355,7 +355,8 @@ internal static partial class DependencyInjection
 
     private static bool IsValidPolicy(RateLimitPolicySettings policy)
     {
-        return policy.PermitLimit > 0 &&
+        return policy is not null &&
+               policy.PermitLimit > 0 &&
                policy.WindowSeconds > 0 &&
                policy.QueueLimit >= 0;
     }

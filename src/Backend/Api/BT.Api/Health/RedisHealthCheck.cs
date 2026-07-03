@@ -41,13 +41,8 @@ internal sealed class RedisHealthCheck(
 
     private static bool IsMemoryCache(CacheSettings settings)
     {
-        if (settings.Provider.Equals("Memory", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return settings.Provider.Equals("Auto", StringComparison.OrdinalIgnoreCase) &&
+        return string.Equals(settings.Provider, "Memory", StringComparison.OrdinalIgnoreCase) || (string.Equals(settings.Provider, "Auto", StringComparison.OrdinalIgnoreCase) &&
                string.IsNullOrWhiteSpace(settings.Redis.ConnectionString) &&
-               string.IsNullOrWhiteSpace(settings.Azure?.ConnectionString);
+               string.IsNullOrWhiteSpace(settings.Azure?.ConnectionString));
     }
 }

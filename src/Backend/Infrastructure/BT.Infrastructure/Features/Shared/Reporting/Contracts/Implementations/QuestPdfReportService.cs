@@ -12,6 +12,7 @@ internal sealed class QuestPdfReportService : IPdfReportService
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Title);
+        ArgumentNullException.ThrowIfNull(request.Sections);
 
         var document = Document.Create(container =>
         {
