@@ -288,7 +288,7 @@
             PageSize: PageSize);
 
         var response = await CustomerService.SearchAsync(request);
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _messageSeverity = Severity.Error;
             _message = response.Message ?? "We could not load customers.";
@@ -378,7 +378,7 @@
         }
 
         var response = await CustomerService.DeleteAsync(customer.Id);
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Customer delete failed.", Severity.Error);
             return;

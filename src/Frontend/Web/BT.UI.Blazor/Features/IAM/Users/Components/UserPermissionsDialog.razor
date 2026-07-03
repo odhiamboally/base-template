@@ -61,14 +61,14 @@
         var permissionsResponse = await IamAdminService.SearchPermissionsAsync(new PermissionSearchRequest(IsActive: true, PageSize: 50));
         var userPermissionsResponse = await IamAdminService.GetUserPermissionsAsync(User.Id);
 
-        if (!permissionsResponse.Successful || permissionsResponse.Data is null)
+        if (!permissionsResponse.IsSuccess || permissionsResponse.Data is null)
         {
             Snackbar.Add(permissionsResponse.Message ?? "We could not load permissions.", Severity.Error);
             _isLoading = false;
             return;
         }
 
-        if (!userPermissionsResponse.Successful || userPermissionsResponse.Data is null)
+        if (!userPermissionsResponse.IsSuccess || userPermissionsResponse.Data is null)
         {
             Snackbar.Add(userPermissionsResponse.Message ?? "We could not load user permissions.", Severity.Error);
             _isLoading = false;
@@ -103,7 +103,7 @@
         var response = await IamAdminService.UpdateUserPermissionsAsync(User.Id, new UpdateUserPermissionsRequest([.. _selectedKeys.Order(StringComparer.OrdinalIgnoreCase)]));
         _isSaving = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "User permission update failed.", Severity.Error);
             return;

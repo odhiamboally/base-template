@@ -16,7 +16,7 @@ Avoid creating a custom environment name such as `Native` unless we have a clear
 
 - `appsettings.json`: safe defaults, placeholders, feature structure, and non-secret values.
 - `appsettings.Development.json`: safe local defaults and local-only toggles.
-- User-secrets: local developer secrets such as SQL connection strings, SMTP credentials, JWT secret, Key Vault URI, and Azure storage connection strings.
+- User-secrets: local developer secrets such as SQL connection strings, JWT secret, Key Vault URI, provider API keys, and Azure storage connection strings.
 - Environment variables: CI/CD, containers, App Service settings, and temporary overrides.
 - Azure Key Vault: production secrets and managed secrets used by deployed apps.
 - Azure App Service settings: runtime settings, Key Vault references, and non-secret deployment configuration.
@@ -45,6 +45,15 @@ Never commit real passwords, account keys, connection strings, API keys, or temp
 | Observability | Application Insights / Azure Monitor | `Observability:AzureMonitor:ConnectionString`, `ApplicationInsights:ConnectionString`, or `APPLICATIONINSIGHTS_CONNECTION_STRING` | Implemented with fallbacks |
 | Messaging | RabbitMQ locally; Azure Service Bus in Azure | `Messaging:Transport`, provider-specific settings | Implemented; local Compose smoke remains |
 | Caching | Redis locally; Azure Managed Redis in Azure | `CacheSettings:Provider`, provider-specific settings | Implemented with memory fallback and managed-identity support |
+| Email delivery | Mailpit locally; provider API in Azure | `EmailSettings:Provider`, provider-specific settings | Implemented; SMTP credentials are not a production standard |
+| HTTP output caching | ASP.NET Core OutputCache | `AddOutputCache`, `UseOutputCache`, endpoint policies | Implemented |
+| Response compression | ASP.NET Core ResponseCompression | `ResponseCompression:Enabled`, `ResponseCompression:EnableForHttps` | Implemented |
+| Feature flags | Configuration-backed feature gate | `FeatureFlags:Provider`, `FeatureFlags:Flags` | Implemented; fail-closed by default |
+| SignalR | Authenticated notification hub | `/hubs/notifications` | Implemented baseline |
+| Reporting | QuestPDF via reporting abstraction | `Reporting:QuestPdf:License` | Implemented baseline |
+| Payments | Payment gateway abstraction with NoOp, Stripe, and M-Pesa adapters | `Payments:Provider`, `Payments:Stripe:*`, `Payments:Mpesa:*` | Code-wired; provider credentials/callback smoke tests are environment-specific certification |
+| Entra ID SSO | Corporate OIDC auth scheme | `EntraId:Enabled`, `EntraId:TenantId`, `EntraId:ClientId`, `EntraId:ClientSecret` | OIDC scheme configurable; local AppUser linking and token issuance flow remains the dedicated IAM slice |
+| Passkeys/WebAuthn | Browser passkey authentication | TBD | Pending dedicated IAM slice |
 
 ## Recommended Local Setup
 
@@ -53,9 +62,49 @@ Use user-secrets for local development:
 ```powershell
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<local-sql-connection>" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "JwtSettings:Secret" "<strong-local-jwt-secret>" --project src\Backend\Api\BT.Api\BT.Api.csproj
-dotnet user-secrets set "EmailSettings:Username" "<smtp-username>" --project src\Backend\Api\BT.Api\BT.Api.csproj
-dotnet user-secrets set "EmailSettings:Password" "<smtp-password-or-app-password>" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "IamProvisioning:TemporaryPassword" "<temporary-password>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+```
+
+Local email should normally be captured by Mailpit through the setup script:
+
+```powershell
+dotnet user-secrets set "EmailSettings:Provider" "LocalMailpit" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "EmailSettings:LocalMailpit:Host" "localhost" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "EmailSettings:LocalMailpit:Port" "1025" --project src\Backend\Api\BT.Api\BT.Api.csproj
+```
+
+Do not use personal mailbox SMTP credentials as the production email path. Production email should use an approved provider API, currently represented by `EmailSettings:Provider=SendGrid`.
+
+Payment providers are selected explicitly:
+
+```powershell
+dotnet user-secrets set "Payments:Provider" "NoOp" --project src\Backend\Api\BT.Api\BT.Api.csproj
+
+# Stripe
+dotnet user-secrets set "Payments:Provider" "Stripe" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Stripe:SecretKey" "<stripe-secret-key>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Stripe:SuccessUrl" "https://localhost:7049/payments/success" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Stripe:CancelUrl" "https://localhost:7049/payments/cancel" --project src\Backend\Api\BT.Api\BT.Api.csproj
+
+# M-Pesa Daraja
+dotnet user-secrets set "Payments:Provider" "Mpesa" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Mpesa:ConsumerKey" "<daraja-consumer-key>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Mpesa:ConsumerSecret" "<daraja-consumer-secret>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Mpesa:ShortCode" "<paybill-or-till>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Mpesa:PassKey" "<daraja-passkey>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Mpesa:AuthEndpoint" "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Mpesa:StkPushEndpoint" "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Mpesa:StkQueryEndpoint" "https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Mpesa:CallbackUrl" "https://<public-callback-host>/api/v1/payments/mpesa/callback" --project src\Backend\Api\BT.Api\BT.Api.csproj
+```
+
+Entra ID SSO is off by default. Enable it only after registering the application in Microsoft Entra ID and adding the redirect URI matching `EntraId:CallbackPath`:
+
+```powershell
+dotnet user-secrets set "EntraId:Enabled" "true" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "EntraId:TenantId" "<tenant-id>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "EntraId:ClientId" "<app-client-id>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "EntraId:ClientSecret" "<app-client-secret>" --project src\Backend\Api\BT.Api\BT.Api.csproj
 ```
 
 For local-only development, leave these values empty so the app uses filesystem/local storage:
@@ -98,6 +147,31 @@ DataProtection__KeyVaultKeyIdentifier=https://<vault>.vault.azure.net/keys/<key>
 ProfileImageStorage__Provider=AzureBlob
 ProfileImageStorage__AzureBlob__ContainerUri=https://<storage-account>.blob.core.windows.net/profile-images
 ProfileImageStorage__AzureBlob__BlobPrefix=profile-images
+EmailSettings__Provider=SendGrid
+EmailSettings__SendGrid__Endpoint=https://api.sendgrid.com/v3/mail/send
+EmailSettings__SendGrid__ApiKey=<key-vault-reference-or-app-setting>
+EmailSettings__FromAddress=noreply@your-domain.example
+EmailSettings__DisplayName=BaseTemplate
+
+# Payments
+Payments__Provider=NoOp|Stripe|Mpesa
+Payments__Stripe__SecretKey=<key-vault-reference>
+Payments__Stripe__SuccessUrl=https://your-app/payments/success
+Payments__Stripe__CancelUrl=https://your-app/payments/cancel
+Payments__Mpesa__ConsumerKey=<key-vault-reference>
+Payments__Mpesa__ConsumerSecret=<key-vault-reference>
+Payments__Mpesa__ShortCode=<paybill-or-till>
+Payments__Mpesa__PassKey=<key-vault-reference>
+Payments__Mpesa__AuthEndpoint=https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials
+Payments__Mpesa__StkPushEndpoint=https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest
+Payments__Mpesa__StkQueryEndpoint=https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query
+Payments__Mpesa__CallbackUrl=https://your-api/api/v1/payments/mpesa/callback
+
+# Entra ID SSO
+EntraId__Enabled=false
+EntraId__TenantId=<tenant-id>
+EntraId__ClientId=<client-id>
+EntraId__ClientSecret=<key-vault-reference>
 
 # Redis Cache - Option 1: Access Keys (Standard)
 CacheSettings__Provider=AzureManagedRedis
@@ -147,7 +221,9 @@ When checking screenshots or app settings, verify:
 - `ConnectionStrings--DefaultConnection` exists in Key Vault or `ConnectionStrings__DefaultConnection` exists in App Service.
 - Cache settings: If `CacheSettings:Azure:UseEntraId` is `true`, ensure the API connection string does not contain a password and has RESP3 enabled. For a user-assigned managed identity, `CacheSettings:Azure:PrincipalId` must contain its client ID.
 - `JwtSettings--Secret` or `JwtSettings--SecretKey` exists in Key Vault.
-- Email credentials exist and `EmailSettings:FromAddress` is allowed by the SMTP provider.
+- `EmailSettings:Provider` is `LocalMailpit` only in Development, `SendGrid` in Production, and `EmailSettings:FromAddress` is a verified sender/domain with the selected provider.
+- Use `OutputCache` for API response caching. Do not add legacy `ResponseCaching` unless a future requirement specifically needs HTTP header/proxy cache semantics.
+- `Microsoft.OpenApi` is pinned directly to a non-vulnerable compatible 2.x version because the ASP.NET OpenAPI source generator is not yet compatible with the 3.x package line.
 
 ## CI/CD Pipeline and Deployments
 

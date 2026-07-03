@@ -9,13 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.Shared.Lookups.CommandHandlers;
 
-public sealed record CreateLookupCommand(string LookupType, CreateLookupRequest Request, string UserId)
-    : IRequest<AppResponse<LookupResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("lookups")];
-}
 
 internal sealed class CreateLookupCommandHandler(ISharedUnitOfWork unitOfWork, ILogger<CreateLookupCommandHandler> logger)
     : IRequestHandler<CreateLookupCommand, AppResponse<LookupResponse>>
@@ -26,7 +20,7 @@ internal sealed class CreateLookupCommandHandler(ISharedUnitOfWork unitOfWork, I
         {
             if (!Enum.TryParse<LookupType>(command.LookupType, true, out var lookupType))
             {
-                return AppResponse.Failure<LookupResponse>($"Invalid lookup type: {command.LookupType}");
+                return AppResponses.Failure<LookupResponse>($"Invalid lookup type: {command.LookupType}");
             }
 
             var lookup = await unitOfWork.LookupRepository
@@ -35,8 +29,8 @@ internal sealed class CreateLookupCommandHandler(ISharedUnitOfWork unitOfWork, I
 
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
             return saved
-                ? AppResponse.Success("Lookup created.", new LookupResponse(lookup.Id, lookup.Code, lookup.Description, lookup.DisplayOrder))
-                : AppResponse.Failure<LookupResponse>("Lookup create failed.");
+                ? AppResponses.Success("Lookup created.", new LookupResponse(lookup.Id, lookup.Code, lookup.Description, lookup.DisplayOrder))
+                : AppResponses.Failure<LookupResponse>("Lookup create failed.");
         }
         catch (Exception ex)
         {

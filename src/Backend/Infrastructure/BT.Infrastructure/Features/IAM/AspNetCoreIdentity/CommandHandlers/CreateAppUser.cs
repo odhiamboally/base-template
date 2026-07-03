@@ -37,7 +37,7 @@ internal sealed class CreateAppUser(
         try
         {
             if (req.EmployeeId.HasValue && req.CustomerId.HasValue)
-                return AppResponse.Failure<AppUserResponse>("A user account can be linked to either an employee or a customer, not both.");
+                return AppResponses.Failure<AppUserResponse>("A user account can be linked to either an employee or a customer, not both.");
 
             Employee? employee = null;
 
@@ -50,7 +50,7 @@ internal sealed class CreateAppUser(
                     .ConfigureAwait(false);
 
                 if (employee is null)
-                    return AppResponse.Failure<AppUserResponse>("The specified employee does not exist or has been deactivated.");
+                    return AppResponses.Failure<AppUserResponse>("The specified employee does not exist or has been deactivated.");
 
                 var alreadyLinked = await userManager.Users
                     .AsNoTracking()
@@ -58,7 +58,7 @@ internal sealed class CreateAppUser(
                     .ConfigureAwait(false);
 
                 if (alreadyLinked)
-                    return AppResponse.Failure<AppUserResponse>("A user account already exists for this employee.");
+                    return AppResponses.Failure<AppUserResponse>("A user account already exists for this employee.");
             }
 
             Customer? customer = null;
@@ -71,7 +71,7 @@ internal sealed class CreateAppUser(
                     .ConfigureAwait(false);
 
                 if (customer is null)
-                    return AppResponse.Failure<AppUserResponse>("The specified customer does not exist or has been deactivated.");
+                    return AppResponses.Failure<AppUserResponse>("The specified customer does not exist or has been deactivated.");
 
                 var alreadyLinked = await userManager.Users
                     .AsNoTracking()
@@ -79,7 +79,7 @@ internal sealed class CreateAppUser(
                     .ConfigureAwait(false);
 
                 if (alreadyLinked)
-                    return AppResponse.Failure<AppUserResponse>("A user account already exists for this customer.");
+                    return AppResponses.Failure<AppUserResponse>("A user account already exists for this customer.");
             }
 
             var emailOrUsernameExists = await userManager.Users
@@ -88,7 +88,7 @@ internal sealed class CreateAppUser(
                 .ConfigureAwait(false);
 
             if (emailOrUsernameExists)
-                return AppResponse.Failure<AppUserResponse>("An account with this username or email already exists.");
+                return AppResponses.Failure<AppUserResponse>("An account with this username or email already exists.");
 
             var appUser = employee is not null
                 ? AppUser.CreateForEmployee(
@@ -134,7 +134,7 @@ internal sealed class CreateAppUser(
             {
                 var error = identityResult.Errors.First().Description;
                 ServiceLogDefinitions.LogAppUserCreationWarning(logger, req.Email, error);
-                return AppResponse.Failure<AppUserResponse>(error);
+                return AppResponses.Failure<AppUserResponse>(error);
             }
 
             createdUser = appUser;
@@ -172,7 +172,7 @@ internal sealed class CreateAppUser(
 
             ServiceLogDefinitions.LogAppUserCreated(logger, appUser.Id, appUser.Email ?? string.Empty);
 
-            return AppResponse.Success("User created successfully.", appUser.ToAppUserResponse());
+            return AppResponses.Success("User created successfully.", appUser.ToAppUserResponse());
         }
         catch (Exception ex)
         {

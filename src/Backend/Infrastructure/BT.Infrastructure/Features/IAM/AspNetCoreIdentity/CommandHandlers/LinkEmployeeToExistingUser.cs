@@ -37,12 +37,12 @@ internal sealed class LinkEmployeeToExistingUser(
 
         if (existingUser is null)
         {
-            return AppResponse.Failure<EmployeeResponse>("No existing user found with this National ID. Use CreateEmployee instead.");
+            return AppResponses.Failure<EmployeeResponse>("No existing user found with this National ID. Use CreateEmployee instead.");
         }
 
         if (existingUser.EmployeeId.HasValue)
         {
-            return AppResponse.Failure<EmployeeResponse>("This user already has an employee record linked.");
+            return AppResponses.Failure<EmployeeResponse>("This user already has an employee record linked.");
         }
 
         var employeeNumber = await employeeNumberGenerator.GenerateAsync(command.EmployeeDetails.DepartmentId, ct).ConfigureAwait(false);
@@ -78,7 +78,7 @@ internal sealed class LinkEmployeeToExistingUser(
 
         }, ct).ConfigureAwait(false);
 
-        return AppResponse.Success("Employee record created and linked to existing user.",
+        return AppResponses.Success("Employee record created and linked to existing user.",
             employee.ToEmployeeResponse());
     }
 }

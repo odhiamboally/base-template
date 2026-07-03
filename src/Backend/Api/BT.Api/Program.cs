@@ -1,6 +1,9 @@
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
+using BT.Api.Configuration;
 using BT.Api.Extensions;
+using BT.Api.Features.Shared.Realtime;
+using BT.Api.Health;
 using BT.Api.Utilities;
 using BT.Application.Extensions;
 using BT.Infrastructure.Features.Banking.Extensions;
@@ -159,7 +162,7 @@ try
                 Version = "v1.0",
                 Description = """
                     Base Template API
-                    
+
                     This API provides a production-ready foundation for:
                     - Authentication and authorization
                     - User and profile management
@@ -179,10 +182,37 @@ try
         options.AddSchemaTransformer<SafeSchemaTransformer>();
     });
 
-    builder.Services.AddHealthChecks()
+    builder.Services.Configure<HealthCheckSettings>(
+        builder.Configuration.GetSection(HealthCheckSettings.SectionName));
+
+    var healthCheckSettings = builder.Configuration
+        .GetSection(HealthCheckSettings.SectionName)
+        .Get<HealthCheckSettings>() ?? new HealthCheckSettings();
+
+    var healthChecks = builder.Services.AddHealthChecks()
         .AddCheck("self-ready", () => HealthCheckResult.Healthy(), tags: ["ready"])
         .AddCheck("self-live", () => HealthCheckResult.Healthy(), tags: ["live"]);
-            
+
+    if (healthCheckSettings.SqlServer)
+    {
+        healthChecks.AddCheck<SqlServerHealthCheck>("sql-server", tags: ["ready", "dependency"]);
+    }
+
+    if (healthCheckSettings.Redis)
+    {
+        healthChecks.AddCheck<RedisHealthCheck>("redis", tags: ["ready", "dependency"]);
+    }
+
+    if (healthCheckSettings.ProfileImageStorage)
+    {
+        healthChecks.AddCheck<ProfileImageStorageHealthCheck>("profile-image-storage", tags: ["ready", "dependency"]);
+    }
+
+    if (healthCheckSettings.KeyVault)
+    {
+        healthChecks.AddCheck<KeyVaultHealthCheck>("key-vault", tags: ["ready", "dependency"]);
+    }
+
     var app = builder.Build();
 
     await app.SeedDevelopmentIdentityAsync().ConfigureAwait(false);
@@ -207,6 +237,15 @@ try
     app.UseSecurityHeaders();
 
     app.UseHttpsRedirection();
+
+    var responseCompressionSettings = builder.Configuration
+        .GetSection(ResponseCompressionSettings.SectionName)
+        .Get<ResponseCompressionSettings>() ?? new ResponseCompressionSettings();
+
+    if (responseCompressionSettings.Enabled)
+    {
+        app.UseResponseCompression();
+    }
 
     app.UseRouting();
 
@@ -276,6 +315,7 @@ try
     });
 
     app.MapControllers();
+    app.MapHub<NotificationHub>("/hubs/notifications");
 
     Log.Information("BT API started successfully");
 

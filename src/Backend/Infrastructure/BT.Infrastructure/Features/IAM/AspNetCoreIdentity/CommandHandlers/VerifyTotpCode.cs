@@ -52,7 +52,7 @@ internal sealed class VerifyTotpCode(
             if (user == null)
             {
                 ServiceLogDefinitions.Log2FAVerificationAttemptNonExistentUser(logger, request.UserId);
-                return AppResponse.Failure<VerifyOtpResponse>("User not found");
+                return AppResponses.Failure<VerifyOtpResponse>("User not found");
             }
 
             bool isValidCode;
@@ -82,7 +82,7 @@ internal sealed class VerifyTotpCode(
                     if (!enableResult.Succeeded)
                     {
                         var errors = string.Join("; ", enableResult.Errors.Select(static error => error.Description));
-                        return AppResponse.Failure<VerifyOtpResponse>($"Could not enable two-factor authentication: {errors}");
+                        return AppResponses.Failure<VerifyOtpResponse>($"Could not enable two-factor authentication: {errors}");
                     }
 
                     ServiceLogDefinitions.LogOtpEnabled(logger, user.Id);
@@ -96,7 +96,7 @@ internal sealed class VerifyTotpCode(
             if (!isValidCode)
             {
                 ServiceLogDefinitions.LogInvalidOtpCode(logger, request.UserId);
-                return AppResponse.Failure<VerifyOtpResponse>("Invalid verification code. Please try again.");
+                return AppResponses.Failure<VerifyOtpResponse>("Invalid verification code. Please try again.");
             }
 
             var requestedSessionId = Guid.CreateVersion7();
@@ -107,17 +107,17 @@ internal sealed class VerifyTotpCode(
                 httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
                 request.DeviceFingerprint ?? "unknown").ConfigureAwait(false);
 
-            if (!sessionCreation.Successful || sessionCreation.Data == Guid.Empty)
+            if (!sessionCreation.IsSuccess || sessionCreation.Data == Guid.Empty)
             {
                 ServiceLogDefinitions.LogFailedToCreateUserSession(logger, user.Id);
-                return AppResponse.Failure<VerifyOtpResponse>("Could not establish a user session.");
+                return AppResponses.Failure<VerifyOtpResponse>("Could not establish a user session.");
             }
 
             var activeSessionId = sessionCreation.Data;
             var userClaims = await claimsService.GetUserClaimsAsync(user, activeSessionId).ConfigureAwait(false);
             if (!userClaims.Any())
             {
-                return AppResponse.Failure<VerifyOtpResponse>("Could not retrieve user claims");
+                return AppResponses.Failure<VerifyOtpResponse>("Could not retrieve user claims");
             }
 
             var tokenResponse = await jwtService.CreateTokenAsync(userClaims).ConfigureAwait(false);
@@ -180,7 +180,7 @@ internal sealed class VerifyTotpCode(
                 Properties = c.Properties.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
             }).ToList();
 
-            return AppResponse.Success("OTP verification successful",
+            return AppResponses.Success("OTP verification successful",
                 new VerifyOtpResponse(
                     tokenResponse,
                     refreshToken ?? string.Empty,

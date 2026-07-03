@@ -123,7 +123,7 @@
         StateHasChanged();
 
         var response = await IamAdminService.GetUserDevicesAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _message = response.Message ?? "We could not load user devices.";
             Snackbar.Add(_message, Severity.Error);
@@ -173,7 +173,7 @@
         }
 
         var response = await IamAdminService.RevokeUserDeviceAsync(device.Id, new RevokeUserDeviceRequest("Revoked from admin user-device list."));
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Device revoke failed.", Severity.Error);
             return;

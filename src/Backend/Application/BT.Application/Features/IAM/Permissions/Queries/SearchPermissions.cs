@@ -11,17 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Permissions.Queries;
 
-public sealed record SearchPermissionsQuery(PermissionSearchRequest SearchRequest, string UserId)
-    : IRequest<AppResponse<PagedResponse<PermissionResponse, Guid>>>, ICachableRequest
-{
-    public string CacheGroup => "permissions";
 
-    public string Discriminator => CacheKeys.Discriminator(SearchRequest);
-
-    public string? CacheUserId => null;
-
-    public bool IsVersioned => true;
-}
 
 internal sealed class SearchPermissionsQueryHandler(IIamUnitOfWork unitOfWork, ILogger<SearchPermissionsQueryHandler> logger)
     : IRequestHandler<SearchPermissionsQuery, AppResponse<PagedResponse<PermissionResponse, Guid>>>
@@ -109,7 +99,7 @@ internal sealed class SearchPermissionsQueryHandler(IIamUnitOfWork unitOfWork, I
                 request.Cursor is null || request.Cursor == Guid.Empty,
                 nextCursor ?? Guid.Empty);
 
-            return AppResponse.Success(result);
+            return AppResponses.Success(result);
         }
         catch (Exception ex)
         {

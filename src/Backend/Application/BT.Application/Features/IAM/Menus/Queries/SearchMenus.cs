@@ -11,14 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Menus.Queries;
 
-public sealed record SearchMenusQuery(MenuSearchRequest SearchRequest, string UserId)
-    : IRequest<AppResponse<PagedResponse<MenuResponse, Guid>>>, ICachableRequest
-{
-    public string CacheGroup => "menus";
-    public string Discriminator => CacheKeys.Discriminator(SearchRequest);
-    public string? CacheUserId => null;
-    public bool IsVersioned => true;
-}
+
 
 internal sealed class SearchMenusQueryHandler(IIamUnitOfWork unitOfWork, ILogger<SearchMenusQueryHandler> logger)
     : IRequestHandler<SearchMenusQuery, AppResponse<PagedResponse<MenuResponse, Guid>>>
@@ -104,7 +97,7 @@ internal sealed class SearchMenusQueryHandler(IIamUnitOfWork unitOfWork, ILogger
                 request.Cursor is null || request.Cursor == Guid.Empty,
                 nextCursor ?? Guid.Empty);
 
-            return AppResponse.Success(result);
+            return AppResponses.Success(result);
         }
         catch (Exception ex)
         {

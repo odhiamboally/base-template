@@ -18,16 +18,16 @@ internal sealed class LinkCustomerToExistingUser(UserManager<AppUser> userManage
         var user = await userManager.FindByIdAsync(command.AppUserId).ConfigureAwait(false);
 
         if (user is null)
-            return AppResponse.Failure<CustomerResponse>("User not found.");
+            return AppResponses.Failure<CustomerResponse>("User not found.");
 
         if (user.CustomerId.HasValue)
-            return AppResponse.Failure<CustomerResponse>("User is already linked to a customer record.");
+            return AppResponses.Failure<CustomerResponse>("User is already linked to a customer record.");
 
         user.LinkToCustomer(command.CustomerId);
 
         await userManager.UpdateAsync(user).ConfigureAwait(false);
         await userManager.AddToRoleAsync(user, Roles.Customer.ToDisplayString()).ConfigureAwait(false);
 
-        return AppResponse.Success<CustomerResponse>("Customer account linked to user.", default!);
+        return AppResponses.Success<CustomerResponse>("Customer account linked to user.", default!);
     }
 }

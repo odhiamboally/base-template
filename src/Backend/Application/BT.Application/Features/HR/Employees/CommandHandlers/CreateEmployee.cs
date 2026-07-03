@@ -20,16 +20,12 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Employees.CommandHandlers;
 
-public sealed record CreateEmployeeCommand(CreateEmployeeRequest Request, string User) : IRequest<AppResponse<EmployeeResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [];
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("employees")];
-}
+
 
 internal sealed class CreateEmployeeCommandHandler(
     IHrUnitOfWork unitOfWork,
     IEmployeeNumberGenerator numberGenerator,
-    ILogger<CreateEmployeeCommandHandler> logger) 
+    ILogger<CreateEmployeeCommandHandler> logger)
     : IRequestHandler<CreateEmployeeCommand, AppResponse<EmployeeResponse>>
 {
     public async Task<AppResponse<EmployeeResponse>> Handle(CreateEmployeeCommand command, CancellationToken cancellationToken)
@@ -45,7 +41,7 @@ internal sealed class CreateEmployeeCommandHandler(
             if (duplicateEmail)
             {
                 LogDefinitions.LogEmployeeDuplicateRegistration(logger, request.Email);
-                return AppResponse.Failure<EmployeeResponse>("An employee with this email already exists.");
+                return AppResponses.Failure<EmployeeResponse>("An employee with this email already exists.");
             }
 
             var result = await unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
@@ -71,7 +67,7 @@ internal sealed class CreateEmployeeCommandHandler(
 
                 var createdEmployee = await unitOfWork.EmployeeRepository.CreateAsync(entityToCreate).ConfigureAwait(false);
 
-                return AppResponse.Success(
+                return AppResponses.Success(
                     "Account created successfully! Please check your email to confirm your account.",
                     createdEmployee.ToEmployeeResponse());
 

@@ -8,8 +8,3 @@ public sealed class CacheSettings
     public RedisCacheSettings Redis { get; set; } = new();
     public AzureCacheSettings? Azure { get; set; }
 }
-
-public sealed class RedisCacheSettings
-{
-    public string? ConnectionString { get; set; }
-}

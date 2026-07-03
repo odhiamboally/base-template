@@ -28,11 +28,3 @@ public sealed class ProfileImageStorageSettings
     public AzureBlobProfileImageStorageSettings AzureBlob { get; init; } = new();
     public AzureBlobProfileImageStorageSettings Azurite { get; init; } = new();
 }
-
-public sealed class AzureBlobProfileImageStorageSettings
-{
-    public string? ContainerUri { get; init; }
-    public string? ConnectionString { get; init; }
-    public string? ContainerName { get; init; }
-    public string BlobPrefix { get; init; } = "profile-images";
-}

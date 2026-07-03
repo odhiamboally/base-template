@@ -3,7 +3,7 @@ using FluentValidation;
 using NetArchTest.Rules;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Text.RegularExpressions;
 
 namespace BT.Tests.Architecture;
 
@@ -13,6 +13,10 @@ namespace BT.Tests.Architecture;
 /// </summary>
 public sealed class NamingConventionTests
 {
+    private static readonly Regex PublicTopLevelTypeRegex = new(
+        @"^\s*public\s+(?:(?:sealed|abstract|static|partial|readonly)\s+)*(?:(?:record\s+(?:class\s+|struct\s+)?)|class\s+|struct\s+|interface\s+|enum\s+)(?<name>[A-Za-z_][A-Za-z0-9_]*)",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     // ── Interfaces ────────────────────────────────────────────────────────────
 
     [Fact]
@@ -164,5 +168,60 @@ public sealed class NamingConventionTests
             because: "feature-owned API controllers must live under BT.Api.Features by bounded context and feature. Found: {0}",
             string.Join(", ", misplacedControllers));
     }
-}
 
+    [Fact]
+    public void Public_Top_Level_Types_Should_Have_One_Type_Per_File()
+    {
+        var authoredSourceRoots = new[]
+        {
+            Path.Combine(AssemblyReferences.RepoRoot, "src"),
+            Path.Combine(AssemblyReferences.RepoRoot, "tests"),
+        };
+
+        var violations = authoredSourceRoots
+            .SelectMany(root => Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories))
+            .Where(IsAuthoredSourceFile)
+            .Select(path => new
+            {
+                Path = path,
+                Types = File.ReadLines(path)
+                    .Select((line, index) => new { Line = index + 1, Match = PublicTopLevelTypeRegex.Match(line) })
+                    .Where(item => item.Match.Success)
+                    .Select(item => new
+                    {
+                        item.Line,
+                        Name = item.Match.Groups["name"].Value,
+                    })
+                    .ToList(),
+            })
+            .Where(file => file.Types.Count > 1 ||
+                           file.Types.Any(type => !string.Equals(
+                               type.Name,
+                               Path.GetFileNameWithoutExtension(file.Path),
+                               StringComparison.Ordinal)))
+            .Select(file =>
+            {
+                var relativePath = Path.GetRelativePath(AssemblyReferences.RepoRoot, file.Path);
+                var types = string.Join(", ", file.Types.Select(type => $"{type.Name} at line {type.Line}"));
+                return $"{relativePath}: {types}";
+            })
+            .ToList();
+
+        violations.Should().BeEmpty(
+            because: "each public top-level class, record, struct, interface, and enum must live in its own file named after that type. Found: {0}",
+            string.Join(Environment.NewLine, violations));
+    }
+
+    private static bool IsAuthoredSourceFile(string path)
+    {
+        var directorySeparator = Path.DirectorySeparatorChar.ToString();
+
+        return !path.Contains($"{directorySeparator}bin{directorySeparator}", StringComparison.OrdinalIgnoreCase) &&
+               !path.Contains($"{directorySeparator}obj{directorySeparator}", StringComparison.OrdinalIgnoreCase) &&
+               !path.Contains($"{directorySeparator}Migrations{directorySeparator}", StringComparison.OrdinalIgnoreCase) &&
+               !path.Contains($"{directorySeparator}Platforms{directorySeparator}", StringComparison.OrdinalIgnoreCase) &&
+               !path.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) &&
+               !path.EndsWith(".xaml.cs", StringComparison.OrdinalIgnoreCase) &&
+               !path.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase);
+    }
+}

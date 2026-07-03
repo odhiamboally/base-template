@@ -102,7 +102,7 @@
             : await CustomerService.UpdateAsync(_model.Id, _model.ToUpdateRequest());
 
         _isSaving = false;
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Customer save failed.", Severity.Error);
             return;

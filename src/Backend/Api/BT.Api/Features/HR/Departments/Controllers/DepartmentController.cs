@@ -26,7 +26,7 @@ public sealed class DepartmentController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new SearchDepartmentsQuery(request, userId)).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 
     [HttpGet("active")]
@@ -38,7 +38,7 @@ public sealed class DepartmentController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new GetDepartmentsQuery(userId)).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 
     [HttpGet("{id:guid}")]
@@ -50,7 +50,7 @@ public sealed class DepartmentController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new GetDepartmentByIdQuery(id, userId)).ConfigureAwait(false);
-        return !response.Successful ? NotFound(response) : Ok(response);
+        return !response.IsSuccess ? NotFound(response) : Ok(response);
     }
 
     [HttpPost]
@@ -64,7 +64,7 @@ public sealed class DepartmentController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new CreateDepartmentCommand(request, userId)).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 
     [HttpPut("{id:guid}")]
@@ -78,7 +78,7 @@ public sealed class DepartmentController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new UpdateDepartmentCommand(id, request with { Id = id }, userId)).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 
     [HttpDelete("{id:guid}")]
@@ -90,6 +90,6 @@ public sealed class DepartmentController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new DeleteDepartmentCommand(id, userId)).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 }

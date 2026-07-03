@@ -43,6 +43,8 @@ else
 
 ## Rules
 
+- Each public settings POCO must live in its own file named after the type. Do not bundle nested settings classes in the parent settings file.
+- Provider integrations must keep provider-specific request and response DTOs beside the provider adapter. Shared application contracts should expose canonical business inputs/results only, not Stripe, M-Pesa, Azure, or other provider wire payloads.
 - Parse string configuration modes in one helper such as `GetKeyEncryptionMode` or `GetMessagingTransport`.
 - Use a small enum for each bounded configuration choice.
 - Keep each configuration branch in a one-purpose method.
@@ -72,5 +74,6 @@ Use this rule of thumb:
 - `Messaging:Transport` is parsed into `MessagingTransport`.
 - `ProfileImageStorage:Provider` is parsed into `ProfileImageStorageProvider`.
 - `AuthProvider:Provider` is parsed into `AuthProvider`.
+- `EmailSettings:Provider` is parsed into `EmailProvider`.
 
 When adding a new configurable provider, transport, mode, or strategy, follow the same pattern and update this document if the convention changes.

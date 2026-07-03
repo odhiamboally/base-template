@@ -10,11 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Commands;
 
-public sealed record CreateReferenceCatalogItemCommand(string CatalogType, ReferenceCatalogItemRequest Request, string UserId)
-    : IRequest<AppResponse<ReferenceCatalogItemResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("iam-reference-data")];
-}
+
 
 internal sealed class CreateReferenceCatalogItemCommandHandler(IIamUnitOfWork unitOfWork, ILogger<CreateReferenceCatalogItemCommandHandler> logger)
     : IRequestHandler<CreateReferenceCatalogItemCommand, AppResponse<ReferenceCatalogItemResponse>>
@@ -25,20 +21,20 @@ internal sealed class CreateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
         {
             if (!ReferenceCatalogTypes.All.Contains(command.CatalogType))
             {
-                return AppResponse.Failure<ReferenceCatalogItemResponse>($"Catalog '{command.CatalogType}' is not supported.");
+                return AppResponses.Failure<ReferenceCatalogItemResponse>($"Catalog '{command.CatalogType}' is not supported.");
             }
 
             var duplicate = await KeyExistsAsync(unitOfWork, command.CatalogType, command.Request.Key, command.Request.ParentKey, cancellationToken)
                 .ConfigureAwait(false);
             if (duplicate)
             {
-                return AppResponse.Failure<ReferenceCatalogItemResponse>($"Catalog key '{command.Request.Key}' already exists.");
+                return AppResponses.Failure<ReferenceCatalogItemResponse>($"Catalog key '{command.Request.Key}' already exists.");
             }
 
             var validationError = await ValidateParentAsync(unitOfWork, command.CatalogType, command.Request, cancellationToken).ConfigureAwait(false);
             if (validationError is not null)
             {
-                return AppResponse.Failure<ReferenceCatalogItemResponse>(validationError);
+                return AppResponses.Failure<ReferenceCatalogItemResponse>(validationError);
             }
 
             ReferenceCatalogItemResponse response = command.CatalogType.ToLowerInvariant() switch
@@ -54,8 +50,8 @@ internal sealed class CreateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
 
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
             return saved
-                ? AppResponse.Success("Reference catalog item created.", response)
-                : AppResponse.Failure<ReferenceCatalogItemResponse>("Reference catalog item create failed.");
+                ? AppResponses.Success("Reference catalog item created.", response)
+                : AppResponses.Failure<ReferenceCatalogItemResponse>("Reference catalog item create failed.");
         }
         catch (Exception ex)
         {

@@ -8,14 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Queries;
 
-public sealed record GetReferenceCatalogQuery(string CatalogType)
-    : IRequest<AppResponse<IReadOnlyList<ReferenceCatalogItemResponse>>>, ICachableRequest
-{
-    public string CacheGroup => "iam-reference-data";
-    public string Discriminator => CacheKeys.Discriminator(new { CatalogType });
-    public string? CacheUserId => null;
-    public bool IsVersioned => true;
-}
+
 
 internal sealed class GetReferenceCatalogQueryHandler(IIamUnitOfWork unitOfWork, ILogger<GetReferenceCatalogQueryHandler> logger)
     : IRequestHandler<GetReferenceCatalogQuery, AppResponse<IReadOnlyList<ReferenceCatalogItemResponse>>>
@@ -26,7 +19,7 @@ internal sealed class GetReferenceCatalogQueryHandler(IIamUnitOfWork unitOfWork,
         {
             if (!ReferenceCatalogTypes.All.Contains(query.CatalogType))
             {
-                return AppResponse.Failure<IReadOnlyList<ReferenceCatalogItemResponse>>($"Catalog '{query.CatalogType}' is not supported.");
+                return AppResponses.Failure<IReadOnlyList<ReferenceCatalogItemResponse>>($"Catalog '{query.CatalogType}' is not supported.");
             }
 
             IReadOnlyList<ReferenceCatalogItemResponse> items = query.CatalogType.ToLowerInvariant() switch
@@ -84,7 +77,7 @@ internal sealed class GetReferenceCatalogQueryHandler(IIamUnitOfWork unitOfWork,
                 _ => []
             };
 
-            return AppResponse.Success("Reference catalog loaded.", items);
+            return AppResponses.Success("Reference catalog loaded.", items);
         }
         catch (Exception ex)
         {

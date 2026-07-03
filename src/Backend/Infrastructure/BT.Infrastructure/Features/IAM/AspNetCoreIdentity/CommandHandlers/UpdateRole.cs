@@ -18,13 +18,13 @@ internal sealed class UpdateRole(RoleManager<AppRole> roleManager, ILogger<Updat
             var role = await roleManager.FindByIdAsync(command.RoleId).ConfigureAwait(false);
             if (role is null)
             {
-                return AppResponse.Failure<AdminRoleListResponse>("Role not found.");
+                return AppResponses.Failure<AdminRoleListResponse>("Role not found.");
             }
 
             var name = command.Request.Name.Trim();
             if (string.IsNullOrWhiteSpace(name))
             {
-                return AppResponse.Failure<AdminRoleListResponse>("Role name is required.");
+                return AppResponses.Failure<AdminRoleListResponse>("Role name is required.");
             }
 
             role.Name = name;
@@ -32,8 +32,8 @@ internal sealed class UpdateRole(RoleManager<AppRole> roleManager, ILogger<Updat
             var result = await roleManager.UpdateAsync(role).ConfigureAwait(false);
 
             return result.Succeeded
-                ? AppResponse.Success("Role updated.", new AdminRoleListResponse(role.Id, role.Name ?? name, role.NormalizedName ?? name.ToUpperInvariant(), role.DepartmentId, role.DepartmentId.HasValue ? "Department-scoped" : "Global", 0))
-                : AppResponse.Failure<AdminRoleListResponse>(string.Join(", ", result.Errors.Select(static error => error.Description)));
+                ? AppResponses.Success("Role updated.", new AdminRoleListResponse(role.Id, role.Name ?? name, role.NormalizedName ?? name.ToUpperInvariant(), role.DepartmentId, role.DepartmentId.HasValue ? "Department-scoped" : "Global", 0))
+                : AppResponses.Failure<AdminRoleListResponse>(string.Join(", ", result.Errors.Select(static error => error.Description)));
         }
         catch (Exception ex)
         {

@@ -100,13 +100,13 @@
     private async Task LoadReferenceDataAsync()
     {
         var departmentsResponse = await DepartmentService.GetAsync();
-        if (departmentsResponse.Successful && departmentsResponse.Data is not null)
+        if (departmentsResponse.IsSuccess && departmentsResponse.Data is not null)
         {
             _departments.AddRange(departmentsResponse.Data.Where(static department => department.IsActive).OrderBy(static department => department.Name));
         }
 
         var referenceResponse = await IamAdminService.GetReferenceDataAsync();
-        if (referenceResponse.Successful && referenceResponse.Data is not null)
+        if (referenceResponse.IsSuccess && referenceResponse.Data is not null)
         {
             _referenceData = referenceResponse.Data;
         }
@@ -141,7 +141,7 @@
             : await IamAdminService.UpdatePermissionAsync(_model.Id, _model.ToUpdateRequest());
         _isSaving = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Permission save failed.", Severity.Error);
             return;

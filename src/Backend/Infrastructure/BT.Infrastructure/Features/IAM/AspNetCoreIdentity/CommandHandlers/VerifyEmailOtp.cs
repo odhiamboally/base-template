@@ -38,17 +38,17 @@ internal sealed class VerifyEmailOtp(
     {
         var req = command.Request;
         var user = await userManager.FindByIdAsync(req.UserId).ConfigureAwait(false);
-        if (user == null) return AppResponse.Failure<VerifyEmailOtpResponse>("User not found");
+        if (user == null) return AppResponses.Failure<VerifyEmailOtpResponse>("User not found");
 
         var attemptKey = CacheKeys.EmailOtpAttempts(user.Id);
         var attempts = await cache.GetAsync<int?>(attemptKey, ct).ConfigureAwait(false) ?? 0;
         if (attempts >= 3)
-            return AppResponse.Failure<VerifyEmailOtpResponse>("Too many attempts. Request a new code.");
+            return AppResponses.Failure<VerifyEmailOtpResponse>("Too many attempts. Request a new code.");
 
         var otpKey = CacheKeys.EmailOtp(user.Id);
         var storedHash = await cache.GetAsync<string>(otpKey, ct).ConfigureAwait(false);
         if (storedHash == null)
-            return AppResponse.Failure<VerifyEmailOtpResponse>("Code expired. Request a new code.");
+            return AppResponses.Failure<VerifyEmailOtpResponse>("Code expired. Request a new code.");
 
         var providedHash = HashCode(user.Id, req.Code, req.Purpose);
         var isValid = CryptographicOperations.FixedTimeEquals(
@@ -59,7 +59,7 @@ internal sealed class VerifyEmailOtp(
         {
             await cache.SetAsync(attemptKey, attempts + 1, TimeSpan.FromMinutes(10), ct).ConfigureAwait(false);
             ServiceLogDefinitions.LogInvalidEmailOtp(logger, user.Id);
-            return AppResponse.Failure<VerifyEmailOtpResponse>("Invalid code");
+            return AppResponses.Failure<VerifyEmailOtpResponse>("Invalid code");
         }
 
         await cache.RemoveAsync(otpKey, ct).ConfigureAwait(false);
@@ -73,20 +73,20 @@ internal sealed class VerifyEmailOtp(
                 await userManager.UpdateAsync(user).ConfigureAwait(false);
                 ServiceLogDefinitions.LogEmailConfirmedViaOtp(logger, user.Id);
             }
-            return AppResponse.Success("Email confirmed",
+            return AppResponses.Success("Email confirmed",
                 new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, null, true, DateTimeOffset.UtcNow, null!, []));
         }
 
         if (string.Equals(req.Purpose, "PasswordReset", StringComparison.OrdinalIgnoreCase))
         {
             await cache.SetAsync(CacheKeys.PasswordResetVerified(user.Id), true, TimeSpan.FromMinutes(5), ct).ConfigureAwait(false);
-            return AppResponse.Success("Code verified",
+            return AppResponses.Success("Code verified",
                 new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, null, true, DateTimeOffset.UtcNow, null!, []));
         }
 
         if (!string.Equals(req.Purpose, "Login", StringComparison.OrdinalIgnoreCase))
         {
-            return AppResponse.Success("Code verified",
+            return AppResponses.Success("Code verified",
                 new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, null, true, DateTimeOffset.UtcNow, null!, []));
         }
 
@@ -98,10 +98,10 @@ internal sealed class VerifyEmailOtp(
             httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
             string.IsNullOrWhiteSpace(req.DeviceFingerprint) ? "unknown" : req.DeviceFingerprint).ConfigureAwait(false);
 
-        if (!sessionCreation.Successful || sessionCreation.Data == Guid.Empty)
+        if (!sessionCreation.IsSuccess || sessionCreation.Data == Guid.Empty)
         {
             ServiceLogDefinitions.LogFailedToCreateUserSession(logger, user.Id);
-            return AppResponse.Failure<VerifyEmailOtpResponse>("Could not establish a user session.");
+            return AppResponses.Failure<VerifyEmailOtpResponse>("Could not establish a user session.");
         }
 
         var activeSessionId = sessionCreation.Data;
@@ -150,7 +150,7 @@ internal sealed class VerifyEmailOtp(
 
         }).ToList();
 
-        return AppResponse.Success("Email OTP verified", new VerifyEmailOtpResponse(
+        return AppResponses.Success("Email OTP verified", new VerifyEmailOtpResponse(
             token,
             refreshToken ?? "",
             user.Id,

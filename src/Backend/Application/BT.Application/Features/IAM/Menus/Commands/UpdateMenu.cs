@@ -10,12 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Menus.Commands;
 
-public sealed record UpdateMenuCommand(Guid Id, UpdateMenuRequest Request, string UserId)
-    : IRequest<AppResponse<MenuResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("menus", Id.ToString())];
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("menus")];
-}
+
 
 internal sealed class UpdateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogger<UpdateMenuCommandHandler> logger)
     : IRequestHandler<UpdateMenuCommand, AppResponse<MenuResponse>>
@@ -29,18 +24,18 @@ internal sealed class UpdateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
                 .ConfigureAwait(false);
             if (catalogError is not null)
             {
-                return AppResponse.Failure<MenuResponse>(catalogError);
+                return AppResponses.Failure<MenuResponse>(catalogError);
             }
 
             var menu = await unitOfWork.MenuRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
             if (menu is null)
             {
-                return AppResponse.Failure<MenuResponse>($"Menu {command.Id} not found.");
+                return AppResponses.Failure<MenuResponse>($"Menu {command.Id} not found.");
             }
 
             if (request.ParentId == command.Id)
             {
-                return AppResponse.Failure<MenuResponse>("A menu cannot be its own parent.");
+                return AppResponses.Failure<MenuResponse>("A menu cannot be its own parent.");
             }
 
             if (request.ParentId.HasValue)
@@ -48,13 +43,13 @@ internal sealed class UpdateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
                 var parent = await unitOfWork.MenuRepository.FindByIdAsync(request.ParentId.Value, cancellationToken).ConfigureAwait(false);
                 if (parent is null)
                 {
-                    return AppResponse.Failure<MenuResponse>("Parent menu not found.");
+                    return AppResponses.Failure<MenuResponse>("Parent menu not found.");
                 }
 
                 if (!string.Equals(parent.Placement, request.Placement, StringComparison.OrdinalIgnoreCase)
                     || parent.DepartmentId != request.DepartmentId)
                 {
-                    return AppResponse.Failure<MenuResponse>("Parent menu must use the same placement and department scope.");
+                    return AppResponses.Failure<MenuResponse>("Parent menu must use the same placement and department scope.");
                 }
             }
 
@@ -66,14 +61,14 @@ internal sealed class UpdateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
 
             if (duplicate)
             {
-                return AppResponse.Failure<MenuResponse>($"Menu key {draft.Key} already exists.");
+                return AppResponses.Failure<MenuResponse>($"Menu key {draft.Key} already exists.");
             }
 
             menu.Update(request.ParentId, request.DepartmentId, key, request.Title, request.Description, request.Url, request.Icon, request.Placement, request.RequiredPermissionKey, request.IsActive, command.UserId);
             await unitOfWork.MenuRepository.UpdateAsync(menu).ConfigureAwait(false);
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
-            return saved ? AppResponse.Success("Menu updated.", menu.ToMenuResponse()) : AppResponse.Failure<MenuResponse>("Menu update failed.");
+            return saved ? AppResponses.Success("Menu updated.", menu.ToMenuResponse()) : AppResponses.Failure<MenuResponse>("Menu update failed.");
         }
         catch (Exception ex)
         {

@@ -65,7 +65,7 @@
     private async Task LoadModulesAsync()
     {
         var response = await IamAdminService.GetNavigationMenusAsync("AdminCenter");
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load admin menus.", Severity.Error);
             _isReady = true;

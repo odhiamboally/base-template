@@ -8,17 +8,7 @@ using MediatR;
 
 namespace BT.Application.Features.HR.Employees.QueryHandlers;
 
-public sealed record GetEmployeeByIdQuery(Guid Id, string UserId)
-    : IRequest<AppResponse<EmployeeResponse>>, ICachableRequest
-{
-    public string CacheGroup => "employees";
 
-    public string Discriminator => CacheKeys.Entity("employees", Id.ToString());
-
-    public string? CacheUserId => null;
-
-    public bool IsVersioned => true;
-}
 
 internal sealed class GetEmployeeByIdQueryHandler(IHrUnitOfWork unitOfWork)
     : IRequestHandler<GetEmployeeByIdQuery, AppResponse<EmployeeResponse>>
@@ -46,7 +36,7 @@ internal sealed class GetEmployeeByIdQueryHandler(IHrUnitOfWork unitOfWork)
                 .ConfigureAwait(false) ?? string.Empty;
 
         return employee is null
-            ? AppResponse.Failure<EmployeeResponse>($"Employee {query.Id} not found.")
-            : AppResponse.Success("Employee loaded.", employee.ToEmployeeResponse(departmentName, managerName));
+            ? AppResponses.Failure<EmployeeResponse>($"Employee {query.Id} not found.")
+            : AppResponses.Success("Employee loaded.", employee.ToEmployeeResponse(departmentName, managerName));
     }
 }

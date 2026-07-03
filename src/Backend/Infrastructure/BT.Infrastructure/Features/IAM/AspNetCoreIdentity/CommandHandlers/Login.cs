@@ -59,20 +59,20 @@ internal sealed class Login(
             if (user == null)
             {
                 ServiceLogDefinitions.LogLoginError(logger, loginRequest.UserName, new AuthenticationException("Invalid user"));
-                return AppResponse.Failure<LoginResponse>("Invalid User Name or password.");
+                return AppResponses.Failure<LoginResponse>("Invalid User Name or password.");
             }
 
             if (!user.IsActive || user.IsDeleted)
             {
                 ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("User account is disabled"));
-                return AppResponse.Failure<LoginResponse>("This account is inactive. Please contact support.");
+                return AppResponses.Failure<LoginResponse>("This account is inactive. Please contact support.");
             }
 
             var emailConfirmed = await userManager.IsEmailConfirmedAsync(user).ConfigureAwait(false);
             if (!emailConfirmed)
             {
                 ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Unconfirmed email"));
-                return AppResponse.Failure<LoginResponse>("Please confirm your email before logging in.");
+                return AppResponses.Failure<LoginResponse>("Please confirm your email before logging in.");
             }
 
             // Use the username overload to avoid introducing a second tracked AppUser instance
@@ -83,13 +83,13 @@ internal sealed class Login(
             if (signInResult.IsLockedOut)
             {
                 ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Account locked"));
-                return AppResponse.Failure<LoginResponse>("Your account is locked due to multiple failed login attempts. Please reset your password or contact support.");
+                return AppResponses.Failure<LoginResponse>("Your account is locked due to multiple failed login attempts. Please reset your password or contact support.");
             }
 
             if (signInResult.IsNotAllowed)
             {
                 ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Sign in not allowed"));
-                return AppResponse.Failure<LoginResponse>("Sign in not allowed. Please contact support.");
+                return AppResponses.Failure<LoginResponse>("Sign in not allowed. Please contact support.");
             }
 
             var twoFactorEnabled = await userManager.GetTwoFactorEnabledAsync(user).ConfigureAwait(false);
@@ -136,7 +136,7 @@ internal sealed class Login(
                 if (string.IsNullOrWhiteSpace(tempToken))
                 {
                     ServiceLogDefinitions.LogFailedToGenerateAccessToken(logger, user.Id);
-                    return AppResponse.Failure<LoginResponse>("Could not generate temporary authentication token");
+                    return AppResponses.Failure<LoginResponse>("Could not generate temporary authentication token");
                 }
 
                 var roles = await userManager.GetRolesAsync(user).ConfigureAwait(false);
@@ -146,7 +146,7 @@ internal sealed class Login(
                     .SetAsync(CacheKeys.UserInfo(user.Id), userInfoWith2FA, TimeSpan.FromMinutes(10), cancellationToken)
                     .ConfigureAwait(false);
 
-                return AppResponse.Success("Two-factor authentication required", new LoginResponse(
+                return AppResponses.Success("Two-factor authentication required", new LoginResponse(
                     user.Id,
                     user.FirstName ?? string.Empty,
                     user.LastName ?? string.Empty,
@@ -165,7 +165,7 @@ internal sealed class Login(
             if (!signInResult.Succeeded)
             {
                 ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Sign in failed"));
-                return AppResponse.Failure<LoginResponse>("Invalid login attempt.");
+                return AppResponses.Failure<LoginResponse>("Invalid login attempt.");
             }
 
             var sessionId = Guid.CreateVersion7();
@@ -176,38 +176,38 @@ internal sealed class Login(
                 httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
                 loginRequest.DeviceFingerprint ?? "unknown").ConfigureAwait(false);
 
-            if (!sessionCreationResult.Successful)
+            if (!sessionCreationResult.IsSuccess)
             {
                 ServiceLogDefinitions.LogFailedToCreateUserSession(logger, user.Id);
-                return AppResponse.Failure<LoginResponse>("Could not establish a user session.");
+                return AppResponses.Failure<LoginResponse>("Could not establish a user session.");
             }
 
             var activeSessionId = sessionCreationResult.Data;
             if (activeSessionId == Guid.Empty)
             {
                 ServiceLogDefinitions.LogFailedToCreateUserSession(logger, user.Id);
-                return AppResponse.Failure<LoginResponse>("Could not establish a user session.");
+                return AppResponses.Failure<LoginResponse>("Could not establish a user session.");
             }
 
             var userClaims = await claimsService.GetUserClaimsAsync(user, activeSessionId).ConfigureAwait(false);
             if (!userClaims.Any())
             {
                 ServiceLogDefinitions.LogFailedToGetUserClaims(logger, user.Id);
-                return AppResponse.Failure<LoginResponse>("Could not retrieve user claims");
+                return AppResponses.Failure<LoginResponse>("Could not retrieve user claims");
             }
 
             var tokenResponse = await jwtService.CreateTokenAsync(userClaims).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(tokenResponse))
             {
                 ServiceLogDefinitions.LogFailedToGenerateAccessToken(logger, user.Id);
-                return AppResponse.Failure<LoginResponse>("Could not generate authentication token");
+                return AppResponses.Failure<LoginResponse>("Could not generate authentication token");
             }
 
             var refreshToken = jwtService.CreateRefreshToken();
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
                 ServiceLogDefinitions.LogFailedToGenerateRefreshToken(logger, user.Id);
-                return AppResponse.Failure<LoginResponse>("Could not generate refresh token");
+                return AppResponses.Failure<LoginResponse>("Could not generate refresh token");
             }
 
             var refreshTokenEntity = BT.Domain.Features.IAM.Users.Entities.RefreshToken.Create(
@@ -225,7 +225,7 @@ internal sealed class Login(
             {
                 var tokenException = new SecurityTokenException("Token validation failed");
                 ServiceLogDefinitions.LogInvalidTokenWithException(logger, tokenException);
-                return AppResponse.Failure<LoginResponse>("Invalid authentication token");
+                return AppResponses.Failure<LoginResponse>("Invalid authentication token");
             }
 
             var rolesResponse = await userManager.GetRolesAsync(user).ConfigureAwait(false);
@@ -236,7 +236,7 @@ internal sealed class Login(
             if (trackedUser == null)
             {
                 ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new InvalidOperationException("User disappeared from store before update"));
-                return AppResponse.Failure<LoginResponse>("Could not complete login.");
+                return AppResponses.Failure<LoginResponse>("Could not complete login.");
             }
 
             trackedUser.RecordSuccessfulLogin();
@@ -247,7 +247,7 @@ internal sealed class Login(
             {
                 var updateError = string.Join("; ", userUpdateResult.Errors.Select(e => e.Description));
                 ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new InvalidOperationException(updateError));
-                return AppResponse.Failure<LoginResponse>("Could not complete login.");
+                return AppResponses.Failure<LoginResponse>("Could not complete login.");
             }
 
             await serviceManager.CacheService
@@ -262,7 +262,7 @@ internal sealed class Login(
                 return true;
             }).ConfigureAwait(false);
 
-            return AppResponse.Success("Login successful", new LoginResponse(
+            return AppResponses.Success("Login successful", new LoginResponse(
                 user.Id,
                 user.FirstName ?? string.Empty,
                 user.LastName ?? string.Empty,

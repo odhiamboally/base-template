@@ -9,13 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.Shared.Lookups.CommandHandlers;
 
-public sealed record UpdateLookupCommand(string LookupType, int Id, UpdateLookupRequest Request, string UserId)
-    : IRequest<AppResponse<LookupResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("lookups", $"{LookupType}:{Id}")];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("lookups")];
-}
 
 internal sealed class UpdateLookupCommandHandler(ISharedUnitOfWork unitOfWork, ILogger<UpdateLookupCommandHandler> logger)
     : IRequestHandler<UpdateLookupCommand, AppResponse<LookupResponse>>
@@ -26,7 +20,7 @@ internal sealed class UpdateLookupCommandHandler(ISharedUnitOfWork unitOfWork, I
         {
             if (!Enum.TryParse<LookupType>(command.LookupType, true, out var lookupType))
             {
-                return AppResponse.Failure<LookupResponse>($"Invalid lookup type: {command.LookupType}");
+                return AppResponses.Failure<LookupResponse>($"Invalid lookup type: {command.LookupType}");
             }
 
             var lookup = await unitOfWork.LookupRepository
@@ -35,13 +29,13 @@ internal sealed class UpdateLookupCommandHandler(ISharedUnitOfWork unitOfWork, I
 
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
             return saved
-                ? AppResponse.Success("Lookup updated.", new LookupResponse(lookup.Id, lookup.Code, lookup.Description, lookup.DisplayOrder))
-                : AppResponse.Failure<LookupResponse>("Lookup update failed.");
+                ? AppResponses.Success("Lookup updated.", new LookupResponse(lookup.Id, lookup.Code, lookup.Description, lookup.DisplayOrder))
+                : AppResponses.Failure<LookupResponse>("Lookup update failed.");
         }
         catch (KeyNotFoundException ex)
         {
             LogDefinitions.LogPipelineException(logger, nameof(UpdateLookupCommandHandler), ex);
-            return AppResponse.Failure<LookupResponse>("The lookup record could not be found.");
+            return AppResponses.Failure<LookupResponse>("The lookup record could not be found.");
         }
         catch (Exception ex)
         {

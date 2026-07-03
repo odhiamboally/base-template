@@ -54,7 +54,7 @@ public sealed class LookupController(ISender sender, IOutputCacheStore cacheStor
             .Send(new CreateLookupCommand(lookupType, request, GetUserId()), ct)
             .ConfigureAwait(false);
 
-        if (response.Successful)
+        if (response.IsSuccess)
         {
             await cacheStore.EvictByTagAsync("lookups", ct).ConfigureAwait(false);
         }
@@ -72,7 +72,7 @@ public sealed class LookupController(ISender sender, IOutputCacheStore cacheStor
             .Send(new UpdateLookupCommand(lookupType, id, request, GetUserId()), ct)
             .ConfigureAwait(false);
 
-        if (response.Successful)
+        if (response.IsSuccess)
         {
             await cacheStore.EvictByTagAsync("lookups", ct).ConfigureAwait(false);
         }
@@ -90,7 +90,7 @@ public sealed class LookupController(ISender sender, IOutputCacheStore cacheStor
             .Send(new DeleteLookupCommand(lookupType, id, GetUserId()), ct)
             .ConfigureAwait(false);
 
-        if (response.Successful)
+        if (response.IsSuccess)
         {
             await cacheStore.EvictByTagAsync("lookups", ct).ConfigureAwait(false);
         }

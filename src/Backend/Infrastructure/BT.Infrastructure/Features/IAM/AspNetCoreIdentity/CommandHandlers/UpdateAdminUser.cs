@@ -21,7 +21,7 @@ internal sealed class UpdateAdminUser(UserManager<AppUser> userManager, ILogger<
             var user = await userManager.FindByIdAsync(command.UserId).ConfigureAwait(false);
             if (user is null)
             {
-                return AppResponse.Failure<AdminUserListResponse>("User not found.");
+                return AppResponses.Failure<AdminUserListResponse>("User not found.");
             }
 
             var gender = Enum.TryParse<Gender>(req.Gender, true, out var parsedGender) ? parsedGender : Gender.Other;
@@ -38,7 +38,7 @@ internal sealed class UpdateAdminUser(UserManager<AppUser> userManager, ILogger<
             var updateResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
             if (!updateResult.Succeeded)
             {
-                return AppResponse.Failure<AdminUserListResponse>(string.Join(", ", updateResult.Errors.Select(static error => error.Description)));
+                return AppResponses.Failure<AdminUserListResponse>(string.Join(", ", updateResult.Errors.Select(static error => error.Description)));
             }
 
             var currentRoles = await userManager.GetRolesAsync(user).ConfigureAwait(false);
@@ -56,7 +56,7 @@ internal sealed class UpdateAdminUser(UserManager<AppUser> userManager, ILogger<
                 var removeResult = await userManager.RemoveFromRolesAsync(user, rolesToRemove).ConfigureAwait(false);
                 if (!removeResult.Succeeded)
                 {
-                    return AppResponse.Failure<AdminUserListResponse>(string.Join(", ", removeResult.Errors.Select(static error => error.Description)));
+                    return AppResponses.Failure<AdminUserListResponse>(string.Join(", ", removeResult.Errors.Select(static error => error.Description)));
                 }
             }
 
@@ -65,7 +65,7 @@ internal sealed class UpdateAdminUser(UserManager<AppUser> userManager, ILogger<
                 var addResult = await userManager.AddToRolesAsync(user, rolesToAdd).ConfigureAwait(false);
                 if (!addResult.Succeeded)
                 {
-                    return AppResponse.Failure<AdminUserListResponse>(string.Join(", ", addResult.Errors.Select(static error => error.Description)));
+                    return AppResponses.Failure<AdminUserListResponse>(string.Join(", ", addResult.Errors.Select(static error => error.Description)));
                 }
             }
 
@@ -86,7 +86,7 @@ internal sealed class UpdateAdminUser(UserManager<AppUser> userManager, ILogger<
                 user.CustomerId,
                 [.. roles.Order(StringComparer.OrdinalIgnoreCase)]);
 
-            return AppResponse.Success("User updated.", response);
+            return AppResponses.Success("User updated.", response);
         }
         catch (Exception ex)
         {

@@ -48,14 +48,14 @@
         var rolesResponse = await IamAdminService.GetRolesAsync();
         var userRolesResponse = await IamAdminService.GetUserRolesAsync(User.Id);
 
-        if (!rolesResponse.Successful || rolesResponse.Data is null)
+        if (!rolesResponse.IsSuccess || rolesResponse.Data is null)
         {
             Snackbar.Add(rolesResponse.Message ?? "We could not load roles.", Severity.Error);
             _isLoading = false;
             return;
         }
 
-        if (!userRolesResponse.Successful || userRolesResponse.Data is null)
+        if (!userRolesResponse.IsSuccess || userRolesResponse.Data is null)
         {
             Snackbar.Add(userRolesResponse.Message ?? "We could not load user roles.", Severity.Error);
             _isLoading = false;
@@ -90,7 +90,7 @@
         var response = await IamAdminService.UpdateUserRolesAsync(User.Id, new UpdateUserRolesRequest([.. _selectedRoles.Order(StringComparer.OrdinalIgnoreCase)]));
         _isSaving = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "User role update failed.", Severity.Error);
             return;

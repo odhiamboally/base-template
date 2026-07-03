@@ -23,27 +23,7 @@ using System.Text;
 
 namespace BT.Application.Features.Banking.Customers.QueryHandlers;
 
-public record SearchCustomerListQuery(CustomerSearchRequest SearchRequest, string UserId)
-    : IRequest<AppResponse<PagedResponse<CustomerResponse, Guid>>>, ICachableRequest
-{
 
-    public string CacheGroup => "customers";
-    public string Discriminator => CacheKeys.Discriminator(new CustomerSearchRequest(
-        SearchRequest.GlobalSearch,
-        SearchRequest.Type,
-        SearchRequest.SegmentType,
-        SearchRequest.SubSegmentType,
-        SearchRequest.IdentificationType,
-        SearchRequest.LineOfBusiness,
-        SearchRequest.Status,
-        SearchRequest.RelationshipManagerId,
-        SearchRequest.Cursor,
-        SearchRequest.PageSize));
-
-    public string? CacheUserId => null;
-    public bool IsVersioned => true;
-    public bool BypassCache => false;  // explicit; see XML doc above
-}
 
 internal sealed class SearchCustomerListQueryHandler(IBankingUnitOfWork _bankingUnitOfWork, ILogger<SearchCustomerListQueryHandler> _logger)
     : IRequestHandler<SearchCustomerListQuery, AppResponse<PagedResponse<CustomerResponse, Guid>>>
@@ -102,7 +82,7 @@ internal sealed class SearchCustomerListQueryHandler(IBankingUnitOfWork _banking
                 nextCursor ?? Guid.Empty
             );
 
-            return AppResponse.Success(pagedResult);
+            return AppResponses.Success(pagedResult);
         }
         catch (Exception ex)
         {

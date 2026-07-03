@@ -179,7 +179,7 @@
                 file.Name,
                 file.ContentType);
 
-            if (!response.Successful)
+            if (!response.IsSuccess)
             {
                 Snackbar.Add(response.Message ?? "Profile picture could not be updated.", Severity.Error);
                 return;

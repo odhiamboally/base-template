@@ -25,7 +25,7 @@ internal sealed class UpdateRolePermissions(
             var role = await roleManager.FindByIdAsync(command.RoleId).ConfigureAwait(false);
             if (role is null)
             {
-                return AppResponse.Failure<RolePermissionsResponse>("Role not found.");
+                return AppResponses.Failure<RolePermissionsResponse>("Role not found.");
             }
 
             var requestedKeys = command.Request.PermissionKeys
@@ -49,7 +49,7 @@ internal sealed class UpdateRolePermissions(
 
             if (invalidKeys.Count > 0)
             {
-                return AppResponse.Failure<RolePermissionsResponse>($"Unknown, inactive, or out-of-scope permission(s): {string.Join(", ", invalidKeys)}.");
+                return AppResponses.Failure<RolePermissionsResponse>($"Unknown, inactive, or out-of-scope permission(s): {string.Join(", ", invalidKeys)}.");
             }
 
             var existingClaims = (await roleManager.GetClaimsAsync(role).ConfigureAwait(false))
@@ -61,7 +61,7 @@ internal sealed class UpdateRolePermissions(
                 var removeResult = await roleManager.RemoveClaimAsync(role, claim).ConfigureAwait(false);
                 if (!removeResult.Succeeded)
                 {
-                    return AppResponse.Failure<RolePermissionsResponse>(string.Join(", ", removeResult.Errors.Select(static error => error.Description)));
+                    return AppResponses.Failure<RolePermissionsResponse>(string.Join(", ", removeResult.Errors.Select(static error => error.Description)));
                 }
             }
 
@@ -74,11 +74,11 @@ internal sealed class UpdateRolePermissions(
                 var addResult = await roleManager.AddClaimAsync(role, new Claim("permission", key)).ConfigureAwait(false);
                 if (!addResult.Succeeded)
                 {
-                    return AppResponse.Failure<RolePermissionsResponse>(string.Join(", ", addResult.Errors.Select(static error => error.Description)));
+                    return AppResponses.Failure<RolePermissionsResponse>(string.Join(", ", addResult.Errors.Select(static error => error.Description)));
                 }
             }
 
-            return AppResponse.Success(
+            return AppResponses.Success(
                 "Role permissions updated.",
                 new RolePermissionsResponse(role.Id, role.Name ?? string.Empty, requestedKeys));
         }

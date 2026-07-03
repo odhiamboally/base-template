@@ -20,16 +20,9 @@ using System.Text;
 namespace BT.Application.Features.Shared.Lookups.QueryHandlers;
 
 
-public sealed record GetLookupQuery(GetLookupRequest GetLookupRequest, string UserId) 
-    : IRequest<AppResponse<IReadOnlyList<LookupResponse>>>, ICachableRequest
-{
-    public string CacheGroup => "lookups";
-    public string Discriminator => GetLookupRequest.LookupType;
-    public string? CacheUserId => null;
-    public bool IsVersioned => false;
-}
 
-internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUnitOfWork, ILogger<GetLookupQueryHandler> _logger) 
+
+internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUnitOfWork, ILogger<GetLookupQueryHandler> _logger)
     : IRequestHandler<GetLookupQuery, AppResponse<IReadOnlyList<LookupResponse>>>
 {
     public async Task<AppResponse<IReadOnlyList<LookupResponse>>> Handle(GetLookupQuery query, CancellationToken cancellationToken)
@@ -51,10 +44,10 @@ internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUnitOfWork,
 
                     return  new AppResponse<IReadOnlyList<LookupResponse>>
                     {
-                        Successful = false,
+                        IsSuccess = false,
                         Message = $"Invalid lookup type: {req.LookupType}"
                     };
-                        
+
                 }
             }
 
@@ -66,10 +59,10 @@ internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUnitOfWork,
 
             return new AppResponse<IReadOnlyList<LookupResponse>>
             {
-                Successful = true,
+                IsSuccess = true,
                 Data = response
             };
-            
+
         }
         catch (ArgumentOutOfRangeException ex)
         {
@@ -77,18 +70,17 @@ internal sealed class GetLookupQueryHandler(ISharedUnitOfWork _sharedUnitOfWork,
 
             return new AppResponse<IReadOnlyList<LookupResponse>>
             {
-                Successful = false,
+                IsSuccess = false,
                 Message = $"Unsupported lookup type: {query.GetLookupRequest.LookupType}"
             };
-                
+
         }
         catch (Exception ex)
         {
             LogDefinitions.LogPipelineException(_logger, nameof(GetLookupQueryHandler), ex);
-                
+
             throw;
         }
 
     }
 }
-    

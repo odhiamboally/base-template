@@ -53,7 +53,7 @@
             : await LookupService.UpdateAsync(LookupType, ExistingLookup.Id, _model.ToUpdateRequest());
         _isSaving = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Lookup save failed.", Severity.Error);
             return;

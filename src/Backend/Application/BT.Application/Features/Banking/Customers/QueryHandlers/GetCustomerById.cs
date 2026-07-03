@@ -31,13 +31,7 @@ namespace BT.Application.Features.Banking.Customers.QueryHandlers;
 ///   UpdateCustomerCommand and DeleteCustomerCommand must include
 ///   CacheKeys.Entity("customers", id) in their DirectInvalidationKeys.
 /// </summary>
-public record GetCustomerByIdQuery(Guid Id) : IRequest<AppResponse<CustomerResponse>>, ICachableRequest
-{
-    public string CacheGroup => "customers";
-    public string Discriminator => Id.ToString();
-    public string? CacheUserId => null;   // entity cache is shared across users
-    public bool IsVersioned => false;  // invalidated directly by exact key
-}
+
 
 internal sealed class GetCustomerByIdQueryHandler(
     IBankingUnitOfWork _bankingUnitOfWork,
@@ -51,9 +45,9 @@ internal sealed class GetCustomerByIdQueryHandler(
             var customer = await _bankingUnitOfWork.CustomerRepository.FindByIdAsync(query.Id, ct).ConfigureAwait(false);
 
             if (customer is null)
-                return AppResponse.Failure<CustomerResponse>($"Customer with ID {query.Id} was not found.");
+                return AppResponses.Failure<CustomerResponse>($"Customer with ID {query.Id} was not found.");
 
-            return AppResponse.Success(customer.ToCustomerResponse());
+            return AppResponses.Success(customer.ToCustomerResponse());
         }
         catch (Exception ex)
         {

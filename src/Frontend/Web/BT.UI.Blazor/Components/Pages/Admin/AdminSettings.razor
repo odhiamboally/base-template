@@ -159,7 +159,7 @@
         StateHasChanged();
 
         var catalogResponse = await LookupService.GetCatalogTypesAsync();
-        if (!catalogResponse.Successful || catalogResponse.Data is null)
+        if (!catalogResponse.IsSuccess || catalogResponse.Data is null)
         {
             _message = catalogResponse.Message ?? "We could not load lookup catalog types.";
             Snackbar.Add(_message, Severity.Error);
@@ -173,7 +173,7 @@
         foreach (var lookupType in _lookupTypes.Select(type => type.Key))
         {
             var response = await LookupService.GetAsync(lookupType);
-            if (!response.Successful || response.Data is null)
+            if (!response.IsSuccess || response.Data is null)
             {
                 _message = response.Message ?? $"We could not load {lookupType}.";
                 Snackbar.Add(_message, Severity.Error);
@@ -239,7 +239,7 @@
         }
 
         var response = await LookupService.DeleteAsync(row.Type, row.Lookup.Id);
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Lookup delete failed.", Severity.Warning);
             return;

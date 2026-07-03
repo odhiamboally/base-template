@@ -1,0 +1,19 @@
+using BT.Application.Contracts.Interfaces.Common;
+using BT.Application.Utilities;
+using BT.Domain.Features.IAM.Contracts;
+using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Features.IAM.ReferenceData.Dtos;
+using MediatR;
+using Microsoft.Extensions.Logging;
+
+namespace BT.Application.Features.IAM.ReferenceData.Queries;
+
+
+public sealed record GetIamReferenceDataQuery : IRequest<AppResponse<IamReferenceDataResponse>>, ICachableRequest
+{
+    public string CacheGroup => "iam-reference-data";
+    public string Discriminator => CacheKeys.Discriminator("all");
+    public string? CacheUserId => null;
+    public bool IsVersioned => true;
+}
+

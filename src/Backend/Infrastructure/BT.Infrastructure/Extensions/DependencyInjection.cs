@@ -1,7 +1,10 @@
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
+using BT.Application.Features.Shared.FeatureFlags.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
+using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
+using BT.Application.Features.Shared.Reporting.Contracts.Interfaces;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;
@@ -16,7 +19,10 @@ using BT.Infrastructure.Contracts.Implementations.Common;
 using BT.Infrastructure.Contracts.Implementations.Caching;
 using BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Services;
 using BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Storage;
+using BT.Infrastructure.Features.Shared.FeatureFlags.Contracts.Implementations;
 using BT.Infrastructure.Features.Shared.Notifications.Contracts.Implementations.Services;
+using BT.Infrastructure.Features.Shared.Payments.Contracts.Implementations;
+using BT.Infrastructure.Features.Shared.Reporting.Contracts.Implementations;
 using BT.Infrastructure.Contracts.Interfaces;
 using BT.Infrastructure.Features.Banking.Customers.EmailComposers;
 using BT.Infrastructure.Features.HR.Employees.EmailComposers;
@@ -28,9 +34,9 @@ using BT.Application.Features.Banking.Customers.IntegrationEvents;
 using BT.Application.Features.HR.Employees.IntegrationEvents;
 using BT.Application.Features.IAM.Users.IntegrationEvents;
 using FluentValidation;
-using MailKit.Net.Smtp;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -48,6 +54,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Quartz;
 using Quartz.Simpl;
+using QuestPDF.Infrastructure;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -78,6 +85,23 @@ public static class DependencyInjection
             services.Configure<IamProvisioningSettings>(configuration.GetSection(IamProvisioningSettings.SectionName));
             services.Configure<MfaSettings>(configuration.GetSection(MfaSettings.SectionName));
             services
+                .AddOptions<FeatureFlagSettings>()
+                .Bind(configuration.GetSection(FeatureFlagSettings.SectionName))
+                .Validate(IsValidFeatureFlagProvider, "FeatureFlags:Provider must be Configuration.")
+                .ValidateOnStart();
+            services
+                .AddOptions<ReportingSettings>()
+                .Bind(configuration.GetSection(ReportingSettings.SectionName))
+                .Validate(IsValidReportingSettings, "Reporting:QuestPdf:License must be Community, Professional, or Enterprise.")
+                .ValidateOnStart();
+            services
+                .AddOptions<PaymentSettings>()
+                .Bind(configuration.GetSection(PaymentSettings.SectionName))
+                .Validate(IsValidPaymentProvider, "Payments:Provider must be NoOp, Stripe, or Mpesa.")
+                .ValidateOnStart();
+            ConfigurePaymentGateways(services, configuration);
+            ConfigureQuestPdf(configuration);
+            services
                 .AddOptions<ProfileImageStorageSettings>()
                 .Bind(configuration.GetSection(ProfileImageStorageSettings.SectionName))
                 .ValidateDataAnnotations()
@@ -96,7 +120,7 @@ public static class DependencyInjection
 
             services.Configure<SessionSettings>(configuration.GetSection(SessionSettings.SectionName));
             ConfigureDistributedCache(services, configuration, cacheSettings);
-            ConfigureMailKitWithSmtp(services, configuration);
+            ConfigureEmailDelivery(services, configuration);
             ConfigureSms(services, configuration);
             ConfigureSerilogEnrichers(services);
             var observabilitySettings = configuration.GetSection(ObservabilitySettings.SectionName).Get<ObservabilitySettings>() ?? new ObservabilitySettings();
@@ -110,7 +134,7 @@ public static class DependencyInjection
             }
 
             AddServices(services, authProviderSettings, messagingSettings, backgroundJobSettings);
-            
+
         return services;
     }
 
@@ -132,6 +156,23 @@ public static class DependencyInjection
         services.AddHttpClient<IApiService, ApiService>();
         services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
         services.AddScoped<ICurrentActorProvider, CurrentActorProvider>();
+        services.AddScoped<IFeatureFlagService, ConfigurationFeatureFlagService>();
+        services.AddScoped<IPdfReportService, QuestPdfReportService>();
+        services.AddScoped<NoOpPaymentGateway>();
+        services.AddScoped<StripePaymentGateway>();
+        services.AddScoped<MpesaPaymentGateway>();
+        services.AddScoped<IPaymentGateway>(sp =>
+        {
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PaymentSettings>>().Value;
+            return GetPaymentProvider(settings) switch
+            {
+                PaymentProvider.NoOp => sp.GetRequiredService<NoOpPaymentGateway>(),
+                PaymentProvider.Stripe => sp.GetRequiredService<StripePaymentGateway>(),
+                PaymentProvider.Mpesa => sp.GetRequiredService<MpesaPaymentGateway>(),
+                _ => throw new InvalidOperationException(
+                    $"Payments:Provider '{settings.Provider}' is not supported. Supported values: NoOp, Stripe, Mpesa.")
+            };
+        });
         services.AddScoped<LocalProfilePictureStorage>();
         services.AddScoped<AzureBlobProfilePictureStorage>();
         services.AddScoped<IProfilePictureStorage>(sp =>
@@ -160,7 +201,7 @@ public static class DependencyInjection
                 "Supported values: AspNetCoreIdentity.");
         }
 
-        services.AddScoped<IEmailService, FluentMailService>();
+        services.AddScoped<IEmailService, EmailDeliveryService>();
         services.AddScoped<ISmsService, SmsService>();
         services.AddScoped<IBackgroundJobService>(_ =>
             backgroundJobSettings.Enabled
@@ -176,6 +217,11 @@ public static class DependencyInjection
     internal static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services
+            .AddOptions<EntraIdSettings>()
+            .Bind(configuration.GetSection(EntraIdSettings.SectionName))
+            .Validate(IsValidEntraIdSettings, "EntraId requires TenantId, ClientId, and ClientSecret when enabled.")
+            .ValidateOnStart();
 
         var jwtSettings = new JwtSettings();
             configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
@@ -206,8 +252,11 @@ public static class DependencyInjection
 
             services.Configure<IdentityOptions>(ConfigureIdentityOptions);
 
+            var entraIdSettings = configuration.GetSection(EntraIdSettings.SectionName).Get<EntraIdSettings>()
+                ?? new EntraIdSettings();
+
             // Authentication with JWT
-            services.AddAuthentication(options =>
+            var authenticationBuilder = services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -217,6 +266,14 @@ public static class DependencyInjection
             {
                 ConfigureJwtBearer(options, jwtSettings);
             });
+
+            if (entraIdSettings.Enabled)
+            {
+                authenticationBuilder.AddOpenIdConnect("EntraId", options =>
+                {
+                    ConfigureEntraId(options, entraIdSettings);
+                });
+            }
 
         services.Configure<DataProtectionTokenProviderOptions>(options =>
         {
@@ -307,7 +364,7 @@ public static class DependencyInjection
 
                     var expirationTime = context.Exception is SecurityTokenExpiredException expiredException
                         ? expiredException.Expires.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)
-                        : string.Empty; 
+                        : string.Empty;
 
                     var errorMessage = new
                     {
@@ -326,7 +383,7 @@ public static class DependencyInjection
                     var logger = loggerFactory.CreateLogger("JwtAuthentication");
 
                     // Check for NotBefore issues specifically
-                    if (context.Exception.Message.Contains("NotBefore", StringComparison.OrdinalIgnoreCase) || 
+                    if (context.Exception.Message.Contains("NotBefore", StringComparison.OrdinalIgnoreCase) ||
                     context.Exception.Message.Contains("not yet valid", StringComparison.OrdinalIgnoreCase))
                     {
                         ServiceLogDefinitions.LogJwtAuthenticationFailed(logger, "Token is not yet valid", context.Exception);
@@ -392,6 +449,28 @@ public static class DependencyInjection
             options.AddPolicy("LookupCachePolicy", builder =>
                 builder.Expire(TimeSpan.FromMinutes(5)).Tag("lookups"));
         });
+    }
+
+    private static void ConfigureEntraId(OpenIdConnectOptions options, EntraIdSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        if (!settings.Enabled)
+        {
+            return;
+        }
+
+        options.Authority = settings.Authority;
+        options.ClientId = settings.ClientId;
+        options.ClientSecret = settings.ClientSecret;
+        options.CallbackPath = settings.CallbackPath;
+        options.ResponseType = "code";
+        options.SaveTokens = false;
+        options.GetClaimsFromUserInfoEndpoint = true;
+        options.Scope.Clear();
+        options.Scope.Add("openid");
+        options.Scope.Add("profile");
+        options.Scope.Add("email");
     }
 
     private static void RegisterRedisCache(IServiceCollection services, string connectionString)
@@ -569,9 +648,9 @@ public static class DependencyInjection
     /// </para>
     /// </remarks>
     public static IServiceCollection ConfigureObservability(
-        this IServiceCollection services, 
-        IConfiguration configuration, 
-        IWebHostEnvironment environment, 
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IWebHostEnvironment environment,
         ObservabilitySettings observabilitySettings)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -608,7 +687,7 @@ public static class DependencyInjection
                 ["deployment.environment"] = environment.EnvironmentName,
                 ["service.namespace"] = observabilitySettings.ServiceNamespace
             }));
-            
+
 
         otelBuilder.WithTracing(tracing =>
         {
@@ -625,7 +704,7 @@ public static class DependencyInjection
                     options.RecordException = true;
                 })
                 .AddSource("BT.Cache");
-                
+
 
         });
 
@@ -663,15 +742,128 @@ public static class DependencyInjection
 
     }
 
-    private static void ConfigureMailKitWithSmtp(IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureEmailDelivery(IServiceCollection services, IConfiguration configuration)
     {
         services
             .AddOptions<EmailSettings>()
             .Bind(configuration.GetSection(EmailSettings.SectionName))
             .ValidateDataAnnotations()
+            .Validate(IsValidEmailProvider, "EmailSettings:Provider must be NoOp, LocalMailpit, or SendGrid.")
             .ValidateOnStart();
 
-        services.AddTransient<ISmtpClient, SmtpClient>();
+        var settings = configuration.GetSection(EmailSettings.SectionName).Get<EmailSettings>() ?? new EmailSettings();
+        services.AddHttpClient("Email.SendGrid", client =>
+        {
+            if (!string.IsNullOrWhiteSpace(settings.SendGrid.Endpoint) &&
+                Uri.TryCreate(settings.SendGrid.Endpoint, UriKind.Absolute, out var endpoint))
+            {
+                client.BaseAddress = endpoint;
+            }
+        });
+    }
+
+    private static bool IsValidEmailProvider(EmailSettings settings)
+    {
+        if (settings is null)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.FromAddress))
+        {
+            return false;
+        }
+
+        return GetEmailProvider(settings) switch
+        {
+            EmailProvider.NoOp => true,
+            EmailProvider.LocalMailpit => !string.IsNullOrWhiteSpace(settings.LocalMailpit.Host) &&
+                settings.LocalMailpit.Port > 0,
+            EmailProvider.SendGrid => !string.IsNullOrWhiteSpace(settings.SendGrid.Endpoint),
+            _ => false
+        };
+    }
+
+    private static bool IsValidFeatureFlagProvider(FeatureFlagSettings settings)
+    {
+        return settings is not null &&
+            GetFeatureFlagProvider(settings) is FeatureFlagProvider.Configuration;
+    }
+
+    private static bool IsValidReportingSettings(ReportingSettings settings)
+    {
+        return settings is not null &&
+            GetQuestPdfLicense(settings.QuestPdf) is not QuestPdfLicense.Invalid;
+    }
+
+    private static bool IsValidPaymentProvider(PaymentSettings settings) =>
+        settings is not null &&
+        GetPaymentProvider(settings) is not PaymentProvider.Invalid;
+
+    private static bool IsValidEntraIdSettings(EntraIdSettings settings)
+    {
+        if (settings is null)
+        {
+            return false;
+        }
+
+        return !settings.Enabled ||
+            (!string.IsNullOrWhiteSpace(settings.TenantId) &&
+             !string.IsNullOrWhiteSpace(settings.ClientId) &&
+             !string.IsNullOrWhiteSpace(settings.ClientSecret));
+    }
+
+    private static void ConfigurePaymentGateways(IServiceCollection services, IConfiguration configuration)
+    {
+        var settings = configuration.GetSection(PaymentSettings.SectionName).Get<PaymentSettings>() ?? new PaymentSettings();
+
+        services.AddHttpClient("Payments.Stripe", client =>
+        {
+            if (!string.IsNullOrWhiteSpace(settings.Stripe.CheckoutSessionsEndpoint) &&
+                Uri.TryCreate(settings.Stripe.CheckoutSessionsEndpoint, UriKind.Absolute, out var endpoint))
+            {
+                client.BaseAddress = endpoint;
+            }
+        });
+
+        services.AddHttpClient("Payments.Mpesa.Auth", client =>
+        {
+            if (!string.IsNullOrWhiteSpace(settings.Mpesa.AuthEndpoint) &&
+                Uri.TryCreate(settings.Mpesa.AuthEndpoint, UriKind.Absolute, out var endpoint))
+            {
+                client.BaseAddress = endpoint;
+            }
+        });
+
+        services.AddHttpClient("Payments.Mpesa", client =>
+        {
+            if (!string.IsNullOrWhiteSpace(settings.Mpesa.StkPushEndpoint) &&
+                Uri.TryCreate(settings.Mpesa.StkPushEndpoint, UriKind.Absolute, out var endpoint))
+            {
+                client.BaseAddress = endpoint;
+            }
+        });
+    }
+
+    private static void ConfigureQuestPdf(IConfiguration configuration)
+    {
+        var settings = configuration.GetSection(ReportingSettings.SectionName).Get<ReportingSettings>()
+            ?? new ReportingSettings();
+
+        if (!settings.QuestPdf.Enabled)
+        {
+            return;
+        }
+
+        QuestPDF.Settings.License = GetQuestPdfLicense(settings.QuestPdf) switch
+        {
+            QuestPdfLicense.Community => LicenseType.Community,
+            QuestPdfLicense.Professional => LicenseType.Professional,
+            QuestPdfLicense.Enterprise => LicenseType.Enterprise,
+            _ => throw new InvalidOperationException(
+                $"Reporting:QuestPdf:License '{settings.QuestPdf.License}' is not supported. " +
+                "Supported values: Community, Professional, Enterprise.")
+        };
     }
 
     private static void ConfigureQuartz(IServiceCollection services, IConfiguration configuration)
@@ -732,7 +924,7 @@ public static class DependencyInjection
                 diagnosticContext.Set("UserAgent", httpContext.Request.Headers["User-Agent"].FirstOrDefault());
                 diagnosticContext.Set("RemoteIpAddress", httpContext.Connection.RemoteIpAddress?.ToString());
                 diagnosticContext.Set("CorrelationId", httpContext.TraceIdentifier);
-                    
+
             };
         });
 
@@ -764,69 +956,96 @@ public static class DependencyInjection
         AzureManagedRedis,
         Invalid
     }
+
+    private static EmailProvider GetEmailProvider(EmailSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Provider))
+        {
+            return EmailProvider.NoOp;
+        }
+
+        return settings.Provider.Trim() switch
+        {
+            var provider when provider.Equals("NoOp", StringComparison.OrdinalIgnoreCase) => EmailProvider.NoOp,
+            var provider when provider.Equals("LocalMailpit", StringComparison.OrdinalIgnoreCase) => EmailProvider.LocalMailpit,
+            var provider when provider.Equals("SendGrid", StringComparison.OrdinalIgnoreCase) => EmailProvider.SendGrid,
+            _ => EmailProvider.Invalid
+        };
+    }
+
+    private enum EmailProvider
+    {
+        NoOp,
+        LocalMailpit,
+        SendGrid,
+        Invalid
+    }
+
+    private static FeatureFlagProvider GetFeatureFlagProvider(FeatureFlagSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Provider))
+        {
+            return FeatureFlagProvider.Configuration;
+        }
+
+        return settings.Provider.Trim() switch
+        {
+            var provider when provider.Equals("Configuration", StringComparison.OrdinalIgnoreCase) => FeatureFlagProvider.Configuration,
+            _ => FeatureFlagProvider.Invalid
+        };
+    }
+
+    private enum FeatureFlagProvider
+    {
+        Configuration,
+        Invalid
+    }
+
+    private static QuestPdfLicense GetQuestPdfLicense(QuestPdfSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.License))
+        {
+            return QuestPdfLicense.Community;
+        }
+
+        return settings.License.Trim() switch
+        {
+            var license when license.Equals("Community", StringComparison.OrdinalIgnoreCase) => QuestPdfLicense.Community,
+            var license when license.Equals("Professional", StringComparison.OrdinalIgnoreCase) => QuestPdfLicense.Professional,
+            var license when license.Equals("Enterprise", StringComparison.OrdinalIgnoreCase) => QuestPdfLicense.Enterprise,
+            _ => QuestPdfLicense.Invalid
+        };
+    }
+
+    private enum QuestPdfLicense
+    {
+        Community,
+        Professional,
+        Enterprise,
+        Invalid
+    }
+
+    private static PaymentProvider GetPaymentProvider(PaymentSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Provider))
+        {
+            return PaymentProvider.NoOp;
+        }
+
+        return settings.Provider.Trim() switch
+        {
+            var provider when provider.Equals("NoOp", StringComparison.OrdinalIgnoreCase) => PaymentProvider.NoOp,
+            var provider when provider.Equals("Stripe", StringComparison.OrdinalIgnoreCase) => PaymentProvider.Stripe,
+            var provider when provider.Equals("Mpesa", StringComparison.OrdinalIgnoreCase) => PaymentProvider.Mpesa,
+            _ => PaymentProvider.Invalid
+        };
+    }
+
+    private enum PaymentProvider
+    {
+        NoOp,
+        Stripe,
+        Mpesa,
+        Invalid
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

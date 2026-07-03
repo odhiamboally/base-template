@@ -130,7 +130,7 @@
     private async Task LoadReferenceDataAsync()
     {
         var response = await IamAdminService.GetReferenceDataAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load IAM reference data.", Severity.Warning);
             return;
@@ -142,7 +142,7 @@
     private async Task LoadDepartmentsAsync()
     {
         var response = await DepartmentService.GetAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load departments.", Severity.Warning);
             return;
@@ -154,7 +154,7 @@
     private async Task LoadPermissionsAsync()
     {
         var response = await IamAdminService.SearchPermissionsAsync(new PermissionSearchRequest(IsActive: true, PageSize: 50));
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load permissions.", Severity.Warning);
             return;
@@ -177,7 +177,7 @@
             : await IamAdminService.UpdateMenuAsync(_model.Id, _model.ToUpdateRequest());
         _isSaving = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Menu save failed.", Severity.Error);
             return;

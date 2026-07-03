@@ -8,13 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.Shared.Lookups.CommandHandlers;
 
-public sealed record DeleteLookupCommand(string LookupType, int Id, string UserId)
-    : IRequest<AppResponse<bool>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("lookups", $"{LookupType}:{Id}")];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("lookups")];
-}
 
 internal sealed class DeleteLookupCommandHandler(ISharedUnitOfWork unitOfWork, ILogger<DeleteLookupCommandHandler> logger)
     : IRequestHandler<DeleteLookupCommand, AppResponse<bool>>
@@ -25,7 +19,7 @@ internal sealed class DeleteLookupCommandHandler(ISharedUnitOfWork unitOfWork, I
         {
             if (!Enum.TryParse<LookupType>(command.LookupType, true, out var lookupType))
             {
-                return AppResponse.Failure<bool>($"Invalid lookup type: {command.LookupType}");
+                return AppResponses.Failure<bool>($"Invalid lookup type: {command.LookupType}");
             }
 
             await unitOfWork.LookupRepository
@@ -34,13 +28,13 @@ internal sealed class DeleteLookupCommandHandler(ISharedUnitOfWork unitOfWork, I
 
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
             return saved
-                ? AppResponse.Success("Lookup deleted.", true)
-                : AppResponse.Failure<bool>("Lookup delete failed.");
+                ? AppResponses.Success("Lookup deleted.", true)
+                : AppResponses.Failure<bool>("Lookup delete failed.");
         }
         catch (KeyNotFoundException ex)
         {
             LogDefinitions.LogPipelineException(logger, nameof(DeleteLookupCommandHandler), ex);
-            return AppResponse.Failure<bool>("The lookup record could not be found.");
+            return AppResponses.Failure<bool>("The lookup record could not be found.");
         }
         catch (Exception ex)
         {

@@ -25,7 +25,7 @@ internal sealed class UpdateUserPermissions(
             var user = await userManager.FindByIdAsync(command.UserId).ConfigureAwait(false);
             if (user is null)
             {
-                return AppResponse.Failure<UserPermissionsResponse>("User not found.");
+                return AppResponses.Failure<UserPermissionsResponse>("User not found.");
             }
 
             var requestedKeys = command.Request.PermissionKeys
@@ -45,7 +45,7 @@ internal sealed class UpdateUserPermissions(
             var invalidKeys = requestedKeys.Except(validKeys, StringComparer.OrdinalIgnoreCase).ToList();
             if (invalidKeys.Count > 0)
             {
-                return AppResponse.Failure<UserPermissionsResponse>($"Unknown or inactive permission(s): {string.Join(", ", invalidKeys)}.");
+                return AppResponses.Failure<UserPermissionsResponse>($"Unknown or inactive permission(s): {string.Join(", ", invalidKeys)}.");
             }
 
             var existingClaims = (await userManager.GetClaimsAsync(user).ConfigureAwait(false))
@@ -57,7 +57,7 @@ internal sealed class UpdateUserPermissions(
                 var removeResult = await userManager.RemoveClaimAsync(user, claim).ConfigureAwait(false);
                 if (!removeResult.Succeeded)
                 {
-                    return AppResponse.Failure<UserPermissionsResponse>(string.Join(", ", removeResult.Errors.Select(static error => error.Description)));
+                    return AppResponses.Failure<UserPermissionsResponse>(string.Join(", ", removeResult.Errors.Select(static error => error.Description)));
                 }
             }
 
@@ -67,11 +67,11 @@ internal sealed class UpdateUserPermissions(
                 var addResult = await userManager.AddClaimAsync(user, new Claim("permission", key)).ConfigureAwait(false);
                 if (!addResult.Succeeded)
                 {
-                    return AppResponse.Failure<UserPermissionsResponse>(string.Join(", ", addResult.Errors.Select(static error => error.Description)));
+                    return AppResponses.Failure<UserPermissionsResponse>(string.Join(", ", addResult.Errors.Select(static error => error.Description)));
                 }
             }
 
-            return AppResponse.Success("User permissions updated.", new UserPermissionsResponse(user.Id, user.UserName ?? user.Email ?? user.Id, requestedKeys));
+            return AppResponses.Success("User permissions updated.", new UserPermissionsResponse(user.Id, user.UserName ?? user.Email ?? user.Id, requestedKeys));
         }
         catch (Exception ex)
         {

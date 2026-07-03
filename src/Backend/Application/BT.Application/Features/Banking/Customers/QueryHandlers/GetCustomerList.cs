@@ -30,7 +30,7 @@ namespace BT.Application.Features.Banking.Customers.QueryHandlers;
 // ════════════════════════════════════════════════════════════════════════════════
 //  GET CUSTOMER LIST  (unfiltered, paginated)
 // ════════════════════════════════════════════════════════════════════════════════
- 
+
 /// <summary>
 /// Returns the full customer list with cursor-based pagination, no search filters.
 ///
@@ -42,16 +42,9 @@ namespace BT.Application.Features.Banking.Customers.QueryHandlers;
 /// Invalidation: any mutation command bumps CacheKeys.GroupVersion("customers"),
 /// which orphans every versioned entry for that user in O(1).
 /// </summary>
-public record GetCustomerListQuery(CustomerListRequest CustomerListRequest, string UserId)
-    : IRequest<AppResponse<PagedResponse<CustomerResponse, Guid>>>, ICachableRequest
-{
-    public string CacheGroup => "customers";
-    public string Discriminator => CacheKeys.Discriminator(new CustomerListRequest(CustomerListRequest.Cursor, CustomerListRequest.PageSize));
-    public string? CacheUserId => null;
-    public bool IsVersioned => true;
-}
 
-internal sealed class GetCustomerListQueryHandler(IBankingUnitOfWork _bankingUnitOfWork, ILogger<GetCustomerListQueryHandler> _logger) 
+
+internal sealed class GetCustomerListQueryHandler(IBankingUnitOfWork _bankingUnitOfWork, ILogger<GetCustomerListQueryHandler> _logger)
     : IRequestHandler<GetCustomerListQuery, AppResponse<PagedResponse<CustomerResponse, Guid>>>
 {
     public async Task<AppResponse<PagedResponse<CustomerResponse, Guid>>> Handle(GetCustomerListQuery query, CancellationToken ct)
@@ -96,7 +89,7 @@ internal sealed class GetCustomerListQueryHandler(IBankingUnitOfWork _bankingUni
                 nextCursor ?? Guid.Empty
             );
 
-            return AppResponse.Success(pagedResult);
+            return AppResponses.Success(pagedResult);
         }
         catch (Exception ex)
         {
@@ -105,4 +98,3 @@ internal sealed class GetCustomerListQueryHandler(IBankingUnitOfWork _bankingUni
         }
     }
 }
-

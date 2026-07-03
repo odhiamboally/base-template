@@ -32,25 +32,15 @@ namespace BT.Application.Features.Banking.Customers.CommandHandlers;
 /// Both are necessary: without the direct deletion the entity detail page would
 /// still show stale data even after the list refreshes.
 /// </summary>
-public record UpdateCustomerCommand(Guid Id, UpdateCustomerRequest UpdateCustomerRequest, string UserId) 
-    : IRequest<AppResponse<CustomerResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("customers", Id.ToString())];
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate =>
-    [
-        CacheKeys.GroupVersion("customers"),
-        CacheKeys.GroupVersion("dashboard")
-    ];
-        
-}
+
 
 internal sealed class UpdateCustomerCommandHandler(
-    IBankingUnitOfWork _bankingUnitOfWork, 
-    IHrUnitOfWork _hrUnitOfWork, 
+    IBankingUnitOfWork _bankingUnitOfWork,
+    IHrUnitOfWork _hrUnitOfWork,
     ILogger<UpdateCustomerCommandHandler> _logger)
     : IRequestHandler<UpdateCustomerCommand, AppResponse<CustomerResponse>>
 {
-    
+
     public async Task<AppResponse<CustomerResponse>> Handle(UpdateCustomerCommand command, CancellationToken ct)
     {
         try
@@ -58,16 +48,16 @@ internal sealed class UpdateCustomerCommandHandler(
             var req = command.UpdateCustomerRequest;
             var customer = await _bankingUnitOfWork.CustomerRepository.FindByIdAsync(req.Id, ct).ConfigureAwait(false);
             if (customer is null)
-                return AppResponse.Failure<CustomerResponse>($"Customer {req.Id} not found.");
-                    
+                return AppResponses.Failure<CustomerResponse>($"Customer {req.Id} not found.");
+
             // Verify new RM if it changed
             var rm = await _hrUnitOfWork.EmployeeRepository
                 .FindByIdAsync(req.RelationshipManagerId, ct)
                 .ConfigureAwait(false);
 
             if (rm is null)
-                return AppResponse.Failure<CustomerResponse>("Selected Relationship Manager does not exist or is inactive.");
-                    
+                return AppResponses.Failure<CustomerResponse>("Selected Relationship Manager does not exist or is inactive.");
+
             // Update via aggregate behaviours — never set properties directly
             customer.SetCorporateDetails(CorporateDetail.Create(
                 req.CompanyName,
@@ -85,7 +75,7 @@ internal sealed class UpdateCustomerCommandHandler(
                 req.TINNumber,
                 req.Classification,
                 req.Comments
-                
+
             ));
 
             customer.SetAddress(Address.Create(
@@ -122,7 +112,7 @@ internal sealed class UpdateCustomerCommandHandler(
 
             LogDefinitions.LogCustomerUpdated(_logger, customer.Number);
 
-            return AppResponse.Success("Customer updated successfully.", customer.ToCustomerResponse());
+            return AppResponses.Success("Customer updated successfully.", customer.ToCustomerResponse());
         }
         catch (Exception ex)
         {

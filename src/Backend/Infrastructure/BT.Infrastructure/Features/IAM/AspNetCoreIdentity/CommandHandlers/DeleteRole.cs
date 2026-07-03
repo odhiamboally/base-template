@@ -20,7 +20,7 @@ internal sealed class DeleteRole(RoleManager<AppRole> roleManager, IamDBContext 
             var role = await roleManager.FindByIdAsync(command.RoleId).ConfigureAwait(false);
             if (role is null)
             {
-                return AppResponse.Failure<bool>("Role not found.");
+                return AppResponses.Failure<bool>("Role not found.");
             }
 
             var assignedUserCount = await context.UserRoles
@@ -30,7 +30,7 @@ internal sealed class DeleteRole(RoleManager<AppRole> roleManager, IamDBContext 
 
             if (assignedUserCount > 0)
             {
-                return AppResponse.Failure<bool>($"Role cannot be deleted because it is assigned to {assignedUserCount} user(s). Remove assignments first.");
+                return AppResponses.Failure<bool>($"Role cannot be deleted because it is assigned to {assignedUserCount} user(s). Remove assignments first.");
             }
 
             var permissionCount = await context.RoleClaims
@@ -40,15 +40,15 @@ internal sealed class DeleteRole(RoleManager<AppRole> roleManager, IamDBContext 
 
             if (permissionCount > 0)
             {
-                return AppResponse.Failure<bool>($"Role cannot be deleted because it has {permissionCount} permission claim(s). Remove permissions first.");
+                return AppResponses.Failure<bool>($"Role cannot be deleted because it has {permissionCount} permission claim(s). Remove permissions first.");
             }
 
             role.MarkAsDeleted(command.DeletedBy);
             var result = await roleManager.UpdateAsync(role).ConfigureAwait(false);
 
             return result.Succeeded
-                ? AppResponse.Success("Role deleted.", true)
-                : AppResponse.Failure<bool>(string.Join(", ", result.Errors.Select(static error => error.Description)));
+                ? AppResponses.Success("Role deleted.", true)
+                : AppResponses.Failure<bool>(string.Join(", ", result.Errors.Select(static error => error.Description)));
         }
         catch (Exception ex)
         {

@@ -20,17 +20,7 @@ namespace BT.Application.Features.Banking.Customers.CommandHandlers;
 /// <summary>
 /// Same invalidation pattern as Update: remove the entity entry + bump the list version.
 /// </summary>
-public record DeleteCustomerCommand(Guid CustomerId, string UserId) : IRequest<AppResponse<bool>>, ICacheInvalidatorRequest
-    
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("customers", CustomerId.ToString())];
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate =>
-    [
-        CacheKeys.GroupVersion("customers"),
-        CacheKeys.GroupVersion("dashboard")
-    ];
-        
-}
+
 
 internal sealed class DeleteCustomerCommandHandler(IBankingUnitOfWork _unitOfWork, ILogger<DeleteCustomerCommandHandler> _logger)
     : IRequestHandler<DeleteCustomerCommand, AppResponse<bool>>
@@ -41,20 +31,20 @@ internal sealed class DeleteCustomerCommandHandler(IBankingUnitOfWork _unitOfWor
         {
             var customer = await _unitOfWork.CustomerRepository.FindByIdAsync(command.CustomerId, ct).ConfigureAwait(false);
             if (customer is null)
-                return AppResponse.Failure<bool>($"Customer {command.CustomerId} not found.");
+                return AppResponses.Failure<bool>($"Customer {command.CustomerId} not found.");
 
             await _unitOfWork.CustomerRepository.SoftDeleteAsync(command.CustomerId, ct).ConfigureAwait(false);
 
             var saved = await _unitOfWork.CompleteAsync(ct).ConfigureAwait(false) > 0;
             if (!saved)
-                return AppResponse.Failure<bool>("Failed to delete customer.");
-            return AppResponse.Success(true);
+                return AppResponses.Failure<bool>("Failed to delete customer.");
+            return AppResponses.Success(true);
         }
         catch (Exception ex)
         {
             LogDefinitions.LogCustomerDeleteFailed(_logger, command.CustomerId, ex);
             throw;
         }
-        
+
     }
 }

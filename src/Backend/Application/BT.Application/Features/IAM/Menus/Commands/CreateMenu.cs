@@ -10,12 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Menus.Commands;
 
-public sealed record CreateMenuCommand(CreateMenuRequest Request, string UserId)
-    : IRequest<AppResponse<MenuResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [];
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("menus")];
-}
+
 
 internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogger<CreateMenuCommandHandler> logger)
     : IRequestHandler<CreateMenuCommand, AppResponse<MenuResponse>>
@@ -29,7 +24,7 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
                 .ConfigureAwait(false);
             if (catalogError is not null)
             {
-                return AppResponse.Failure<MenuResponse>(catalogError);
+                return AppResponses.Failure<MenuResponse>(catalogError);
             }
 
             if (request.ParentId.HasValue)
@@ -37,13 +32,13 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
                 var parent = await unitOfWork.MenuRepository.FindByIdAsync(request.ParentId.Value, cancellationToken).ConfigureAwait(false);
                 if (parent is null)
                 {
-                    return AppResponse.Failure<MenuResponse>("Parent menu not found.");
+                    return AppResponses.Failure<MenuResponse>("Parent menu not found.");
                 }
 
                 if (!string.Equals(parent.Placement, request.Placement, StringComparison.OrdinalIgnoreCase)
                     || parent.DepartmentId != request.DepartmentId)
                 {
-                    return AppResponse.Failure<MenuResponse>("Parent menu must use the same placement and department scope.");
+                    return AppResponses.Failure<MenuResponse>("Parent menu must use the same placement and department scope.");
                 }
             }
 
@@ -55,13 +50,13 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
 
             if (duplicate)
             {
-                return AppResponse.Failure<MenuResponse>($"Menu key {menu.Key} already exists.");
+                return AppResponses.Failure<MenuResponse>($"Menu key {menu.Key} already exists.");
             }
 
             await unitOfWork.MenuRepository.CreateAsync(menu, cancellationToken).ConfigureAwait(false);
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
-            return saved ? AppResponse.Success("Menu created.", menu.ToMenuResponse()) : AppResponse.Failure<MenuResponse>("Menu create failed.");
+            return saved ? AppResponses.Success("Menu created.", menu.ToMenuResponse()) : AppResponses.Failure<MenuResponse>("Menu create failed.");
         }
         catch (Exception ex)
         {

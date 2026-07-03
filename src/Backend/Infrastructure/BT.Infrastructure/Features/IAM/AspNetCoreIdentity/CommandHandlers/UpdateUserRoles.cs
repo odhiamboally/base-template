@@ -22,7 +22,7 @@ internal sealed class UpdateUserRoles(
             var user = await userManager.FindByIdAsync(command.UserId).ConfigureAwait(false);
             if (user is null)
             {
-                return AppResponse.Failure<UserRolesResponse>("User not found.");
+                return AppResponses.Failure<UserRolesResponse>("User not found.");
             }
 
             var requestedRoles = command.Request.Roles
@@ -36,7 +36,7 @@ internal sealed class UpdateUserRoles(
             {
                 if (!await roleManager.RoleExistsAsync(role).ConfigureAwait(false))
                 {
-                    return AppResponse.Failure<UserRolesResponse>($"Role {role} does not exist.");
+                    return AppResponses.Failure<UserRolesResponse>($"Role {role} does not exist.");
                 }
             }
 
@@ -49,7 +49,7 @@ internal sealed class UpdateUserRoles(
                 var removeResult = await userManager.RemoveFromRolesAsync(user, rolesToRemove).ConfigureAwait(false);
                 if (!removeResult.Succeeded)
                 {
-                    return AppResponse.Failure<UserRolesResponse>(string.Join(", ", removeResult.Errors.Select(static error => error.Description)));
+                    return AppResponses.Failure<UserRolesResponse>(string.Join(", ", removeResult.Errors.Select(static error => error.Description)));
                 }
             }
 
@@ -58,11 +58,11 @@ internal sealed class UpdateUserRoles(
                 var addResult = await userManager.AddToRolesAsync(user, rolesToAdd).ConfigureAwait(false);
                 if (!addResult.Succeeded)
                 {
-                    return AppResponse.Failure<UserRolesResponse>(string.Join(", ", addResult.Errors.Select(static error => error.Description)));
+                    return AppResponses.Failure<UserRolesResponse>(string.Join(", ", addResult.Errors.Select(static error => error.Description)));
                 }
             }
 
-            return AppResponse.Success("User roles updated.", new UserRolesResponse(user.Id, user.UserName ?? user.Email ?? user.Id, requestedRoles));
+            return AppResponses.Success("User roles updated.", new UserRolesResponse(user.Id, user.UserName ?? user.Email ?? user.Id, requestedRoles));
         }
         catch (Exception ex)
         {

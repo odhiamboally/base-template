@@ -21,13 +21,13 @@ internal sealed class RevokeUserDevice(IamDBContext context, ILogger<RevokeUserD
 
             if (device is null)
             {
-                return AppResponse.Failure<bool>("User device not found.");
+                return AppResponses.Failure<bool>("User device not found.");
             }
 
             device.RevokeTrust(command.RevokedBy);
             await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-            return AppResponse.Success("Device trust revoked.", true);
+            return AppResponses.Success("Device trust revoked.", true);
         }
         catch (Exception ex)
         {

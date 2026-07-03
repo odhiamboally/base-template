@@ -10,13 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Employees.CommandHandlers;
 
-public sealed record UpdateEmployeeCommand(Guid Id, UpdateEmployeeRequest Request, string UserId)
-    : IRequest<AppResponse<EmployeeResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("employees", Id.ToString())];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("employees")];
-}
 
 internal sealed class UpdateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILogger<UpdateEmployeeCommandHandler> logger)
     : IRequestHandler<UpdateEmployeeCommand, AppResponse<EmployeeResponse>>
@@ -29,7 +23,7 @@ internal sealed class UpdateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILo
             var employee = await unitOfWork.EmployeeRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
             if (employee is null)
             {
-                return AppResponse.Failure<EmployeeResponse>($"Employee {command.Id} not found.");
+                return AppResponses.Failure<EmployeeResponse>($"Employee {command.Id} not found.");
             }
 
             var duplicateEmail = await unitOfWork.EmployeeRepository
@@ -38,7 +32,7 @@ internal sealed class UpdateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILo
 
             if (duplicateEmail)
             {
-                return AppResponse.Failure<EmployeeResponse>($"Employee email {request.Email} is already in use.");
+                return AppResponses.Failure<EmployeeResponse>($"Employee email {request.Email} is already in use.");
             }
 
             var phone = PhoneNumberFormatter.Normalize(
@@ -62,7 +56,7 @@ internal sealed class UpdateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILo
             await unitOfWork.EmployeeRepository.UpdateAsync(employee).ConfigureAwait(false);
             await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
-            return AppResponse.Success("Employee updated.", employee.ToEmployeeResponse());
+            return AppResponses.Success("Employee updated.", employee.ToEmployeeResponse());
         }
         catch (Exception ex)
         {

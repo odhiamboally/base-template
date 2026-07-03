@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
@@ -35,6 +36,7 @@ using Serilog.Events;
 
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
@@ -54,6 +56,7 @@ internal static partial class DependencyInjection
         services.AddWebEncoders();
         services.AddHttpClient();
         services.AddHttpContextAccessor();
+        services.AddSignalR();
         services.AddAuthorization();
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
@@ -67,7 +70,8 @@ internal static partial class DependencyInjection
 
         ConfigureHttpResilience(services, configuration);
         ConfigureDataProtection(services, configuration, environment);
-        ConfigureCustomRateLimiting(services);
+        ConfigureResponseCompression(services, configuration);
+        ConfigureCustomRateLimiting(services, configuration);
 
         services.AddValidatorsFromAssembly(assembly);
 
@@ -245,67 +249,57 @@ internal static partial class DependencyInjection
         dataProtectionBuilder.ProtectKeysWithCertificate(cert);
         DataProtectionLogging.CertificateLoaded(logger, thumbprint);
     }
-    private static void ConfigureCustomRateLimiting(IServiceCollection services)
+    private static void ConfigureResponseCompression(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<ResponseCompressionSettings>()
+            .Bind(configuration.GetSection(ResponseCompressionSettings.SectionName))
+            .ValidateOnStart();
+
+        var settings = configuration.GetSection(ResponseCompressionSettings.SectionName).Get<ResponseCompressionSettings>()
+            ?? new ResponseCompressionSettings();
+
+        if (!settings.Enabled)
+        {
+            return;
+        }
+
+        services.AddResponseCompression(options =>
+        {
+            options.EnableForHttps = settings.EnableForHttps;
+            options.Providers.Add<BrotliCompressionProvider>();
+            options.Providers.Add<GzipCompressionProvider>();
+        });
+
+        services.Configure<BrotliCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Fastest;
+        });
+
+        services.Configure<GzipCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Fastest;
+        });
+    }
+
+    private static void ConfigureCustomRateLimiting(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<RateLimitSettings>()
+            .Bind(configuration.GetSection(RateLimitSettings.SectionName))
+            .Validate(HasValidRateLimitSettings, "RateLimiting policies must have PermitLimit > 0, WindowSeconds > 0, and QueueLimit >= 0.")
+            .ValidateOnStart();
+
+        var settings = configuration.GetSection(RateLimitSettings.SectionName).Get<RateLimitSettings>()
+            ?? new RateLimitSettings();
+
         services.AddRateLimiter(options =>
             {
-                options.AddFixedWindowLimiter("LoginPolicy", configureOptions =>
-                {
-                    configureOptions.PermitLimit = 10;       // More reasonable for login
-                    configureOptions.Window = TimeSpan.FromMinutes(2); // Longer window
-                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    configureOptions.QueueLimit = 3;
-                });
-
-                options.AddFixedWindowLimiter("AuthPolicy", configureOptions =>
-                {
-                    configureOptions.PermitLimit = 5;        // 5 attempts
-                    configureOptions.Window = TimeSpan.FromMinutes(1); // per minute
-                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    configureOptions.QueueLimit = 2;         // Allow 2 queued requests
-                });
-
-                options.AddFixedWindowLimiter("ApiPolicy", configureOptions =>
-                {
-                    configureOptions.PermitLimit = 100;      // 100 requests
-                    configureOptions.Window = TimeSpan.FromMinutes(1); // per minute
-                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    configureOptions.QueueLimit = 10;
-                });
-
-                options.AddFixedWindowLimiter("PasswordResetPolicy", configureOptions =>
-                {
-                    configureOptions.PermitLimit = 3;        // Only 3 attempts
-                    configureOptions.Window = TimeSpan.FromMinutes(15); // per 15 minutes
-                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    configureOptions.QueueLimit = 0;          // No queuing for security
-                });
-
-                options.AddFixedWindowLimiter("TwoFactorPolicy", configureOptions =>
-                {
-                    configureOptions.PermitLimit = 10;       // 10 attempts
-                    configureOptions.Window = TimeSpan.FromMinutes(5); // per 5 minutes
-                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    configureOptions.QueueLimit = 3;
-                });
-
-                options.AddFixedWindowLimiter("FileUploadPolicy", configureOptions =>
-                {
-                    configureOptions.PermitLimit = 20;       // 20 uploads
-                    configureOptions.Window = TimeSpan.FromHours(1); // per hour
-                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    configureOptions.QueueLimit = 5;
-                });
-
-                options.AddFixedWindowLimiter("RefreshTokenPolicy", configureOptions =>
-                {
-                    configureOptions.PermitLimit = 10;
-                    configureOptions.Window = TimeSpan.FromMinutes(1); // per hour
-                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    configureOptions.QueueLimit = 2;
-                });
-
-
+                AddFixedWindowPolicy(options, "LoginPolicy", settings.LoginPolicy, settings.Enabled);
+                AddFixedWindowPolicy(options, "AuthPolicy", settings.AuthPolicy, settings.Enabled);
+                AddFixedWindowPolicy(options, "ApiPolicy", settings.ApiPolicy, settings.Enabled);
+                AddFixedWindowPolicy(options, "PasswordResetPolicy", settings.PasswordResetPolicy, settings.Enabled);
+                AddFixedWindowPolicy(options, "TwoFactorPolicy", settings.TwoFactorPolicy, settings.Enabled);
+                AddFixedWindowPolicy(options, "FileUploadPolicy", settings.FileUploadPolicy, settings.Enabled);
+                AddFixedWindowPolicy(options, "RefreshTokenPolicy", settings.RefreshTokenPolicy, settings.Enabled);
 
                 // Rate limit exceeded response
                 options.OnRejected = async (context, token) =>
@@ -331,6 +325,39 @@ internal static partial class DependencyInjection
                 };
 
         });
+    }
+
+    private static void AddFixedWindowPolicy(
+        RateLimiterOptions options,
+        string policyName,
+        RateLimitPolicySettings policy,
+        bool enabled)
+    {
+        options.AddFixedWindowLimiter(policyName, configureOptions =>
+        {
+            configureOptions.PermitLimit = enabled ? policy.PermitLimit : int.MaxValue;
+            configureOptions.Window = TimeSpan.FromSeconds(policy.WindowSeconds);
+            configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            configureOptions.QueueLimit = enabled ? policy.QueueLimit : int.MaxValue;
+        });
+    }
+
+    private static bool HasValidRateLimitSettings(RateLimitSettings settings)
+    {
+        return IsValidPolicy(settings.LoginPolicy) &&
+               IsValidPolicy(settings.AuthPolicy) &&
+               IsValidPolicy(settings.ApiPolicy) &&
+               IsValidPolicy(settings.PasswordResetPolicy) &&
+               IsValidPolicy(settings.TwoFactorPolicy) &&
+               IsValidPolicy(settings.FileUploadPolicy) &&
+               IsValidPolicy(settings.RefreshTokenPolicy);
+    }
+
+    private static bool IsValidPolicy(RateLimitPolicySettings policy)
+    {
+        return policy.PermitLimit > 0 &&
+               policy.WindowSeconds > 0 &&
+               policy.QueueLimit >= 0;
     }
 
     public static IServiceCollection ConfigureOutBoxMessagingWithGlobalRetry(this IServiceCollection services, IConfiguration configuration)

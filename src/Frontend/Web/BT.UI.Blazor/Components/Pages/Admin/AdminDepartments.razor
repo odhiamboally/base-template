@@ -225,7 +225,7 @@
             PageSize: PageSize);
 
         var response = await DepartmentService.SearchAsync(request);
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _message = response.Message ?? "We could not load departments.";
             Snackbar.Add(_message, Severity.Error);
@@ -311,7 +311,7 @@
         }
 
         var response = await DepartmentService.DeleteAsync(department.Id);
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Department delete failed.", Severity.Error);
             return;
