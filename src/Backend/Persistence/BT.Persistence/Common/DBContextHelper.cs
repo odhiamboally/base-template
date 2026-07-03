@@ -11,9 +11,9 @@ using System.Linq.Expressions;
 
 namespace BT.Persistence.Common;
 
-internal static class DbContextHelper
+internal static class DBContextHelper
 {
-    public static void ApplyStandardModelConventions(ModelBuilder modelBuilder, ITenantFilteredDbContext context)
+    public static void ApplyStandardModelConventions(ModelBuilder modelBuilder, ITenantFilteredDBContext context)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
         ArgumentNullException.ThrowIfNull(context);
@@ -98,7 +98,7 @@ internal static class DbContextHelper
         return Expression.Lambda(comparison, parameter);
     }
 
-    private static void ApplyQueryFilters(ModelBuilder modelBuilder, IMutableEntityType entityType, ITenantFilteredDbContext context)
+    private static void ApplyQueryFilters(ModelBuilder modelBuilder, IMutableEntityType entityType, ITenantFilteredDBContext context)
     {
         var entityClrType = entityType.ClrType;
 #pragma warning disable CS0618 // EF Core 10 obsoletes unnamed filters; keep composing existing filters until we migrate to named filters solution-wide.
@@ -134,7 +134,7 @@ internal static class DbContextHelper
             .HasDatabaseName($"IX_{entityType.GetTableName()}_CreatedAt_Id");
     }
 
-    private static LambdaExpression CreateTenantFilter(Type type, ITenantFilteredDbContext context)
+    private static LambdaExpression CreateTenantFilter(Type type, ITenantFilteredDBContext context)
     {
         var parameter = Expression.Parameter(type, "e");
         var tenantProperty = Expression.Call(
@@ -144,8 +144,8 @@ internal static class DbContextHelper
             parameter,
             Expression.Constant(nameof(BaseEntity.TenantId)));
         var currentTenantId = Expression.Property(
-            Expression.Convert(Expression.Constant(context), typeof(ITenantFilteredDbContext)),
-            nameof(ITenantFilteredDbContext.CurrentTenantId));
+            Expression.Convert(Expression.Constant(context), typeof(ITenantFilteredDBContext)),
+            nameof(ITenantFilteredDBContext.CurrentTenantId));
         var comparison = Expression.Equal(tenantProperty, currentTenantId);
         return Expression.Lambda(comparison, parameter);
     }

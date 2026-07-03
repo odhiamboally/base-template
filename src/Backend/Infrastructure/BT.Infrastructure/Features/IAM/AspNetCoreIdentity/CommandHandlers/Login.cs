@@ -231,7 +231,7 @@ internal sealed class Login(
             var rolesResponse = await userManager.GetRolesAsync(user).ConfigureAwait(false);
             var userRoles = new Collection<string>(rolesResponse.ToList());
             var mfaEnrollmentRequired = IsMfaEnrollmentRequired(twoFactorEnabled, rolesResponse);
-            // Reload the user via UserManager to ensure we operate on the DbContext-tracked instance
+            // Reload the user via UserManager to ensure we operate on the EF-tracked instance
             var trackedUser = await userManager.FindByIdAsync(user.Id).ConfigureAwait(false);
             if (trackedUser == null)
             {

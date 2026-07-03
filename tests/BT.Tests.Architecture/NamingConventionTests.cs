@@ -199,6 +199,34 @@ public sealed class NamingConventionTests
             string.Join(Environment.NewLine, violations));
     }
 
+    [Fact]
+    public void Custom_Context_Related_Types_Should_Use_DB_Acronym()
+    {
+        var assemblies = new[]
+        {
+            AssemblyReferences.Api,
+            AssemblyReferences.Application,
+            AssemblyReferences.Persistence,
+            AssemblyReferences.SharedKernel,
+            AssemblyReferences.SharedKernelValidation,
+        };
+
+        var violations = assemblies
+            .SelectMany(static assembly => assembly.GetTypes())
+            .Where(static type => type.Namespace is not null &&
+                                  type.Namespace.StartsWith("BT.", StringComparison.Ordinal))
+            .Where(static type => type.Name.Contains("DbContext", StringComparison.Ordinal) ||
+                                  type.Name.Contains("DbContextFactory", StringComparison.Ordinal) ||
+                                  type.Name.Contains("DbContextHelper", StringComparison.Ordinal))
+            .Select(static type => type.FullName)
+            .Distinct()
+            .ToList();
+
+        violations.Should().BeEmpty(
+            because: "custom context-related types should use the DB acronym, for example IamDBContext, IamDBContextFactory, and DBContextHelper. Found: {0}",
+            string.Join(", ", violations));
+    }
+
     private static List<PublicTopLevelType> GetPublicTopLevelTypes(string path)
     {
         var sourceText = File.ReadAllText(path);

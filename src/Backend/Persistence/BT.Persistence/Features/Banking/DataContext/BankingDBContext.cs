@@ -18,7 +18,7 @@ public class BankingDBContext(
     ICurrentTenantProvider? tenantProvider = null,
     ICurrentActorProvider? actorProvider = null,
     ILogger<BankingDBContext>? logger = null
-) : DbContext(options), ITenantFilteredDbContext
+) : DbContext(options), ITenantFilteredDBContext
 {
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Director> Directors { get; set; }
@@ -40,16 +40,16 @@ public class BankingDBContext(
         modelBuilder.Entity<Employee>()
             .ToTable("Employees", table => table.ExcludeFromMigrations());
 
-        DbContextHelper.ApplyStandardModelConventions(modelBuilder, this);
+        DBContextHelper.ApplyStandardModelConventions(modelBuilder, this);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
-            DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
+            var domainEvents = DBContextHelper.CollectDomainEvents(ChangeTracker);
+            DBContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
+            DBContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);
@@ -78,7 +78,7 @@ public class BankingDBContext(
         catch (Exception ex)
         {
             if (logger is not null)
-                PersistenceLogDefinitions.LogDbContextSaveChangesError(logger, nameof(BankingDBContext), ex);
+                PersistenceLogDefinitions.LogDBContextSaveChangesError(logger, nameof(BankingDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }

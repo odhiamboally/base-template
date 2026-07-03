@@ -108,7 +108,7 @@ public sealed class PersistenceLayerTests
             .ToList();
 
         entitiesWithoutTenantId.Should().BeEmpty(
-            because: "persisted bounded-context entities must expose TenantId so DbContext query filters can enforce tenant isolation. Missing: {0}",
+            because: "persisted bounded-context entities must expose TenantId so DBContext query filters can enforce tenant isolation. Missing: {0}",
             string.Join(", ", entitiesWithoutTenantId));
     }
 
@@ -195,10 +195,10 @@ public sealed class PersistenceLayerTests
         throw new DirectoryNotFoundException("Could not locate repository root from the test output directory.");
     }
 
-    // ── DbContexts ────────────────────────────────────────────────────────────
+    // ── DBContexts ────────────────────────────────────────────────────────────
 
     [Fact]
-    public void DbContexts_Should_Reside_In_Known_DataContext_Namespaces()
+    public void DBContexts_Should_Reside_In_Known_DataContext_Namespaces()
     {
         var dbContextTypes = Types.InAssembly(AssemblyReferences.Persistence)
             .That()
@@ -206,7 +206,7 @@ public sealed class PersistenceLayerTests
             .GetTypes()
             .ToList();
 
-        dbContextTypes.Should().NotBeEmpty("Persistence must define EF Core DbContext types.");
+        dbContextTypes.Should().NotBeEmpty("Persistence must define EF Core DBContext types.");
 
         var allowedNamespaces = new[]
         {
@@ -222,12 +222,12 @@ public sealed class PersistenceLayerTests
             .ToList();
 
         misplacedTypes.Should().BeEmpty(
-            because: "DbContext subclasses must live in one of the bounded-context DataContext namespaces. Found: {0}",
+            because: "DBContext subclasses must live in one of the bounded-context DataContext namespaces. Found: {0}",
             string.Join(", ", misplacedTypes));
     }
 
     [Fact]
-    public void Required_Bounded_Context_DbContexts_Should_Exist()
+    public void Required_Bounded_Context_DBContexts_Should_Exist()
     {
         var dbContextTypeNames = Types.InAssembly(AssemblyReferences.Persistence)
             .That()
@@ -241,11 +241,11 @@ public sealed class PersistenceLayerTests
             "IamDBContext",
             "HrDBContext",
             "BankingDBContext"
-        ], because: "the modular monolith requires one DbContext per bounded context.");
+        ], because: "the modular monolith requires one DBContext per bounded context.");
     }
 
     [Fact]
-    public void DbContexts_Should_Expose_CurrentTenantId_For_Global_Filters()
+    public void DBContexts_Should_Expose_CurrentTenantId_For_Global_Filters()
     {
         var dbContextsWithoutTenantContext = Types.InAssembly(AssemblyReferences.Persistence)
             .That()
@@ -256,7 +256,7 @@ public sealed class PersistenceLayerTests
             .ToList();
 
         dbContextsWithoutTenantContext.Should().BeEmpty(
-            because: "DbContexts must expose CurrentTenantId so EF global query filters are tenant-parameterized per request. Missing: {0}",
+            because: "DBContexts must expose CurrentTenantId so EF global query filters are tenant-parameterized per request. Missing: {0}",
             string.Join(", ", dbContextsWithoutTenantContext));
     }
 }

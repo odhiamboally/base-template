@@ -54,6 +54,7 @@ This file is the canonical source of truth and working contract for AI coding to
 ## Persistence Rules
 
 - Every declared `DbSet<T>` entity must have explicit EF configuration.
+- Custom persistence context-related types use the project `DB` acronym, for example `IamDBContext`, `DBContextHelper`, and `ITenantFilteredDBContext`; keep Microsoft framework API names unchanged.
 - Respect tenant isolation, soft delete, and audit actor conventions.
 - `CreatedBy`, `UpdatedBy`, `ActivatedBy`, `DeactivatedBy`, and `DeletedBy` must store stable actor identifiers, not display names or labels such as `DevelopmentSeed`.
 - Prefer generic repository methods unless a concrete repository method is persistence-specific.

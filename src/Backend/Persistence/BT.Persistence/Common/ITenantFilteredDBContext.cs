@@ -1,6 +1,6 @@
 namespace BT.Persistence.Common;
 
-internal interface ITenantFilteredDbContext
+internal interface ITenantFilteredDBContext
 {
     Guid CurrentTenantId { get; }
 }
