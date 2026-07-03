@@ -184,11 +184,13 @@ EventIds are structured by architectural layer to simplify searching in logs:
 - [ ] **Correlated Tracing:** Ensure OpenTelemetry trace context propagates across Blazor client HTTP requests -> API gateways -> MediatR pipelines -> EF Core.
 - [ ] **API Lifecycle:** Define deprecation headers, throttle response consistency, and API security policy tests.
 
-### Phase 4 - CI/CD Pipelines & Azure Deployment
-*Goal: Establish secure, repeatable deployment guardrails without manual steps.*
+### Phase 4 - CI/CD Pipelines And Deployment
+*Goal: establish secure, repeatable deployment guardrails without manual steps, while supporting Azure, non-Azure container hosts, and local Docker smoke deployments.*
 - [~] **efbundle Migration Pipeline:** GitHub Actions compiles context-specific EF migration bundles and executes them through OIDC with Azure SQL wake-up retries and temporary runner firewall access. The remaining gate is the first successful Azure migration/deployment smoke.
-- [ ] **Docker Local Platform:** Finalize `docker-compose` to run SQL Server, Redis, RabbitMQ, and Seq in one command.
-- [ ] **Azure Deployment Workflows:** Wire Blue/Green deployment slot switches for API services in GitHub Actions.
+- [~] **Docker Local Platform:** Docker Compose defines RabbitMQ, Redis, Mailpit, Azurite, optional SQL Server, and optional Seq. Add app-host Dockerfiles and local app-compose smoke deployment before marking deployment-local complete.
+- [ ] **Container Publish Workflow:** Build and publish API/UI container images to GHCR or Docker Hub without requiring Azure.
+- [ ] **Deployment Target Matrix:** Support documented deployment targets: Azure App Service/Container Apps, DigitalOcean/Heroku/generic Docker, and local app-compose.
+- [ ] **Azure Deployment Workflows:** Wire Blue/Green deployment slot switches for API services in GitHub Actions after Azure subscription/billing is active.
 
 ### Phase 5 - Template Extensibility
 *Goal: complete reusable extension points without adding product-specific SACCO/domain features to the template.*
