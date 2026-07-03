@@ -181,7 +181,7 @@ internal sealed class GetAdminUsers(UserManager<AppUser> userManager, IamDBConte
             string.IsNullOrWhiteSpace(req.Cursor),
             nextCursor);
 
-        return AppResponse.Success("Users loaded.", paged);
+        return AppResponses.Success("Users loaded.", paged);
     }
 
     private sealed record AdminUserPageRow(

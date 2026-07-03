@@ -17,15 +17,7 @@ using BT.SharedKernel.Extensions;
 
 namespace BT.Application.Features.Shared.Dashboard.QueryHandlers;
 
-public record GetDashboardSummaryQuery(string UserId, string? RoleScope = null) : IRequest<AppResponse<DashboardSummaryResponse>>, ICachableRequest
-    
-{
-    public string CacheGroup => "dashboard";
-    public string Discriminator => CacheKeys.Discriminator(new { RoleScope });
-    public string? CacheUserId => null;
-    public bool IsVersioned => true;
-    public TimeSpan? Expiration => TimeSpan.FromMinutes(5); 
-}
+
 
 
 internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankingUnitOfWork, ILogger<GetDashboardSummaryQueryHandler> _logger)
@@ -96,7 +88,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
                 .OrderByDescending(r => r.Total)
                 .ToList();
 
-            return AppResponse.Success<DashboardSummaryResponse>(new(
+            return AppResponses.Success<DashboardSummaryResponse>(new(
                 total, active, pendingApproval, draft,
                 bySegment, byCustomerType, aging, rmWorkload));
         }
@@ -107,7 +99,7 @@ internal sealed class GetDashboardSummaryQueryHandler(IBankingUnitOfWork _bankin
         }
     }
 
-   
+
 
     /// <summary>
     /// Groups a row set by a label, builds per-status counts for each group.

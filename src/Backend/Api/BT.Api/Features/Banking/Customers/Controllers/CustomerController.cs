@@ -29,7 +29,7 @@ public sealed class CustomerController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new SearchCustomerListQuery(request, userId)).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 
     [HttpGet("{id:guid}")]
@@ -37,7 +37,7 @@ public sealed class CustomerController(ISender sender) : BaseController
     public async Task<ActionResult<AppResponse<CustomerResponse>>> GetById(Guid id)
     {
         var response = await sender.Send(new GetCustomerByIdQuery(id)).ConfigureAwait(false);
-        return !response.Successful ? NotFound(response) : Ok(response);
+        return !response.IsSuccess ? NotFound(response) : Ok(response);
     }
 
     [HttpPost]
@@ -52,7 +52,7 @@ public sealed class CustomerController(ISender sender) : BaseController
         var command = new CreateCustomerCommand(request, userId);
 
         var response = await sender.Send(command).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 
     [HttpPut("{id:guid}")]
@@ -66,7 +66,7 @@ public sealed class CustomerController(ISender sender) : BaseController
 
         var command = new UpdateCustomerCommand(id, request with { Id = id }, userId);
         var response = await sender.Send(command).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 
     [HttpDelete("{id:guid}")]
@@ -77,6 +77,6 @@ public sealed class CustomerController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new DeleteCustomerCommand(id, userId)).ConfigureAwait(false);
-        return !response.Successful ? BadRequest(response) : Ok(response);
+        return !response.IsSuccess ? BadRequest(response) : Ok(response);
     }
 }

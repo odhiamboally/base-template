@@ -7,11 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Commands;
 
-public sealed record DeleteReferenceCatalogItemCommand(string CatalogType, Guid Id, string UserId)
-    : IRequest<AppResponse<bool>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("iam-reference-data")];
-}
+
 
 internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork unitOfWork, ILogger<DeleteReferenceCatalogItemCommandHandler> logger)
     : IRequestHandler<DeleteReferenceCatalogItemCommand, AppResponse<bool>>
@@ -23,19 +19,19 @@ internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork un
             var usageError = await ValidateNotUsedAsync(command, cancellationToken).ConfigureAwait(false);
             if (usageError is not null)
             {
-                return AppResponse.Failure<bool>(usageError);
+                return AppResponses.Failure<bool>(usageError);
             }
 
             var found = await DeactivateAsync(command, cancellationToken).ConfigureAwait(false);
             if (!found)
             {
-                return AppResponse.Failure<bool>("Reference catalog item was not found.");
+                return AppResponses.Failure<bool>("Reference catalog item was not found.");
             }
 
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
             return saved
-                ? AppResponse.Success("Reference catalog item deactivated.", true)
-                : AppResponse.Failure<bool>("Reference catalog item deactivate failed.");
+                ? AppResponses.Success("Reference catalog item deactivated.", true)
+                : AppResponses.Failure<bool>("Reference catalog item deactivate failed.");
         }
         catch (Exception ex)
         {

@@ -11,17 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Employees.QueryHandlers;
 
-public sealed record SearchEmployeesQuery(EmployeeSearchRequest SearchRequest, string UserId)
-    : IRequest<AppResponse<PagedResponse<EmployeeResponse, Guid>>>, ICachableRequest
-{
-    public string CacheGroup => "employees";
 
-    public string Discriminator => CacheKeys.Discriminator(SearchRequest);
-
-    public string? CacheUserId => null;
-
-    public bool IsVersioned => true;
-}
 
 internal sealed class SearchEmployeesQueryHandler(IHrUnitOfWork unitOfWork, ILogger<SearchEmployeesQueryHandler> logger)
     : IRequestHandler<SearchEmployeesQuery, AppResponse<PagedResponse<EmployeeResponse, Guid>>>
@@ -128,7 +118,7 @@ internal sealed class SearchEmployeesQueryHandler(IHrUnitOfWork unitOfWork, ILog
                 request.Cursor is null || request.Cursor == Guid.Empty,
                 nextCursor ?? Guid.Empty);
 
-            return AppResponse.Success(result);
+            return AppResponses.Success(result);
         }
         catch (Exception ex)
         {

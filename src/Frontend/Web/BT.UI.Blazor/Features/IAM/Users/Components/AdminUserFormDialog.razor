@@ -96,7 +96,7 @@
             var createResponse = await IamAdminService.CreateUserAsync(_model.ToRequest());
             _isSaving = false;
 
-            if (!createResponse.Successful)
+            if (!createResponse.IsSuccess)
             {
                 Snackbar.Add(createResponse.Message ?? "User creation failed.", Severity.Error);
                 return;
@@ -110,7 +110,7 @@
         var updateResponse = await IamAdminService.UpdateUserAsync(ExistingUser.Id, _model.ToUpdateRequest());
         _isSaving = false;
 
-        if (!updateResponse.Successful)
+        if (!updateResponse.IsSuccess)
         {
             Snackbar.Add(updateResponse.Message ?? "User update failed.", Severity.Error);
             return;

@@ -50,6 +50,6 @@ internal sealed class GetAdminRoles(RoleManager<AppRole> roleManager, IamDBConte
                 userCounts.GetValueOrDefault(role.Id)))
             .ToList();
 
-        return AppResponse.Success("Roles loaded.", (IReadOnlyList<AdminRoleListResponse>)result);
+        return AppResponses.Success("Roles loaded.", (IReadOnlyList<AdminRoleListResponse>)result);
     }
 }

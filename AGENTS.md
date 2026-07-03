@@ -42,15 +42,19 @@ This file is the canonical source of truth and working contract for AI coding to
 
 - Use MediatR request/handler flows already established in the repo.
 - Commands/queries and handlers should remain feature-owned.
+- Each public top-level type must live in its own file named after that type. This applies to classes, records, structs, interfaces, and enums; do not bundle multiple public DTOs, validators, settings POCOs, entities, or helper types in one file.
 - Use `AppResponse<T>` for expected business outcomes.
 - Throw exceptions only for unexpected or exceptional failures.
 - API responses must go through the established response/problem-details pattern.
 - Do not leak exception type names, stack traces, provider errors, connection strings, or internal IDs into user-facing messages.
 - All user-facing errors from the UI must be sanitized through the shared messaging pattern.
+- Provider-specific integration DTOs belong beside the provider adapter. Shared contracts should stay provider-neutral and should not expose Stripe, M-Pesa, Azure, or other provider wire payloads.
+- When a capability supports multiple runtime providers per operation, use a router/factory over isolated provider adapters. Do not make one provider adapter understand another provider's DTOs, credentials, or callbacks.
 
 ## Persistence Rules
 
 - Every declared `DbSet<T>` entity must have explicit EF configuration.
+- Custom persistence context-related types use the project `DB` acronym, for example `IamDBContext`, `DBContextHelper`, and `ITenantFilteredDBContext`; keep Microsoft framework API names unchanged.
 - Respect tenant isolation, soft delete, and audit actor conventions.
 - `CreatedBy`, `UpdatedBy`, `ActivatedBy`, `DeactivatedBy`, and `DeletedBy` must store stable actor identifiers, not display names or labels such as `DevelopmentSeed`.
 - Prefer generic repository methods unless a concrete repository method is persistence-specific.
@@ -97,6 +101,7 @@ This file is the canonical source of truth and working contract for AI coding to
 - Use connection strings only for local development or controlled non-managed-identity scenarios.
 - Key Vault secret names use double hyphen mapping, for example `Section--Setting`.
 - Environment variables use double underscore mapping, for example `Section__Setting`.
+- Production email delivery must use approved provider API adapters. Personal mailbox SMTP is not a production path; Mailpit SMTP is local-only capture infrastructure.
 - Keep Azure setup notes in `docs/development/azure-storage-configuration.md` and the checklist in `docs/development/environment-configuration-checklist.md`.
 - Run application hosts from Visual Studio and local infrastructure through `ops/local/docker-compose.yml`; do not replace or remove Azure production provider configuration when adding local providers.
 

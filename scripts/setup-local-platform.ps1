@@ -86,10 +86,9 @@ dotnet user-secrets set 'Messaging:RabbitMq:Username' $environment.RABBITMQ_USER
 dotnet user-secrets set 'Messaging:RabbitMq:Password' $environment.RABBITMQ_PASSWORD --project $apiProject
 dotnet user-secrets set 'CacheSettings:Provider' 'Redis' --project $apiProject
 dotnet user-secrets set 'CacheSettings:Redis:ConnectionString' "localhost:$($environment.REDIS_HOST_PORT),password=$($environment.REDIS_PASSWORD),abortConnect=false" --project $apiProject
-dotnet user-secrets set 'EmailSettings:Host' 'localhost' --project $apiProject
-dotnet user-secrets set 'EmailSettings:Port' '1025' --project $apiProject
-dotnet user-secrets set 'EmailSettings:EnableSsl' 'false' --project $apiProject
-dotnet user-secrets set 'EmailSettings:UseAuthentication' 'false' --project $apiProject
+dotnet user-secrets set 'EmailSettings:Provider' 'LocalMailpit' --project $apiProject
+dotnet user-secrets set 'EmailSettings:LocalMailpit:Host' 'localhost' --project $apiProject
+dotnet user-secrets set 'EmailSettings:LocalMailpit:Port' '1025' --project $apiProject
 dotnet user-secrets set 'ProfileImageStorage:Provider' 'Azurite' --project $apiProject
 dotnet user-secrets set 'ProfileImageStorage:Azurite:ConnectionString' 'UseDevelopmentStorage=true' --project $apiProject
 dotnet user-secrets set 'ProfileImageStorage:Azurite:ContainerName' 'profile-images' --project $apiProject

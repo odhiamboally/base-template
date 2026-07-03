@@ -20,13 +20,13 @@ internal sealed class GetCurrentUserProfilePicture(
 
         if (string.IsNullOrWhiteSpace(query.UserId))
         {
-            return AppResponse.Failure<ProfilePictureFile>("Authenticated user was not resolved.");
+            return AppResponses.Failure<ProfilePictureFile>("Authenticated user was not resolved.");
         }
 
         var user = await userManager.FindByIdAsync(query.UserId).ConfigureAwait(false);
         if (user is null || user.ProfilePictureUrl is null)
         {
-            return AppResponse.Failure<ProfilePictureFile>("Profile picture was not found.");
+            return AppResponses.Failure<ProfilePictureFile>("Profile picture was not found.");
         }
 
         var profilePicture = await storage
@@ -34,7 +34,7 @@ internal sealed class GetCurrentUserProfilePicture(
             .ConfigureAwait(false);
 
         return profilePicture is null
-            ? AppResponse.Failure<ProfilePictureFile>("Profile picture was not found.")
-            : AppResponse.Success("Profile picture loaded.", profilePicture);
+            ? AppResponses.Failure<ProfilePictureFile>("Profile picture was not found.")
+            : AppResponses.Success("Profile picture loaded.", profilePicture);
     }
 }

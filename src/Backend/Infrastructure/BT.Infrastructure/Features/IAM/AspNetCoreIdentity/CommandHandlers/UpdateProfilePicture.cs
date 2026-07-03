@@ -31,13 +31,13 @@ internal sealed class UpdateProfilePicture(
             var validationError = Validate(command);
             if (validationError is not null)
             {
-                return AppResponse.Failure<ProfilePictureResponse>(validationError);
+                return AppResponses.Failure<ProfilePictureResponse>(validationError);
             }
 
             var user = await userManager.FindByIdAsync(command.UserId).ConfigureAwait(false);
             if (user is null)
             {
-                return AppResponse.Failure<ProfilePictureResponse>("User account was not found.");
+                return AppResponses.Failure<ProfilePictureResponse>("User account was not found.");
             }
 
             var profilePictureUrl = await storage
@@ -50,10 +50,10 @@ internal sealed class UpdateProfilePicture(
             if (!result.Succeeded)
             {
                 var errors = string.Join("; ", result.Errors.Select(static error => error.Description));
-                return AppResponse.Failure<ProfilePictureResponse>($"Profile picture could not be updated: {errors}");
+                return AppResponses.Failure<ProfilePictureResponse>($"Profile picture could not be updated: {errors}");
             }
 
-            return AppResponse.Success(
+            return AppResponses.Success(
                 "Profile picture updated.",
                 new ProfilePictureResponse(ProfilePictureUrlMapping.ToCurrentUserRoute(profilePictureUrl)!));
         }

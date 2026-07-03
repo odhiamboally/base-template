@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace BT.Persistence.Features.IAM.DataContext;
 
-public class IamDbContextFactory : IDesignTimeDbContextFactory<IamDBContext>
+public class IamDBContextFactory : IDesignTimeDbContextFactory<IamDBContext>
 {
     public IamDBContext CreateDbContext(string[] args)
     {

@@ -10,13 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Departments.CommandHandlers;
 
-public sealed record CreateDepartmentCommand(CreateDepartmentRequest Request, string UserId)
-    : IRequest<AppResponse<DepartmentResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("departments")];
-}
 
 internal sealed class CreateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, ILogger<CreateDepartmentCommandHandler> logger)
     : IRequestHandler<CreateDepartmentCommand, AppResponse<DepartmentResponse>>
@@ -33,7 +27,7 @@ internal sealed class CreateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
 
             if (duplicate)
             {
-                return AppResponse.Failure<DepartmentResponse>($"Department code {code} is already in use.");
+                return AppResponses.Failure<DepartmentResponse>($"Department code {code} is already in use.");
             }
 
             var department = Department.Create(code, request.Name, request.Description, command.UserId);
@@ -41,8 +35,8 @@ internal sealed class CreateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved
-                ? AppResponse.Success("Department created.", department.ToDepartmentResponse())
-                : AppResponse.Failure<DepartmentResponse>("Department create failed.");
+                ? AppResponses.Success("Department created.", department.ToDepartmentResponse())
+                : AppResponses.Failure<DepartmentResponse>("Department create failed.");
         }
         catch (Exception ex)
         {

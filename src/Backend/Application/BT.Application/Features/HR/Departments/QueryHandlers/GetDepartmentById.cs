@@ -9,16 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Departments.QueryHandlers;
 
-public sealed record GetDepartmentByIdQuery(Guid Id, string UserId) : IRequest<AppResponse<DepartmentResponse>>, ICachableRequest
-{
-    public string CacheGroup => "departments";
 
-    public string Discriminator => CacheKeys.Entity("departments", Id.ToString());
-
-    public string? CacheUserId => null;
-
-    public bool IsVersioned => true;
-}
 
 internal sealed class GetDepartmentByIdQueryHandler(IHrUnitOfWork unitOfWork, ILogger<GetDepartmentByIdQueryHandler> logger)
     : IRequestHandler<GetDepartmentByIdQuery, AppResponse<DepartmentResponse>>
@@ -29,8 +20,8 @@ internal sealed class GetDepartmentByIdQueryHandler(IHrUnitOfWork unitOfWork, IL
         {
             var department = await unitOfWork.DepartmentRepository.FindByIdAsync(query.Id, cancellationToken).ConfigureAwait(false);
             return department is null
-                ? AppResponse.Failure<DepartmentResponse>($"Department {query.Id} not found.")
-                : AppResponse.Success(department.ToDepartmentResponse());
+                ? AppResponses.Failure<DepartmentResponse>($"Department {query.Id} not found.")
+                : AppResponses.Success(department.ToDepartmentResponse());
         }
         catch (Exception ex)
         {

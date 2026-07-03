@@ -1,16 +1,17 @@
 namespace BT.Infrastructure.Configuration;
-public class EmailSettings
+
+public sealed class EmailSettings
 {
     public const string SectionName = "EmailSettings";
-    public string Host { get; set; } = string.Empty;
-    public int Port { get; set; } = 587;
-    public bool EnableSsl { get; set; } = true;
-    public bool UseAuthentication { get; set; } = true;
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
+
+    public string Provider { get; set; } = "NoOp";
     public string FromAddress { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string ClientBaseUrl { get; set; } = string.Empty;
     public string TemplatePath { get; set; } = string.Empty;
-    
+
+    public bool AllowNoOpInProduction { get; set; }
+
+    public LocalMailpitEmailSettings LocalMailpit { get; set; } = new();
+    public SendGridEmailSettings SendGrid { get; set; } = new();
 }

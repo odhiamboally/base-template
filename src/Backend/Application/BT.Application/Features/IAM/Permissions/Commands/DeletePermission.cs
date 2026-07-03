@@ -7,13 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Permissions.Commands;
 
-public sealed record DeletePermissionCommand(Guid Id, string UserId)
-    : IRequest<AppResponse<bool>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("permissions", Id.ToString())];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("permissions")];
-}
 
 internal sealed class DeletePermissionCommandHandler(IIamUnitOfWork unitOfWork, ILogger<DeletePermissionCommandHandler> logger)
     : IRequestHandler<DeletePermissionCommand, AppResponse<bool>>
@@ -25,7 +19,7 @@ internal sealed class DeletePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
             var permission = await unitOfWork.PermissionRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
             if (permission is null)
             {
-                return AppResponse.Failure<bool>($"Permission {command.Id} not found.");
+                return AppResponses.Failure<bool>($"Permission {command.Id} not found.");
             }
 
             permission.MarkAsDeleted(command.UserId);
@@ -33,8 +27,8 @@ internal sealed class DeletePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved
-                ? AppResponse.Success("Permission deleted.", true)
-                : AppResponse.Failure<bool>("Permission delete failed.");
+                ? AppResponses.Success("Permission deleted.", true)
+                : AppResponses.Failure<bool>("Permission delete failed.");
         }
         catch (Exception ex)
         {

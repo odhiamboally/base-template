@@ -18,7 +18,7 @@ public class HrDBContext(
     ICurrentTenantProvider? tenantProvider = null,
     ICurrentActorProvider? actorProvider = null,
     ILogger<HrDBContext>? logger = null
-) : DbContext(options), ITenantFilteredDbContext
+) : DbContext(options), ITenantFilteredDBContext
 {
     public DbSet<Employee> Employees { get; set; }
     public DbSet<EmployeeNumberSequence> EmployeeNumberSequences { get; set; }
@@ -38,16 +38,16 @@ public class HrDBContext(
             typeof(HrDBContext).Assembly,
             type => type.Namespace?.StartsWith("BT.Persistence.Features.HR", StringComparison.Ordinal) == true);
 
-        DbContextHelper.ApplyStandardModelConventions(modelBuilder, this);
+        DBContextHelper.ApplyStandardModelConventions(modelBuilder, this);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
-            DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
+            var domainEvents = DBContextHelper.CollectDomainEvents(ChangeTracker);
+            DBContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
+            DBContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);
@@ -76,7 +76,7 @@ public class HrDBContext(
         catch (Exception ex)
         {
             if (logger is not null)
-                PersistenceLogDefinitions.LogDbContextSaveChangesError(logger, nameof(HrDBContext), ex);
+                PersistenceLogDefinitions.LogDBContextSaveChangesError(logger, nameof(HrDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }

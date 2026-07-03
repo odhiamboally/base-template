@@ -13,8 +13,3 @@ public interface IProfilePictureStorage
         Uri profilePictureUri,
         CancellationToken cancellationToken = default);
 }
-
-public sealed record ProfilePictureFile(
-    Stream Content,
-    string ContentType,
-    string FileName);

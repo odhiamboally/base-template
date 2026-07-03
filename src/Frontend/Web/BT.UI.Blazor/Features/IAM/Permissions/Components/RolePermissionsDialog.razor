@@ -68,14 +68,14 @@
         var permissionsResponse = await IamAdminService.SearchPermissionsAsync(new PermissionSearchRequest(DepartmentId: Role.DepartmentId, IsActive: true, PageSize: 50));
         var rolePermissionsResponse = await IamAdminService.GetRolePermissionsAsync(Role.Id);
 
-        if (!permissionsResponse.Successful || permissionsResponse.Data is null)
+        if (!permissionsResponse.IsSuccess || permissionsResponse.Data is null)
         {
             Snackbar.Add(permissionsResponse.Message ?? "We could not load permissions.", Severity.Error);
             _isLoading = false;
             return;
         }
 
-        if (!rolePermissionsResponse.Successful || rolePermissionsResponse.Data is null)
+        if (!rolePermissionsResponse.IsSuccess || rolePermissionsResponse.Data is null)
         {
             Snackbar.Add(rolePermissionsResponse.Message ?? "We could not load role permissions.", Severity.Error);
             _isLoading = false;
@@ -112,7 +112,7 @@
         var response = await IamAdminService.UpdateRolePermissionsAsync(Role.Id, new UpdateRolePermissionsRequest([.. _selectedKeys.Order(StringComparer.OrdinalIgnoreCase)]));
         _isSaving = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Role permission update failed.", Severity.Error);
             return;

@@ -1,5 +1,6 @@
 using System.Net;
 using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Features.Shared.Common.Enums;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.UI.Blazor.Configuration;
 using BT.UI.Blazor.Features.Shared.BackendApi;
@@ -25,7 +26,7 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             unavailableMessage: "The identity service is unavailable. Please try again.",
             timeoutMessage: "The identity service timed out. Please try again.").ConfigureAwait(false);
 
-        if (response.Successful && response.Data is { IsAuthenticated: true, Requires2FA: false } login)
+        if (response.IsSuccess && response.Data is { IsAuthenticated: true, Requires2FA: false } login)
         {
             await storage.SaveAsync(login.Token, login.RefreshToken, login.SessionId).ConfigureAwait(false);
         }
@@ -45,7 +46,7 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             unavailableMessage: "The identity service is unavailable. Please try again.",
             timeoutMessage: "The identity service timed out. Please try again.").ConfigureAwait(false);
 
-        if (response.Successful && response.Data is not null)
+        if (response.IsSuccess && response.Data is not null)
         {
             await storage.SaveAsync(response.Data.Token, response.Data.RefreshToken, response.Data.SessionId).ConfigureAwait(false);
         }
@@ -116,13 +117,13 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             await storage.ClearAsync().ConfigureAwait(false);
         }
 
-        return AppResponse.Success("Signed out", true);
+        return AppResponses.Success("Signed out", true);
     }
 
     private async Task<AppResponse<T>> SendWithRefreshAsync<T>(HttpMethod method, string endpoint)
     {
         var response = await SendAuthenticatedAsync<T>(method, endpoint).ConfigureAwait(false);
-        if (response.ErrorCode != HttpStatusCode.Unauthorized.ToString())
+        if (response.Error?.Type != ErrorType.Unauthorized)
         {
             return response;
         }
@@ -134,10 +135,10 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
         }
 
         var refreshResponse = await RefreshTokenAsync(new RefreshTokenRequest(accessToken, refreshToken)).ConfigureAwait(false);
-        if (!refreshResponse.Successful)
+        if (!refreshResponse.IsSuccess)
         {
             await storage.ClearAsync().ConfigureAwait(false);
-            return AppResponse.Failure<T>(refreshResponse.Message ?? "Your session has expired. Please sign in again.");
+            return AppResponses.Failure<T>(refreshResponse.Message ?? "Your session has expired. Please sign in again.");
         }
 
         return await SendAuthenticatedAsync<T>(method, endpoint).ConfigureAwait(false);
@@ -164,7 +165,7 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
                 timeoutMessage: "The identity service timed out. Please try again.")
             .ConfigureAwait(false);
 
-        if (response.ErrorCode != HttpStatusCode.Unauthorized.ToString())
+        if (response.Error?.Type != ErrorType.Unauthorized)
         {
             return response;
         }
@@ -176,10 +177,10 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
         }
 
         var refreshResponse = await RefreshTokenAsync(new RefreshTokenRequest(accessToken, refreshToken)).ConfigureAwait(false);
-        if (!refreshResponse.Successful)
+        if (!refreshResponse.IsSuccess)
         {
             await storage.ClearAsync().ConfigureAwait(false);
-            return AppResponse.Failure<T>(refreshResponse.Message ?? "Your session has expired. Please sign in again.");
+            return AppResponses.Failure<T>(refreshResponse.Message ?? "Your session has expired. Please sign in again.");
         }
 
         using var retryContent = contentFactory();

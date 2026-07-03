@@ -8,16 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.Shared.Lookups.QueryHandlers;
 
-public sealed record GetLookupCatalogTypesQuery : IRequest<AppResponse<IReadOnlyList<LookupCatalogTypeResponse>>>, ICachableRequest
-{
-    public string CacheGroup => "lookups";
 
-    public string Discriminator => "catalog-types";
-
-    public string? CacheUserId => null;
-
-    public bool IsVersioned => false;
-}
 
 internal sealed class GetLookupCatalogTypesQueryHandler(
     ISharedUnitOfWork sharedUnitOfWork,
@@ -43,7 +34,7 @@ internal sealed class GetLookupCatalogTypesQueryHandler(
                     type.IsActive))
                 .ToList();
 
-            return AppResponse.Success<IReadOnlyList<LookupCatalogTypeResponse>>(response);
+            return AppResponses.Success<IReadOnlyList<LookupCatalogTypeResponse>>(response);
         }
         catch (Exception ex)
         {

@@ -39,7 +39,7 @@ internal sealed class EmployeeWelcomeEmailComposer(
             var template = await ResolveTemplateAsync(templateType, ct).ConfigureAwait(false);
 
             if (template == null)
-                return AppResponse.Failure<ComposeEmailResponse>($"Template {templateType} not found");
+                return AppResponses.Failure<ComposeEmailResponse>($"Template {templateType} not found");
 
             var tokens = new Dictionary<string, string>
             {
@@ -53,7 +53,7 @@ internal sealed class EmployeeWelcomeEmailComposer(
                 ["Date"] = evt.OccurredAt.ToString("f", CultureInfo.InvariantCulture)
             };
 
-            return AppResponse.Success("Email composed", ComposeFromTemplate(
+            return AppResponses.Success("Email composed", ComposeFromTemplate(
                 template,
                 evt.Name,
                 evt.Email,

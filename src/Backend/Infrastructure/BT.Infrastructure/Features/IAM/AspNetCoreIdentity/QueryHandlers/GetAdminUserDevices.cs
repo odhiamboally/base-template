@@ -30,6 +30,6 @@ internal sealed class GetAdminUserDevices(IamDBContext context)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return AppResponse.Success("User devices loaded.", (IReadOnlyList<AdminUserDeviceResponse>)devices);
+        return AppResponses.Success("User devices loaded.", (IReadOnlyList<AdminUserDeviceResponse>)devices);
     }
 }

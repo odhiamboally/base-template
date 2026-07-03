@@ -9,11 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Commands;
 
-public sealed record UpdateReferenceCatalogItemCommand(string CatalogType, Guid Id, ReferenceCatalogItemRequest Request, string UserId)
-    : IRequest<AppResponse<ReferenceCatalogItemResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("iam-reference-data")];
-}
+
 
 internal sealed class UpdateReferenceCatalogItemCommandHandler(IIamUnitOfWork unitOfWork, ILogger<UpdateReferenceCatalogItemCommandHandler> logger)
     : IRequestHandler<UpdateReferenceCatalogItemCommand, AppResponse<ReferenceCatalogItemResponse>>
@@ -24,13 +20,13 @@ internal sealed class UpdateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
         {
             if (!ReferenceCatalogTypes.All.Contains(command.CatalogType))
             {
-                return AppResponse.Failure<ReferenceCatalogItemResponse>($"Catalog '{command.CatalogType}' is not supported.");
+                return AppResponses.Failure<ReferenceCatalogItemResponse>($"Catalog '{command.CatalogType}' is not supported.");
             }
 
             var parentError = await ValidateParentChangeAsync(command, cancellationToken).ConfigureAwait(false);
             if (parentError is not null)
             {
-                return AppResponse.Failure<ReferenceCatalogItemResponse>(parentError);
+                return AppResponses.Failure<ReferenceCatalogItemResponse>(parentError);
             }
 
             ReferenceCatalogItemResponse? response = command.CatalogType.ToLowerInvariant() switch
@@ -46,13 +42,13 @@ internal sealed class UpdateReferenceCatalogItemCommandHandler(IIamUnitOfWork un
 
             if (response is null)
             {
-                return AppResponse.Failure<ReferenceCatalogItemResponse>("Reference catalog item was not found.");
+                return AppResponses.Failure<ReferenceCatalogItemResponse>("Reference catalog item was not found.");
             }
 
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
             return saved
-                ? AppResponse.Success("Reference catalog item updated.", response)
-                : AppResponse.Failure<ReferenceCatalogItemResponse>("Reference catalog item update failed.");
+                ? AppResponses.Success("Reference catalog item updated.", response)
+                : AppResponses.Failure<ReferenceCatalogItemResponse>("Reference catalog item update failed.");
         }
         catch (Exception ex)
         {

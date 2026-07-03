@@ -33,18 +33,18 @@ internal sealed class SendEmailOtp(
         var user = await userManager.FindByIdAsync(request.UserId).ConfigureAwait(false);
 
         if (user == null || string.IsNullOrWhiteSpace(user.Email))
-            return AppResponse.Failure<SendEmailOtpResponse>("User not found");
+            return AppResponses.Failure<SendEmailOtpResponse>("User not found");
 
         if (!user.IsActive || user.IsDeleted)
-            return AppResponse.Failure<SendEmailOtpResponse>("Account is disabled");
+            return AppResponses.Failure<SendEmailOtpResponse>("Account is disabled");
 
         var requiresConfirmed = !string.Equals(request.Purpose, OtpPurpose.EmailConfirmation.ToString(), StringComparison.OrdinalIgnoreCase);
         if (requiresConfirmed && !await userManager.IsEmailConfirmedAsync(user).ConfigureAwait(false))
-            return AppResponse.Failure<SendEmailOtpResponse>("Email not confirmed");
+            return AppResponses.Failure<SendEmailOtpResponse>("Email not confirmed");
 
         var cooldownKey = CacheKeys.EmailOtpCooldown(user.Id);
         if (await cache.GetAsync<string>(cooldownKey, ct).ConfigureAwait(false) != null)
-            return AppResponse.Failure<SendEmailOtpResponse>("Please wait before requesting another code");
+            return AppResponses.Failure<SendEmailOtpResponse>("Please wait before requesting another code");
 
         var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
         var otpKey = CacheKeys.EmailOtp(user.Id);
@@ -64,7 +64,7 @@ internal sealed class SendEmailOtp(
             expiresAt), ct).ConfigureAwait(false);
 
         ServiceLogDefinitions.LogEmailOtpSent(logger, user.Id, request.Purpose);
-        return AppResponse.Success(
+        return AppResponses.Success(
             "Code sent",
             new SendEmailOtpResponse(
                 user.Id,

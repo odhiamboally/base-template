@@ -1,6 +1,6 @@
 # Base Template - Living Architecture And Delivery Plan
 
-> Last updated: 2026-06-12
+> Last updated: 2026-07-03
 >
 > This file is the canonical roadmap for the BaseTemplate solution.
 > It defines the architectural guardrails, execution order, and production-hardening specifications.
@@ -10,7 +10,7 @@
 
 ## 1. Purpose
 
-BaseTemplate is a reusable enterprise .NET solution template for building production-grade systems quickly, designed with a **Production-First Mindset** from the get-go. 
+BaseTemplate is a reusable enterprise .NET solution template for building production-grade systems quickly, designed with a **Production-First Mindset** from the get-go.
 
 The solution is structured as a **Logical Modular Monolith**:
 - **Single Deployable Unit:** Simplifies deployment, operations, and hosting costs while the domain is evolving.
@@ -69,6 +69,8 @@ src/Backend/Application/BT.Application/Features/{BoundedContext}/{Feature}
 ```
 All query records, command records, validators, mapping profiles, and handlers for a given feature slice reside in the same folder. Shared plumbing (observability, caching abstractions, logging, base controllers) lives in root-level directories.
 
+Every public top-level type must live in its own file named after that type. This applies to DTOs, validators, settings POCOs, entities, interfaces, records, enums, and public helper classes. Bundling public types into one file is not allowed because it makes future refactoring and maintenance painful.
+
 ---
 
 ## 3. Current State
@@ -79,19 +81,21 @@ All query records, command records, validators, mapping profiles, and handlers f
 - **Shared Kernel & Validation:** Created `BT.SharedKernel` (DTOs) and `BT.SharedKernel.Validation` (Validators) to share validation logic between client-side Blazor/MAUI and backend MediatR behaviors.
 - **IAM/Auth Enterprise Baseline:** Auth endpoints expose login, refresh, logout, current-user, permission-based authorization, server-side session tracking, sliding refresh token rotation, MFA enrollment/disable, trusted-device support, inactivity warning/logout, and profile-picture upload through a storage abstraction.
 - **Audit Actor Stamping:** Persistence audit fields use the current actor provider where available and fall back to `System` only for background/startup work.
-- **Profile Image Storage:** User profile pictures are supported through `IProfilePictureStorage`; local development stores files under API static assets, while Azure Blob can be added behind the same abstraction during cloud hardening.
+- **Profile Image Storage:** User profile pictures are supported through `IProfilePictureStorage`; local development stores files under API static assets, while Azure Blob/Azurite providers are available behind the same abstraction for cloud and local-platform hardening.
+- **Provider-Based Email Delivery:** Production email is no longer SMTP-driven. Local development uses Mailpit capture, while production uses provider API mode (`SendGrid`) through typed `EmailSettings`.
+- **Operational API Baseline:** OutputCache, response compression, configurable fixed-window rate limiting, SignalR hub registration, deep health-check endpoints, feature flags, QuestPDF reporting abstraction, and payment gateway abstraction with per-request NoOp/Stripe/M-Pesa provider routing are wired.
 - **Architecture Tests:** Guardrails built enforcing that all Queries declare cache strategies and all Banking/HR write commands declare cache invalidation.
 
 ### 3.2 Areas That Must Still Be Completed Or Certified
-- **Platform Storage Certification:** Profile image storage now supports local and Azure Blob providers behind `IProfilePictureStorage`; Data Protection supports local keys plus Azure Blob/Key Vault configuration. The remaining gate is local build plus Azure configuration smoke once cloud resources are ready.
+- **Platform Storage Certification:** Profile image storage now supports local, Azurite, and Azure Blob providers behind `IProfilePictureStorage`; Data Protection supports local keys plus Azure Blob/Key Vault configuration. The remaining gate is local build plus Azure configuration smoke once cloud resources are ready.
 - **HybridCache Certification:** Query caching and output caching are wired; complete the remaining review for native `GetOrCreateAsync` usage, negative-cache behavior, and Redis-backed multi-node invalidation.
 - **MassTransit/Outbox Certification:** RabbitMQ and Azure Service Bus transports are configurable and MassTransit EF Outbox is registered. Real RabbitMQ EF-outbox-to-consumer delivery is certified by `scripts/test-local-messaging.ps1`; Azure Service Bus transport certification remains cloud-dependent.
-- **Exception And Validation Coverage:** ProblemDetails and frontend parsing are in place. The remaining gate is validator coverage review for command/request DTOs and tests proving backend validation messages surface cleanly in Blazor.
-- **API Security And Lifecycle:** Security headers, rate limiting, CORS, JWT, permission policies, and API versioning are present. The remaining gate is deprecation policy, throttle response consistency, CSRF stance, and operational tests.
+- **Exception And Validation Coverage:** ProblemDetails and frontend parsing are in place, and the UI sanitizes backend failures before displaying them. The remaining gate is validator coverage review for command/request DTOs and tests proving backend validation messages surface cleanly in Blazor.
+- **API Security And Lifecycle:** Security headers, configurable rate limiting, CORS, JWT, permission policies, API versioning, response compression, and OutputCache are present. The remaining gate is deprecation policy, throttle response consistency, CSRF stance, and operational tests.
 - **Production Migrations:** Build a pipeline using `efbundle` to execute schema changes safely during deployments instead of using `db.Database.Migrate()` on startup.
 - **Dynamic Navigation Maturity:** Dynamic menu/catalog management exists; continue tightening permission filtering, tenant/department scope rules, and client-facing administration workflows as feature modules grow.
-- **Observability & Health Checks:** Wire deep, operational health checks for SQL, Redis, Service Bus, and Key Vault.
-- **Production Smoke Testing:** Run the full local smoke cycle against real SMTP/user-secrets/Key Vault settings before promoting to Azure deployment work.
+- **Observability & Health Checks:** Deep health endpoints now cover self, SQL, Redis, profile-image storage, and optional Key Vault probing. Service Bus/RabbitMQ broker health remains transport-smoke dependent.
+- **Production Smoke Testing:** Run the full local smoke cycle against Mailpit/provider email, user-secrets, storage, cache, messaging, and Key Vault settings before promoting to Azure deployment work.
 - **Local Platform Certification:** Docker Compose now defines RabbitMQ, Redis, Mailpit, and Azurite, with optional SQL Server and Seq. Real RabbitMQ outbox delivery is certified; complete Redis cache behavior smoke before certifying the phase.
 
 ---
@@ -105,13 +109,14 @@ For a template to be production-ready, it must enforce operational and security 
    ```csharp
    // Standard Query Caching Behavior
    return await cache.GetOrCreateAsync(
-       key, 
-       async ct => await next(ct), 
-       expiration, 
+       key,
+       async ct => await next(ct),
+       expiration,
        cancellationToken);
    ```
 2. **Synchronized L1 Eviction:** Configure `HybridCache` to connect to Redis as the pub/sub backplane. When an instance removes or updates a key, it must broadcast an eviction message to clear L1 caches on other API nodes.
 3. **HTTP Output Caching:** Use `AddOutputCache()` in the Web API layer for static, public endpoints (such as `/api/v1/lookups`). This bypasses controllers, DI, and DB layers completely, serving directly from cache at the routing layer.
+4. **No Legacy ResponseCaching By Default:** Standardize on OutputCache for server-side API response caching. Add legacy `ResponseCaching` only if a future requirement explicitly needs HTTP header/proxy cache semantics.
 
 ### 4.2 Database Operations
 1. **Zero Startup Migrations in Production:** Calling `context.Database.Migrate()` on API startup is an anti-pattern. Under load or during scaling, multiple container instances starting up concurrently will attempt to migrate the database simultaneously, causing transaction deadlocks or schema corruption.
@@ -172,16 +177,18 @@ EventIds are structured by architectural layer to simplify searching in logs:
 - [~] **Enable Redis L1 Eviction Bus:** Redis distributed cache and `IConnectionMultiplexer` registration exist; certify multi-node invalidation behavior explicitly.
 - [x] **Add Namespace Dependency Tests:** NetArchTest blocks cross-bounded-context namespace references.
 - [x] **Configure Output Caching:** `AddOutputCache`, `UseOutputCache`, and lookup endpoint policies are registered.
+- [x] **Response Compression:** ASP.NET Core response compression is registered and controlled by `ResponseCompression` settings.
+- [x] **Provider-Based Email Delivery:** Local Mailpit and production SendGrid API modes are registered; personal mailbox SMTP is not a production delivery path.
 - [~] **Profile Media Storage:** Local and Azure Blob profile picture providers exist behind `IProfilePictureStorage`; certify Azure settings with real storage.
 - [~] **Validation Coverage:** Shared DTO validators and Application write-command validators are being expanded for admin/customer/employee/reference flows.
 - [~] **MassTransit/Outbox:** RabbitMQ/Azure Service Bus switching and EF outbox are wired; RabbitMQ publish/consume and health behavior are certified locally, while Azure Service Bus certification remains cloud-dependent.
 
 ### Phase 3 - API Security And Operational Readiness
 *Goal: Ensure the system can be monitored, scaled, and diagnosed under load.*
-- [ ] **Deep Health Checks:** Replace basic TCP check endpoints with active health checks testing actual database write, cache set, service bus connection, and Key Vault secret retrieval.
+- [~] **Deep Health Checks:** Active endpoints cover self, SQL, Redis, profile-image storage, and optional Key Vault secret probing. Broker-specific transport smoke remains separate.
 - [~] **Configure ASP.NET Data Protection:** Local file/DPAPI and Azure Blob/Key Vault settings are wired; certify with Azure resources.
 - [ ] **PII Log Sanitization:** Implement Serilog destructuring policies to mask passwords, MFA codes, and personal identifiers.
-- [ ] **Correlated Tracing:** Ensure OpenTelemetry trace context propagates across Blazor client HTTP requests -> API gateways -> MediatR pipelines -> EF Core.
+- [~] **Correlated Tracing:** OpenTelemetry/Azure Monitor wiring exists; certify trace context propagation across Blazor client HTTP requests -> API gateways -> MediatR pipelines -> EF Core.
 - [ ] **API Lifecycle:** Define deprecation headers, throttle response consistency, and API security policy tests.
 
 ### Phase 4 - CI/CD Pipelines & Azure Deployment
@@ -194,10 +201,12 @@ EventIds are structured by architectural layer to simplify searching in logs:
 *Goal: complete reusable extension points without adding product-specific SACCO/domain features to the template.*
 - [ ] **Dynamic Permissions-Based Menus:** Implement backend menu/module API that constructs the UI layout based on user permissions, roles, and active feature flags.
 - [ ] **MudBlazor UI Shell:** Implement responsive theme, layouts, and auth pages in the Shared Razor Class Library (RCL).
-- [ ] **Feature Flags:** Add a generic feature-flag abstraction usable from API/Application/UI.
-- [ ] **SignalR Baseline:** Add authenticated hub structure and conventions.
-- [ ] **Reporting Baseline:** Add QuestPDF/reporting abstraction without product-specific reports.
-- [ ] **Payment Gateway Integrations:** Write clean Stripe and Mpesa integrations behind a unified `IPaymentGateway` interface.
+- [x] **Feature Flags:** Generic fail-closed feature-flag abstraction is registered with configuration-backed evaluation.
+- [x] **SignalR Baseline:** Authenticated notification hub structure and tenant grouping convention are registered.
+- [x] **Reporting Baseline:** QuestPDF reporting abstraction is registered without product-specific reports.
+- [~] **Payment Gateway Integrations:** `IPaymentGateway` abstraction plus NoOp, Stripe Checkout, M-Pesa STK/query adapters, and per-request provider routing are registered. Remaining certification is real-provider credentials, callback smoke tests, idempotency, reconciliation, and provider-specific operational runbooks.
+- [~] **Entra ID SSO:** OIDC scheme and typed configuration are registered. Remaining IAM work is the AppUser linking/token issuance callback flow and UI entry point.
+- [ ] **Passkeys/WebAuthn:** Add passkey registration/authentication ceremonies, credential storage, browser challenge flow, and recovery policy.
 
 ---
 

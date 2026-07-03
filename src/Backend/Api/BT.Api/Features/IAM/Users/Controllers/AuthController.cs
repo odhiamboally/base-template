@@ -136,18 +136,3 @@ public sealed class AuthController(ISender sender) : BaseController
     }
 
 }
-
-public sealed record LoginApiRequest(
-    string UserName,
-    string Password,
-    bool RememberMe,
-    string? ReturnUrl,
-    string DeviceFingerprint)
-    : LoginRequest(UserName, Password, RememberMe, ReturnUrl, DeviceFingerprint);
-
-public sealed record ResetPasswordApiRequest(
-    string Email,
-    string? NewPassword,
-    string? Password,
-    string? ConfirmPassword)
-    : ResetPasswordRequest(Email, NewPassword, Password, ConfirmPassword);

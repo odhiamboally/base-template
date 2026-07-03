@@ -32,11 +32,11 @@ internal sealed class GetCurrentUser(
         {
             var userId = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
-                return AppResponse.Failure<CurrentUserResponse>("User not found.");
+                return AppResponses.Failure<CurrentUserResponse>("User not found.");
 
             var appUser = await userManager.FindByIdAsync(userId).ConfigureAwait(false);
             if (appUser == null)
-                return AppResponse.Failure<CurrentUserResponse>("User not found.");
+                return AppResponses.Failure<CurrentUserResponse>("User not found.");
 
             var roles = await userManager.GetRolesAsync(appUser).ConfigureAwait(false);
             var rolesList = roles.ToList();
@@ -65,7 +65,7 @@ internal sealed class GetCurrentUser(
             var sessionId = httpContextAccessor.HttpContext?.User.FindFirstValue("session_id");
             var mfaEnrollmentRequired = IsMfaEnrollmentRequired(twoFactorEnabled, rolesList);
 
-            return AppResponse.Success("CurrentUser", new CurrentUserResponse(
+            return AppResponses.Success("CurrentUser", new CurrentUserResponse(
                 userId,
                 appUser.EmployeeId ?? Guid.Empty,
                 appUser.CustomerId ?? Guid.Empty,

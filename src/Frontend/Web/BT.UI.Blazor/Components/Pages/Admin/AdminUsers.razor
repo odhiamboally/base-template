@@ -283,7 +283,7 @@
             PageSize: PageSize);
 
         var response = await IamAdminService.SearchUsersAsync(request);
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _messageSeverity = Severity.Error;
             _message = response.Message ?? "We could not load users.";
@@ -376,7 +376,7 @@
         }
 
         var response = await IamAdminService.DeactivateUserAsync(user.Id, new DeactivateUserRequest("Deactivated from admin user list."));
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "User deactivation failed.", Severity.Error);
             return;

@@ -28,12 +28,12 @@ internal sealed class RevokeEmployeeSystemAccess(
 
             if (user is null)
             {
-                return AppResponse.Failure<bool>("This employee is not linked to an IAM user account.");
+                return AppResponses.Failure<bool>("This employee is not linked to an IAM user account.");
             }
 
             if (!user.IsActive)
             {
-                return AppResponse.Success("Employee system access is already inactive.", true);
+                return AppResponses.Success("Employee system access is already inactive.", true);
             }
 
             var reason = string.IsNullOrWhiteSpace(command.Request.Reason)
@@ -44,7 +44,7 @@ internal sealed class RevokeEmployeeSystemAccess(
             var updateResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
             if (!updateResult.Succeeded)
             {
-                return AppResponse.Failure<bool>(updateResult.Errors.First().Description);
+                return AppResponses.Failure<bool>(updateResult.Errors.First().Description);
             }
 
             await sessionService.RevokeAllUserSessionsAsync(user.Id).ConfigureAwait(false);
@@ -53,7 +53,7 @@ internal sealed class RevokeEmployeeSystemAccess(
                 .ConfigureAwait(false);
             await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
-            return AppResponse.Success("Employee system access revoked. Active sessions and refresh tokens have been terminated.", true);
+            return AppResponses.Success("Employee system access revoked. Active sessions and refresh tokens have been terminated.", true);
         }
         catch (Exception ex)
         {

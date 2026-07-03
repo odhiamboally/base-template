@@ -51,7 +51,7 @@
     protected override async Task OnInitializedAsync()
     {
         var response = await IamAdminService.GetRolesAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load roles.", Severity.Error);
             _isLoading = false;

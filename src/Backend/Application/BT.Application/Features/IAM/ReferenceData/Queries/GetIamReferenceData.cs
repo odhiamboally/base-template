@@ -8,13 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.ReferenceData.Queries;
 
-public sealed record GetIamReferenceDataQuery : IRequest<AppResponse<IamReferenceDataResponse>>, ICachableRequest
-{
-    public string CacheGroup => "iam-reference-data";
-    public string Discriminator => CacheKeys.Discriminator("all");
-    public string? CacheUserId => null;
-    public bool IsVersioned => true;
-}
+
 
 internal sealed class GetIamReferenceDataQueryHandler(IIamUnitOfWork unitOfWork, ILogger<GetIamReferenceDataQueryHandler> logger)
     : IRequestHandler<GetIamReferenceDataQuery, AppResponse<IamReferenceDataResponse>>
@@ -80,7 +74,7 @@ internal sealed class GetIamReferenceDataQueryHandler(IIamUnitOfWork unitOfWork,
                 .ConfigureAwait(false);
 
             var response = new IamReferenceDataResponse(contexts, resources, actions, placements, icons, routes);
-            return AppResponse.Success("IAM reference data loaded.", response);
+            return AppResponses.Success("IAM reference data loaded.", response);
         }
         catch (Exception ex)
         {

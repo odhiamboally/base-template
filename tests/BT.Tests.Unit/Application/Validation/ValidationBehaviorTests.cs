@@ -2,7 +2,10 @@ using BT.Application.Behaviours;
 using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Features.IAM.Users.Validators;
 using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Dtos.Utilities;
+using BT.SharedKernel.Features.Shared.Common.Enums;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
+
 using MediatR;
 
 namespace BT.Tests.Unit.Application.Validation;
@@ -22,14 +25,21 @@ public sealed class ValidationBehaviorTests
             _ =>
             {
                 nextCalled = true;
-                return Task.FromResult(AppResponse.Success("ok", CreateLoginResponse("token")));
+                return Task.FromResult(AppResponses.Success("ok", CreateLoginResponse("token")));
             },
             CancellationToken.None);
 
         Assert.False(nextCalled);
-        Assert.False(response.Successful);
-        Assert.Equal("VALIDATION_ERROR", response.ErrorCode);
-        Assert.NotEmpty(response.ValidationErrors);
+        Assert.False(response.IsSuccess);
+        Assert.False(response.IsSuccess);
+
+        var error = Assert.IsType<AppError>(response.Error);
+
+        Assert.Equal(ErrorType.Validation, error.Type);
+        Assert.Equal(ErrorCodes.Validation, error.Code);
+
+        Assert.NotNull(error.ValidationErrors);
+        Assert.NotEmpty(error.ValidationErrors);
     }
 
     [Fact]
@@ -41,10 +51,10 @@ public sealed class ValidationBehaviorTests
 
         var response = await behavior.Handle(
             command,
-            _ => Task.FromResult(AppResponse.Success("ok", CreateLoginResponse("token"))),
+            _ => Task.FromResult(AppResponses.Success("ok", CreateLoginResponse("token"))),
             CancellationToken.None);
 
-        Assert.True(response.Successful);
+        Assert.True(response.IsSuccess);
         Assert.Equal("token", response.Data?.Token);
     }
 

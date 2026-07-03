@@ -272,7 +272,7 @@
             PageSize);
 
         var response = await EmployeeService.SearchAsync(request);
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _messageSeverity = Severity.Error;
             _message = response.Message ?? "We could not load employees.";
@@ -295,7 +295,7 @@
     private async Task LoadDepartmentsAsync()
     {
         var response = await DepartmentService.GetAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load departments.", Severity.Error);
             return;
@@ -370,7 +370,7 @@
         }
 
         var response = await EmployeeService.DeleteAsync(employee.Id);
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Employee delete failed.", Severity.Error);
             return;
@@ -416,7 +416,7 @@
         }
 
         var response = await IamAdminService.GrantEmployeeSystemAccessAsync(employee.Id, new GrantEmployeeSystemAccessRequest(roles));
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "System access grant failed.", Severity.Warning);
             return;
@@ -448,7 +448,7 @@
             employee.Id,
             new DeactivateUserRequest("Revoked from employee administration."));
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "System access revoke failed.", Severity.Warning);
             return;
@@ -460,7 +460,7 @@
     private async Task ShowIamLinkAsync(EmployeeResponse employee)
     {
         var response = await IamAdminService.SearchUsersAsync(new AdminUserSearchRequest(EmployeeId: employee.Id, PageSize: 1));
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load the IAM link.", Severity.Error);
             return;

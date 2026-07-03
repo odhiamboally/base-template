@@ -19,7 +19,7 @@ public class SharedDBContext(
     ICurrentTenantProvider? tenantProvider = null,
     ICurrentActorProvider? actorProvider = null,
     ILogger<SharedDBContext>? logger = null
-) : DbContext(options), ITenantFilteredDbContext
+) : DbContext(options), ITenantFilteredDBContext
 {
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<FailedMessage> FailedMessages { get; set; }
@@ -52,16 +52,16 @@ public class SharedDBContext(
             typeof(SharedDBContext).Assembly,
             type => type.Namespace?.StartsWith("BT.Persistence.Features.Shared", StringComparison.Ordinal) == true);
 
-        DbContextHelper.ApplyStandardModelConventions(modelBuilder, this);
+        DBContextHelper.ApplyStandardModelConventions(modelBuilder, this);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var domainEvents = DbContextHelper.CollectDomainEvents(ChangeTracker);
-            DbContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DbContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
+            var domainEvents = DBContextHelper.CollectDomainEvents(ChangeTracker);
+            DBContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
+            DBContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);
@@ -90,7 +90,7 @@ public class SharedDBContext(
         catch (Exception ex)
         {
             if (logger is not null)
-                PersistenceLogDefinitions.LogDbContextSaveChangesError(logger, nameof(SharedDBContext), ex);
+                PersistenceLogDefinitions.LogDBContextSaveChangesError(logger, nameof(SharedDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }

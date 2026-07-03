@@ -29,12 +29,12 @@ internal sealed class VerifyPassword(
 
             if (user == null)
             {
-                return AppResponse.Failure<bool>("User not found");
+                return AppResponses.Failure<bool>("User not found");
             }
 
             if (await userManager.IsLockedOutAsync(user).ConfigureAwait(false))
             {
-                return AppResponse.Failure<bool>("Account is locked");
+                return AppResponses.Failure<bool>("Account is locked");
             }
 
             var isPasswordValid = await userManager.CheckPasswordAsync(user, request.Password).ConfigureAwait(false);
@@ -43,13 +43,13 @@ internal sealed class VerifyPassword(
                 await userManager.AccessFailedAsync(user).ConfigureAwait(false);
 
                 return await userManager.IsLockedOutAsync(user).ConfigureAwait(false)
-                    ? AppResponse.Failure<bool>("Account locked due to too many failed attempts")
-                    : AppResponse.Failure<bool>("Invalid password");
+                    ? AppResponses.Failure<bool>("Account locked due to too many failed attempts")
+                    : AppResponses.Failure<bool>("Invalid password");
             }
 
             await userManager.ResetAccessFailedCountAsync(user).ConfigureAwait(false);
 
-            return AppResponse.Success("Password verified successfully", true);
+            return AppResponses.Success("Password verified successfully", true);
         }
         catch (Exception ex)
         {

@@ -45,10 +45,10 @@ public class ValidationBehavior<TRequest, TResponse>
                     .ToDictionary(failureGroup => failureGroup.Key, failureGroup => failureGroup
                     .ToList());
 
-                var method = typeof(AppResponse)
+                var method = typeof(AppResponses)
                     .GetMethods()
                     .SingleOrDefault(method =>
-                        method.Name == nameof(AppResponse.ValidationFailure) &&
+                        method.Name == nameof(AppResponses.ValidationFailure) &&
                         method.IsGenericMethodDefinition &&
                         method.GetParameters() is [{ ParameterType: var parameterType }] &&
                         parameterType == typeof(Dictionary<string, List<string>>));
