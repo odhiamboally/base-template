@@ -71,7 +71,7 @@ dotnet test tests\BT.Tests.Architecture\BT.Tests.Architecture.csproj --no-restor
 Useful additional checks:
 
 ```powershell
-dotnet test tests\BT.Tests.Unit\BT.Tests.Unit.csproj --no-restore -p:UseSharedCompilation=false
+dotnet test tests/BT.Tests.Unit/BT.Tests.Unit.csproj --no-restore -p:UseSharedCompilation=false
 .\scripts\test-local-messaging.ps1
 ```
 
