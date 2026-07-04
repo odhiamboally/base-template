@@ -34,21 +34,8 @@ namespace BT.Application.Features.Banking.Customers.CommandHandlers;
 /// No entity key to delete (the entity does not exist in cache yet).
 /// Versioned list entries are orphaned in O(1).
 /// </summary>
-public sealed record CreateCustomerCommand(CreateCustomerRequest CreateCustomerRequest, string UserId) 
-    : IRequest<AppResponse<CustomerResponse>>, ICacheInvalidatorRequest
-{
-    // No direct keys — new entity, nothing cached yet.
-    public IReadOnlyList<string> DirectInvalidationKeys => [];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate =>
-    [
-        CacheKeys.GroupVersion("customers"),
-        CacheKeys.GroupVersion("dashboard")
-    ];
-        
 
-}
-    
 internal sealed class CreateCustomerCommandHandler(
     IBankingUnitOfWork _bankingUnitOfWork,
     ILogger<CreateCustomerCommandHandler> _logger,
@@ -80,7 +67,7 @@ internal sealed class CreateCustomerCommandHandler(
                 req.TINNumber,
                 req.Classification,
                 req.Comments
-                
+
             );
 
             var address = Address.Create(
@@ -132,13 +119,13 @@ internal sealed class CreateCustomerCommandHandler(
             }, ct).ConfigureAwait(false);
 
             LogDefinitions.LogCustomerCreated(_logger, customer.Number, customer.CorporateDetail.CompanyName);
-            return AppResponse.Success($"Customer {customer.Number} created successfully.", customer.ToCustomerResponse());
+            return AppResponses.Success($"Customer {customer.Number} created successfully.", customer.ToCustomerResponse());
 
         }
         catch (ArgumentException ex)
         {
             LogDefinitions.LogCustomerCreateValidationFailed(_logger, ex);
-            return AppResponse.Failure<CustomerResponse>("Customer details are invalid. Please review the form and try again.");
+            return AppResponses.Failure<CustomerResponse>("Customer details are invalid. Please review the form and try again.");
         }
         catch (Exception ex)
         {

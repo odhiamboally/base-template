@@ -67,7 +67,7 @@ internal sealed class ApiService : IApiService
 
                 HttpClientLogDefinitions.LogExternalApiWarning(_logger, "DELETE", endpoint, (int)apiResponse.StatusCode);
 
-                return AppResponse.Failure<TResponse?>(contextualError);
+                return AppResponses.Failure<TResponse?>(contextualError);
 
             }
 
@@ -75,11 +75,11 @@ internal sealed class ApiService : IApiService
             if (response == null)
             {
                 responseMessage = "Response content is null";
-                return AppResponse.Failure<TResponse?>("Response is null");
+                return AppResponses.Failure<TResponse?>("Response is null");
             }
 
             responseMessage = response.Message ?? "Resource deleted successfully";
-            return AppResponse.Success(response.Message!, response.Data);
+            return AppResponses.Success(response.Message ?? "Resource deleted successfully", response.Data)!;
 
         }
         catch (Exception ex)
@@ -110,7 +110,7 @@ internal sealed class ApiService : IApiService
 
                 HttpClientLogDefinitions.LogExternalApiWarning(_logger, "GET", endpoint, (int)apiResponse.StatusCode);
 
-                return AppResponse.Failure<TResponse?>(contextualError);
+                return AppResponses.Failure<TResponse?>(contextualError);
             }
 
 
@@ -120,8 +120,8 @@ internal sealed class ApiService : IApiService
             //var response = await apiResponse.Content.ReadFromJsonAsync<AppResponse<TResponse>>();
 
             return response == null
-                ? AppResponse.Failure<TResponse?>("Response content is null")
-                : AppResponse.Success(response.Message!, response.Data);
+                ? AppResponses.Failure<TResponse?>("Response content is null")
+                : AppResponses.Success<TResponse?>(response.Message ?? "Operation completed.", response.Data);
         }
         catch (Exception ex)
         {
@@ -152,7 +152,7 @@ internal sealed class ApiService : IApiService
 
                 HttpClientLogDefinitions.LogExternalApiWarning(_logger, "GET", endpoint, (int)apiResponse.StatusCode);
 
-                return AppResponse.Failure<TResponse?>(contextualError);
+                return AppResponses.Failure<TResponse?>(contextualError);
             }
 
             var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -161,16 +161,16 @@ internal sealed class ApiService : IApiService
             if (response == null)
             {
                 responseMessage = "Response content is null";
-                return AppResponse.Failure<TResponse?>("Response content is null");
+                return AppResponses.Failure<TResponse?>("Response content is null");
             }
 
             responseMessage = response.Message ?? "Records fetched successfully";
-            return AppResponse.Success(response.Message!, response.Data);
+            return AppResponses.Success(response.Message ?? "Records fetched successfully", response.Data)!;
         }
         catch (Exception ex)
         {
             HttpClientLogDefinitions.LogExternalApiError(_logger, "GET", endpoint, ex);
-            return AppResponse.Failure<TResponse?>(responseMessage);
+            return AppResponses.Failure<TResponse?>(responseMessage);
         }
     }
 
@@ -220,7 +220,7 @@ internal sealed class ApiService : IApiService
 
                 HttpClientLogDefinitions.LogExternalApiWarning(_logger, "POST", endpoint, (int)apiResponse.StatusCode);
 
-                return AppResponse.Failure<TResponse?>(contextualError);
+                return AppResponses.Failure<TResponse?>(contextualError);
             }
 
             var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -229,17 +229,17 @@ internal sealed class ApiService : IApiService
             if (response == null)
             {
                 responseMessage = "Response content is null";
-                return AppResponse.Failure<TResponse?>("Response content is null");
+                return AppResponses.Failure<TResponse?>("Response content is null");
             }
 
             response = response with { SessionId = sessionId };
 
-            return AppResponse.Success(response.Message!, response.Data);
+            return AppResponses.Success(response.Message ?? "Resource created successfully", response.Data)!;
         }
         catch (Exception ex)
         {
             HttpClientLogDefinitions.LogExternalApiError(_logger, "POST", endpoint, ex);
-            return AppResponse.Failure<TResponse?>("An error occurred while processing your request.");
+            return AppResponses.Failure<TResponse?>("An error occurred while processing your request.");
         }
     }
 
@@ -263,7 +263,7 @@ internal sealed class ApiService : IApiService
 
                 HttpClientLogDefinitions.LogExternalApiWarning(_logger, "PUT", endpoint, (int)apiResponse.StatusCode);
 
-                return AppResponse.Failure<TResponse?>(contextualError);
+                return AppResponses.Failure<TResponse?>(contextualError);
             }
 
             var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -271,12 +271,12 @@ internal sealed class ApiService : IApiService
 
             return response switch
             {
-                null => AppResponse.Failure<TResponse?>("Response content is null"),
+                null => AppResponses.Failure<TResponse?>("Response content is null"),
 
-                { Successful: false } or { Data: null }
-                    => AppResponse.Failure<TResponse?>(response.Message ?? "Update operation failed"),
+                { IsSuccess: false } or { Data: null }
+                    => AppResponses.Failure<TResponse?>(response.Message ?? "Update operation failed"),
 
-                _ => AppResponse.Success<TResponse?>(
+                _ => AppResponses.Success<TResponse?>(
                         response.Message ?? "Resource updated successfully",
                         response.Data)
             };
@@ -306,18 +306,18 @@ internal sealed class ApiService : IApiService
 
                 HttpClientLogDefinitions.LogExternalApiWarning(_logger, "GET", endpoint, (int)apiResponse.StatusCode);
 
-                return AppResponse.Failure<PagedResponse<TResponse, TCursor>>(contextualError);
+                return AppResponses.Failure<PagedResponse<TResponse, TCursor>>(contextualError);
             }
 
             content = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<AppResponse<PagedResponse<TResponse, TCursor>>>(content, _jsonOptions);
 
-            return response ?? AppResponse.Failure<PagedResponse<TResponse, TCursor>>("Failed to deserialize response");
+            return response ?? AppResponses.Failure<PagedResponse<TResponse, TCursor>>("Failed to deserialize response");
         }
         catch (Exception ex)
         {
             HttpClientLogDefinitions.LogExternalApiError(_logger, "GET", endpoint, ex);
-            return AppResponse.Failure<PagedResponse<TResponse, TCursor>>("The external service could not complete the request. Please try again.");
+            return AppResponses.Failure<PagedResponse<TResponse, TCursor>>("The external service could not complete the request. Please try again.");
         }
 
     }
@@ -340,7 +340,7 @@ internal sealed class ApiService : IApiService
 
                 HttpClientLogDefinitions.LogExternalApiWarning(_logger, "GET", endpoint, (int)apiResponse.StatusCode);
 
-                return AppResponse.Failure<PagedResponse<TResponse, TCursor>>(contextualError);
+                return AppResponses.Failure<PagedResponse<TResponse, TCursor>>(contextualError);
             }
 
             var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -348,13 +348,13 @@ internal sealed class ApiService : IApiService
 
             //var response = JsonSerializer.Deserialize<AppResponse<PagedResult<TResponse>>>(content, new JsonSerializerOptions{PropertyNameCaseInsensitive = true});
 
-            return response ?? AppResponse.Failure<PagedResponse<TResponse, TCursor>>("Failed to deserialize response");
+            return response ?? AppResponses.Failure<PagedResponse<TResponse, TCursor>>("Failed to deserialize response");
 
         }
         catch (Exception ex)
         {
             HttpClientLogDefinitions.LogExternalApiError(_logger, "GET", endpoint, ex);
-            return AppResponse.Failure<PagedResponse<TResponse, TCursor>>("The external service could not complete the request. Please try again.");
+            return AppResponses.Failure<PagedResponse<TResponse, TCursor>>("The external service could not complete the request. Please try again.");
         }
     }
 
@@ -374,32 +374,32 @@ internal sealed class ApiService : IApiService
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
 
                 HttpClientLogDefinitions.LogExternalApiWarning(_logger, "PATCH", endpoint, (int)apiResponse.StatusCode);
-                return AppResponse.Failure<TResponse>(contextualError);
+                return AppResponses.Failure<TResponse>(contextualError);
 
             }
             var response = await apiResponse.Content.ReadFromJsonAsync<AppResponse<TResponse>>().ConfigureAwait(false);
             if (response == null)
             {
                 responseMessage = "Response content is null";
-                return AppResponse.Failure<TResponse>("Response content is null");
+                return AppResponses.Failure<TResponse>("Response content is null");
 
             }
-            if (!response.Successful || response.Data == null)
+            if (!response.IsSuccess || response.Data == null)
             {
                 responseMessage = response.Message ?? "Patch operation failed";
-                return AppResponse.Failure<TResponse>(response.Message ?? "Patch operation failed");
+                return AppResponses.Failure<TResponse>(response.Message ?? "Patch operation failed");
             }
 
 
             responseMessage = response.Message ?? "Patch operation successful";
-            return AppResponse.Success(response.Message ?? "Patch operation successful", response.Data);
+            return AppResponses.Success(response.Message ?? "Patch operation successful", response.Data);
 
         }
         catch (Exception ex)
         {
 
             HttpClientLogDefinitions.LogExternalApiError(_logger, "PATCH", endpoint, ex);
-            return AppResponse.Failure<TResponse>(responseMessage);
+            return AppResponses.Failure<TResponse>(responseMessage);
         }
     }
 
@@ -564,4 +564,3 @@ internal sealed class ApiService : IApiService
     }
 
 }
-

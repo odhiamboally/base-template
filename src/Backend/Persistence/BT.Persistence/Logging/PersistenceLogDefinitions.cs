@@ -44,8 +44,8 @@ internal static partial class PersistenceLogDefinitions
     [LoggerMessage(EventId = 4206, Level = LogLevel.Error, Message = "Error in retryable transaction. Rolling back...")]
     public static partial void LogRetryableTransactionErrorRollback(ILogger logger, Exception ex);
 
-    [LoggerMessage(EventId = 4207, Level = LogLevel.Error, Message = "Unhandled error while saving changes in {DbContextName}")]
-    public static partial void LogDbContextSaveChangesError(ILogger logger, string dbContextName, Exception ex);
+    [LoggerMessage(EventId = 4207, Level = LogLevel.Error, Message = "Unhandled error while saving changes in {ContextName}")]
+    public static partial void LogDBContextSaveChangesError(ILogger logger, string contextName, Exception ex);
 
     [LoggerMessage(EventId = 4208, Level = LogLevel.Error, Message = "Failed to delete expired temp TOTP secrets")]
     public static partial void LogDeleteExpiredTempTotpSecretsError(ILogger logger, Exception ex);

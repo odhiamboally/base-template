@@ -94,7 +94,7 @@
             var request = new PasswordLoginRequest(_form.UserName, _form.Password, _form.RememberMe, _form.ReturnUrl, "blazor-server");
             var response = await AuthSession.SignInAsync(request);
 
-            if (!response.Successful || response.Data is null)
+            if (!response.IsSuccess || response.Data is null)
             {
                 _isError = true;
                 _message = GetDisplayMessage(response.Message, "We could not sign you in. Please check your username and password.");

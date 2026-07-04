@@ -9,13 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Menus.Queries;
 
-public sealed record GetMenuByIdQuery(Guid Id, string UserId) : IRequest<AppResponse<MenuResponse>>, ICachableRequest
-{
-    public string CacheGroup => "menus";
-    public string Discriminator => CacheKeys.Entity("menus", Id.ToString());
-    public string? CacheUserId => null;
-    public bool IsVersioned => true;
-}
+
 
 internal sealed class GetMenuByIdQueryHandler(IIamUnitOfWork unitOfWork, ILogger<GetMenuByIdQueryHandler> logger)
     : IRequestHandler<GetMenuByIdQuery, AppResponse<MenuResponse>>
@@ -26,8 +20,8 @@ internal sealed class GetMenuByIdQueryHandler(IIamUnitOfWork unitOfWork, ILogger
         {
             var menu = await unitOfWork.MenuRepository.FindByIdAsync(query.Id, cancellationToken).ConfigureAwait(false);
             return menu is null
-                ? AppResponse.Failure<MenuResponse>($"Menu {query.Id} not found.")
-                : AppResponse.Success(menu.ToMenuResponse());
+                ? AppResponses.Failure<MenuResponse>($"Menu {query.Id} not found.")
+                : AppResponses.Success(menu.ToMenuResponse());
         }
         catch (Exception ex)
         {

@@ -32,7 +32,7 @@ internal sealed class SmsService(
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
             {
-                return AppResponse.Failure<bool>("Phone number is required.");
+                return AppResponses.Failure<bool>("Phone number is required.");
             }
 
             var formattedNumber = StandardizePhoneNumber(phoneNumber);
@@ -48,8 +48,8 @@ internal sealed class SmsService(
 
             // Check the status provided by Twilio
             return result.ErrorCode == null
-                ? AppResponse.Success("SMS queued successfully", true)
-                : AppResponse.Failure<bool>($"Failed to deliver SMS: {result.ErrorMessage}");
+                ? AppResponses.Success("SMS queued successfully", true)
+                : AppResponses.Failure<bool>($"Failed to deliver SMS: {result.ErrorMessage}");
         }
         catch (Exception ex)
         {

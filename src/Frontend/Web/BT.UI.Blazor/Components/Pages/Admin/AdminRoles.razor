@@ -131,7 +131,7 @@
         StateHasChanged();
 
         var response = await IamAdminService.GetRolesAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _message = response.Message ?? "We could not load roles.";
             Snackbar.Add(_message, Severity.Error);
@@ -212,7 +212,7 @@
         }
 
         var response = await IamAdminService.DeleteRoleAsync(role.Id);
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Role delete failed.", Severity.Warning);
             return;

@@ -18,7 +18,7 @@ Run in Docker:
 
 - RabbitMQ for local MassTransit messaging
 - Redis for distributed cache and HybridCache L2
-- Mailpit for safe local SMTP capture
+- Mailpit for safe local email capture
 - Seq when a locally installed Seq instance is not already available
 - Azurite for local Azure Blob-compatible profile-image storage
 - SQL Server when a developer does not want to use an installed SQL Server instance
@@ -36,7 +36,7 @@ Docker Desktop must be running. From the repository root:
 The script:
 
 1. Generates random local-only credentials in ignored `ops/local/.env`.
-2. Writes matching RabbitMQ, Redis, and Mailpit values to API user-secrets.
+2. Writes matching RabbitMQ, Redis, and Mailpit provider values to API user-secrets.
 3. Pulls and starts RabbitMQ, Redis, Mailpit, and Azurite.
 4. Waits for container health checks.
 
@@ -76,7 +76,7 @@ The standard setup selects `ProfileImageStorage:Provider=Azurite`, uses the sepa
 | RabbitMQ Management | `http://localhost:15672` | Exchanges, queues, consumers, and message rates |
 | Redis | `localhost:6380` | HybridCache distributed layer; avoids common existing port `6379` |
 | Mailpit | `http://localhost:8025` | Captured email UI |
-| Mailpit SMTP | `localhost:1025` | Local SMTP relay |
+| Mailpit SMTP | `localhost:1025` | Local-only capture relay used by `EmailSettings:Provider=LocalMailpit` |
 | Seq | `http://localhost:5341` | Structured logs, optional profile |
 | Azurite Blob | `http://localhost:10000` | Storage emulator, optional profile |
 | SQL Server | `localhost,14333` | Containerized database, optional profile |
@@ -134,14 +134,14 @@ Set it in GitHub under **Settings > Secrets and variables > Actions > Variables 
 | Messaging | RabbitMQ | Azure Service Bus |
 | Distributed cache | Redis container | Azure Managed Redis using managed identity |
 | SQL | Installed SQL Server or SQL container | Azure SQL |
-| Email | Mailpit | Approved SMTP/email provider |
+| Email | Mailpit | Approved email API provider, currently `SendGrid` |
 | Logs | Seq | Azure Monitor/Application Insights, optionally Seq |
 | Profile images | Local filesystem or Azurite | Private Azure Blob Storage |
 | Data Protection | Local key ring | Azure Blob key ring encrypted by Key Vault |
 
 The Azure OIDC workflow, migration bundles, App Service deployment jobs, managed-identity configuration, and Key Vault/Blob settings remain in the repository. Local configuration overrides them through `appsettings.Development.json` and user-secrets; it does not replace them.
 
-Development explicitly disables external Data Protection key storage and SMTP authentication. Existing Azure Blob/Key Vault URIs and real SMTP credentials can remain configured without being contacted by the local runtime.
+Development explicitly disables external Data Protection key storage and selects the local Mailpit email provider. Existing Azure Blob/Key Vault URIs and production email provider secrets can remain configured without being contacted by the local runtime.
 
 ## Messaging License Decision
 

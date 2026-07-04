@@ -48,37 +48,37 @@ internal sealed class RefreshToken(
             if (principal == null)
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "InvalidAccessTokenFormat", string.Empty, "Invalid access token format provided for refresh");
-                return AppResponse.Failure<RefreshTokenResponse>("Invalid access token format");
+                return AppResponses.Failure<RefreshTokenResponse>("Invalid access token format");
             }
 
             var userId = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
             if (string.IsNullOrWhiteSpace(userId))
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "InvalidAccessTokenFormat", string.Empty, "No user ID found in access token");
-                return AppResponse.Failure<RefreshTokenResponse>("Invalid token: No user ID found");
+                return AppResponses.Failure<RefreshTokenResponse>("Invalid token: No user ID found");
             }
 
             var user = await userManager.FindByIdAsync(userId).ConfigureAwait(false);
             if (user == null)
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "UserNotFoundForRefresh", userId, "User not found for refresh token");
-                return AppResponse.Failure<RefreshTokenResponse>("User not found");
+                return AppResponses.Failure<RefreshTokenResponse>("User not found");
             }
 
             if (!user.IsActive || user.IsDeleted)
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "InactiveUserRefreshAttempt", userId, "Refresh token attempt for inactive user");
-                return AppResponse.Failure<RefreshTokenResponse>("User account is not active");
+                return AppResponses.Failure<RefreshTokenResponse>("User account is not active");
             }
 
             var sessionId = principal.FindFirstValue("session_id");
             if (!string.IsNullOrWhiteSpace(sessionId))
             {
                 var sessionValidation = await sessionService.IsSessionValidAsync(sessionId, userId).ConfigureAwait(false);
-                if (!sessionValidation.Successful)
+                if (!sessionValidation.IsSuccess)
                 {
                     SecurityLogDefinitions.LogSecurityEvent(logger, "InvalidSessionRefreshAttempt", userId, sessionValidation.Message ?? "Invalid session");
-                    return AppResponse.Failure<RefreshTokenResponse>("Your session is no longer active. Please sign in again.");
+                    return AppResponses.Failure<RefreshTokenResponse>("Your session is no longer active. Please sign in again.");
                 }
             }
 
@@ -86,7 +86,7 @@ internal sealed class RefreshToken(
             if (storedRefreshToken == null)
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "RefreshTokenNotFound", userId, "Refresh token not found for user");
-                return AppResponse.Failure<RefreshTokenResponse>("Invalid refresh token");
+                return AppResponses.Failure<RefreshTokenResponse>("Invalid refresh token");
             }
 
             if (storedRefreshToken.ExpiresAt <= DateTimeOffset.UtcNow)
@@ -99,13 +99,13 @@ internal sealed class RefreshToken(
                     return true;
                 }).ConfigureAwait(false);
 
-                return AppResponse.Failure<RefreshTokenResponse>("Refresh token has expired");
+                return AppResponses.Failure<RefreshTokenResponse>("Refresh token has expired");
             }
 
             if (storedRefreshToken.IsRevoked)
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "RevokedRefreshToken", userId, "Revoked refresh token used");
-                return AppResponse.Failure<RefreshTokenResponse>("Refresh token has been revoked");
+                return AppResponses.Failure<RefreshTokenResponse>("Refresh token has been revoked");
             }
 
             if (storedRefreshToken.IsUsed)
@@ -118,13 +118,13 @@ internal sealed class RefreshToken(
                     return true;
                 }).ConfigureAwait(false);
 
-                return AppResponse.Failure<RefreshTokenResponse>("Refresh token has already been used");
+                return AppResponses.Failure<RefreshTokenResponse>("Refresh token has already been used");
             }
 
             if (storedRefreshToken.AppUserId != userId)
             {
                 SecurityLogDefinitions.LogSecurityEvent(logger, "RefreshTokenUserMismatch", userId, $"Token UserId: {storedRefreshToken.AppUserId}, Request UserId: {userId}");
-                return AppResponse.Failure<RefreshTokenResponse>("Token mismatch");
+                return AppResponses.Failure<RefreshTokenResponse>("Token mismatch");
             }
 
             Guid? activeSessionId = Guid.TryParse(sessionId, out var parsedSessionId) ? parsedSessionId : null;
@@ -132,28 +132,28 @@ internal sealed class RefreshToken(
             if (!userClaims.Any())
             {
                 ServiceLogDefinitions.LogFailedToGetUserClaims(logger, userId);
-                return AppResponse.Failure<RefreshTokenResponse>("Could not retrieve user claims");
+                return AppResponses.Failure<RefreshTokenResponse>("Could not retrieve user claims");
             }
 
             var newAccessTokenResponse = await jwtService.CreateTokenAsync(userClaims).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(newAccessTokenResponse))
             {
                 ServiceLogDefinitions.LogFailedToGenerateAccessToken(logger, userId);
-                return AppResponse.Failure<RefreshTokenResponse>("Could not generate new access token");
+                return AppResponses.Failure<RefreshTokenResponse>("Could not generate new access token");
             }
 
             var newRefreshTokenResponse = jwtService.CreateRefreshToken();
             if (string.IsNullOrWhiteSpace(newRefreshTokenResponse))
             {
                 ServiceLogDefinitions.LogFailedToGenerateRefreshToken(logger, userId);
-                return AppResponse.Failure<RefreshTokenResponse>("Could not generate new refresh token");
+                return AppResponses.Failure<RefreshTokenResponse>("Could not generate new refresh token");
             }
 
             var tokenExpiry = jwtService.GetTokenExpiry(newAccessTokenResponse);
             if (tokenExpiry == default)
             {
                 ServiceLogDefinitions.LogFailedToGetTokenExpiry(logger, userId);
-                return AppResponse.Failure<RefreshTokenResponse>("Could not determine token expiry");
+                return AppResponses.Failure<RefreshTokenResponse>("Could not determine token expiry");
             }
 
             var newRefreshTokenEntity = BT.Domain.Features.IAM.Users.Entities.RefreshToken.Create(
@@ -203,7 +203,7 @@ internal sealed class RefreshToken(
 
             ServiceLogDefinitions.LogTokenRefreshed(logger, userId);
 
-            return AppResponse.Success("Token refreshed successfully", new RefreshTokenResponse(
+            return AppResponses.Success("Token refreshed successfully", new RefreshTokenResponse(
                 newAccessTokenResponse,
                 newRefreshTokenResponse,
                 userId,
@@ -217,7 +217,7 @@ internal sealed class RefreshToken(
         {
             ServiceLogDefinitions.LogTokenRefreshError(logger, ex, request.AccessToken?.Length ?? 0, !string.IsNullOrWhiteSpace(request.RefreshToken));
 
-            return AppResponse.Failure<RefreshTokenResponse>("Unable to refresh token. Please sign in again.");
+            return AppResponses.Failure<RefreshTokenResponse>("Unable to refresh token. Please sign in again.");
         }
     }
 }

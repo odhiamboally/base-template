@@ -1,0 +1,15 @@
+using BT.Application.Features.HR.Departments.CommandHandlers;
+using BT.SharedKernel.Validation.Features.HR.Departments.Validators;
+using FluentValidation;
+
+namespace BT.Application.Features.Shared.Validation;
+
+public sealed class UpdateDepartmentCommandValidator : AbstractValidator<UpdateDepartmentCommand>
+{
+    public UpdateDepartmentCommandValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Department ID is required.");
+        RuleFor(x => x.Request).SetValidator(new UpdateDepartmentRequestValidator());
+        RuleFor(x => x.UserId).NotEmpty().WithMessage("Current user is required.");
+    }
+}

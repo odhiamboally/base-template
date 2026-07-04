@@ -52,7 +52,7 @@ internal sealed class Logout(
                 await publisher.Publish(new UserLogoutEvent(userId, sessionId), cancellationToken).ConfigureAwait(false);
             }
 
-            return AppResponse.Success("Signed out successfully", true);
+            return AppResponses.Success("Signed out successfully", true);
         }
         catch (Exception ex)
         {

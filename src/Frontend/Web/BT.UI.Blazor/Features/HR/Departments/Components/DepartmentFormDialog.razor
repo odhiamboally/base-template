@@ -65,7 +65,7 @@
             : await DepartmentService.UpdateAsync(_model.Id, _model.ToUpdateRequest());
         _isSaving = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Department save failed.", Severity.Error);
             return;

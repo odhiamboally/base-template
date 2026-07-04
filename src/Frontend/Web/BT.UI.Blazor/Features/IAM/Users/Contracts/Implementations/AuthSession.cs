@@ -45,7 +45,7 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
                 if (!string.IsNullOrWhiteSpace(accessToken))
                 {
                     var currentUser = await authService.GetCurrentUserAsync().ConfigureAwait(false);
-                    if (currentUser.Successful)
+                    if (currentUser.IsSuccess)
                     {
                         CurrentUser = currentUser.Data;
                         LastError = null;
@@ -85,7 +85,7 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
         ArgumentNullException.ThrowIfNull(request);
 
         var response = await authService.LoginAsync(request).ConfigureAwait(false);
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             LastError = response.Message;
             return response;
@@ -136,7 +136,7 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
         ArgumentNullException.ThrowIfNull(request);
 
         var response = await authService.VerifyTotpAsync(request).ConfigureAwait(false);
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             LastError = response.Message;
             return response;
@@ -184,8 +184,8 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
     private async Task RefreshCurrentUserAsync()
     {
         var currentUser = await authService.GetCurrentUserAsync().ConfigureAwait(false);
-        CurrentUser = currentUser.Successful ? currentUser.Data : null;
-        LastError = currentUser.Successful ? null : GetMeaningfulMessage(currentUser.Message, "The API did not return a current user profile.");
+        CurrentUser = currentUser.IsSuccess ? currentUser.Data : null;
+        LastError = currentUser.IsSuccess ? null : GetMeaningfulMessage(currentUser.Message, "The API did not return a current user profile.");
     }
 
     private async Task TryClearStorageAsync()

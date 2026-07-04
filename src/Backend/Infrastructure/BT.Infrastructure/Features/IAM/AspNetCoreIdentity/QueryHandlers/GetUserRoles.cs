@@ -15,13 +15,13 @@ internal sealed class GetUserRoles(UserManager<AppUser> userManager)
         var user = await userManager.FindByIdAsync(request.UserId).ConfigureAwait(false);
         if (user is null)
         {
-            return AppResponse.Failure<UserRolesResponse>("User not found.");
+            return AppResponses.Failure<UserRolesResponse>("User not found.");
         }
 
         var roles = (await userManager.GetRolesAsync(user).ConfigureAwait(false))
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        return AppResponse.Success("User roles loaded.", new UserRolesResponse(user.Id, user.UserName ?? user.Email ?? user.Id, roles));
+        return AppResponses.Success("User roles loaded.", new UserRolesResponse(user.Id, user.UserName ?? user.Email ?? user.Id, roles));
     }
 }

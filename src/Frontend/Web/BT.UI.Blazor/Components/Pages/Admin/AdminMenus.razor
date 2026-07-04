@@ -150,7 +150,7 @@
     private async Task LoadDepartmentsAsync()
     {
         var response = await DepartmentService.GetAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load departments.", Severity.Warning);
             return;
@@ -167,7 +167,7 @@
         StateHasChanged();
 
         var response = await IamAdminService.SearchMenusAsync(new MenuSearchRequest(PageSize: 100));
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _message = response.Message ?? "We could not load menus.";
             Snackbar.Add(_message, Severity.Error);
@@ -225,7 +225,7 @@
         }
 
         var response = await IamAdminService.DeleteMenuAsync(menu.Id);
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Menu delete failed.", Severity.Warning);
             return;

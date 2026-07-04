@@ -210,7 +210,7 @@
     private async Task LoadDepartmentsAsync()
     {
         var response = await DepartmentService.GetAsync();
-        if (response.Successful && response.Data is not null)
+        if (response.IsSuccess && response.Data is not null)
         {
             _departments.Clear();
             _departments.AddRange(response.Data.Where(static department => department.IsActive).OrderBy(static department => department.Name));
@@ -280,7 +280,7 @@
             PageSize: PageSize);
 
         var response = await IamAdminService.SearchPermissionsAsync(request);
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _message = response.Message ?? "We could not load permissions.";
             Snackbar.Add(_message, Severity.Error);
@@ -370,7 +370,7 @@
         }
 
         var response = await IamAdminService.DeletePermissionAsync(permission.Id);
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Permission delete failed.", Severity.Error);
             return;
@@ -388,7 +388,7 @@
         }
 
         var rolesResponse = await IamAdminService.GetRolesAsync();
-        if (!rolesResponse.Successful || rolesResponse.Data is null)
+        if (!rolesResponse.IsSuccess || rolesResponse.Data is null)
         {
             Snackbar.Add(rolesResponse.Message ?? "We could not load roles for usage review.", Severity.Error);
             return;
@@ -398,7 +398,7 @@
         foreach (var role in rolesResponse.Data)
         {
             var permissionsResponse = await IamAdminService.GetRolePermissionsAsync(role.Id);
-            if (permissionsResponse.Successful
+            if (permissionsResponse.IsSuccess
                 && permissionsResponse.Data?.PermissionKeys.Contains(permission.Key, StringComparer.OrdinalIgnoreCase) == true)
             {
                 roleNames.Add(role.Name);

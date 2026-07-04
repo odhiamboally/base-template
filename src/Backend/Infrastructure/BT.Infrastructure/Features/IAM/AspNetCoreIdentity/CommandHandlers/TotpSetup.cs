@@ -33,7 +33,7 @@ internal sealed class InitiateTotpSetupCommandHandler(
             var user = await userManager.FindByIdAsync(userId).ConfigureAwait(false);
             if (user == null)
             {
-                return AppResponse.Failure<TwoFactorSetupInfo>("User not found.");
+                return AppResponses.Failure<TwoFactorSetupInfo>("User not found.");
             }
 
             await iamUnitOfWork.TempTotpSecretRepository.DeleteUserTempSecretsAsync(userId, cancellationToken).ConfigureAwait(false);
@@ -52,7 +52,7 @@ internal sealed class InitiateTotpSetupCommandHandler(
 
             var qrUri = GenerateQrCodeUri(user.Email!, plainSecret);
 
-            return AppResponse.Success("Scan this QR code", new TwoFactorSetupInfo
+            return AppResponses.Success("Scan this QR code", new TwoFactorSetupInfo
             {
                 QrCodeUri = qrUri,
                 ManualEntryKey = plainSecret

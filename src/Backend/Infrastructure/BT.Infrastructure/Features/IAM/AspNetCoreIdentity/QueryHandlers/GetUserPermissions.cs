@@ -15,7 +15,7 @@ internal sealed class GetUserPermissions(UserManager<AppUser> userManager)
         var user = await userManager.FindByIdAsync(request.UserId).ConfigureAwait(false);
         if (user is null)
         {
-            return AppResponse.Failure<UserPermissionsResponse>("User not found.");
+            return AppResponses.Failure<UserPermissionsResponse>("User not found.");
         }
 
         var permissions = (await userManager.GetClaimsAsync(user).ConfigureAwait(false))
@@ -25,6 +25,6 @@ internal sealed class GetUserPermissions(UserManager<AppUser> userManager)
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        return AppResponse.Success("User permissions loaded.", new UserPermissionsResponse(user.Id, user.UserName ?? user.Email ?? user.Id, permissions));
+        return AppResponses.Success("User permissions loaded.", new UserPermissionsResponse(user.Id, user.UserName ?? user.Email ?? user.Id, permissions));
     }
 }

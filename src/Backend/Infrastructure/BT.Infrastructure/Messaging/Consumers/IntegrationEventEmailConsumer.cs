@@ -34,7 +34,7 @@ public abstract class IntegrationEventEmailConsumer<TEvent>(
     IEmailComposer<TEvent> composer,
     ISharedUnitOfWork sharedUnitOfWork,
     ILogger<IntegrationEventEmailConsumer<TEvent>> logger) : IConsumer<TEvent> where TEvent : class, IIntegrationEvent
-    
+
 {
     public async Task Consume(ConsumeContext<TEvent> context)
     {
@@ -47,7 +47,7 @@ public abstract class IntegrationEventEmailConsumer<TEvent>(
         try
         {
             var composed = await composer.ComposeAsync(evt, context.CancellationToken).ConfigureAwait(false);
-            if (!composed.Successful || composed.Data is null)
+            if (!composed.IsSuccess || composed.Data is null)
             {
                 MessageBusLogDefinitions.LogEmailCompositionFailed(logger, messageId);
                 return;

@@ -9,16 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Permissions.Queries;
 
-public sealed record GetPermissionByIdQuery(Guid Id, string UserId) : IRequest<AppResponse<PermissionResponse>>, ICachableRequest
-{
-    public string CacheGroup => "permissions";
 
-    public string Discriminator => CacheKeys.Entity("permissions", Id.ToString());
-
-    public string? CacheUserId => null;
-
-    public bool IsVersioned => true;
-}
 
 internal sealed class GetPermissionByIdQueryHandler(IIamUnitOfWork unitOfWork, ILogger<GetPermissionByIdQueryHandler> logger)
     : IRequestHandler<GetPermissionByIdQuery, AppResponse<PermissionResponse>>
@@ -29,8 +20,8 @@ internal sealed class GetPermissionByIdQueryHandler(IIamUnitOfWork unitOfWork, I
         {
             var permission = await unitOfWork.PermissionRepository.FindByIdAsync(query.Id, cancellationToken).ConfigureAwait(false);
             return permission is null
-                ? AppResponse.Failure<PermissionResponse>($"Permission {query.Id} not found.")
-                : AppResponse.Success(permission.ToPermissionResponse());
+                ? AppResponses.Failure<PermissionResponse>($"Permission {query.Id} not found.")
+                : AppResponses.Success(permission.ToPermissionResponse());
         }
         catch (Exception ex)
         {

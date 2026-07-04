@@ -1,6 +1,6 @@
 # Base Template - Execution Strategy
 
-> Last updated: 2026-06-12
+> Last updated: 2026-07-03
 >
 > This file explains how to execute `PLAN.md` without jumping between unrelated work.
 > `PLAN.md` defines what the template should become. This file defines sequencing, dependencies, readiness gates, and safe parallel work.
@@ -267,9 +267,9 @@ Use this register as the working execution checklist. A phase is not considered 
 | --- | --- | --- | --- |
 | Phase 1 - IAM/Auth Enterprise Baseline | Implemented, needs final smoke certification | Login, refresh, logout, sessions, lockout, TOTP MFA setup/disable, admin MFA enforcement, grant/revoke system access, current user, profile picture upload, inactivity warning | Browser smoke: login, MFA challenge/setup/disable, grant email, revoke access, refresh, logout, session timeout |
 | Phase 2 - Platform Storage, Cache, Exceptions, Validation, Messaging | In progress | Azure Blob profile storage, Data Protection Blob/Key Vault keys, HybridCache/output cache, ProblemDetails propagation, FluentValidation coverage, MassTransit outbox | Build/test plus targeted smoke for profile upload, error messages, lookup cache, outbox publish |
-| Phase 3 - API Security And Operational Readiness | Pending | security headers, CORS, rate limiting policies, API version/deprecation headers, deep health checks, PII log masking, correlated tracing, dependency vulnerability hygiene | Health endpoints prove SQL/Redis/bus/Key Vault; logs are safe; API communicates deprecation/throttling clearly; package advisories are resolved or explicitly risk-accepted |
+| Phase 3 - API Security And Operational Readiness | In progress | security headers, CORS, configurable rate limiting policies, response compression, API version/deprecation headers, deep health checks, PII log masking, correlated tracing, dependency vulnerability hygiene | Health endpoints prove SQL/Redis/storage/Key Vault where enabled; logs are safe; API communicates deprecation/throttling clearly; package advisories are resolved or explicitly risk-accepted |
 | Phase 4 - Deployment And Release Engineering | In progress | OIDC-authenticated efbundle migration pipeline, Docker Compose, GitHub Actions release, Azure App Service deployment slots, Key Vault wiring, rollback notes | CI builds/test/releases, migration bundle generated, Azure deploy smoke passes |
-| Phase 5 - Template Extensibility | Pending | feature flags, permission-aware dynamic menus, SignalR baseline, reporting abstraction, payment gateway abstractions, RCL consolidation | Feature gates and dynamic menus fail closed; reusable examples exist without domain-specific SACCO logic |
+| Phase 5 - Template Extensibility | In progress | feature flags, permission-aware dynamic menus, SignalR baseline, reporting abstraction, payment gateway abstractions, Entra SSO, passkeys, RCL consolidation | Feature gates and dynamic menus fail closed; reusable examples exist without domain-specific SACCO logic; SSO/passkeys have real flows before being marked complete |
 
 ---
 

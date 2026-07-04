@@ -18,12 +18,12 @@ internal sealed class DeactivateAdminUser(UserManager<AppUser> userManager, ILog
             var user = await userManager.FindByIdAsync(command.UserId).ConfigureAwait(false);
             if (user is null)
             {
-                return AppResponse.Failure<bool>("User not found.");
+                return AppResponses.Failure<bool>("User not found.");
             }
 
             if (!user.IsActive)
             {
-                return AppResponse.Success("User is already inactive.", true);
+                return AppResponses.Success("User is already inactive.", true);
             }
 
             var reason = string.IsNullOrWhiteSpace(command.Request.Reason)
@@ -34,8 +34,8 @@ internal sealed class DeactivateAdminUser(UserManager<AppUser> userManager, ILog
             var result = await userManager.UpdateAsync(user).ConfigureAwait(false);
 
             return result.Succeeded
-                ? AppResponse.Success("User deactivated.", true)
-                : AppResponse.Failure<bool>(string.Join(", ", result.Errors.Select(static error => error.Description)));
+                ? AppResponses.Success("User deactivated.", true)
+                : AppResponses.Failure<bool>(string.Join(", ", result.Errors.Select(static error => error.Description)));
         }
         catch (Exception ex)
         {

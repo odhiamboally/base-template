@@ -89,7 +89,7 @@
         var response = await AuthSession.CompleteTwoFactorAsync(request);
         _isBusy = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             _message = UserMessageSanitizer.Normalize(response.Message, "Verification failed. Please try again.");
             return;

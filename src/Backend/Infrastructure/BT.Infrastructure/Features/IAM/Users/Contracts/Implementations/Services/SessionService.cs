@@ -37,8 +37,8 @@ internal sealed class SessionService(
                 .ConfigureAwait(false);
 
             return activeSessions.Count >= _sessionSettings.MaxConcurrentSessions
-                ? AppResponse.Failure<bool>($"Maximum {_sessionSettings.MaxConcurrentSessions} concurrent sessions allowed")
-                : AppResponse.Success("Concurrent session check passed", true);
+                ? AppResponses.Failure<bool>($"Maximum {_sessionSettings.MaxConcurrentSessions} concurrent sessions allowed")
+                : AppResponses.Success("Concurrent session check passed", true);
         }
         catch (Exception ex)
         {
@@ -53,15 +53,15 @@ internal sealed class SessionService(
         {
             // Check concurrent session limit
             var concurrentCheck = await CheckConcurrentSessionsAsync(userId).ConfigureAwait(false);
-            if (!concurrentCheck.Successful)
+            if (!concurrentCheck.IsSuccess)
             {
                 // If at limit, end the oldest sessions
                 var endSessionsResponse = await RevokeAllUserSessionsAsync(userId).ConfigureAwait(false);
-                if (!endSessionsResponse.Successful)
+                if (!endSessionsResponse.IsSuccess)
                 {
                     ServiceLogDefinitions.LogFailedToEndOldSessions(_logger, userId, endSessionsResponse.Message ?? string.Empty);
 
-                    return AppResponse.Failure<Guid>("Failed to end old sessions");
+                    return AppResponses.Failure<Guid>("Failed to end old sessions");
                 }
 
             }
@@ -78,7 +78,7 @@ internal sealed class SessionService(
             await _unitOfWork.SessionRepository.CreateAsync(session).ConfigureAwait(false);
             await _unitOfWork.CompleteAsync().ConfigureAwait(false);
 
-            return AppResponse.Success("Session created successfully", sessionId);
+            return AppResponses.Success("Session created successfully", sessionId);
         }
         catch (Exception ex)
         {
@@ -142,7 +142,7 @@ internal sealed class SessionService(
                 }
 
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
-                return AppResponse.Success("Session created successfully", sessionId);
+                return AppResponses.Success("Session created successfully", sessionId);
             }, maxRetries, 50).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -158,7 +158,7 @@ internal sealed class SessionService(
         {
             if (!Guid.TryParse(sessionId, out var sessionGuid))
             {
-                return AppResponse.Failure<bool>("Invalid session id");
+                return AppResponses.Failure<bool>("Invalid session id");
             }
 
             var session = await _unitOfWork.SessionRepository
@@ -167,14 +167,14 @@ internal sealed class SessionService(
 
             if (session == null)
             {
-                return AppResponse.Success("Session not found", true);
+                return AppResponses.Success("Session not found", true);
             }
 
             session.Revoke("Session revoked by request");
 
             await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
             await _unitOfWork.CompleteAsync().ConfigureAwait(false);
-            return AppResponse.Success("Session ended successfully", true);
+            return AppResponses.Success("Session ended successfully", true);
         }
         catch (Exception ex)
         {
@@ -213,7 +213,7 @@ internal sealed class SessionService(
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
             }
 
-            return AppResponse.Success($"Ended {sessionsToEnd.Count} sessions", true);
+            return AppResponses.Success($"Ended {sessionsToEnd.Count} sessions", true);
         }
         catch (Exception ex)
         {
@@ -232,7 +232,7 @@ internal sealed class SessionService(
 
             var sessionList = new Collection<AppUserSession>(sessions);
 
-            return AppResponse.Success("Active sessions retrieved", sessionList);
+            return AppResponses.Success("Active sessions retrieved", sessionList);
         }
         catch (Exception ex)
         {
@@ -267,7 +267,7 @@ internal sealed class SessionService(
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
             }
 
-            return AppResponse.Success($"Cleaned up {expiredSessions.Count} expired sessions", true);
+            return AppResponses.Success($"Cleaned up {expiredSessions.Count} expired sessions", true);
         }
         catch (Exception ex)
         {
@@ -280,7 +280,7 @@ internal sealed class SessionService(
     {
         if (!Guid.TryParse(sessionId, out var sessionGuid))
         {
-            return AppResponse.Failure<bool>("Invalid session id");
+            return AppResponses.Failure<bool>("Invalid session id");
         }
 
         try
@@ -292,12 +292,12 @@ internal sealed class SessionService(
 
             if (session == null || session.AppUserId != userId)
             {
-                return AppResponse.Failure<bool>("Session not found");
+                return AppResponses.Failure<bool>("Session not found");
             }
 
             if (!session.IsActive)
             {
-                return AppResponse.Failure<bool>("Session is not active");
+                return AppResponses.Failure<bool>("Session is not active");
             }
 
             var now = DateTimeOffset.UtcNow;
@@ -308,7 +308,7 @@ internal sealed class SessionService(
                 await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
 
-                return AppResponse.Failure<bool>("Session has expired");
+                return AppResponses.Failure<bool>("Session has expired");
             }
 
             // Optimize database writes: only write back if sliding expiration/access time is at least 1 minute old
@@ -322,7 +322,7 @@ internal sealed class SessionService(
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
             }
 
-            return AppResponse.Success("Session is valid", true);
+            return AppResponses.Success("Session is valid", true);
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -336,8 +336,8 @@ internal sealed class SessionService(
                 .ConfigureAwait(false);
 
             return freshSession != null && freshSession.IsActive && freshSession.ExpiresAt > DateTimeOffset.UtcNow
-                ? AppResponse.Success("Session is valid (concurrency resolved)", true)
-                : AppResponse.Failure<bool>("Session has expired or is invalid");
+                ? AppResponses.Success("Session is valid (concurrency resolved)", true)
+                : AppResponses.Failure<bool>("Session has expired or is invalid");
         }
         catch (Exception ex)
         {
@@ -350,7 +350,7 @@ internal sealed class SessionService(
     {
         if (!Guid.TryParse(sessionId, out var sessionGuid))
         {
-            return AppResponse.Failure<bool>("Invalid session id");
+            return AppResponses.Failure<bool>("Invalid session id");
         }
 
         try
@@ -361,12 +361,12 @@ internal sealed class SessionService(
 
             if (session == null)
             {
-                return AppResponse.Failure<bool>("Session not found");
+                return AppResponses.Failure<bool>("Session not found");
             }
 
             if (!session.IsActive)
             {
-                return AppResponse.Failure<bool>("Session is not active");
+                return AppResponses.Failure<bool>("Session is not active");
             }
 
             var now = DateTimeOffset.UtcNow;
@@ -377,7 +377,7 @@ internal sealed class SessionService(
                 await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
 
-                return AppResponse.Failure<bool>("Session has expired");
+                return AppResponses.Failure<bool>("Session has expired");
             }
 
             // Optimize database writes: only write back if sliding expiration/access time is at least 1 minute old
@@ -391,7 +391,7 @@ internal sealed class SessionService(
                 await _unitOfWork.CompleteAsync().ConfigureAwait(false);
             }
 
-            return AppResponse.Success("Session is valid", true);
+            return AppResponses.Success("Session is valid", true);
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -406,10 +406,10 @@ internal sealed class SessionService(
 
             if (freshSession != null && freshSession.IsActive && freshSession.ExpiresAt > DateTimeOffset.UtcNow)
             {
-                return AppResponse.Success("Session is valid (concurrency resolved)", true);
+                return AppResponses.Success("Session is valid (concurrency resolved)", true);
             }
 
-            return AppResponse.Failure<bool>("Session has expired or is invalid");
+            return AppResponses.Failure<bool>("Session has expired or is invalid");
         }
         catch (Exception ex)
         {
@@ -418,4 +418,3 @@ internal sealed class SessionService(
         }
     }
 }
-

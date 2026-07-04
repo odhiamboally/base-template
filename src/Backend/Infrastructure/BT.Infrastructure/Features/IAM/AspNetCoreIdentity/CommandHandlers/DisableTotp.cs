@@ -28,27 +28,27 @@ internal sealed class DisableTotp(
             var user = await userManager.FindByIdAsync(command.UserId).ConfigureAwait(false);
             if (user is null)
             {
-                return AppResponse.Failure<bool>("User not found.");
+                return AppResponses.Failure<bool>("User not found.");
             }
 
             var isEnabled = await userManager.GetTwoFactorEnabledAsync(user).ConfigureAwait(false);
             if (!isEnabled)
             {
-                return AppResponse.Success("Authenticator app is already disabled.", true);
+                return AppResponses.Success("Authenticator app is already disabled.", true);
             }
 
             var identityResult = await userManager.SetTwoFactorEnabledAsync(user, false).ConfigureAwait(false);
             if (!identityResult.Succeeded)
             {
                 var errors = string.Join("; ", identityResult.Errors.Select(static error => error.Description));
-                return AppResponse.Failure<bool>($"Could not disable authenticator app: {errors}");
+                return AppResponses.Failure<bool>($"Could not disable authenticator app: {errors}");
             }
 
             var secretsDeactivated = await iamUnitOfWork.AppUserTotpSecretRepository.DeactivateUserSecretsAsync(user.Id).ConfigureAwait(false);
             if (!secretsDeactivated)
             {
                 await userManager.SetTwoFactorEnabledAsync(user, true).ConfigureAwait(false);
-                return AppResponse.Failure<bool>("Could not disable authenticator app. Please try again.");
+                return AppResponses.Failure<bool>("Could not disable authenticator app. Please try again.");
             }
 
             await iamUnitOfWork.TempTotpSecretRepository.DeleteUserTempSecretsAsync(user.Id, cancellationToken).ConfigureAwait(false);
@@ -89,7 +89,7 @@ internal sealed class DisableTotp(
                 ? "Authenticator app has been disabled. Because your role requires MFA, please sign in again and set it up before continuing."
                 : "Authenticator app has been disabled.";
 
-            return AppResponse.Success(message, true);
+            return AppResponses.Success(message, true);
         }
         catch (Exception ex)
         {

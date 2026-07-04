@@ -39,7 +39,7 @@ internal sealed class BackendApiClient(
             (accessToken, _, sessionId) = await storage.GetAsync().ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(accessToken))
             {
-                return AppResponse.Failure<T>("Please sign in to continue.");
+                return AppResponses.Failure<T>("Please sign in to continue.");
             }
         }
 
@@ -72,16 +72,16 @@ internal sealed class BackendApiClient(
             catch (HttpRequestException ex)
             {
                 BackendApiLogDefinitions.LogRequestFailed(logger, method.Method, endpoint, ex);
-                return AppResponse.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
+                return AppResponses.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
             }
             catch (TaskCanceledException ex)
             {
                 BackendApiLogDefinitions.LogRequestTimedOut(logger, method.Method, endpoint, ex);
-                return AppResponse.Failure<T>(timeoutMessage ?? "The backend service timed out. Please try again.");
+                return AppResponses.Failure<T>(timeoutMessage ?? "The backend service timed out. Please try again.");
             }
         }
 
-        return AppResponse.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
+        return AppResponses.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
     }
 
     public async Task<AppResponse<T>> SendMultipartAsync<T>(
@@ -105,7 +105,7 @@ internal sealed class BackendApiClient(
             var (accessToken, _, sessionId) = await storage.GetAsync().ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(accessToken))
             {
-                return AppResponse.Failure<T>("Please sign in to continue.");
+                return AppResponses.Failure<T>("Please sign in to continue.");
             }
 
             message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -123,12 +123,12 @@ internal sealed class BackendApiClient(
         catch (HttpRequestException ex)
         {
             BackendApiLogDefinitions.LogRequestFailed(logger, HttpMethod.Post.Method, endpoint, ex);
-            return AppResponse.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
+            return AppResponses.Failure<T>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
         }
         catch (TaskCanceledException ex)
         {
             BackendApiLogDefinitions.LogRequestTimedOut(logger, HttpMethod.Post.Method, endpoint, ex);
-            return AppResponse.Failure<T>(timeoutMessage ?? "The backend service timed out. Please try again.");
+            return AppResponses.Failure<T>(timeoutMessage ?? "The backend service timed out. Please try again.");
         }
     }
 
@@ -152,21 +152,16 @@ internal sealed class BackendApiClient(
                     ? UserMessageSanitizer.NormalizeNullable(appResponse.Message, "Operation completed.")
                     : UserMessageSanitizer.Normalize(
                         appResponse.Message,
-                        "The request could not be completed. Please try again or contact support if the problem persists."),
-                ErrorCode = appResponse.ErrorCode ?? (response.IsSuccessStatusCode ? null : response.StatusCode.ToString())
+                        "The request could not be completed. Please try again or contact support if the problem persists.")
             };
         }
 
-        return AppResponse.Failure<T>(
+        return AppResponses.Failure<T>(
             response.IsSuccessStatusCode
                 ? "The backend service returned an empty response."
                 : UserMessageSanitizer.Normalize(
                     await ReadErrorMessageAsync(response).ConfigureAwait(false),
-                    "The request could not be completed. Please try again or contact support if the problem persists."))
-            with
-            {
-                ErrorCode = response.StatusCode.ToString()
-            };
+                    "The request could not be completed. Please try again or contact support if the problem persists."));
     }
 
     private async Task<AppResponse<T>?> TryReadAppResponseAsync<T>(HttpResponseMessage response, string endpoint)

@@ -23,7 +23,7 @@ public sealed class ProfileController(ISender sender) : BaseController
     {
         if (file is null)
         {
-            return BadRequest(AppResponse.Failure<ProfilePictureResponse>("Profile picture is required."));
+            return BadRequest(AppResponses.Failure<ProfilePictureResponse>("Profile picture is required."));
         }
 
         var userId = GetUserId();
@@ -49,7 +49,7 @@ public sealed class ProfileController(ISender sender) : BaseController
             .Send(new GetCurrentUserProfilePictureQuery(GetUserId()))
             .ConfigureAwait(false);
 
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             return HandleResponse(response);
         }

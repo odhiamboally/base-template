@@ -44,7 +44,7 @@
     private async Task LoadDepartmentsAsync()
     {
         var response = await DepartmentService.GetAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load departments.", Severity.Warning);
             return;
@@ -67,7 +67,7 @@
             : await IamAdminService.UpdateRoleAsync(ExistingRole.Id, new UpdateRoleRequest(_name.Trim(), _departmentId));
         _isSaving = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Role creation failed.", Severity.Error);
             return;

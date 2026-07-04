@@ -9,13 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.HR.Departments.CommandHandlers;
 
-public sealed record UpdateDepartmentCommand(Guid Id, UpdateDepartmentRequest Request, string UserId)
-    : IRequest<AppResponse<DepartmentResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("departments", Id.ToString())];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("departments"), CacheKeys.GroupVersion("employees")];
-}
 
 internal sealed class UpdateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, ILogger<UpdateDepartmentCommandHandler> logger)
     : IRequestHandler<UpdateDepartmentCommand, AppResponse<DepartmentResponse>>
@@ -28,7 +22,7 @@ internal sealed class UpdateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
             var department = await unitOfWork.DepartmentRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
             if (department is null)
             {
-                return AppResponse.Failure<DepartmentResponse>($"Department {command.Id} not found.");
+                return AppResponses.Failure<DepartmentResponse>($"Department {command.Id} not found.");
             }
 
             var code = request.Code.Trim().ToUpperInvariant();
@@ -38,7 +32,7 @@ internal sealed class UpdateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
 
             if (duplicate)
             {
-                return AppResponse.Failure<DepartmentResponse>($"Department code {code} is already in use.");
+                return AppResponses.Failure<DepartmentResponse>($"Department code {code} is already in use.");
             }
 
             department.Update(code, request.Name, request.Description, request.IsActive, command.UserId);
@@ -46,8 +40,8 @@ internal sealed class UpdateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved
-                ? AppResponse.Success("Department updated.", department.ToDepartmentResponse())
-                : AppResponse.Failure<DepartmentResponse>("Department update failed.");
+                ? AppResponses.Success("Department updated.", department.ToDepartmentResponse())
+                : AppResponses.Failure<DepartmentResponse>("Department update failed.");
         }
         catch (Exception ex)
         {

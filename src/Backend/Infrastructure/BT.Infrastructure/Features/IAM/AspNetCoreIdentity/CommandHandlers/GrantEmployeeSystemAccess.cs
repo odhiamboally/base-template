@@ -31,7 +31,7 @@ internal sealed class GrantEmployeeSystemAccess(
             var temporaryPassword = provisioningOptions.Value.TemporaryPassword;
             if (string.IsNullOrWhiteSpace(temporaryPassword))
             {
-                return AppResponse.Failure<bool>(
+                return AppResponses.Failure<bool>(
                     "IAM provisioning is not configured. Set IamProvisioning:TemporaryPassword via user secrets, environment variables, or Key Vault.");
             }
 
@@ -50,7 +50,7 @@ internal sealed class GrantEmployeeSystemAccess(
 
                 if (employee is null)
                 {
-                    return AppResponse.Failure<bool>("Employee record was not found.");
+                    return AppResponses.Failure<bool>("Employee record was not found.");
                 }
 
                 user = AppUser.CreateForEmployee(
@@ -69,7 +69,7 @@ internal sealed class GrantEmployeeSystemAccess(
                 var createResult = await userManager.CreateAsync(user, temporaryPassword).ConfigureAwait(false);
                 if (!createResult.Succeeded)
                 {
-                    return AppResponse.Failure<bool>(createResult.Errors.First().Description);
+                    return AppResponses.Failure<bool>(createResult.Errors.First().Description);
                 }
 
                 createdNewUser = true;
@@ -77,7 +77,7 @@ internal sealed class GrantEmployeeSystemAccess(
 
             if (user.IsActive)
             {
-                return AppResponse.Failure<bool>(
+                return AppResponses.Failure<bool>(
                     "This employee is already linked to an active IAM account. Use Manage Roles or Revoke Access instead.");
             }
 
@@ -87,7 +87,7 @@ internal sealed class GrantEmployeeSystemAccess(
                     .ConfigureAwait(false);
                 if (!passwordResetResult.Succeeded)
                 {
-                    return AppResponse.Failure<bool>(passwordResetResult.Errors.First().Description);
+                    return AppResponses.Failure<bool>(passwordResetResult.Errors.First().Description);
                 }
             }
 
@@ -96,7 +96,7 @@ internal sealed class GrantEmployeeSystemAccess(
 
             var updateResult = await userManager.UpdateAsync(user).ConfigureAwait(false);
             if (!updateResult.Succeeded)
-                return AppResponse.Failure<bool>(updateResult.Errors.First().Description);
+                return AppResponses.Failure<bool>(updateResult.Errors.First().Description);
 
             var rolesAdded = Array.Empty<string>();
             if (command.Roles.Any())
@@ -110,7 +110,7 @@ internal sealed class GrantEmployeeSystemAccess(
                 {
                     var roleResult = await userManager.AddToRolesAsync(user, rolesToAdd).ConfigureAwait(false);
                     if (!roleResult.Succeeded)
-                        return AppResponse.Failure<bool>(roleResult.Errors.First().Description);
+                        return AppResponses.Failure<bool>(roleResult.Errors.First().Description);
 
                     rolesAdded = rolesToAdd;
                 }
@@ -118,10 +118,10 @@ internal sealed class GrantEmployeeSystemAccess(
 
             var emailResponse = await SendActivationEmailAsync(user, provisioningOptions.Value, createdNewUser, ct)
                 .ConfigureAwait(false);
-            if (!emailResponse.Successful)
+            if (!emailResponse.IsSuccess)
             {
                 await RollBackActivationAsync(user, rolesAdded, command.GrantedBy).ConfigureAwait(false);
-                return AppResponse.Failure<bool>("System access was not granted because the activation email could not be sent. Please verify email settings and try again.");
+                return AppResponses.Failure<bool>("System access was not granted because the activation email could not be sent. Please verify email settings and try again.");
             }
 
             if (logger.IsEnabled(LogLevel.Information))
@@ -133,7 +133,7 @@ internal sealed class GrantEmployeeSystemAccess(
                 ? "IAM account created, linked to the employee, activated, roles assigned, and activation email sent."
                 : "Existing IAM account reactivated, roles assigned, and activation email sent.";
 
-            return AppResponse.Success(message, true);
+            return AppResponses.Success(message, true);
         }
         catch (Exception ex)
         {

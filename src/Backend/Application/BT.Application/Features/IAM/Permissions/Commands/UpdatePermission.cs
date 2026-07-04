@@ -10,13 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Application.Features.IAM.Permissions.Commands;
 
-public sealed record UpdatePermissionCommand(Guid Id, UpdatePermissionRequest Request, string UserId)
-    : IRequest<AppResponse<PermissionResponse>>, ICacheInvalidatorRequest
-{
-    public IReadOnlyList<string> DirectInvalidationKeys => [CacheKeys.Entity("permissions", Id.ToString())];
 
-    public IReadOnlyList<string> GroupVersionKeysToInvalidate => [CacheKeys.GroupVersion("permissions")];
-}
 
 internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, ILogger<UpdatePermissionCommandHandler> logger)
     : IRequestHandler<UpdatePermissionCommand, AppResponse<PermissionResponse>>
@@ -29,13 +23,13 @@ internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
                 .ConfigureAwait(false);
             if (catalogError is not null)
             {
-                return AppResponse.Failure<PermissionResponse>(catalogError);
+                return AppResponses.Failure<PermissionResponse>(catalogError);
             }
 
             var permission = await unitOfWork.PermissionRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
             if (permission is null)
             {
-                return AppResponse.Failure<PermissionResponse>($"Permission {command.Id} not found.");
+                return AppResponses.Failure<PermissionResponse>($"Permission {command.Id} not found.");
             }
 
             var draft = Permission.Create(
@@ -52,7 +46,7 @@ internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
 
             if (duplicate)
             {
-                return AppResponse.Failure<PermissionResponse>($"Permission {draft.Key} already exists.");
+                return AppResponses.Failure<PermissionResponse>($"Permission {draft.Key} already exists.");
             }
 
             permission.Update(
@@ -68,8 +62,8 @@ internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved
-                ? AppResponse.Success("Permission updated.", permission.ToPermissionResponse())
-                : AppResponse.Failure<PermissionResponse>("Permission update failed.");
+                ? AppResponses.Success("Permission updated.", permission.ToPermissionResponse())
+                : AppResponses.Failure<PermissionResponse>("Permission update failed.");
         }
         catch (Exception ex)
         {

@@ -38,7 +38,7 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
 
         // Now, we have an authenticated user with a session ID. Let's validate the session.
         var sessionValidation = await sessionService.IsSessionValidAsync(sessionId, userId).ConfigureAwait(false);
-        if (!sessionValidation.Successful)
+        if (!sessionValidation.IsSuccess)
         {
             MiddlewareLogDefinitions.LogInvalidSession(logger, sessionId, userId, sessionValidation.Message); //
 
@@ -63,24 +63,24 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
             "/Auth/SessionStatus",
             "/Auth/KeepAlive",
             "/ExtendSession",
-            
+
             // API auth endpoints
             "/api/auth/login",
             "/api/auth/logout",
             "/api/auth/logoutuser",
             "/api/auth/register",
             "/api/auth/refresh-token",
-            
+
             // Password reset endpoints
             "/Auth/ForgotPassword",
             "/Auth/ResetPassword",
             "/Auth/ConfirmEmail",
             "/api/auth/password/",
-            
+
             // 2FA endpoints
             "/Auth/TwoFactorLogin",
             "/api/auth/2fa/",
-            
+
             // Static assets
             "/css/",
             "/js/",
@@ -88,11 +88,11 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
             "/lib/",
             "/favicon.ico",
             "/_vs/",
-            
+
             // Health checks and diagnostics
             "/health",
             "/ready",
-            
+
             // Error pages
             "/Error",
             "/Home/Error"

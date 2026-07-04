@@ -21,13 +21,7 @@ namespace BT.Application.Features.HR.Employees.QueryHandlers;
 
 // ── Get Active Employees (for RM dropdown) ────────────────────────────────
 
-public record GetEmployeesQuery(string UserId) : IRequest<AppResponse<List<EmployeeResponse>>>, ICachableRequest
-{
-    public string CacheGroup => "employees";
-    public string Discriminator => "all";
-    public string? CacheUserId => null;
-    public bool IsVersioned => true;
-}
+
 
 
 internal sealed class GetEmployeesQueryHandler(IHrUnitOfWork _hrUnitOfWork, ILogger<GetEmployeesQueryHandler> _logger)
@@ -69,7 +63,7 @@ internal sealed class GetEmployeesQueryHandler(IHrUnitOfWork _hrUnitOfWork, ILog
                     departments.GetValueOrDefault(employee.DepartmentId, string.Empty),
                     employee.ManagerId.HasValue ? managers.GetValueOrDefault(employee.ManagerId.Value, string.Empty) : string.Empty))
                 .ToList();
-            return AppResponse.Success($"Success", mapped);
+            return AppResponses.Success($"Success", mapped);
         }
         catch (Exception ex)
         {
@@ -78,4 +72,3 @@ internal sealed class GetEmployeesQueryHandler(IHrUnitOfWork _hrUnitOfWork, ILog
         }
     }
 }
-

@@ -170,7 +170,7 @@
 
         _hasLoadedOtpStatus = false;
         var status = await AuthService.GetTotpStatusAsync(AuthSession.CurrentUser.AppUserId);
-        if (status.Successful)
+        if (status.IsSuccess)
         {
             _otpStatus = status.Data;
         }
@@ -196,7 +196,7 @@
         var response = await AuthService.InitiateTotpSetupAsync();
         _isBusy = false;
 
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             _isError = true;
             _message = UserMessageSanitizer.Normalize(response.Message, "Could not start two-factor setup.");
@@ -231,7 +231,7 @@
 
         _isBusy = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             _isError = true;
             _message = UserMessageSanitizer.Normalize(response.Message, "Could not enable two-factor authentication.");
@@ -278,7 +278,7 @@
         var response = await AuthService.DisableTotpAsync();
         _isBusy = false;
 
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             _isError = true;
             _message = UserMessageSanitizer.Normalize(response.Message, "Could not disable authenticator-app 2FA.");

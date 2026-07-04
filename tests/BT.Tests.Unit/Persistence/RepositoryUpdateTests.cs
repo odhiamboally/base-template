@@ -15,9 +15,9 @@ namespace BT.Tests.Unit.Persistence
             public string Name { get; set; } = string.Empty;
         }
 
-        private sealed class TestDbContext : DbContext
+        private sealed class TestDBContext : DbContext
         {
-            public TestDbContext(DbContextOptions<TestDbContext> options) : base(options)
+            public TestDBContext(DbContextOptions<TestDBContext> options) : base(options)
             {
             }
 
@@ -33,12 +33,12 @@ namespace BT.Tests.Unit.Persistence
         [Fact]
         public async Task UpdateAsync_MergesIntoTrackedInstance_WhenDuplicateKeyExists()
         {
-            var options = new DbContextOptionsBuilder<TestDbContext>()
+            var options = new DbContextOptionsBuilder<TestDBContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
             // Seed a tracked instance
-            using (var seedContext = new TestDbContext(options))
+            using (var seedContext = new TestDBContext(options))
             {
                 var existing = new TestEntity { Id = Guid.NewGuid(), Name = "Original" };
                 seedContext.Add(existing);
@@ -46,7 +46,7 @@ namespace BT.Tests.Unit.Persistence
             }
 
             // Act: create a new context to get the tracked instance into ChangeTracker, then call UpdateAsync
-            using (var context = new TestDbContext(options))
+            using (var context = new TestDBContext(options))
             {
                 // Attach/load the existing instance so the context is tracking it
                 var tracked = await context.TestEntities.FirstAsync();
@@ -77,17 +77,17 @@ namespace BT.Tests.Unit.Persistence
         public async Task UpdateRangeAsync_StagesChanges_WithoutSavingImmediately()
         {
             var entityId = Guid.NewGuid();
-            var options = new DbContextOptionsBuilder<TestDbContext>()
+            var options = new DbContextOptionsBuilder<TestDBContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
-            await using (var seedContext = new TestDbContext(options))
+            await using (var seedContext = new TestDBContext(options))
             {
                 seedContext.Add(new TestEntity { Id = entityId, Name = "Original" });
                 await seedContext.SaveChangesAsync();
             }
 
-            await using (var context = new TestDbContext(options))
+            await using (var context = new TestDBContext(options))
             {
                 var entity = await context.TestEntities.FirstAsync();
                 entity.Name = "Staged";
@@ -98,7 +98,7 @@ namespace BT.Tests.Unit.Persistence
                 Assert.Equal(1, stagedCount);
             }
 
-            await using (var verifyContext = new TestDbContext(options))
+            await using (var verifyContext = new TestDBContext(options))
             {
                 var persisted = await verifyContext.TestEntities.SingleAsync();
                 Assert.Equal("Original", persisted.Name);

@@ -32,7 +32,7 @@ public class MediatorSerializedJob(IServiceProvider _serviceProvider) : IJob
         // Deserialize back to the original Request object
         if (JsonSerializer.Deserialize(data, type) is IRequest request)
         {
-            // Explicitly creating a scope ensures that the UnitOfWork and DbContext
+            // Explicitly creating a scope ensures that the UnitOfWork and DBContext
             // used by the handler are fresh and disposed correctly.
             using var scope = _serviceProvider.CreateScope();
             var sender = scope.ServiceProvider.GetRequiredService<ISender>();

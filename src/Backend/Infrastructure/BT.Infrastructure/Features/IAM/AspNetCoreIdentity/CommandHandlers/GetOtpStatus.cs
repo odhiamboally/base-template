@@ -19,7 +19,7 @@ internal sealed class GetOtpStatus(UserManager<AppUser> userManager, ILogger<Get
             var user = await userManager.FindByIdAsync(command.UserId).ConfigureAwait(false);
             if (user == null)
             {
-                return AppResponse.Failure<OtpStatusResponse>("User not found.");
+                return AppResponses.Failure<OtpStatusResponse>("User not found.");
             }
 
             var isEnabled = await userManager.GetTwoFactorEnabledAsync(user).ConfigureAwait(false);
@@ -31,7 +31,7 @@ internal sealed class GetOtpStatus(UserManager<AppUser> userManager, ILogger<Get
                 DisplayName: "Authenticator App"
             );
 
-            return AppResponse.Success("OTP status retrieved", response);
+            return AppResponses.Success("OTP status retrieved", response);
         }
         catch (Exception ex)
         {

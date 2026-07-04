@@ -3,13 +3,6 @@ using PhoneNumbers;
 
 namespace BT.SharedKernel.Features.Shared.Phone;
 
-public sealed record PhoneNumberParts(
-    string CountryCode,
-    string NationalNumber,
-    string E164,
-    string RegionCode = "",
-    string NumberType = "");
-
 public static partial class PhoneNumberFormatter
 {
     public const string DefaultCountryCode = "+254";

@@ -121,7 +121,7 @@
             : await EmployeeService.UpdateAsync(_model.Id, _model.ToUpdateRequest());
 
         _isSaving = false;
-        if (!response.Successful)
+        if (!response.IsSuccess)
         {
             Snackbar.Add(response.Message ?? "Employee save failed.", Severity.Error);
             return;
@@ -136,7 +136,7 @@
     private async Task LoadDepartmentsAsync()
     {
         var response = await DepartmentService.GetAsync();
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load departments.", Severity.Error);
             return;
@@ -175,7 +175,7 @@
         var response = await EmployeeService.SearchAsync(new EmployeeSearchRequest(DepartmentId: _model.DepartmentId, PageSize: 50));
         _isLoadingManagers = false;
 
-        if (!response.Successful || response.Data is null)
+        if (!response.IsSuccess || response.Data is null)
         {
             Snackbar.Add(response.Message ?? "We could not load managers.", Severity.Error);
             return;
