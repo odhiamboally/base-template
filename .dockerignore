@@ -23,3 +23,10 @@ coverage*
 healthchecksdb
 README.md
 docs
+PLAN.md
+PLAN_EXECUTION_STRATEGY.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+tests/
+scripts/

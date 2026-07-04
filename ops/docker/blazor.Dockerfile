@@ -18,7 +18,8 @@ COPY ["src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj", "src/Frontend/Web/BT.
 
 RUN dotnet restore "src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj"
 
-COPY . .
+COPY ["src/Shared/", "src/Shared/"]
+COPY ["src/Frontend/", "src/Frontend/"]
 
 RUN dotnet publish "src/Frontend/Web/BT.UI.Blazor/BT.UI.Blazor.csproj" \
     --configuration Release \

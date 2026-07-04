@@ -21,7 +21,8 @@ COPY ["src/Backend/Api/BT.Api/BT.Api.csproj", "src/Backend/Api/BT.Api/"]
 
 RUN dotnet restore "src/Backend/Api/BT.Api/BT.Api.csproj"
 
-COPY . .
+COPY ["src/Shared/", "src/Shared/"]
+COPY ["src/Backend/", "src/Backend/"]
 
 RUN dotnet publish "src/Backend/Api/BT.Api/BT.Api.csproj" \
     --configuration Release \
