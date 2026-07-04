@@ -22,7 +22,7 @@ It is designed to be cloned, renamed, configured, and extended into a real appli
 Rename a cloned repository before its first application run or deployment:
 
 ```powershell
-cd E:\Repos\BaseTemplate
+cd path/to/BaseTemplate
 .\scripts\rename-template.ps1 -NewName InsurHub -NamespacePrefix IH
 ```
 

@@ -137,8 +137,8 @@ Use configuration for runtime providers:
 | Messaging | RabbitMQ | Azure Service Bus | RabbitMQ |
 | Cache | Redis container | Azure Redis | Redis |
 | Email | Mailpit | Approved email API provider | Approved email API provider |
-| Profile images | Azurite or local filesystem | Private Azure Blob | Host-specific object storage or private volume |
-| Data Protection | Local key ring | Azure Blob plus Key Vault | External persistent key ring |
+| Profile images | Azurite or local filesystem | Private Azure Blob | S3-compatible storage or private volume |
+| Data Protection | Local key ring | Azure Blob plus Key Vault | Redis or shared file share |
 | SQL | Local SQL Server | Azure SQL | SQL Server-compatible host |
 
 Use CI/CD variables for deployment target:
