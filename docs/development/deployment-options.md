@@ -26,8 +26,8 @@ Use this sequence until Azure credits or a paid subscription are available:
 1. Keep Azure deployment workflows and settings in the repository.
 2. Leave `AZURE_DEPLOYMENT_ENABLED=false` or unset.
 3. Run the app from Visual Studio with local Docker infrastructure.
-4. Add a provider-neutral container publish workflow that can push API/UI images to GHCR or Docker Hub.
-5. Add a local app-compose profile only after Dockerfiles are finalized.
+4. Use the provider-neutral container publish workflow to build/lint API/UI images and push them to GHCR when publishing is enabled.
+5. Add a local app-compose profile only after the Dockerfiles have passed CI and local smoke.
 6. Add DigitalOcean or Heroku deployment only when we choose a specific host to certify.
 
 This lets us keep moving without throwing away the Azure production path.
@@ -201,11 +201,37 @@ When Azure is enabled:
 - The deployment workflow may run migrations and deploy according to the protected GitHub environment.
 - Azure failures should be treated as deployment-environment failures, not local-development failures.
 
+## Container Publish Baseline
+
+BaseTemplate uses GHCR as the first neutral image registry because it is already attached to GitHub Actions and does not require Azure credits.
+
+Current image workflow:
+
+```text
+Visual Studio -> GitHub Repo -> GitHub Actions -> lint Dockerfiles -> build API/UI images -> GHCR
+```
+
+The workflow is `.github/workflows/container-publish.yml`.
+
+- Pull requests build and lint images but do not publish.
+- Pushes to `main` publish images to GHCR.
+- Manual workflow runs can publish images when `publish_images=true`.
+- The images are `ghcr.io/<owner>/base-template-api` and `ghcr.io/<owner>/base-template-blazor`.
+
+GHCR is the staging point for future host-specific deployments:
+
+```text
+GHCR -> Azure Container Apps
+GHCR -> DigitalOcean App Platform
+GHCR -> VPS Docker Compose
+GHCR or Heroku Registry -> Heroku
+```
+
+Heroku is the one exception because Heroku can require pushing to `registry.heroku.com/<app>/web` before releasing. We should add that only when we are ready to certify a Heroku app.
+
 ## Next Implementation Steps
 
-1. Add production Dockerfiles for API and Blazor UI.
-2. Add a container-publish workflow that pushes to GHCR by default.
-3. Add `DEPLOY_TARGET` handling for manual dispatch.
-4. Add local app Docker Compose using the published or locally built images.
-5. Add DigitalOcean or Heroku workflow only after we choose the host to certify.
-6. Keep Azure workflow disabled until subscription billing is active again.
+1. Add `DEPLOY_TARGET` handling for manual dispatch.
+2. Add local app Docker Compose using the published or locally built images.
+3. Add DigitalOcean or Heroku workflow only after we choose the host to certify.
+4. Keep Azure workflow disabled until subscription billing is active again.
