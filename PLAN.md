@@ -195,7 +195,7 @@ EventIds are structured by architectural layer to simplify searching in logs:
 *Goal: establish secure, repeatable deployment guardrails without manual steps, while supporting Azure, non-Azure container hosts, and local Docker smoke deployments.*
 - [~] **efbundle Migration Pipeline:** GitHub Actions compiles context-specific EF migration bundles and executes them through OIDC with Azure SQL wake-up retries and temporary runner firewall access. The remaining gate is the first successful Azure migration/deployment smoke.
 - [~] **Docker Local Platform:** Docker Compose defines RabbitMQ, Redis, Mailpit, Azurite, optional SQL Server, and optional Seq. Add app-host Dockerfiles and local app-compose smoke deployment before marking deployment-local complete.
-- [ ] **Container Publish Workflow:** Build and publish API/UI container images to GHCR or Docker Hub without requiring Azure.
+- [~] **Container Publish Workflow:** API/UI Dockerfiles and GHCR build/publish workflow are added. Remaining gate is the first successful workflow run and image pull smoke.
 - [ ] **Deployment Target Matrix:** Support documented deployment targets: Azure App Service/Container Apps, DigitalOcean/Heroku/generic Docker, and local app-compose.
 - [ ] **Azure Deployment Workflows:** Wire Blue/Green deployment slot switches for API services in GitHub Actions after Azure subscription/billing is active.
 
