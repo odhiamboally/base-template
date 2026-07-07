@@ -162,6 +162,7 @@ public static class DependencyInjection
         services.AddScoped<StripePaymentGateway>();
         services.AddScoped<MpesaPaymentGateway>();
         services.AddScoped<IPaymentGateway, RoutedPaymentGateway>();
+        services.AddScoped<IPaymentWebhookVerifier, StripeWebhookVerifier>();
         services.AddScoped<LocalProfilePictureStorage>();
         services.AddScoped<AzureBlobProfilePictureStorage>();
         services.AddScoped<S3ProfilePictureStorage>();

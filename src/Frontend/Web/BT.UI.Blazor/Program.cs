@@ -9,6 +9,7 @@ using BT.UI.Blazor.Features.IAM.Users.Implementations;
 using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Implementations;
 using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Interfaces;
 using BT.UI.Blazor.Features.Shared.Lookups.Contracts.Implementations;
+using BT.UI.Blazor.Features.Shared.Messaging;
 using BT.UI.Blazor.Features.Shared.Payments.Contracts.Implementations;
 using BT.UI.Rcl.Features.Banking.Customers.Contracts.Interfaces;
 using BT.UI.Rcl.Features.HR.Departments.Contracts.Interfaces;
@@ -23,7 +24,7 @@ using System.Globalization;
 var builder = WebApplication.CreateBuilder(args);
 ConfigurePlatformAssignedPort(builder.WebHost);
 
-BT.UI.Blazor.Features.Shared.Messaging.UserMessageSanitizer.IsDevelopment = builder.Environment.IsDevelopment();
+UserMessageSanitizer.IsDevelopment = builder.Environment.IsDevelopment();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
