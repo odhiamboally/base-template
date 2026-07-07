@@ -7,6 +7,8 @@ internal sealed class DataProtectionSettings
     public string ApplicationName { get; init; } = "BaseTemplate";
     public string? KeysPath { get; init; }
     public string? BlobKeyUri { get; init; }
+    public string? RedisKeyRingConnectionString { get; init; }
+    public string RedisKeyRingKey { get; init; } = "DataProtection-Keys";
     public string? KeyVaultKeyIdentifier { get; init; }
     public string? CertificateThumbprint { get; init; }
     public string KeyEncryptionMode { get; init; } = "Auto";

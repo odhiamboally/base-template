@@ -16,7 +16,7 @@ This document explains the supported deployment paths for BaseTemplate and clone
 | --- | --- | --- | --- |
 | Azure DevOps to Azure Container Apps | Visual Studio -> Azure Repos -> Azure Pipelines -> Docker image -> ACR or Docker Hub -> Azure Container Apps | Planned | Azure-first clients who standardize on Azure DevOps |
 | GitHub Actions to Azure Container Apps or App Service | Visual Studio -> GitHub -> GitHub Actions -> Docker image or app artifact -> ACR/GHCR/Docker Hub -> Azure | Partly wired; gated by `AZURE_DEPLOYMENT_ENABLED` | Recommended Azure path once subscription is active |
-| GitHub Actions to non-Azure container host | Visual Studio -> GitHub -> GitHub Actions -> Docker image -> GHCR/Docker Hub -> Heroku, DigitalOcean, or VPS | Planned | When Azure is unavailable or a client chooses another host |
+| GitHub Actions to non-Azure container host | Visual Studio -> GitHub -> GitHub Actions -> Docker image -> GHCR/Heroku Registry -> Heroku, DigitalOcean, or VPS | Wired for manual deployment certification | When Azure is unavailable or a client chooses another host |
 | Local Docker deployment | Visual Studio or CLI -> local Docker image -> local Docker Compose runtime | Planned | Local demos, smoke testing, and offline proof-of-concept work |
 
 ## Current Recommendation
@@ -28,7 +28,7 @@ Use this sequence until Azure credits or a paid subscription are available:
 3. Run the app from Visual Studio with local Docker infrastructure.
 4. Use the provider-neutral container publish workflow to build/lint API/UI images and push them to GHCR when publishing is enabled.
 5. Add a local app-compose profile only after the Dockerfiles have passed CI and local smoke.
-6. Add DigitalOcean or Heroku deployment only when we choose a specific host to certify.
+6. Use the non-Azure workflow when we choose DigitalOcean, Heroku, or a generic Docker host to certify.
 
 This lets us keep moving without throwing away the Azure production path.
 
@@ -90,6 +90,8 @@ Important fit notes:
 - SQL Server is not a natural Heroku add-on path, so database hosting must be decided separately.
 
 Reference: [Heroku Container Registry and Runtime](https://devcenter.heroku.com/articles/container-registry-and-runtime).
+
+Detailed setup for DigitalOcean, Heroku, and generic Docker hosts lives in [Non-Azure Deployment Configuration](non-azure-deployment.md).
 
 ### VPS Or Generic Docker Host
 
@@ -194,7 +196,8 @@ When Azure is disabled:
 
 - Backend, frontend, mobile, full-solution, and architecture workflows can still run.
 - Azure deployment jobs should skip because `AZURE_DEPLOYMENT_ENABLED` is not `true`.
-- Container publish jobs, once added, can still build and publish images to GHCR or Docker Hub without deploying to Azure.
+- Container publish jobs can still build and publish images to GHCR without deploying to Azure.
+- The non-Azure deployment workflow can deploy to DigitalOcean, Heroku, or hand off GHCR images to a generic Docker host when manually dispatched.
 
 When Azure is enabled:
 
@@ -227,11 +230,11 @@ GHCR -> VPS Docker Compose
 GHCR or Heroku Registry -> Heroku
 ```
 
-Heroku is the one exception because Heroku can require pushing to `registry.heroku.com/<app>/web` before releasing. We should add that only when we are ready to certify a Heroku app.
+Heroku is the one exception because Heroku can require pushing to `registry.heroku.com/<app>/web` before releasing. The manual non-Azure deployment workflow includes this path so it can be certified when Heroku app names and credentials are available.
 
 ## Next Implementation Steps
 
-1. Add `DEPLOY_TARGET` handling for manual dispatch.
-2. Add local app Docker Compose using the published or locally built images.
-3. Add DigitalOcean or Heroku workflow only after we choose the host to certify.
+1. Add local app Docker Compose using the published or locally built images.
+2. Add S3-compatible profile image storage before certifying non-Azure production profile uploads.
+3. Use Redis Data Protection key persistence for Heroku, DigitalOcean, or other hosts with ephemeral filesystems.
 4. Keep Azure workflow disabled until subscription billing is active again.

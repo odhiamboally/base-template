@@ -9,15 +9,19 @@ using BT.UI.Blazor.Features.IAM.Users.Implementations;
 using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Implementations;
 using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Interfaces;
 using BT.UI.Blazor.Features.Shared.Lookups.Contracts.Implementations;
+using BT.UI.Blazor.Features.Shared.Payments.Contracts.Implementations;
 using BT.UI.Rcl.Features.Banking.Customers.Contracts.Interfaces;
 using BT.UI.Rcl.Features.HR.Departments.Contracts.Interfaces;
 using BT.UI.Rcl.Features.HR.Employees.Contracts.Interfaces;
 using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 using BT.UI.Rcl.Features.Shared.Lookups.Contracts.Interfaces;
+using BT.UI.Rcl.Features.Shared.Payments.Contracts.Interfaces;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+ConfigurePlatformAssignedPort(builder.WebHost);
 
 BT.UI.Blazor.Features.Shared.Messaging.UserMessageSanitizer.IsDevelopment = builder.Environment.IsDevelopment();
 
@@ -62,6 +66,7 @@ builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IIamAdminService, IamAdminService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
+builder.Services.AddScoped<IPaymentCheckoutService, PaymentCheckoutService>();
 builder.Services.AddSingleton<IAuthenticatorQrCodeService, AuthenticatorQrCodeService>();
 var httpClientBuilder = builder.Services.AddHttpClient<IBackendApiClient, BackendApiClient>((serviceProvider, client) =>
 {
@@ -97,3 +102,21 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+static void ConfigurePlatformAssignedPort(ConfigureWebHostBuilder webHost)
+{
+    var port = Environment.GetEnvironmentVariable("PORT");
+
+    if (string.IsNullOrWhiteSpace(port))
+    {
+        return;
+    }
+
+    if (!int.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedPort) ||
+        parsedPort <= 0)
+    {
+        throw new InvalidOperationException("The PORT environment variable must be a positive integer.");
+    }
+
+    webHost.UseUrls($"http://+:{parsedPort}");
+}

@@ -26,7 +26,7 @@ In the Azure portal:
 9. Set **Entity type** to `Environment`.
 10. Set the environment name to `production`.
 
-The environment name must match `environment: production` in `.github/workflows/deploy.yml`.
+The environment name must match `environment: production` in `.github/workflows/deploy-azure.yml`.
 
 ## 2. Assign Azure RBAC Roles
 
@@ -67,8 +67,13 @@ Add these environment variables:
 | `AZURE_RESOURCE_GROUP` | `rg-basetemplate-prod` | Resource group containing Azure SQL |
 | `AZURE_SQL_SERVER_NAME` | `bt-prod-sqlserver` | SQL logical server name without `.database.windows.net` |
 | `AZURE_SQL_NETWORK_MODE` | `PublicRunner` | `PublicRunner` or `PrivateRunner` migration networking strategy |
-| `AZURE_API_APP_NAME` | `base-template-api-dev` | Exact API App Service resource name |
-| `AZURE_UI_APP_NAME` | `base-template-web-dev` | Exact UI App Service resource name |
+| `AZURE_API_APP_NAME` | `base-template-api-dev` | Exact API App Service resource name (for app-service) |
+| `AZURE_UI_APP_NAME` | `base-template-web-dev` | Exact UI App Service resource name (for app-service) |
+| `AZURE_DEPLOYMENT_TARGET` | `app-service`, `aca-acr`, `aca-ghcr` | Deployment mechanism selection (default: app-service) |
+| `AZURE_CONTAINER_REGISTRY_NAME` | `acrbasetemplate` | ACR Name for container deployments (for aca-acr) |
+| `AZURE_ACA_API_NAME` | `ca-base-template-api` | Exact API Container App resource name (for ACA flows) |
+| `AZURE_ACA_UI_NAME` | `ca-base-template-blazor` | Exact UI Container App resource name (for ACA flows) |
+| `AZURE_SERVICE_BUS_NAMESPACE` | `bt-prod-servicebus` | Service Bus namespace for messaging |
 
 Add this environment secret:
 

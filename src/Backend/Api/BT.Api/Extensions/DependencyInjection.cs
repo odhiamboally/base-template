@@ -33,6 +33,7 @@ using Microsoft.IdentityModel.Tokens;
 
 using Serilog.Core;
 using Serilog.Events;
+using StackExchange.Redis;
 
 using System.Globalization;
 using System.IO;
@@ -114,6 +115,18 @@ internal static partial class DependencyInjection
         {
             var blobClient = new BlobClient(new Uri(dpSettings.BlobKeyUri), new DefaultAzureCredential());
             dataProtectionBuilder.PersistKeysToAzureBlobStorage(blobClient);
+            ConfigureDataProtectionKeyEncryption(dataProtectionBuilder, dpSettings);
+            return;
+        }
+
+        if (dpSettings?.UseExternalKeyStore == true && !string.IsNullOrWhiteSpace(dpSettings.RedisKeyRingConnectionString))
+        {
+            var redis = ConnectionMultiplexer.Connect(dpSettings.RedisKeyRingConnectionString);
+            var key = string.IsNullOrWhiteSpace(dpSettings.RedisKeyRingKey)
+                ? "DataProtection-Keys"
+                : dpSettings.RedisKeyRingKey.Trim();
+
+            dataProtectionBuilder.PersistKeysToStackExchangeRedis(redis, key);
             ConfigureDataProtectionKeyEncryption(dataProtectionBuilder, dpSettings);
             return;
         }

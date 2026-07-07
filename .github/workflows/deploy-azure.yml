@@ -1,30 +1,68 @@
-name: Deploy to Azure App Service
+name: Deploy to Azure
 
 on:
   push:
     branches: [main]
     paths:
       - "src/**"
-      - ".github/workflows/deploy.yml"
+      - ".github/workflows/deploy-azure.yml"
   workflow_dispatch:
+    inputs:
+      deployment_target:
+        description: "Deployment target"
+        required: true
+        default: app-service
+        type: choice
+        options:
+          - app-service
+          - aca-acr
+          - aca-ghcr
 
 permissions:
   contents: read
+  packages: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}
+  API_IMAGE: base-template-api
+  BLAZOR_IMAGE: base-template-blazor
 
 jobs:
+  setup:
+    name: Setup deployment target
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || vars.AZURE_DEPLOYMENT_ENABLED == 'true'
+    outputs:
+      target: ${{ steps.resolve.outputs.target }}
+      image_tag: latest
+    steps:
+      - id: resolve
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target=${{ inputs.deployment_target }}" >> $GITHUB_OUTPUT
+          else
+            TARGET="${{ vars.AZURE_DEPLOYMENT_TARGET }}"
+            if [ -z "$TARGET" ]; then TARGET="app-service"; fi
+            echo "target=$TARGET" >> $GITHUB_OUTPUT
+          fi
+
   build-and-test:
     name: Build & Test
-    if: vars.AZURE_DEPLOYMENT_ENABLED == 'true'
+    needs: setup
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    
+
     services:
       mssql:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
-          ACCEPT_EULA: 'Y'
-          MSSQL_SA_PASSWORD: 'Password123!'
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Password123!"
         ports:
           - 1433:1433
       redis:
@@ -108,7 +146,7 @@ jobs:
     name: Run DB Migrations
     needs: build-and-test
     runs-on: ubuntu-latest
-    environment: production
+    environment: azure-prod
     permissions:
       contents: read
       id-token: write
@@ -258,11 +296,12 @@ jobs:
             --name "$FIREWALL_RULE_NAME" \
             --output none
 
-  deploy-api:
-    name: Deploy API to Azure
-    needs: [build-and-test, run-migrations]
+  deploy-app-service-api:
+    name: Deploy API to Azure App Service
+    needs: [setup, build-and-test, run-migrations]
+    if: needs.setup.outputs.target == 'app-service'
     runs-on: ubuntu-latest
-    environment: production
+    environment: azure-prod
     permissions:
       contents: read
       id-token: write
@@ -286,11 +325,12 @@ jobs:
           app-name: ${{ vars.AZURE_API_APP_NAME }}
           package: ./api-app
 
-  deploy-ui:
-    name: Deploy UI to Azure
-    needs: [build-and-test, run-migrations]
+  deploy-app-service-ui:
+    name: Deploy UI to Azure App Service
+    needs: [setup, build-and-test, run-migrations]
+    if: needs.setup.outputs.target == 'app-service'
     runs-on: ubuntu-latest
-    environment: production
+    environment: azure-prod
     permissions:
       contents: read
       id-token: write
@@ -313,3 +353,127 @@ jobs:
         with:
           app-name: ${{ vars.AZURE_UI_APP_NAME }}
           package: ./ui-app
+  build-push-containers:
+    name: Build & Push Containers
+    needs: setup
+    if: needs.setup.outputs.target == 'aca-acr' || needs.setup.outputs.target == 'aca-ghcr'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: api
+            image: base-template-api
+            dockerfile: ops/docker/api.Dockerfile
+          - service: blazor
+            image: base-template-blazor
+            dockerfile: ops/docker/blazor.Dockerfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Sign in to Azure with OIDC
+        if: needs.setup.outputs.target == 'aca-acr'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        if: needs.setup.outputs.target == 'aca-acr'
+        run: |
+          az acr login --name ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}
+          echo "DOCKER_REGISTRY=${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" >> $GITHUB_ENV
+          echo "DOCKER_NAMESPACE=" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        if: needs.setup.outputs.target == 'aca-ghcr'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set GHCR Environment
+        if: needs.setup.outputs.target == 'aca-ghcr'
+        run: |
+          echo "DOCKER_REGISTRY=ghcr.io" >> $GITHUB_ENV
+          echo "DOCKER_NAMESPACE=${{ env.IMAGE_NAMESPACE }}/" >> $GITHUB_ENV
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}${{ matrix.image }}:${{ needs.setup.outputs.image_tag }}
+            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}${{ matrix.image }}:sha-${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  deploy-aca:
+    name: Deploy to Azure Container Apps
+    needs: [setup, run-migrations, build-push-containers]
+    if: needs.setup.outputs.target == 'aca-acr' || needs.setup.outputs.target == 'aca-ghcr'
+    runs-on: ubuntu-latest
+    environment: azure-prod
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy API to ACA (ACR)
+        if: needs.setup.outputs.target == 'aca-acr'
+        uses: azure/container-apps-deploy-action@v3
+        with:
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ vars.AZURE_ACA_API_NAME }}
+          acrName: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}
+          imageToDeploy: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.API_IMAGE }}:sha-${{ github.sha }}
+
+      - name: Deploy UI to ACA (ACR)
+        if: needs.setup.outputs.target == 'aca-acr'
+        uses: azure/container-apps-deploy-action@v3
+        with:
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ vars.AZURE_ACA_UI_NAME }}
+          acrName: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}
+          imageToDeploy: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.BLAZOR_IMAGE }}:sha-${{ github.sha }}
+
+      - name: Deploy API to ACA (GHCR)
+        if: needs.setup.outputs.target == 'aca-ghcr'
+        uses: azure/container-apps-deploy-action@v3
+        with:
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ vars.AZURE_ACA_API_NAME }}
+          registryUrl: ghcr.io
+          registryUsername: ${{ github.actor }}
+          registryPassword: ${{ secrets.GITHUB_TOKEN }}
+          imageToDeploy: ghcr.io/${{ env.IMAGE_NAMESPACE }}/${{ env.API_IMAGE }}:sha-${{ github.sha }}
+
+      - name: Deploy UI to ACA (GHCR)
+        if: needs.setup.outputs.target == 'aca-ghcr'
+        uses: azure/container-apps-deploy-action@v3
+        with:
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ vars.AZURE_ACA_UI_NAME }}
+          registryUrl: ghcr.io
+          registryUsername: ${{ github.actor }}
+          registryPassword: ${{ secrets.GITHUB_TOKEN }}
+          imageToDeploy: ghcr.io/${{ env.IMAGE_NAMESPACE }}/${{ env.BLAZOR_IMAGE }}:sha-${{ github.sha }}

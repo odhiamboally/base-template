@@ -235,4 +235,13 @@ internal static partial class ServiceLogDefinitions
 
     [LoggerMessage(EventId = 3481, Level = LogLevel.Warning, Message = "Session validation concurrency conflict occurred for session {SessionId}. Checking database status.")]
     public static partial void LogSessionConcurrencyConflict(ILogger logger, string sessionId, Exception ex);
+
+    [LoggerMessage(EventId = 3482, Level = LogLevel.Warning, Message = "Payment webhook verification failed for provider {Provider}: {Reason}")]
+    public static partial void LogPaymentWebhookVerificationFailed(ILogger logger, string provider, string reason);
+
+    [LoggerMessage(EventId = 3483, Level = LogLevel.Error, Message = "Payment webhook payload processing failed for provider {Provider}")]
+    public static partial void LogPaymentWebhookPayloadError(ILogger logger, string provider, Exception ex);
+
+    [LoggerMessage(EventId = 3484, Level = LogLevel.Information, Message = "Payment webhook verified for provider {Provider}. Event {EventId} type {EventType}")]
+    public static partial void LogPaymentWebhookVerified(ILogger logger, string provider, string eventId, string eventType);
 }

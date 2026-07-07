@@ -13,6 +13,7 @@ This file is the canonical source of truth and working contract for AI coding to
    - `docs/development/environment-configuration-checklist.md`
    - `docs/development/local-platform.md`
    - `docs/development/azure-storage-configuration.md`
+   - `docs/development/non-azure-deployment.md`
    - `docs/development/configuration-code-conventions.md`
 4. Inspect the existing code before proposing or writing changes.
 5. If a convention changes, update this file and the relevant docs in the same PR.

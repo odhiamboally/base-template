@@ -1,6 +1,6 @@
 # Implementation Plan - GitHub Actions To Azure CI/CD
 
-This document records the intended CI/CD architecture. The executable source of truth is `.github/workflows/deploy.yml`; the required Azure and GitHub setup is documented in [Azure CI/CD Configuration](azure-cicd-configuration.md).
+This document records the intended CI/CD architecture. The executable source of truth is `.github/workflows/deploy-azure.yml`; the required Azure and GitHub setup is documented in [Azure CI/CD Configuration](azure-cicd-configuration.md).
 
 ## Goals
 

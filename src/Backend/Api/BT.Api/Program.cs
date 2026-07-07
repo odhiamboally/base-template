@@ -35,6 +35,7 @@ try
     Log.Information("Starting application");
 
     var builder = WebApplication.CreateBuilder(args);
+    ConfigurePlatformAssignedPort(builder.WebHost);
 
     // ── Key Vault — production secrets ────────────────────────────────────────
     // Only runs outside Development — User Secrets handle dev.
@@ -332,4 +333,22 @@ finally
 {
     // Flush and close all Serilog sinks before the process exits.
     await Log.CloseAndFlushAsync().ConfigureAwait(false);
+}
+
+static void ConfigurePlatformAssignedPort(ConfigureWebHostBuilder webHost)
+{
+    var port = Environment.GetEnvironmentVariable("PORT");
+
+    if (string.IsNullOrWhiteSpace(port))
+    {
+        return;
+    }
+
+    if (!int.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedPort) ||
+        parsedPort <= 0)
+    {
+        throw new InvalidOperationException("The PORT environment variable must be a positive integer.");
+    }
+
+    webHost.UseUrls($"http://+:{parsedPort}");
 }

@@ -107,7 +107,7 @@ public static class DependencyInjection
                 .ValidateDataAnnotations()
                 .Validate(
                     IsValidProfileImageStorageProvider,
-                    "ProfileImageStorage:Provider must be Local, Azurite, or AzureBlob. Blob providers require ContainerUri or ConnectionString plus ContainerName.")
+                    "ProfileImageStorage:Provider must be Local, Azurite, AzureBlob, or S3. Blob providers require ContainerUri or ConnectionString plus ContainerName. S3 requires ServiceUrl, BucketName, AccessKey, and SecretKey.")
                 .ValidateOnStart();
             services.AddOptions<TenantSettings>()
                 .Bind(configuration.GetSection(TenantSettings.SectionName))
@@ -164,6 +164,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentGateway, RoutedPaymentGateway>();
         services.AddScoped<LocalProfilePictureStorage>();
         services.AddScoped<AzureBlobProfilePictureStorage>();
+        services.AddScoped<S3ProfilePictureStorage>();
         services.AddScoped<IProfilePictureStorage>(sp =>
         {
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ProfileImageStorageSettings>>().Value;
@@ -172,9 +173,10 @@ public static class DependencyInjection
                 ProfileImageStorageProvider.Local => sp.GetRequiredService<LocalProfilePictureStorage>(),
                 ProfileImageStorageProvider.Azurite => sp.GetRequiredService<AzureBlobProfilePictureStorage>(),
                 ProfileImageStorageProvider.AzureBlob => sp.GetRequiredService<AzureBlobProfilePictureStorage>(),
+                ProfileImageStorageProvider.S3 => sp.GetRequiredService<S3ProfilePictureStorage>(),
                 _ => throw new InvalidOperationException(
                     $"ProfileImageStorage:Provider '{settings.Provider}' is not supported. " +
-                    "Supported values: Local, Azurite, AzureBlob.")
+                    "Supported values: Local, Azurite, AzureBlob, S3.")
             };
         });
 
@@ -556,6 +558,7 @@ public static class DependencyInjection
             ProfileImageStorageProvider.Local => true,
             ProfileImageStorageProvider.Azurite => IsBlobProfileImageStorageConfigured(settings.Azurite),
             ProfileImageStorageProvider.AzureBlob => IsAzureBlobProfileImageStorageConfigured(settings),
+            ProfileImageStorageProvider.S3 => IsS3ProfileImageStorageConfigured(settings.S3),
             _ => false
         };
     }
@@ -572,6 +575,14 @@ public static class DependencyInjection
              !string.IsNullOrWhiteSpace(settings.ContainerName));
     }
 
+    private static bool IsS3ProfileImageStorageConfigured(S3ProfileImageStorageSettings settings)
+    {
+        return !string.IsNullOrWhiteSpace(settings.ServiceUrl) &&
+               !string.IsNullOrWhiteSpace(settings.BucketName) &&
+               !string.IsNullOrWhiteSpace(settings.AccessKey) &&
+               !string.IsNullOrWhiteSpace(settings.SecretKey);
+    }
+
     private static ProfileImageStorageProvider GetProfileImageStorageProvider(ProfileImageStorageSettings settings)
     {
         if (string.IsNullOrWhiteSpace(settings.Provider))
@@ -584,6 +595,7 @@ public static class DependencyInjection
             var provider when provider.Equals("Local", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.Local,
             var provider when provider.Equals("Azurite", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.Azurite,
             var provider when provider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.AzureBlob,
+            var provider when provider.Equals("S3", StringComparison.OrdinalIgnoreCase) => ProfileImageStorageProvider.S3,
             _ => ProfileImageStorageProvider.Invalid
         };
     }
@@ -928,6 +940,7 @@ public static class DependencyInjection
         Local,
         Azurite,
         AzureBlob,
+        S3,
         Invalid
     }
 

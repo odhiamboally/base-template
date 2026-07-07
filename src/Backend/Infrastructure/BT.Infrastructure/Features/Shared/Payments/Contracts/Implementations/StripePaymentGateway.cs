@@ -27,7 +27,7 @@ internal sealed class StripePaymentGateway(
         if (!IsConfigured())
         {
             return AppResponses.Failure<PaymentInitiationResponse>(
-                "Stripe payment provider is not configured for this environment.");
+                AppError.DependencyUnavailable("Stripe payment provider is not configured for this environment."));
         }
 
         try
@@ -56,7 +56,7 @@ internal sealed class StripePaymentGateway(
                     (int)response.StatusCode);
 
                 return AppResponses.Failure<PaymentInitiationResponse>(
-                    "Stripe could not accept the payment initiation request.");
+                    AppError.DependencyUnavailable("Stripe could not accept the payment initiation request."));
             }
 
             using var stream = await response.Content
@@ -69,7 +69,7 @@ internal sealed class StripePaymentGateway(
             if (providerResponse is null || string.IsNullOrWhiteSpace(providerResponse.Id))
             {
                 return AppResponses.Failure<PaymentInitiationResponse>(
-                    "Stripe returned an incomplete payment initiation response.");
+                    AppError.DependencyUnavailable("Stripe returned an incomplete payment initiation response."));
             }
 
             return AppResponses.Success(
@@ -89,7 +89,7 @@ internal sealed class StripePaymentGateway(
                 ex);
 
             return AppResponses.Failure<PaymentInitiationResponse>(
-                "Stripe payment provider is temporarily unavailable.");
+                AppError.DependencyUnavailable("Stripe payment provider is temporarily unavailable."));
         }
     }
 
@@ -103,7 +103,7 @@ internal sealed class StripePaymentGateway(
         if (!IsConfigured())
         {
             return AppResponses.Failure<PaymentStatusResponse>(
-                "Stripe payment provider is not configured for this environment.");
+                AppError.DependencyUnavailable("Stripe payment provider is not configured for this environment."));
         }
 
         var statusEndpoint = $"{_settings.CheckoutSessionsEndpoint.TrimEnd('/')}/{Uri.EscapeDataString(paymentReference)}";
@@ -124,7 +124,7 @@ internal sealed class StripePaymentGateway(
                     (int)response.StatusCode);
 
                 return AppResponses.Failure<PaymentStatusResponse>(
-                    "Stripe payment status could not be retrieved.");
+                    AppError.DependencyUnavailable("Stripe payment status could not be retrieved."));
             }
 
             using var stream = await response.Content
@@ -137,7 +137,7 @@ internal sealed class StripePaymentGateway(
             if (providerResponse is null)
             {
                 return AppResponses.Failure<PaymentStatusResponse>(
-                    "Stripe returned an incomplete payment status response.");
+                    AppError.DependencyUnavailable("Stripe returned an incomplete payment status response."));
             }
 
             return AppResponses.Success(
@@ -154,7 +154,7 @@ internal sealed class StripePaymentGateway(
             HttpClientLogDefinitions.LogExternalApiError(logger, "GET", statusEndpoint, ex);
 
             return AppResponses.Failure<PaymentStatusResponse>(
-                "Stripe payment provider is temporarily unavailable.");
+                AppError.DependencyUnavailable("Stripe payment provider is temporarily unavailable."));
         }
     }
 
