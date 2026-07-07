@@ -25,9 +25,9 @@ public record AppResponse<T>
     }
 
     [JsonConstructor]
-    internal AppResponse(bool successful, string? message, T? data)
+    internal AppResponse(bool isSuccess, string? message, T? data)
     {
-        IsSuccess = successful;
+        IsSuccess = isSuccess;
         Message = message ?? "Operation Successful";
         Data = data;
     }
