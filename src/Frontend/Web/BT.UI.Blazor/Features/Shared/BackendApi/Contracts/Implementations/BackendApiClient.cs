@@ -175,7 +175,8 @@ internal sealed class BackendApiClient(
             }
 
             using var document = JsonDocument.Parse(content);
-            if (!document.RootElement.TryGetProperty("successful", out _))
+            if (!document.RootElement.TryGetProperty("isSuccess", out _) &&
+                !document.RootElement.TryGetProperty("successful", out _))
             {
                 return null;
             }
