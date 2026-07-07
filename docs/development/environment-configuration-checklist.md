@@ -1,6 +1,6 @@
 # Environment Configuration Checklist
 
-This checklist explains how BaseTemplate should be configured locally, when developing locally against Azure services, and when deployed to Azure.
+This checklist explains how BaseTemplate should be configured locally, when developing locally against Azure services, when deployed to Azure, and when deployed to supported non-Azure container hosts.
 
 ## Configuration Modes
 
@@ -20,6 +20,7 @@ Avoid creating a custom environment name such as `Native` unless we have a clear
 - Environment variables: CI/CD, containers, App Service settings, and temporary overrides.
 - Azure Key Vault: production secrets and managed secrets used by deployed apps.
 - Azure App Service settings: runtime settings, Key Vault references, and non-secret deployment configuration.
+- Non-Azure host environment/config variables: production runtime settings for DigitalOcean, Heroku, and generic Docker hosts.
 
 Never commit real passwords, account keys, connection strings, API keys, or temporary provisioning passwords.
 
@@ -74,6 +75,8 @@ dotnet user-secrets set "EmailSettings:LocalMailpit:Port" "1025" --project src\B
 ```
 
 Do not use personal mailbox SMTP credentials as the production email path. Production email should use an approved provider API, currently represented by `EmailSettings:Provider=SendGrid`.
+SendGrid is Twilio SendGrid. It is managed from the Twilio/SendGrid platform, but it is separate from Twilio SMS or WhatsApp credentials.
+The local setup script removes legacy SMTP-style secrets such as `EmailSettings:Username`, `EmailSettings:Password`, and `SmtpSettings:Password` so old personal-mailbox settings cannot accidentally confuse local testing.
 
 Payment providers are selected explicitly:
 
@@ -83,6 +86,7 @@ dotnet user-secrets set "Payments:Provider" "NoOp" --project src\Backend\Api\BT.
 # Stripe
 dotnet user-secrets set "Payments:Provider" "Stripe" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "Payments:Stripe:SecretKey" "<stripe-secret-key>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "Payments:Stripe:WebhookSigningSecret" "<stripe-webhook-signing-secret>" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "Payments:Stripe:SuccessUrl" "https://localhost:7049/payments/success" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "Payments:Stripe:CancelUrl" "https://localhost:7049/payments/cancel" --project src\Backend\Api\BT.Api\BT.Api.csproj
 
@@ -106,6 +110,31 @@ dotnet user-secrets set "EntraId:TenantId" "<tenant-id>" --project src\Backend\A
 dotnet user-secrets set "EntraId:ClientId" "<app-client-id>" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "EntraId:ClientSecret" "<app-client-secret>" --project src\Backend\Api\BT.Api\BT.Api.csproj
 ```
+
+## Provider Readiness Without Enabling Providers
+
+BaseTemplate keeps provider integrations code-ready and configuration-ready without forcing every cloned application to use every provider.
+
+The standard is:
+
+- Keep typed JSON sections and settings POCOs present for every supported provider.
+- Keep local defaults safe: `Payments:Provider=NoOp`, `EntraId:Enabled=false`, `EmailSettings:Provider=LocalMailpit`, and `Messaging:Transport=RabbitMq`.
+- Add real provider secrets only when that provider is selected for a local smoke test or deployed environment.
+- Fail fast when a provider is selected but required values are missing.
+
+Do not store placeholder API keys in user-secrets. Empty placeholders belong in JSON; user-secrets should contain real local developer values only.
+
+Provider-specific values to collect when enabling each integration:
+
+| Provider | Enable when | Required local user-secrets |
+| --- | --- | --- |
+| Twilio SendGrid email | Testing production-style email delivery | `EmailSettings:Provider=SendGrid`, `EmailSettings:SendGrid:ApiKey`, `EmailSettings:FromAddress`, `EmailSettings:ClientBaseUrl` |
+| Stripe payments | Testing card/checkout flow | `Payments:Provider=Stripe` or per-request provider selection, `Payments:Stripe:SecretKey`, `Payments:Stripe:WebhookSigningSecret`, `Payments:Stripe:SuccessUrl`, `Payments:Stripe:CancelUrl` |
+| M-Pesa Daraja | Testing STK Push/query flow | `Payments:Provider=Mpesa` or per-request provider selection, `Payments:Mpesa:ConsumerKey`, `Payments:Mpesa:ConsumerSecret`, `Payments:Mpesa:ShortCode`, `Payments:Mpesa:PassKey`, endpoints, and public callback URL |
+| Entra ID SSO | Testing corporate OIDC login | `EntraId:Enabled=true`, `EntraId:TenantId`, `EntraId:ClientId`, `EntraId:ClientSecret` |
+| Azure Service Bus | Testing Azure messaging transport | `Messaging:Transport=AzureServiceBus`, `Messaging:AzureServiceBus:ConnectionString` |
+
+If Azure subscription access is unavailable, leave Entra ID and Azure Service Bus disabled. The JSON sections, settings POCOs, DI registration, and fail-fast validation remain ready for the future subscription upgrade.
 
 For local-only development, leave these values empty so the app uses filesystem/local storage:
 
@@ -156,9 +185,10 @@ EmailSettings__DisplayName=BaseTemplate
 # Payments
 Payments__Provider=NoOp|Stripe|Mpesa
 Payments__Stripe__SecretKey=<key-vault-reference>
+Payments__Stripe__WebhookSigningSecret=<key-vault-reference>
 Payments__Stripe__SuccessUrl=https://your-app/payments/success
 Payments__Stripe__CancelUrl=https://your-app/payments/cancel
-Payments__Mpesa__ConsumerKey=<key-vault-reference>
+Payments__Mpesa__ConsumerKey=<key-vault-reference>
 Payments__Mpesa__ConsumerSecret=<key-vault-reference>
 Payments__Mpesa__ShortCode=<paybill-or-till>
 Payments__Mpesa__PassKey=<key-vault-reference>
@@ -173,6 +203,10 @@ EntraId__TenantId=<tenant-id>
 EntraId__ClientId=<client-id>
 EntraId__ClientSecret=<key-vault-reference>
 
+# Messaging
+Messaging__Transport=AzureServiceBus
+Messaging__AzureServiceBus__ConnectionString=<key-vault-reference-or-app-setting>
+
 # Redis Cache - Option 1: Access Keys (Standard)
 CacheSettings__Provider=AzureManagedRedis
 CacheSettings__Azure__ConnectionString=your-redis-name.redis.cache.windows.net:6380,password=PRIMARY_ACCESS_KEY,ssl=True,abortConnect=False
@@ -183,7 +217,6 @@ CacheSettings__Provider=AzureManagedRedis
 CacheSettings__Azure__ConnectionString=your-redis-name.redis.cache.windows.net:6380,ssl=True,abortConnect=False
 CacheSettings__Azure__UseEntraId=true
 CacheSettings__Azure__PrincipalId=<User-Assigned-Identity-Client-ID-Or-Leave-Blank-For-System-Assigned>
-```
 
 Optional observability keys:
 
@@ -196,6 +229,52 @@ or Key Vault:
 ```text
 ApplicationInsights--ConnectionString=<application-insights-connection-string>
 ```
+
+## Recommended Non-Azure Production Setup
+
+Use this when deploying through `.github/workflows/non-azure-deploy.yml`.
+
+Minimum API settings:
+
+```text
+ASPNETCORE_ENVIRONMENT=Production
+ConnectionStrings__DefaultConnection=<sql-server-connection>
+JwtSettings__Secret=<strong-secret>
+KeyVault__Uri=
+DataProtection__ApplicationName=BaseTemplate
+DataProtection__UseExternalKeyStore=true
+DataProtection__RedisKeyRingConnectionString=<redis-connection>
+DataProtection__RedisKeyRingKey=DataProtection-Keys
+EmailSettings__Provider=SendGrid
+EmailSettings__SendGrid__Endpoint=https://api.sendgrid.com/v3/mail/send
+EmailSettings__SendGrid__ApiKey=<sendgrid-key>
+EmailSettings__FromAddress=<verified-sender>
+EmailSettings__DisplayName=BaseTemplate
+Messaging__Transport=RabbitMq
+Messaging__RabbitMq__Host=<rabbitmq-host>
+Messaging__RabbitMq__Username=<rabbitmq-user>
+Messaging__RabbitMq__Password=<rabbitmq-password>
+CacheSettings__Provider=Redis
+CacheSettings__Redis__ConnectionString=<redis-connection>
+```
+
+Minimum Blazor settings:
+
+```text
+ASPNETCORE_ENVIRONMENT=Production
+BackendApi__BaseUrl=https://<api-host>/
+```
+
+DigitalOcean and Heroku both expose environment variables/config vars. These are the non-Azure equivalent of App Service app settings, not a full Key Vault replacement. For stronger secret governance, use an external vault or the platform's managed secret integration when available.
+
+For Heroku, the application reads the platform-assigned `PORT` variable automatically. Do not hardcode `ASPNETCORE_URLS` to a fixed port unless the host supports that port.
+
+For non-Azure production profile images and Data Protection keys, avoid ephemeral local filesystems. Use Redis for Data Protection key-ring persistence, and use an implemented durable provider or add the required provider before certification:
+
+- S3-compatible object storage for profile images.
+- Durable private volume for profile images only when the host documents persistence, backup, and restore ownership.
+
+See [Non-Azure Deployment Configuration](non-azure-deployment.md).
 
 ## Azure RBAC Checklist
 
@@ -213,11 +292,13 @@ When checking screenshots or app settings, verify:
 
 - Mode/provider/transport settings use supported values exactly: `DataProtection__KeyEncryptionMode` = `Auto`, `KeyVault`, `Certificate`, or `None`; `ProfileImageStorage__Provider` = `Local` or `AzureBlob`; `Messaging__Transport` = `RabbitMq` or `AzureServiceBus`; `CacheSettings__Provider` = `Auto`, `Memory`, `Redis`, or `AzureManagedRedis`.
 - `DataProtection__BlobKeyUri` points to the `dataprotection-keys` container and a blob name such as `keyring.xml`.
+- `DataProtection__RedisKeyRingConnectionString` is set for non-Azure production hosts that use Redis for Data Protection key persistence.
 - `DataProtection__ApplicationName` is identical across every instance and deployment slot and remains unchanged after protected data is issued.
 - `DataProtection__KeyEncryptionMode` is `KeyVault` or `Auto` for Azure.
 - `DataProtection__KeyVaultKeyIdentifier` points to a Key Vault key version, not a secret or certificate.
 - `DataProtection__CertificateThumbprint` is empty unless deliberately using certificate mode.
 - `ProfileImageStorage__Provider` is `AzureBlob` when testing Azure profile image uploads.
+- `ProfileImageStorage__Provider` is not `Local` for non-Azure production unless the host provides a durable private volume and backup plan.
 - `ConnectionStrings--DefaultConnection` exists in Key Vault or `ConnectionStrings__DefaultConnection` exists in App Service.
 - Cache settings: If `CacheSettings:Azure:UseEntraId` is `true`, ensure the API connection string does not contain a password and has RESP3 enabled. For a user-assigned managed identity, `CacheSettings:Azure:PrincipalId` must contain its client ID.
 - `JwtSettings--Secret` or `JwtSettings--SecretKey` exists in Key Vault.
@@ -227,7 +308,7 @@ When checking screenshots or app settings, verify:
 
 ## CI/CD Pipeline and Deployments
 
-BaseTemplate includes an automated CI/CD pipeline in `.github/workflows/deploy.yml` that handles compiling, testing, migrating Azure SQL, and deploying both the backend API and frontend Blazor UI to Azure App Services on pushes or merges to `main`.
+BaseTemplate includes an automated CI/CD pipeline in `.github/workflows/deploy-azure.yml` that handles compiling, testing, migrating Azure SQL, and deploying both the backend API and frontend Blazor UI to Azure App Services on pushes or merges to `main`.
 
 ### Deployment Prerequisites
 

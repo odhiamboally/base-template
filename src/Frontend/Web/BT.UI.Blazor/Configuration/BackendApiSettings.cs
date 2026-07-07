@@ -170,6 +170,9 @@ internal sealed class HrEndpointSettings
 
 internal sealed class SharedEndpointSettings
 {
+    [Required]
+    public PaymentEndpointSettings Payments { get; init; } = new();
+
     public string LookupCatalogTypes { get; init; } = "api/v{version}/shared/lookups/catalog-types";
 
     public string LookupByType { get; init; } = "api/v{version}/shared/lookups/{lookupType}";
@@ -179,6 +182,13 @@ internal sealed class SharedEndpointSettings
     public string LookupUpdate { get; init; } = "api/v{version}/shared/lookups/{lookupType}/{id}";
 
     public string LookupDelete { get; init; } = "api/v{version}/shared/lookups/{lookupType}/{id}";
+}
+
+internal sealed class PaymentEndpointSettings
+{
+    public string Checkout { get; init; } = "api/v{version}/shared/payments/checkout";
+
+    public string Status { get; init; } = "api/v{version}/shared/payments/{provider}/{paymentReference}";
 }
 
 internal sealed class CustomerEndpointSettings

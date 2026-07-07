@@ -26,4 +26,22 @@ public sealed record AppError(ErrorType Type, string Code, string Message, IRead
             ErrorType.Unexpected,
             ErrorCodes.Unexpected,
             "An unexpected error occurred.");
+
+    public static AppError Forbidden(string message) =>
+        new(
+            ErrorType.Forbidden,
+            ErrorCodes.Forbidden,
+            message);
+
+    public static AppError BusinessRule(string message) =>
+        new(
+            ErrorType.BusinessRule,
+            ErrorCodes.BusinessRule,
+            message);
+
+    public static AppError DependencyUnavailable(string message) =>
+        new(
+            ErrorType.DependencyUnavailable,
+            ErrorCodes.DependencyUnavailable,
+            message);
 }

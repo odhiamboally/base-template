@@ -89,6 +89,13 @@ dotnet user-secrets set 'CacheSettings:Redis:ConnectionString' "localhost:$($env
 dotnet user-secrets set 'EmailSettings:Provider' 'LocalMailpit' --project $apiProject
 dotnet user-secrets set 'EmailSettings:LocalMailpit:Host' 'localhost' --project $apiProject
 dotnet user-secrets set 'EmailSettings:LocalMailpit:Port' '1025' --project $apiProject
+dotnet user-secrets remove 'EmailSettings:Host' --project $apiProject *> $null
+dotnet user-secrets remove 'EmailSettings:Port' --project $apiProject *> $null
+dotnet user-secrets remove 'EmailSettings:Username' --project $apiProject *> $null
+dotnet user-secrets remove 'EmailSettings:Password' --project $apiProject *> $null
+dotnet user-secrets remove 'EmailSettings:EnableSsl' --project $apiProject *> $null
+dotnet user-secrets remove 'EmailSettings:UseAuthentication' --project $apiProject *> $null
+dotnet user-secrets remove 'SmtpSettings:Password' --project $apiProject *> $null
 dotnet user-secrets set 'ProfileImageStorage:Provider' 'Azurite' --project $apiProject
 dotnet user-secrets set 'ProfileImageStorage:Azurite:ConnectionString' 'UseDevelopmentStorage=true' --project $apiProject
 dotnet user-secrets set 'ProfileImageStorage:Azurite:ContainerName' 'profile-images' --project $apiProject

@@ -1,3 +1,4 @@
+using Amazon.S3;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 
@@ -33,6 +34,11 @@ internal sealed class ProfileImageStorageHealthCheck(
         if (provider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase))
         {
             return await CheckBlobStorageAsync(settings.AzureBlob, "Azure Blob profile image storage", cancellationToken)
+                .ConfigureAwait(false);
+        }
+        if (provider.Equals("S3", StringComparison.OrdinalIgnoreCase))
+        {
+            return await CheckS3StorageAsync(settings.S3, "S3 profile image storage", cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -90,5 +96,40 @@ internal sealed class ProfileImageStorageHealthCheck(
         }
 
         throw new InvalidOperationException("Blob profile image storage requires ContainerUri or ConnectionString plus ContainerName.");
+    }
+
+    private static async Task<HealthCheckResult> CheckS3StorageAsync(
+        S3ProfileImageStorageSettings settings,
+        string description,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var config = new AmazonS3Config
+            {
+                ServiceURL = settings.ServiceUrl,
+                ForcePathStyle = true
+            };
+            
+            using var client = new AmazonS3Client(settings.AccessKey, settings.SecretKey, config);
+            
+            var request = new Amazon.S3.Model.ListObjectsV2Request
+            {
+                BucketName = settings.BucketName,
+                MaxKeys = 1
+            };
+
+            await client.ListObjectsV2Async(request, cancellationToken).ConfigureAwait(false);
+
+            return HealthCheckResult.Healthy($"{description} bucket is reachable.");
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return HealthCheckResult.Unhealthy($"{description} bucket does not exist.");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy($"{description} probe failed.", ex);
+        }
     }
 }

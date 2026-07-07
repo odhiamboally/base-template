@@ -1,0 +1,183 @@
+@page "/payments/card"
+@rendermode InteractiveServer
+@inject IAuthSession AuthSession
+@inject IPaymentCheckoutService PaymentCheckoutService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Card Payment | Base Template</PageTitle>
+
+<section class="dashboard-page">
+    @if (!_isReady)
+    {
+        <MudPaper Class="status-card" Elevation="0">Preparing payment checkout...</MudPaper>
+    }
+    else
+    {
+        <div class="dashboard-hero compact-hero">
+            <div>
+                <span class="eyebrow">Payments</span>
+                <h1>Payment checkout.</h1>
+                <p>Choose your preferred payment method below to complete the transaction.</p>
+            </div>
+        </div>
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" md="7">
+                <MudPaper Class="poc-panel" Elevation="0">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="eyebrow">Secure checkout</span>
+                            <h2>Payment details</h2>
+                        </div>
+                    </div>
+
+                    <MudForm @ref="_form">
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12">
+                                <MudRadioGroup T="string" @bind-Value="_selectedProvider" Required="true">
+                                    <MudRadio Value="@("Stripe")" Color="Color.Primary">Card (Stripe)</MudRadio>
+                                    <MudRadio Value="@("Mpesa")" Color="Color.Success">Mobile Money (M-Pesa)</MudRadio>
+                                </MudRadioGroup>
+                            </MudItem>
+                            
+                            @if (_selectedProvider == "Mpesa")
+                            {
+                                <MudItem xs="12">
+                                    <MudTextField Label="M-Pesa Phone Number"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Mask="@(new PatternMask("000 000 000 000"))"
+                                                  Placeholder="254 7XX XXX XXX"
+                                                  @bind-Value="_phoneNumber"
+                                                  Required="true" />
+                                </MudItem>
+                            }
+
+                            <MudItem xs="12" sm="4">
+                                <MudNumericField T="decimal"
+                                                 Label="Amount"
+                                                 Min="1"
+                                                 Variant="Variant.Outlined"
+                                                 Margin="Margin.Dense"
+                                                 @bind-Value="_amount"
+                                                 Required="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudTextField Label="Currency"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              MaxLength="3"
+                                              @bind-Value="_currency"
+                                              Required="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudTextField Label="Reference"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              @bind-Value="_customerReference"
+                                              Required="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField Label="Description"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              @bind-Value="_description"
+                                              Required="true" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudForm>
+
+                    <div class="modal-actions mt-3">
+                        <MudButton Variant="Variant.Filled"
+                                   Disabled="_isSubmitting"
+                                   Class="bt-mud-primary bt-small-button"
+                                   OnClick="StartCheckoutAsync">
+                            @(_isSubmitting ? "Processing..." : (_selectedProvider == "Stripe" ? "Pay by card" : "Pay with M-Pesa"))
+                        </MudButton>
+                    </div>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="5">
+                <MudPaper Class="poc-panel" Elevation="0">
+                    <span class="eyebrow">Provider boundary</span>
+                    <h2>How it works</h2>
+                    <p>
+                        BaseTemplate handles multiple payment providers dynamically. 
+                        <strong>Stripe</strong> uses Hosted Checkout, securely redirecting to collect card details.
+                        <strong>M-Pesa</strong> uses STK Push, prompting the user's phone directly.
+                    </p>
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">
+                        Configure Stripe and M-Pesa API keys before using real provider calls.
+                    </MudAlert>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</section>
+
+@code {
+    private MudForm? _form;
+    private bool _isReady;
+    private bool _isSubmitting;
+    private decimal _amount = 100m;
+    private string _currency = "KES";
+    private string _description = "BaseTemplate payment";
+    private string _customerReference = $"BT-{DateTimeOffset.UtcNow:yyyyMMddHHmm}";
+    private string _selectedProvider = "Stripe";
+    private string? _phoneNumber;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await AuthSession.InitializeAsync();
+        if (!AuthSession.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/iam/sign-in");
+            return;
+        }
+
+        _isReady = true;
+        StateHasChanged();
+    }
+
+    private async Task StartCheckoutAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        var callbackUrl = Navigation.ToAbsoluteUri("/payments/success").ToString();
+        var request = new PaymentInitiationRequest(
+            _amount,
+            _currency.Trim().ToUpperInvariant(),
+            _description.Trim(),
+            _customerReference.Trim(),
+            callbackUrl,
+            PayerPhoneNumber: _selectedProvider == "Mpesa" ? _phoneNumber?.Replace(" ", "") : null,
+            Provider: _selectedProvider);
+
+        var response = await PaymentCheckoutService.CreateCheckoutAsync(request);
+        if (!response.IsSuccess || response.Data is null || string.IsNullOrWhiteSpace(response.Data.CheckoutUrl))
+        {
+            Snackbar.Add(response.Message ?? "Payment checkout could not be started.", Severity.Error);
+            _isSubmitting = false;
+            return;
+        }
+
+        Navigation.NavigateTo(response.Data.CheckoutUrl, forceLoad: true);
+    }
+}
