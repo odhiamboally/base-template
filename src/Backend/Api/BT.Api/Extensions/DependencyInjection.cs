@@ -126,7 +126,7 @@ internal static partial class DependencyInjection
                 : dpSettings.RedisKeyRingKey.Trim();
 
             dataProtectionBuilder.PersistKeysToStackExchangeRedis(
-                () => ConnectionMultiplexer.Connect(dpSettings.RedisKeyRingConnectionString),
+                () => ConnectionMultiplexer.Connect(dpSettings.RedisKeyRingConnectionString).GetDatabase(),
                 key);
             ConfigureDataProtectionKeyEncryption(dataProtectionBuilder, dpSettings);
             return;
