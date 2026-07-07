@@ -53,7 +53,7 @@ internal sealed class StripeWebhookVerifier(
             ServiceLogDefinitions.LogPaymentWebhookVerified(logger, verification.Provider, verification.EventId, verification.EventType);
             return Task.FromResult(AppResponses.Success("Stripe webhook verified.", verification));
         }
-        catch (JsonException ex)
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
         {
             ServiceLogDefinitions.LogPaymentWebhookPayloadError(logger, "Stripe", ex);
             return Task.FromResult(AppResponses.Failure<PaymentWebhookVerificationResponse>(
@@ -87,7 +87,8 @@ internal sealed class StripeWebhookVerifier(
         }
 
         var signedAt = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp);
-        if (DateTimeOffset.UtcNow - signedAt > SignatureTolerance)
+        var difference = DateTimeOffset.UtcNow - signedAt;
+        if (difference > SignatureTolerance || difference < -SignatureTolerance)
         {
             reason = "Stripe signature timestamp is outside tolerance.";
             return false;

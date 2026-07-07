@@ -121,12 +121,13 @@ internal static partial class DependencyInjection
 
         if (dpSettings?.UseExternalKeyStore == true && !string.IsNullOrWhiteSpace(dpSettings.RedisKeyRingConnectionString))
         {
-            var redis = ConnectionMultiplexer.Connect(dpSettings.RedisKeyRingConnectionString);
             var key = string.IsNullOrWhiteSpace(dpSettings.RedisKeyRingKey)
                 ? "DataProtection-Keys"
                 : dpSettings.RedisKeyRingKey.Trim();
 
-            dataProtectionBuilder.PersistKeysToStackExchangeRedis(redis, key);
+            dataProtectionBuilder.PersistKeysToStackExchangeRedis(
+                () => ConnectionMultiplexer.Connect(dpSettings.RedisKeyRingConnectionString),
+                key);
             ConfigureDataProtectionKeyEncryption(dataProtectionBuilder, dpSettings);
             return;
         }

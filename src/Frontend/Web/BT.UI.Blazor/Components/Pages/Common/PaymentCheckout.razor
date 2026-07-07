@@ -160,14 +160,14 @@
         }
 
         _isSubmitting = true;
-        var callbackUrl = Navigation.ToAbsoluteUri("/payments/cancel").ToString();
+        var callbackUrl = Navigation.ToAbsoluteUri("/payments/success").ToString();
         var request = new PaymentInitiationRequest(
             _amount,
             _currency.Trim().ToUpperInvariant(),
             _description.Trim(),
             _customerReference.Trim(),
             callbackUrl,
-            PayerPhoneNumber: _selectedProvider == "Mpesa" ? _phoneNumber?.Trim() : null,
+            PayerPhoneNumber: _selectedProvider == "Mpesa" ? _phoneNumber?.Replace(" ", "") : null,
             Provider: _selectedProvider);
 
         var response = await PaymentCheckoutService.CreateCheckoutAsync(request);

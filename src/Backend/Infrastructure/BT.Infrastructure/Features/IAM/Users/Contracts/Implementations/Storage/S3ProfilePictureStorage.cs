@@ -52,17 +52,16 @@ internal sealed class S3ProfilePictureStorage(IOptions<ProfileImageStorageSettin
         Uri profilePictureUri,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(profilePictureUri);
         var activeSettings = ActiveStorageSettings;
         using var s3Client = CreateS3Client(activeSettings);
 
         // Parse the blobName from the URI
-        var pathSegments = profilePictureUri.AbsolutePath.TrimStart('/').Split('/', 2);
-        if (pathSegments.Length < 2 || pathSegments[0] != activeSettings.BucketName)
-        {
-             return null;
-        }
-
-        var blobName = pathSegments[1];
+        var path = profilePictureUri.AbsolutePath.TrimStart('/');
+        var bucketPrefix = $"{activeSettings.BucketName}/";
+        var blobName = path.StartsWith(bucketPrefix, StringComparison.OrdinalIgnoreCase)
+            ? path[bucketPrefix.Length..]
+            : path;
 
         try
         {
