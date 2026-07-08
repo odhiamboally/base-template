@@ -1,5 +1,4 @@
 @page "/billing"
-@attribute [Authorize]
 
 @rendermode InteractiveServer
 @inject IAuthSession AuthSession
@@ -9,13 +8,8 @@
 
 <PageTitle>Billing | Base Template</PageTitle>
 
-<section class="dashboard-page">
-    @if (!_isReady)
-    {
-        <MudPaper Class="status-card" Elevation="0">Preparing payment checkout...</MudPaper>
-    }
-    else
-    {
+<RequireAuthenticated>
+    <section class="dashboard-page">
         <div class="dashboard-hero compact-hero">
             <div>
                 <span class="eyebrow">Subscription & Billing</span>
@@ -37,7 +31,7 @@
                     <MudForm @ref="_form">
                         <MudGrid Spacing="2">
                             <MudItem xs="12">
-                                <MudRadioGroup T="string" @bind-Value="_selectedProvider" Required="true">
+                                <MudRadioGroup T="string" Value="@_selectedProvider" ValueChanged="OnProviderChanged" Required="true">
                                     <MudRadio Value="@("Stripe")" Color="Color.Primary">Card (Stripe)</MudRadio>
                                     <MudRadio Value="@("Mpesa")" Color="Color.Success">Mobile Money (M-Pesa)</MudRadio>
                                 </MudRadioGroup>
@@ -56,29 +50,30 @@
                                 </MudItem>
                             }
 
-                            <MudItem xs="12" sm="4">
+                            <MudItem xs="12" sm="8">
                                 <MudNumericField T="decimal"
                                                  Label="Amount"
                                                  Min="1"
                                                  Variant="Variant.Outlined"
                                                  Margin="Margin.Dense"
+                                                 Format="N2"
                                                  @bind-Value="_amount"
                                                  Required="true" />
                             </MudItem>
                             <MudItem xs="12" sm="4">
-                                <MudTextField Label="Currency"
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense"
-                                              MaxLength="3"
-                                              @bind-Value="_currency"
-                                              Required="true" />
-                            </MudItem>
-                            <MudItem xs="12" sm="4">
-                                <MudTextField Label="Reference"
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense"
-                                              @bind-Value="_customerReference"
-                                              Required="true" />
+                                <MudSelect T="string"
+                                           Label="Currency"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Value="@_currency"
+                                           ValueChanged="OnCurrencyChanged"
+                                           Required="true"
+                                           ReadOnly="@(_selectedProvider == "Mpesa")">
+                                    <MudSelectItem Value="@("USD")">🇺🇸 USD</MudSelectItem>
+                                    <MudSelectItem Value="@("KES")">🇰🇪 KES</MudSelectItem>
+                                    <MudSelectItem Value="@("EUR")">🇪🇺 EUR</MudSelectItem>
+                                    <MudSelectItem Value="@("GBP")">🇬🇧 GBP</MudSelectItem>
+                                </MudSelect>
                             </MudItem>
                             <MudItem xs="12">
                                 <MudTextField Label="Description"
@@ -116,36 +111,44 @@
                 </MudPaper>
             </MudItem>
         </MudGrid>
-    }
-</section>
+    </section>
+</RequireAuthenticated>
 
 @code {
     private MudForm? _form;
-    private bool _isReady;
     private bool _isSubmitting;
     private decimal _amount = 100m;
-    private string _currency = "KES";
+    private string _currency = "USD";
     private string _description = "BaseTemplate payment";
-    private string _customerReference = $"BT-{DateTimeOffset.UtcNow:yyyyMMddHHmm}";
+    private string _customerReference = "";
     private string _selectedProvider = "Stripe";
     private string? _phoneNumber;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnInitialized()
     {
-        if (!firstRender)
-        {
-            return;
-        }
+        GenerateReference();
+    }
 
-        await AuthSession.InitializeAsync();
-        if (!AuthSession.IsAuthenticated)
+    private void OnProviderChanged(string provider)
+    {
+        _selectedProvider = provider;
+        if (provider == "Mpesa")
         {
-            Navigation.NavigateTo("/iam/sign-in");
-            return;
+            _currency = "KES";
         }
+        GenerateReference();
+    }
 
-        _isReady = true;
-        StateHasChanged();
+    private void OnCurrencyChanged(string currency)
+    {
+        _currency = currency;
+        GenerateReference();
+    }
+
+    private void GenerateReference()
+    {
+        var prefix = _selectedProvider == "Stripe" ? "CARD" : "MPESA";
+        _customerReference = $"BT-{prefix}-{_currency}-{DateTimeOffset.UtcNow:yyMMddHHmmss}";
     }
 
     private async Task StartCheckoutAsync()
