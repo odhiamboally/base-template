@@ -4,6 +4,7 @@ using BT.Persistence.Features.IAM.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BT.Persistence.Migrations.IAM
 {
     [DbContext(typeof(IamDBContext))]
-    partial class IamDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260708094838_AddMenuDisplayOrder")]
+    partial class AddMenuDisplayOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

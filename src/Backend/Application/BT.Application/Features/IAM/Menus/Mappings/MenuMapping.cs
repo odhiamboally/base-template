@@ -20,6 +20,7 @@ public static class MenuMapping
             menu.Icon,
             menu.Placement,
             menu.RequiredPermissionKey,
+            menu.DisplayOrder,
             menu.IsActive,
             children ?? []);
     }
@@ -35,11 +36,11 @@ public static class MenuMapping
 
         var lookup = menus.ToLookup(static menu => menu.ParentId);
 
-        return [.. rootParentIds.SelectMany(Build).OrderBy(static menu => menu.Title)];
+        return [.. rootParentIds.SelectMany(Build).OrderBy(static menu => menu.DisplayOrder).ThenBy(static menu => menu.Title)];
 
         List<MenuResponse> Build(Guid? parentId)
             => [.. lookup[parentId]
-                .OrderBy(static menu => menu.Title)
+                .OrderBy(static menu => menu.DisplayOrder).ThenBy(static menu => menu.Title)
                 .Select(child => child.ToMenuResponse(Build(child.Id)))];
     }
 }

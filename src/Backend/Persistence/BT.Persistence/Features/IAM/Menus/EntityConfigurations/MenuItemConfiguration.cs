@@ -22,6 +22,7 @@ internal sealed class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
         builder.Property(menu => menu.Icon).HasMaxLength(80).IsRequired();
         builder.Property(menu => menu.Placement).HasMaxLength(40).IsRequired();
         builder.Property(menu => menu.RequiredPermissionKey).HasMaxLength(160);
+        builder.Property(menu => menu.DisplayOrder).HasDefaultValue(0);
         builder.Property(menu => menu.DepartmentId);
         builder.Property(menu => menu.CreatedBy).HasMaxLength(120).IsRequired();
         builder.Property(menu => menu.UpdatedBy).HasMaxLength(120);

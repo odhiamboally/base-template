@@ -43,7 +43,7 @@ internal sealed class CreateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
             }
 
             var key = Slugify(request.Title);
-            var menu = MenuItem.Create(request.ParentId, request.DepartmentId, key, request.Title, request.Description, request.Url, request.Icon, request.Placement, request.RequiredPermissionKey, command.UserId);
+            var menu = MenuItem.Create(request.ParentId, request.DepartmentId, key, request.Title, request.Description, request.Url, request.Icon, request.Placement, request.RequiredPermissionKey, request.DisplayOrder, command.UserId);
             var duplicate = await unitOfWork.MenuRepository
                 .AnyAsync(existing => existing.Key == menu.Key, cancellationToken)
                 .ConfigureAwait(false);

@@ -34,6 +34,7 @@ public record AppResponse<T>
 
     [JsonPropertyName("successful")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonInclude]
     internal bool? Successful
     {
         get => null;

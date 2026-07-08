@@ -11,5 +11,6 @@ public sealed record MenuResponse(
     string Icon,
     string Placement,
     string? RequiredPermissionKey,
+    int DisplayOrder,
     bool IsActive,
     IReadOnlyList<MenuResponse> Children);

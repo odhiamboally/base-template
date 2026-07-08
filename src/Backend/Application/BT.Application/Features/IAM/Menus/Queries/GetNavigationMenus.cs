@@ -25,7 +25,7 @@ internal sealed class GetNavigationMenusQueryHandler(IIamUnitOfWork unitOfWork, 
                     menus => menus
                         .Where(menu => menu.IsActive && menu.Placement == query.Placement)
                         .Where(menu => query.HasFullAccess || menu.RequiredPermissionKey == null || permissionSet.Contains(menu.RequiredPermissionKey))
-                        .OrderBy(static menu => menu.Title),
+                        .OrderBy(static menu => menu.DisplayOrder).ThenBy(static menu => menu.Title),
                     cancellationToken)
                 .ConfigureAwait(false);
 
