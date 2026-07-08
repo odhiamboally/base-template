@@ -1,46 +1,47 @@
 @page "/admin/iam"
-@attribute [Authorize]
 
 @rendermode InteractiveServer
 @using BT.UI.Blazor.Components.Pages.Admin
 
 <PageTitle>Identity & Access | Base Template</PageTitle>
 
-<section class="dashboard-page">
-    <div class="dashboard-hero compact-hero">
-        <div>
-            <span class="eyebrow">Administration</span>
-            <h1>Identity & Access.</h1>
-            <p>Manage roles, permissions, users, and trusted devices across the platform.</p>
+<RequireAuthenticated>
+    <section class="dashboard-page">
+        <div class="dashboard-hero compact-hero">
+            <div>
+                <span class="eyebrow">Administration</span>
+                <h1>Identity & Access.</h1>
+                <p>Manage roles, permissions, users, and trusted devices across the platform.</p>
+            </div>
         </div>
-    </div>
 
-    <MudPaper Class="poc-panel" Elevation="0">
-        <MudTabs ActivePanelIndex="_activeTab" ActivePanelIndexChanged="OnTabChanged" Rounded="true" Elevation="0" Class="bt-catalog-tabs">
-            <MudTabPanel Text="Roles" />
-            <MudTabPanel Text="Permissions" />
-            <MudTabPanel Text="Users" />
-            <MudTabPanel Text="User Devices" />
-        </MudTabs>
+        <MudPaper Class="poc-panel" Elevation="0">
+            <MudTabs ActivePanelIndex="_activeTab" ActivePanelIndexChanged="OnTabChanged" Rounded="true" Elevation="0" Class="bt-catalog-tabs">
+                <MudTabPanel Text="Roles" />
+                <MudTabPanel Text="Permissions" />
+                <MudTabPanel Text="Users" />
+                <MudTabPanel Text="User Devices" />
+            </MudTabs>
 
-        @if (_activeTab == 0)
-        {
-            <AdminRoles />
-        }
-        else if (_activeTab == 1)
-        {
-            <AdminPermissions />
-        }
-        else if (_activeTab == 2)
-        {
-            <AdminUsers />
-        }
-        else if (_activeTab == 3)
-        {
-            <AdminUserDevices />
-        }
-    </MudPaper>
-</section>
+            @if (_activeTab == 0)
+            {
+                <AdminRoles />
+            }
+            else if (_activeTab == 1)
+            {
+                <AdminPermissions />
+            }
+            else if (_activeTab == 2)
+            {
+                <AdminUsers />
+            }
+            else if (_activeTab == 3)
+            {
+                <AdminUserDevices />
+            }
+        </MudPaper>
+    </section>
+</RequireAuthenticated>
 
 @code {
     private int _activeTab;
