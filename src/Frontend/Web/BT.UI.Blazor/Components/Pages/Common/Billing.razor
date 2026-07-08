@@ -1,4 +1,6 @@
 @page "/billing"
+@attribute [Authorize]
+
 @rendermode InteractiveServer
 @inject IAuthSession AuthSession
 @inject IPaymentCheckoutService PaymentCheckoutService

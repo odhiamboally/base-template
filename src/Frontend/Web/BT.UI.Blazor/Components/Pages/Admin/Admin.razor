@@ -1,4 +1,6 @@
 @page "/admin"
+@attribute [Authorize]
+
 @rendermode InteractiveServer
 @inject IAuthSession AuthSession
 @inject IIamAdminService IamAdminService
