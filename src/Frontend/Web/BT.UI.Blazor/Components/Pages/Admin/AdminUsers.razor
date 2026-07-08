@@ -1,4 +1,3 @@
-@page "/admin/users"
 @rendermode InteractiveServer
 @using BT.SharedKernel.Features.IAM.Users.Dtos
 @inject IAuthSession AuthSession
@@ -7,31 +6,14 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>Users | Base Template</PageTitle>
-
-<section class="dashboard-page">
-    <div class="dashboard-hero compact-hero">
-        <div>
-            <span class="eyebrow">Administration</span>
-            <h1>Users.</h1>
-            <p>Application users, account status, MFA posture, and employee/customer linkage are loaded from IAM.</p>
-        </div>
+<div class="list-toolbar">
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
         @if (AuthSession.HasPermission("users.create"))
         {
             <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenUserDialogAsync(null))">Create user</MudButton>
         }
+        <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
     </div>
-
-    <MudPaper Class="poc-panel" Elevation="0">
-        <div class="panel-heading">
-            <div>
-                <span class="eyebrow">User list</span>
-                <h2>Application users</h2>
-            </div>
-            <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
-        </div>
-
-        <div class="list-toolbar">
             <MudTextField @bind-Value="_searchText"
                           Placeholder="Search name, username, email, phone..."
                           Adornment="Adornment.Start"
@@ -150,8 +132,6 @@
                 </PagerContent>
             </MudTable>
         </div>
-    </MudPaper>
-</section>
 
 @code {
     private static readonly string[] StatusOptions = ["Active", "Inactive"];

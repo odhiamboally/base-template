@@ -10,4 +10,5 @@ public sealed record CreateMenuRequest
     public string Icon { get; init; } = "Menu";
     public string Placement { get; init; } = "AdminCenter";
     public string? RequiredPermissionKey { get; init; }
+    public int DisplayOrder { get; init; }
 }

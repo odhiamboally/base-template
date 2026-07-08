@@ -32,19 +32,7 @@ public record AppResponse<T>
         Data = data;
     }
 
-    [JsonPropertyName("successful")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    internal bool? Successful
-    {
-        get => null;
-        init
-        {
-            if (value.HasValue)
-            {
-                IsSuccess = value.Value;
-            }
-        }
-    }
+
 
     internal AppResponse(AppError error)
     {

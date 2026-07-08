@@ -20,9 +20,9 @@
     color: #173b2b;
     display: flex;
     gap: 0.65rem;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 3rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0.75rem 0.5rem 1rem;
     text-decoration: none;
 }
 

@@ -1,4 +1,3 @@
-@page "/admin/permissions"
 @rendermode InteractiveServer
 @using BT.SharedKernel.Features.HR.Departments.Dtos
 @using BT.UI.Rcl.Features.HR.Departments.Contracts.Interfaces
@@ -9,31 +8,14 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>Permissions | Base Template</PageTitle>
-
-<section class="dashboard-page">
-    <div class="dashboard-hero compact-hero">
-        <div>
-            <span class="eyebrow">Administration</span>
-            <h1>Permissions.</h1>
-            <p>Permission keys are loaded from IAM and become the single source for role claims, direct grants, and menu visibility.</p>
-        </div>
+<div class="list-toolbar">
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
         @if (AuthSession.HasPermission("roles.manage_permissions"))
         {
             <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.LockPerson" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenFormDialogAsync(null))">Create permission</MudButton>
         }
+        <MudChip T="string" Size="Size.Small" Color="Color.Success">@_statusLabel</MudChip>
     </div>
-
-    <MudPaper Class="poc-panel" Elevation="0">
-        <div class="panel-heading">
-            <div>
-                <span class="eyebrow">Permission catalog</span>
-                <h2>Bounded-context permissions</h2>
-            </div>
-            <MudChip T="string" Size="Size.Small" Color="Color.Success">@_statusLabel</MudChip>
-        </div>
-
-        <div class="list-toolbar">
             <MudTextField @bind-Value="_searchText"
                           Placeholder="Search key, context, resource, action, description..."
                           Adornment="Adornment.Start"
@@ -144,8 +126,6 @@
                 </PagerContent>
             </MudTable>
         </div>
-    </MudPaper>
-</section>
 
 @code {
     private readonly List<PermissionResponse> _permissions = [];

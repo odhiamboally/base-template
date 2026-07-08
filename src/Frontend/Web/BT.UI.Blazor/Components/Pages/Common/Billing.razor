@@ -1,11 +1,13 @@
-@page "/payments/card"
+@page "/billing"
+@attribute [Authorize]
+
 @rendermode InteractiveServer
 @inject IAuthSession AuthSession
 @inject IPaymentCheckoutService PaymentCheckoutService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>Card Payment | Base Template</PageTitle>
+<PageTitle>Billing | Base Template</PageTitle>
 
 <section class="dashboard-page">
     @if (!_isReady)
@@ -16,9 +18,9 @@
     {
         <div class="dashboard-hero compact-hero">
             <div>
-                <span class="eyebrow">Payments</span>
-                <h1>Payment checkout.</h1>
-                <p>Choose your preferred payment method below to complete the transaction.</p>
+                <span class="eyebrow">Subscription & Billing</span>
+                <h1>Billing & Payments.</h1>
+                <p>Manage your active subscriptions, view billing history, or make a one-time payment.</p>
             </div>
         </div>
 

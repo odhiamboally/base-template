@@ -5,54 +5,65 @@
 <section class="overview-page">
     <div class="overview-hero">
         <span class="eyebrow">Solution overview</span>
-        <h1>Reusable enterprise base template.</h1>
+        <h1>Modern enterprise base template.</h1>
         <p>
-            This POC demonstrates a modular monolith foundation with bounded contexts, production-minded security,
-            local developer ergonomics, and a UI-to-API flow ready to grow into real business modules.
+            This foundation demonstrates a modular monolith architecture with bounded contexts, production-grade security,
+            scalable UI components, and integrated third-party capabilities like Payments and Identity Management.
         </p>
     </div>
 
-    <MudGrid Spacing="3">
+    <MudGrid Spacing="4">
+        <!-- Architecture -->
         <MudItem xs="12" md="6" lg="4">
             <MudPaper Class="overview-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.AccountTree" />
-                <h2>Architecture</h2>
-                <p>Bounded contexts across IAM, Banking, HR, and Shared modules, with feature-first organization in backend and UI.</p>
+                <MudIcon Icon="@Icons.Material.Filled.AccountTree" Size="Size.Large" Class="mb-3" />
+                <h2>Modular Architecture</h2>
+                <p>Domain-Driven Design boundaries across IAM, Billing, HR, and Shared modules. Clear separation of application logic, persistence, and external adapters.</p>
             </MudPaper>
         </MudItem>
+
+        <!-- UI & UX -->
         <MudItem xs="12" md="6" lg="4">
             <MudPaper Class="overview-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.Security" />
-                <h2>Security</h2>
-                <p>ASP.NET Core Identity, JWT-backed API access, local dev admin seed, authenticator-app 2FA, rate limiting, and security headers.</p>
+                <MudIcon Icon="@Icons.Material.Filled.Web" Size="Size.Large" Class="mb-3" />
+                <h2>Responsive UI</h2>
+                <p>Blazor Web App paired with MudBlazor. Features glassmorphism aesthetics, dynamic data tables, complex forms, and robust state management.</p>
             </MudPaper>
         </MudItem>
+
+        <!-- Identity & Security -->
         <MudItem xs="12" md="6" lg="4">
             <MudPaper Class="overview-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.Storage" />
-                <h2>Persistence</h2>
-                <p>EF Core contexts per bounded context, explicit entity configurations, migrations, soft-delete guardrails, and context-owned repositories.</p>
+                <MudIcon Icon="@Icons.Material.Filled.Security" Size="Size.Large" Class="mb-3" />
+                <h2>Identity & Security</h2>
+                <p>Complete IAM engine with ASP.NET Core Identity. Role-based access control, granular permission claims, MFA, and trusted device tracking.</p>
             </MudPaper>
         </MudItem>
+
+        <!-- Billing & Payments -->
         <MudItem xs="12" md="6" lg="4">
             <MudPaper Class="overview-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.Hub" />
-                <h2>Integration</h2>
-                <p>Domain/integration event conventions, outbox direction, MassTransit decision point, and background job abstractions.</p>
+                <MudIcon Icon="@Icons.Material.Filled.Payments" Size="Size.Large" Class="mb-3" />
+                <h2>Payments (Stripe & M-Pesa)</h2>
+                <p>Pre-configured integrations with Stripe and M-Pesa. Support for subscriptions, payment intents, and local mobile money flows (East Africa).</p>
             </MudPaper>
         </MudItem>
+
+        <!-- Persistence -->
         <MudItem xs="12" md="6" lg="4">
             <MudPaper Class="overview-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.MonitorHeart" />
-                <h2>Operations</h2>
-                <p>Health checks, Serilog/Seq direction, OpenAPI/Scalar, GitHub Actions guardrails, and local run documentation.</p>
+                <MudIcon Icon="@Icons.Material.Filled.Storage" Size="Size.Large" Class="mb-3" />
+                <h2>Persistence & Caching</h2>
+                <p>EF Core with context-specific DbSets, tenant isolation, automatic soft-delete, and audit tracking. Redis integration for distributed caching.</p>
             </MudPaper>
         </MudItem>
+
+        <!-- Operations -->
         <MudItem xs="12" md="6" lg="4">
             <MudPaper Class="overview-card" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.Web" />
-                <h2>UI Flow</h2>
-                <p>Blazor Web App, MudBlazor shell, HTTP API client boundary, protected token storage, and demo-ready IAM/admin surfaces.</p>
+                <MudIcon Icon="@Icons.Material.Filled.MonitorHeart" Size="Size.Large" Class="mb-3" />
+                <h2>Observability & Ops</h2>
+                <p>Health checks, structured Serilog logging (Seq ready), OpenAPI/Scalar documentation, Dockerized local dev, and Azure-ready deployments.</p>
             </MudPaper>
         </MudItem>
     </MudGrid>

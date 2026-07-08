@@ -53,18 +53,20 @@ internal sealed class UpdateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
                 }
             }
 
-            var key = Slugify(request.Title);
-            var draft = MenuItem.Create(request.ParentId, request.DepartmentId, key, request.Title, request.Description, request.Url, request.Icon, request.Placement, request.RequiredPermissionKey, command.UserId);
-            var duplicate = await unitOfWork.MenuRepository
-                .AnyAsync(existing => existing.Id != command.Id && existing.Key == draft.Key, cancellationToken)
-                .ConfigureAwait(false);
 
-            if (duplicate)
-            {
-                return AppResponses.Failure<MenuResponse>($"Menu key {draft.Key} already exists.");
-            }
-
-            menu.Update(request.ParentId, request.DepartmentId, key, request.Title, request.Description, request.Url, request.Icon, request.Placement, request.RequiredPermissionKey, request.IsActive, command.UserId);
+            menu.Update(
+                request.ParentId,
+                request.DepartmentId,
+                menu.Key, // Prevent key change on update
+                request.Title,
+                request.Description,
+                request.Url,
+                request.Icon,
+                request.Placement,
+                request.RequiredPermissionKey,
+                request.DisplayOrder,
+                request.IsActive,
+                command.UserId);
             await unitOfWork.MenuRepository.UpdateAsync(menu).ConfigureAwait(false);
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
@@ -76,9 +78,6 @@ internal sealed class UpdateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
             throw;
         }
     }
-
-    private static string Slugify(string value)
-        => string.Join('-', value.Trim().ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
     private static async Task<string?> ValidateCatalogAsync(
         IIamUnitOfWork unitOfWork,

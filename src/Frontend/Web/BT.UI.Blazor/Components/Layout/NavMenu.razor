@@ -37,9 +37,9 @@
 
     private static IReadOnlyList<MenuResponse> FallbackMenus =>
     [
-        new(Guid.Empty, null, null, "dashboard", "Dashboard", "Operations dashboard.", "/dashboard", "Dashboard", "Sidebar", null, true, []),
-        new(Guid.Empty, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, true, []),
-        new(Guid.Empty, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, true, [])
+        new(Guid.Empty, null, null, "dashboard", "Dashboard", "Operations dashboard.", "/dashboard", "Dashboard", "Sidebar", null, 1, true, []),
+        new(Guid.Empty, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, 2, true, []),
+        new(Guid.Empty, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, 3, true, [])
     ];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
