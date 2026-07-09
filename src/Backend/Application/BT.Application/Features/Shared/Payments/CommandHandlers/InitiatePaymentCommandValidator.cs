@@ -18,13 +18,9 @@ public sealed class InitiatePaymentCommandValidator : AbstractValidator<Initiate
 
         RuleFor(command => command.Request.Description)
             .NotEmpty()
-            .MaximumLength(200);
+            .MaximumLength(500).WithMessage("Description must not exceed 500 characters.");
 
-        RuleFor(command => command.Request.CustomerReference)
-            .NotEmpty()
-            .MaximumLength(100);
-
-        RuleFor(command => command.Request.CallbackUrl)
+        RuleFor(x => x.Request.CallbackUrl)
             .NotEmpty()
             .Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _))
             .WithMessage("CallbackUrl must be an absolute URL.");

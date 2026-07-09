@@ -44,12 +44,16 @@ public sealed class PaymentsController(ISender sender) : BaseController
 
     [HttpPost("stripe/webhook")]
     [AllowAnonymous]
-    [EnableRateLimiting("AuthPolicy")]
+    [EnableRateLimiting("ApiPolicy")]
     public async Task<IActionResult> StripeWebhook(CancellationToken ct)
     {
         var signatureHeader = Request.Headers["Stripe-Signature"].ToString();
-        using var reader = new StreamReader(Request.Body, Encoding.UTF8);
+        
+        Request.EnableBuffering();
+        Request.Body.Position = 0;
+        using var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true);
         var payload = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
+        Request.Body.Position = 0;
 
         var response = await sender
             .Send(new VerifyPaymentWebhookCommand("Stripe", payload, signatureHeader), ct)

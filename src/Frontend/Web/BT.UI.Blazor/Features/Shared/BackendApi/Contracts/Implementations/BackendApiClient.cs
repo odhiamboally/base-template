@@ -201,12 +201,19 @@ internal sealed class BackendApiClient(
         try
         {
             using var document = JsonDocument.Parse(content);
+            
+            // If it's a Validation problem, we should prioritize the specific field errors.
+            var validationErrors = TryGetValidationErrors(document.RootElement);
+            if (!string.IsNullOrWhiteSpace(validationErrors))
+            {
+                return validationErrors;
+            }
+            
             return TryGetString(document.RootElement, "message")
                 ?? TryGetString(document.RootElement, "detail")
                 ?? TryGetString(document.RootElement, "title")
                 ?? TryGetString(document.RootElement, "error")
                 ?? TryGetSessionInvalidMessage(document.RootElement)
-                ?? TryGetValidationErrors(document.RootElement)
                 ?? "The backend service rejected the request.";
         }
         catch (JsonException)

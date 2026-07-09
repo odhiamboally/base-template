@@ -14,10 +14,13 @@ internal sealed class UnsupportedPaymentGateway : IPaymentGateway
     }
 
     public Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
+        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
         PaymentInitiationRequest request,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(AppResponses.Failure<PaymentInitiationResponse>(
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(AppResponses.Failure<PaymentInitiationResponse>(
             BuildMessage(request.Provider ?? _provider)));
+    }
 
     public Task<AppResponse<PaymentStatusResponse>> GetStatusAsync(
         string paymentReference,

@@ -57,6 +57,7 @@
                                                  Variant="Variant.Outlined"
                                                  Margin="Margin.Dense"
                                                  Format="N2"
+                                                 HideSpinButtons="true"
                                                  @bind-Value="_amount"
                                                  Required="true" />
                             </MudItem>
@@ -120,13 +121,11 @@
     private decimal _amount = 100m;
     private string _currency = "USD";
     private string _description = "BaseTemplate payment";
-    private string _customerReference = "";
     private string _selectedProvider = "Stripe";
     private string? _phoneNumber;
 
     protected override void OnInitialized()
     {
-        GenerateReference();
     }
 
     private void OnProviderChanged(string provider)
@@ -136,19 +135,11 @@
         {
             _currency = "KES";
         }
-        GenerateReference();
     }
 
     private void OnCurrencyChanged(string currency)
     {
         _currency = currency;
-        GenerateReference();
-    }
-
-    private void GenerateReference()
-    {
-        var prefix = _selectedProvider == "Stripe" ? "CARD" : "MPESA";
-        _customerReference = $"BT-{prefix}-{_currency}-{DateTimeOffset.UtcNow:yyMMddHHmmss}";
     }
 
     private async Task StartCheckoutAsync()
@@ -170,7 +161,6 @@
             _amount,
             _currency.Trim().ToUpperInvariant(),
             _description.Trim(),
-            _customerReference.Trim(),
             callbackUrl,
             PayerPhoneNumber: _selectedProvider == "Mpesa" ? _phoneNumber?.Replace(" ", "") : null,
             Provider: _selectedProvider);
@@ -178,7 +168,9 @@
         var response = await PaymentCheckoutService.CreateCheckoutAsync(request);
         if (!response.IsSuccess || response.Data is null || string.IsNullOrWhiteSpace(response.Data.CheckoutUrl))
         {
-            Snackbar.Add(response.Message ?? "Payment checkout could not be started.", Severity.Error);
+            var errorMessage = response.Message 
+                ?? "Payment checkout could not be started.";
+            Snackbar.Add(errorMessage, Severity.Error);
             _isSubmitting = false;
             return;
         }

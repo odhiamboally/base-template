@@ -14,6 +14,7 @@ internal sealed class NoOpPaymentGateway(
     private readonly PaymentSettings _settings = options.Value;
 
     public Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
+        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
