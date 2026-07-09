@@ -22,6 +22,7 @@ internal sealed class MpesaPaymentGateway(
     private readonly MpesaPaymentSettings _settings = options.Value.Mpesa;
 
     public async Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
+        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -58,15 +59,15 @@ internal sealed class MpesaPaymentGateway(
                 password,
                 timestamp,
                 "CustomerPayBillOnline",
-                decimal.ToInt32(decimal.Round(request.Amount, 0, MidpointRounding.AwayFromZero)),
+                decimal.ToInt32(decimal.Round(record.Amount.Amount, 0, MidpointRounding.AwayFromZero)),
                 normalizedPhoneNumber,
                 _settings.ShortCode,
                 normalizedPhoneNumber,
                 string.IsNullOrWhiteSpace(_settings.CallbackUrl) ? request.CallbackUrl : _settings.CallbackUrl,
-                string.IsNullOrWhiteSpace(request.CustomerReference)
+                string.IsNullOrWhiteSpace(record.CustomerReference)
                     ? _settings.AccountReference
-                    : request.CustomerReference,
-                request.Description);
+                    : record.CustomerReference,
+                record.Description);
 
             using var httpClient = httpClientFactory.CreateClient("Payments.Mpesa");
             httpClient.BaseAddress = new Uri(_settings.StkPushEndpoint);

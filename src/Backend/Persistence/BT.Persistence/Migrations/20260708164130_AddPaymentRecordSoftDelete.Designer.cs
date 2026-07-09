@@ -4,16 +4,19 @@ using BT.Persistence.Features.Shared.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BT.Persistence.Migrations.Shared
+namespace BT.Persistence.Migrations
 {
     [DbContext(typeof(SharedDBContext))]
-    partial class SharedDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260708164130_AddPaymentRecordSoftDelete")]
+    partial class AddPaymentRecordSoftDelete
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

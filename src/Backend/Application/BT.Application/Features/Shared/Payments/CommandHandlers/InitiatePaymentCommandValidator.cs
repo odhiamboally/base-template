@@ -18,13 +18,16 @@ public sealed class InitiatePaymentCommandValidator : AbstractValidator<Initiate
 
         RuleFor(command => command.Request.Description)
             .NotEmpty()
-            .MaximumLength(200);
+            .MaximumLength(500).WithMessage("Description must not exceed 500 characters.");
 
-        RuleFor(command => command.Request.CustomerReference)
-            .NotEmpty()
-            .MaximumLength(100);
+        RuleFor(x => x.Request.Amount)
+            .GreaterThan(0).WithMessage("Amount must be greater than zero.");
 
-        RuleFor(command => command.Request.CallbackUrl)
+        RuleFor(x => x.Request.Currency)
+            .NotEmpty().WithMessage("Currency is required.")
+            .Length(3).WithMessage("Currency must be a 3-letter ISO code.");
+
+        RuleFor(x => x.Request.CallbackUrl)
             .NotEmpty()
             .Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _))
             .WithMessage("CallbackUrl must be an absolute URL.");

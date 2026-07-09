@@ -54,8 +54,12 @@
             return;
         }
 
-        await LoadModulesAsync();
-        StateHasChanged();
+        await AuthSession.InitializeAsync();
+        if (AuthSession.IsAuthenticated)
+        {
+            await LoadModulesAsync();
+            StateHasChanged();
+        }
     }
 
     private async Task LoadModulesAsync()

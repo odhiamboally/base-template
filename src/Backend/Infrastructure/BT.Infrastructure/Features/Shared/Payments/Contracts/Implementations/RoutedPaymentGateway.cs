@@ -15,12 +15,13 @@ internal sealed class RoutedPaymentGateway(
     private readonly PaymentSettings _settings = options.Value;
 
     public Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
+        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return ResolveGateway(request.Provider).InitiateAsync(request, cancellationToken);
+        return ResolveGateway(request.Provider).InitiateAsync(record, request, cancellationToken);
     }
 
     public Task<AppResponse<PaymentStatusResponse>> GetStatusAsync(

@@ -6,6 +6,7 @@ using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
 using BT.Domain.Features.Banking.Customers.Lookups;
 using BT.Domain.Features.Shared.Lookups.Entities;
+using BT.Domain.Features.Shared.Payments.Entities;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
 using MassTransit;
@@ -23,6 +24,7 @@ public class SharedDBContext(
 {
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<FailedMessage> FailedMessages { get; set; }
+    public DbSet<PaymentRecord> PaymentRecords { get; set; }
     public DbSet<LookupCatalogType> LookupCatalogTypes { get; set; }
 
     public DbSet<CustomerStatusLookup> CustomerStatuses { get; set; }

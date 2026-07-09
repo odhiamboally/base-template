@@ -19,6 +19,7 @@ internal sealed class StripePaymentGateway(
     private readonly StripePaymentSettings _settings = options.Value.Stripe;
 
     public async Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
+        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -33,10 +34,10 @@ internal sealed class StripePaymentGateway(
         try
         {
             var providerRequest = StripeCheckoutSessionRequest.From(
-                request.Amount,
-                request.Currency,
-                request.Description,
-                request.CustomerReference,
+                record.Amount.Amount,
+                record.Amount.Currency,
+                record.Description,
+                record.CustomerReference,
                 request.CallbackUrl,
                 _settings.SuccessUrl,
                 _settings.CancelUrl);

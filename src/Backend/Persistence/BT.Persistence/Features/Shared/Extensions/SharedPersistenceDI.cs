@@ -50,6 +50,9 @@ public static class SharedPersistenceDI
         services.AddScoped<IFailedMessageRepository, SharedFailedMessageRepository>();
         services.AddScoped<ISharedUnitOfWork, SharedUnitOfWork>();
 
+        services.AddScoped<IRepository<BT.Domain.Features.Shared.Payments.Entities.PaymentRecord>>(sp =>
+            new BT.Persistence.Common.Repositories.Repository<BT.Domain.Features.Shared.Payments.Entities.PaymentRecord>(sp.GetRequiredService<SharedDBContext>()));
+
         return services;
     }
 }
