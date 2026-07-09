@@ -13,8 +13,11 @@ internal sealed class PaymentRecordConfiguration : IEntityTypeConfiguration<Paym
 
         builder.Property(x => x.Description).IsRequired().HasMaxLength(500);
         builder.Property(x => x.CustomerReference).IsRequired().HasMaxLength(100);
+        builder.HasIndex(x => x.CustomerReference).IsUnique();
+
         builder.Property(x => x.Provider).IsRequired().HasMaxLength(50);
         builder.Property(x => x.ProviderReference).HasMaxLength(200);
+        builder.HasIndex(x => x.ProviderReference).HasFilter("[ProviderReference] IS NOT NULL");
 
         builder.OwnsOne(x => x.Amount, amountBuilder =>
         {
