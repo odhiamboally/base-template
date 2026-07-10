@@ -1,14 +1,20 @@
 using Asp.Versioning;
+
 using BT.Api.Common.Authorization;
 using BT.Api.Common.Controllers;
+using BT.Api.Logging;
+using BT.Api.Middleware;
 using BT.Application.Features.Shared.Payments.CommandHandlers;
 using BT.Application.Features.Shared.Payments.CommandHandlers.Mpesa;
 using BT.Application.Features.Shared.Payments.QueryHandlers;
 using BT.SharedKernel.Features.Shared.Payments.Dtos;
+
 using MediatR;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+
 using System.Text;
 using System.Text.Json;
 
@@ -18,7 +24,7 @@ namespace BT.Api.Features.Shared.Payments.Controllers;
 [Route("api/v{version:apiVersion}/shared/payments")]
 [ApiController]
 [Authorize]
-public sealed class PaymentsController(ISender sender) : BaseController
+public sealed class PaymentsController(ISender sender, ILogger<PaymentsController> logger) : BaseController
 {
     [HttpPost("checkout")]
     [RequirePermission("payments.create")]
@@ -101,7 +107,14 @@ public sealed class PaymentsController(ISender sender) : BaseController
             .Send(new ProcessMpesaC2BConfirmationCommand(payload), ct)
             .ConfigureAwait(false);
 
-        return HandleResponse(response);
+        return HandleResponse(
+            response,
+            onSuccess: _ => Ok(new { ResultCode = "0", ResultDesc = "Accepted" }),
+            onError: error =>
+            {
+                PaymentLogDefinitions.LogMpesaC2bConfirmationError(logger, error.Code);
+                return Ok(new { ResultCode = "0", ResultDesc = "Accepted" });
+            });
     }
 
     [HttpPost("mobile-money/admin/register-c2b-urls")]

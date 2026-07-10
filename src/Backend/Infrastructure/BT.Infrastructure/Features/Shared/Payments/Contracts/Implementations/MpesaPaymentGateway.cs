@@ -72,7 +72,7 @@ internal sealed class MpesaPaymentGateway(
                 _settings.ShortCode,
                 normalizedPhoneNumber,
                 string.IsNullOrWhiteSpace(_settings.CallbackUrlBase) ? request.CallbackUrl : $"{_settings.CallbackUrlBase.TrimEnd('/')}/api/v1/shared/payments/mobile-money/stk-callback",
-                accountRef.Length > 12 ? accountRef[..12] : accountRef,
+                accountRef.Length > 12 ? accountRef[^12..] : accountRef,
                 transactionDesc.Length > 13 ? transactionDesc[..13] : transactionDesc);
 
             using var httpClient = httpClientFactory.CreateClient("Payments.Mpesa");
@@ -267,7 +267,8 @@ internal sealed class MpesaPaymentGateway(
             var request = new MpesaC2BSimulateRequest(
                 _settings.C2BShortCode,
                 "CustomerPayBillOnline",
-                decimal.ToInt32(decimal.Round(amount, 0, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture),
+                //decimal.ToInt32(decimal.Round(amount, 0, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture),
+                amount.ToString("F2", CultureInfo.InvariantCulture),
                 NormalizeMpesaPhone(phoneNumber),
                 billRefNumber);
 

@@ -20,6 +20,5 @@ public sealed class MpesaPaymentSettings
     public string StkQueryEndpoint { get; set; } = "/mpesa/stkpushquery/v1/query";
     public string C2BRegisterUrlEndpoint { get; set; } = "/mpesa/c2b/v1/registerurl";
     public string C2BSimulateEndpoint { get; set; } = "/mpesa/c2b/v1/simulate";
-    public string CallbackUrlBase { get; set; } = "https://4z7339tf-7049.uks1.devtunnels.ms";
-    //public string CallbackUrlBase { get; set; } = "https://8387-105-165-215-110.ngrok-free.app";
+    public string CallbackUrlBase { get; set; } = string.Empty;
 }
