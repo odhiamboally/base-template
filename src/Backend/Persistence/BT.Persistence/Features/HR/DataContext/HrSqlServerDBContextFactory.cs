@@ -18,18 +18,3 @@ public class HrSqlServerDBContextFactory : IDesignTimeDbContextFactory<HrSqlServ
         return new HrSqlServerDBContext(optionsBuilder.Options);
     }
 }
-
-public class HrPostgreSqlDBContextFactory : IDesignTimeDbContextFactory<HrPostgreSqlDBContext>
-{
-    public HrPostgreSqlDBContext CreateDbContext(string[] args)
-    {
-        var configuration = DesignTimeConfigurationFactory.Create();
-        var optionsBuilder = new DbContextOptionsBuilder<HrPostgreSqlDBContext>();
-        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "HrConnection");
-
-        optionsBuilder.UseNpgsql(
-            connectionString,
-            pgOptions => DesignTimeConfigurationFactory.ConfigurePostgreSql(pgOptions, "__EFMigrationsHistory_HR"));
-        return new HrPostgreSqlDBContext(optionsBuilder.Options);
-    }
-}

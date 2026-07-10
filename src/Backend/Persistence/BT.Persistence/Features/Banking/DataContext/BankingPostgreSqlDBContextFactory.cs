@@ -4,21 +4,6 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace BT.Persistence.Features.Banking.DataContext;
 
-public class BankingSqlServerDBContextFactory : IDesignTimeDbContextFactory<BankingSqlServerDBContext>
-{
-    public BankingSqlServerDBContext CreateDbContext(string[] args)
-    {
-        var configuration = DesignTimeConfigurationFactory.Create();
-        var optionsBuilder = new DbContextOptionsBuilder<BankingSqlServerDBContext>();
-        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "BankingConnection");
-
-        optionsBuilder.UseSqlServer(
-            connectionString,
-            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_Banking"));
-        return new BankingSqlServerDBContext(optionsBuilder.Options);
-    }
-}
-
 public class BankingPostgreSqlDBContextFactory : IDesignTimeDbContextFactory<BankingPostgreSqlDBContext>
 {
     public BankingPostgreSqlDBContext CreateDbContext(string[] args)
