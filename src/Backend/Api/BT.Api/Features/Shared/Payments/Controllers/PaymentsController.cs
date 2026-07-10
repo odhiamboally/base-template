@@ -1,14 +1,22 @@
 using Asp.Versioning;
+
 using BT.Api.Common.Authorization;
 using BT.Api.Common.Controllers;
+using BT.Api.Logging;
+using BT.Api.Middleware;
 using BT.Application.Features.Shared.Payments.CommandHandlers;
+using BT.Application.Features.Shared.Payments.CommandHandlers.Mpesa;
 using BT.Application.Features.Shared.Payments.QueryHandlers;
 using BT.SharedKernel.Features.Shared.Payments.Dtos;
+
 using MediatR;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+
 using System.Text;
+using System.Text.Json;
 
 namespace BT.Api.Features.Shared.Payments.Controllers;
 
@@ -16,7 +24,7 @@ namespace BT.Api.Features.Shared.Payments.Controllers;
 [Route("api/v{version:apiVersion}/shared/payments")]
 [ApiController]
 [Authorize]
-public sealed class PaymentsController(ISender sender) : BaseController
+public sealed class PaymentsController(ISender sender, ILogger<PaymentsController> logger) : BaseController
 {
     [HttpPost("checkout")]
     [RequirePermission("payments.create")]
@@ -57,6 +65,77 @@ public sealed class PaymentsController(ISender sender) : BaseController
 
         var response = await sender
             .Send(new VerifyPaymentWebhookCommand("Stripe", payload, signatureHeader), ct)
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("mobile-money/stk-callback")]
+    [AllowAnonymous]
+    [EnableRateLimiting("ApiPolicy")]
+    public async Task<IActionResult> MpesaStkCallback([FromBody] JsonElement payload, CancellationToken ct)
+    {
+        var response = await sender
+            .Send(new ProcessMpesaStkCallbackCommand(payload), ct)
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("mobile-money/c2b-validation")]
+    [AllowAnonymous]
+    [EnableRateLimiting("ApiPolicy")]
+    public async Task<IActionResult> MpesaC2BValidation([FromBody] JsonElement payload, CancellationToken ct)
+    {
+        var response = await sender
+            .Send(new ProcessMpesaC2BValidationCommand(payload), ct)
+            .ConfigureAwait(false);
+
+        return HandleResponse(
+            response,
+            onSuccess: _ => Ok(new { ResultCode = "0", ResultDesc = "Accepted" }),
+            onError: _ => Ok(new { ResultCode = "C2B00016", ResultDesc = "Rejected" })
+        );
+    }
+
+    [HttpPost("mobile-money/c2b-confirmation")]
+    [AllowAnonymous]
+    [EnableRateLimiting("ApiPolicy")]
+    public async Task<IActionResult> MpesaC2BConfirmation([FromBody] JsonElement payload, CancellationToken ct)
+    {
+        var response = await sender
+            .Send(new ProcessMpesaC2BConfirmationCommand(payload), ct)
+            .ConfigureAwait(false);
+
+        return HandleResponse(
+            response,
+            onSuccess: _ => Ok(new { ResultCode = "0", ResultDesc = "Accepted" }),
+            onError: error =>
+            {
+                PaymentLogDefinitions.LogMpesaC2bConfirmationError(logger, error.Code);
+                return Ok(new { ResultCode = "0", ResultDesc = "Accepted" });
+            });
+    }
+
+    [HttpPost("mobile-money/admin/register-c2b-urls")]
+    [RequirePermission("payments.admin")]
+    [EnableRateLimiting("ApiPolicy")]
+    public async Task<IActionResult> MpesaRegisterC2BUrls(CancellationToken ct)
+    {
+        var response = await sender
+            .Send(new RegisterMpesaC2BUrlsCommand(), ct)
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("mobile-money/admin/simulate-c2b")]
+    [RequirePermission("payments.admin")]
+    [EnableRateLimiting("ApiPolicy")] 
+    public async Task<IActionResult> MpesaSimulateC2B([FromBody] SimulateMpesaC2BPaymentCommand command, CancellationToken ct)
+    {
+        var response = await sender
+            .Send(command, ct)
             .ConfigureAwait(false);
 
         return HandleResponse(response);

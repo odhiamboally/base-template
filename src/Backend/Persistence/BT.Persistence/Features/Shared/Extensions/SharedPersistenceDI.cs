@@ -6,12 +6,14 @@ using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.Banking.Customers.Contracts.Repositories;
 using BT.Domain.Features.HR.Employees.Contracts.Repositories;
 using BT.Domain.Features.IAM.Users.Contracts.Repositories;
+using BT.Domain.Features.Shared.Payments.Contracts.Repositories;
 using BT.Domain.Shared.Contracts.Repositories;
 using BT.Persistence.Features.Shared;
 using BT.Persistence.Features.Shared.DataContext;
 using BT.Persistence.Features.Shared.EmailTemplates.Repositories;
 using BT.Persistence.Features.Shared.FailedMessages.Repositories;
 using BT.Persistence.Features.Shared.Lookups.Repositories;
+using BT.Persistence.Features.Shared.Payments.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -48,10 +50,8 @@ public static class SharedPersistenceDI
         services.AddScoped<ILookupRepository, SharedLookupRepository>();
         services.AddScoped<IEmailTemplateRepository, SharedEmailTemplateRepository>();
         services.AddScoped<IFailedMessageRepository, SharedFailedMessageRepository>();
+        services.AddScoped<IPaymentRecordRepository, SharedPaymentRecordRepository>();
         services.AddScoped<ISharedUnitOfWork, SharedUnitOfWork>();
-
-        services.AddScoped<IRepository<BT.Domain.Features.Shared.Payments.Entities.PaymentRecord>>(sp =>
-            new BT.Persistence.Common.Repositories.Repository<BT.Domain.Features.Shared.Payments.Entities.PaymentRecord>(sp.GetRequiredService<SharedDBContext>()));
 
         return services;
     }

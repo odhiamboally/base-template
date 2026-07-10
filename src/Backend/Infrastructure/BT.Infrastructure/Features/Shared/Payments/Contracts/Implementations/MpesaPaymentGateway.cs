@@ -1,4 +1,5 @@
 using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
+using BT.Domain.Features.Shared.Payments.Entities;
 using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Features.Shared.Payments.Contracts.Implementations.Mpesa;
 using BT.Infrastructure.Logging;
@@ -17,12 +18,12 @@ namespace BT.Infrastructure.Features.Shared.Payments.Contracts.Implementations;
 internal sealed class MpesaPaymentGateway(
     IHttpClientFactory httpClientFactory,
     IOptions<PaymentSettings> options,
-    ILogger<MpesaPaymentGateway> logger) : IPaymentGateway
+    ILogger<MpesaPaymentGateway> logger) : IPaymentGateway, IMpesaC2BService
 {
     private readonly MpesaPaymentSettings _settings = options.Value.Mpesa;
 
     public async Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
-        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
+        PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -54,6 +55,13 @@ internal sealed class MpesaPaymentGateway(
                 Encoding.UTF8.GetBytes($"{_settings.ShortCode}{_settings.PassKey}{timestamp}"));
 
             var normalizedPhoneNumber = NormalizeMpesaPhone(request.PayerPhoneNumber);
+            var accountRef = string.IsNullOrWhiteSpace(record.CustomerReference)
+                ? _settings.AccountReference
+                : record.CustomerReference;
+            var transactionDesc = string.IsNullOrWhiteSpace(record.Description)
+                ? "Payment"
+                : record.Description;
+
             var providerRequest = new MpesaStkPushRequest(
                 _settings.ShortCode,
                 password,
@@ -63,22 +71,20 @@ internal sealed class MpesaPaymentGateway(
                 normalizedPhoneNumber,
                 _settings.ShortCode,
                 normalizedPhoneNumber,
-                string.IsNullOrWhiteSpace(_settings.CallbackUrl) ? request.CallbackUrl : _settings.CallbackUrl,
-                string.IsNullOrWhiteSpace(record.CustomerReference)
-                    ? _settings.AccountReference
-                    : record.CustomerReference,
-                record.Description);
+                string.IsNullOrWhiteSpace(_settings.CallbackUrlBase) ? request.CallbackUrl : $"{_settings.CallbackUrlBase.TrimEnd('/')}/api/v1/shared/payments/mobile-money/stk-callback",
+                accountRef.Length > 12 ? accountRef[^12..] : accountRef,
+                transactionDesc.Length > 13 ? transactionDesc[..13] : transactionDesc);
 
             using var httpClient = httpClientFactory.CreateClient("Payments.Mpesa");
-            httpClient.BaseAddress = new Uri(_settings.StkPushEndpoint);
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             using var response = await httpClient
-                .PostAsJsonAsync(string.Empty, providerRequest, cancellationToken)
+                .PostAsJsonAsync(_settings.StkPushEndpoint, providerRequest, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
+                var errorBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 HttpClientLogDefinitions.LogExternalApiWarning(
                     logger,
                     "POST",
@@ -86,7 +92,7 @@ internal sealed class MpesaPaymentGateway(
                     (int)response.StatusCode);
 
                 return AppResponses.Failure<PaymentInitiationResponse>(
-                    "M-Pesa could not accept the payment initiation request.");
+                    $"M-Pesa rejected the request. Details: {errorBody}");
             }
 
             using var stream = await response.Content
@@ -151,11 +157,10 @@ internal sealed class MpesaPaymentGateway(
                 paymentReference);
 
             using var httpClient = httpClientFactory.CreateClient("Payments.Mpesa");
-            httpClient.BaseAddress = new Uri(_settings.StkQueryEndpoint);
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             using var response = await httpClient
-                .PostAsJsonAsync(string.Empty, providerRequest, cancellationToken)
+                .PostAsJsonAsync(_settings.StkQueryEndpoint, providerRequest, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
@@ -196,16 +201,110 @@ internal sealed class MpesaPaymentGateway(
         }
     }
 
+    public async Task<AppResponse<string>> RegisterUrlsAsync(CancellationToken cancellationToken = default)
+    {
+        if (!IsConfiguredForC2BRegistration())
+        {
+            return AppResponses.Failure<string>("M-Pesa C2B is not fully configured for URL registration.");
+        }
+
+        try
+        {
+            var accessToken = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                return AppResponses.Failure<string>("M-Pesa authentication failed.");
+            }
+
+            var validationUrl = $"{_settings.CallbackUrlBase.TrimEnd('/')}/api/v1/shared/payments/mobile-money/c2b-validation";
+            var confirmationUrl = $"{_settings.CallbackUrlBase.TrimEnd('/')}/api/v1/shared/payments/mobile-money/c2b-confirmation";
+
+            var request = new MpesaC2BRegisterUrlRequest(
+                _settings.C2BShortCode,
+                "Completed",
+                confirmationUrl,
+                validationUrl);
+
+            using var httpClient = httpClientFactory.CreateClient("Payments.Mpesa");
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            using var response = await httpClient
+                .PostAsJsonAsync(_settings.C2BRegisterUrlEndpoint, request, cancellationToken)
+                .ConfigureAwait(false);
+
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                HttpClientLogDefinitions.LogExternalApiWarning(logger, "POST", _settings.C2BRegisterUrlEndpoint, (int)response.StatusCode);
+                return AppResponses.Failure<string>($"URL Registration failed: {responseBody}");
+            }
+
+            return AppResponses.Success("C2B URLs registered successfully.", responseBody);
+        }
+        catch (Exception ex)
+        {
+            HttpClientLogDefinitions.LogExternalApiError(logger, "POST", _settings.C2BRegisterUrlEndpoint, ex);
+            return AppResponses.Failure<string>("An error occurred during C2B URL registration.");
+        }
+    }
+
+    public async Task<AppResponse<string>> SimulatePaymentAsync(decimal amount, string phoneNumber, string billRefNumber, CancellationToken cancellationToken = default)
+    {
+        if (!IsConfiguredForC2BSimulation())
+        {
+            return AppResponses.Failure<string>("M-Pesa C2B is not fully configured for simulation.");
+        }
+
+        try
+        {
+            var accessToken = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                return AppResponses.Failure<string>("M-Pesa authentication failed.");
+            }
+
+            var request = new MpesaC2BSimulateRequest(
+                _settings.C2BShortCode,
+                "CustomerPayBillOnline",
+                //decimal.ToInt32(decimal.Round(amount, 0, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture),
+                amount.ToString("F2", CultureInfo.InvariantCulture),
+                NormalizeMpesaPhone(phoneNumber),
+                billRefNumber);
+
+            using var httpClient = httpClientFactory.CreateClient("Payments.Mpesa");
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            using var response = await httpClient
+                .PostAsJsonAsync(_settings.C2BSimulateEndpoint, request, cancellationToken)
+                .ConfigureAwait(false);
+
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                HttpClientLogDefinitions.LogExternalApiWarning(logger, "POST", _settings.C2BSimulateEndpoint, (int)response.StatusCode);
+                return AppResponses.Failure<string>($"Payment simulation failed: {responseBody}");
+            }
+
+            return AppResponses.Success("C2B payment simulated successfully.", responseBody);
+        }
+        catch (Exception ex)
+        {
+            HttpClientLogDefinitions.LogExternalApiError(logger, "POST", _settings.C2BSimulateEndpoint, ex);
+            return AppResponses.Failure<string>("An error occurred during C2B payment simulation.");
+        }
+    }
+
     private async Task<string?> GetAccessTokenAsync(CancellationToken cancellationToken)
     {
         using var httpClient = httpClientFactory.CreateClient("Payments.Mpesa.Auth");
-        httpClient.BaseAddress = new Uri(_settings.AuthEndpoint);
         var credentials = Convert.ToBase64String(
             Encoding.UTF8.GetBytes($"{_settings.ConsumerKey}:{_settings.ConsumerSecret}"));
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
 
         using var response = await httpClient
-            .GetAsync(string.Empty, cancellationToken)
+            .GetAsync(_settings.AuthEndpoint, cancellationToken)
             .ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode)
@@ -233,16 +332,28 @@ internal sealed class MpesaPaymentGateway(
         IsAuthConfigured() &&
         !string.IsNullOrWhiteSpace(_settings.ShortCode) &&
         !string.IsNullOrWhiteSpace(_settings.PassKey) &&
-        Uri.TryCreate(_settings.StkPushEndpoint, UriKind.Absolute, out _);
+        !string.IsNullOrWhiteSpace(_settings.StkPushEndpoint);
 
     private bool IsConfiguredForStatus() =>
         IsConfiguredForInitiation() &&
-        Uri.TryCreate(_settings.StkQueryEndpoint, UriKind.Absolute, out _);
+        !string.IsNullOrWhiteSpace(_settings.StkQueryEndpoint);
 
     private bool IsAuthConfigured() =>
         !string.IsNullOrWhiteSpace(_settings.ConsumerKey) &&
         !string.IsNullOrWhiteSpace(_settings.ConsumerSecret) &&
-        Uri.TryCreate(_settings.AuthEndpoint, UriKind.Absolute, out _);
+        !string.IsNullOrWhiteSpace(_settings.AuthEndpoint) &&
+        !string.IsNullOrWhiteSpace(_settings.BaseUrl);
+
+    private bool IsConfiguredForC2BRegistration() =>
+        IsAuthConfigured() &&
+        !string.IsNullOrWhiteSpace(_settings.C2BShortCode) &&
+        !string.IsNullOrWhiteSpace(_settings.C2BRegisterUrlEndpoint) &&
+        !string.IsNullOrWhiteSpace(_settings.CallbackUrlBase);
+
+    private bool IsConfiguredForC2BSimulation() =>
+        IsAuthConfigured() &&
+        !string.IsNullOrWhiteSpace(_settings.C2BShortCode) &&
+        !string.IsNullOrWhiteSpace(_settings.C2BSimulateEndpoint);
 
     private static string NormalizeMpesaPhone(string phoneNumber)
     {

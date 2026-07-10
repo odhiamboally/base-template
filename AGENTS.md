@@ -51,6 +51,9 @@ This file is the canonical source of truth and working contract for AI coding to
 - All user-facing errors from the UI must be sanitized through the shared messaging pattern.
 - Provider-specific integration DTOs belong beside the provider adapter. Shared contracts should stay provider-neutral and should not expose Stripe, M-Pesa, Azure, or other provider wire payloads.
 - When a capability supports multiple runtime providers per operation, use a router/factory over isolated provider adapters. Do not make one provider adapter understand another provider's DTOs, credentials, or callbacks.
+- Application-layer command/query handlers must use bounded-context Unit of Work interfaces (`ISharedUnitOfWork`, `IBankingUnitOfWork`, etc.) for persistence orchestration, not raw `IRepository<T>`. Always call `CompleteAsync` with a `CancellationToken` after write operations.
+- Pass `CancellationToken` to all async I/O calls (`ReadAsStringAsync`, `CompleteAsync`, `SaveChangesAsync`, etc.) where the parameter is available.
+- Use `StringComparison.OrdinalIgnoreCase` for case-insensitive comparisons. Reserve `ToUpperInvariant()`/`ToLowerInvariant()` for value normalization (stored keys, wire formats, display strings) — never for equality checks. C# `switch` on normalized strings is acceptable when `StringComparison` is not supported by the expression.
 
 ## Persistence Rules
 

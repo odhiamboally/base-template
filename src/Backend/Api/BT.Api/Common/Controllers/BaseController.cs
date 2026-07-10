@@ -12,51 +12,10 @@ namespace BT.Api.Common.Controllers;
 
 public abstract class BaseController : ControllerBase
 {
-    //protected IActionResult HandleResponse<T>(AppResponse<T> response)
-    //{
-    //    ArgumentNullException.ThrowIfNull(response);
-
-    //    if (response.IsSuccess && response.Data != null)
-    //    {
-    //        return Ok(response);
-    //    }
-
-    //    // Use Problem Details format for failures
-    //    var problemDetails = new ProblemDetails
-    //    {
-    //        Instance = HttpContext.Request.Path,
-    //    };
-
-    //    if (!response.IsSuccess)
-    //    {
-    //        var (statusCode, title) = DetermineErrorType(response.ErrorCode, response.Message ?? string.Empty);
-
-    //        problemDetails.Status = statusCode;
-    //        problemDetails.Title = title;
-    //        problemDetails.Detail = response.Message;
-
-    //        // Add additional context if available
-    //        if (response.Errors != null && response.Errors.Any())
-    //        {
-    //            // Since Errors is a List<string>, group all errors under "general"
-    //            problemDetails.Extensions["errors"] = new Dictionary<string, string[]>
-    //            {
-    //                { "general", response.Errors.ToArray() }
-    //            };
-    //        }
-
-    //        return StatusCode(statusCode, problemDetails);
-    //    }
-
-    //    // Handle case where successful but data is null
-    //    problemDetails.Status = StatusCodes.Status404NotFound;
-    //    problemDetails.Title = "Resource Not Found";
-    //    problemDetails.Detail = "The requested resource was not found.";
-
-    //    return NotFound(problemDetails);
-    //}
-
-    protected IActionResult HandleResponse<T>(AppResponse<T> response, Func<AppResponse<T>, IActionResult>? onSuccess = null)
+    protected IActionResult HandleResponse<T>(
+        AppResponse<T> response, 
+        Func<AppResponse<T>, IActionResult>? onSuccess = null,
+        Func<AppError, IActionResult>? onError = null)
     {
         ArgumentNullException.ThrowIfNull(response);
 
@@ -67,7 +26,8 @@ public abstract class BaseController : ControllerBase
             return onSuccess?.Invoke(response) ?? Ok(response);
         }
 
-        return ToProblem(response.Error ?? AppError.Unexpected());
+        var error = response.Error ?? AppError.Unexpected();
+        return onError?.Invoke(error) ?? ToProblem(error);
     }
 
     private ObjectResult ToProblem(AppError error)
