@@ -101,7 +101,11 @@ public sealed class PaymentsController(ISender sender) : BaseController
             .Send(new ProcessMpesaC2BConfirmationCommand(payload), ct)
             .ConfigureAwait(false);
 
-        return HandleResponse(response);
+        return HandleResponse(
+            response,
+            onSuccess: _ => Ok(new { ResultCode = "0", ResultDesc = "Accepted" }),
+            onError: _ => Ok(new { ResultCode = "0", ResultDesc = "Accepted" })
+);
     }
 
     [HttpPost("mobile-money/admin/register-c2b-urls")]

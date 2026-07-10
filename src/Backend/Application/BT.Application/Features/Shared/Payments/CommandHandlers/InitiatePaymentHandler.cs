@@ -46,9 +46,16 @@ internal sealed class InitiatePaymentHandler(
             CreatedBy = string.Empty
         };
 
-        await sharedUnitOfWork.PaymentRecordRepository.CreateAsync(paymentRecord, cancellationToken).ConfigureAwait(false);
-        await sharedUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+        var initiatePaymentResult = await paymentGateway
+            .InitiateAsync(paymentRecord, request.Request, cancellationToken)
+            .ConfigureAwait(false);
 
-        return await paymentGateway.InitiateAsync(paymentRecord, request.Request, cancellationToken).ConfigureAwait(false);
+        if (initiatePaymentResult.IsSuccess)
+        {
+            await sharedUnitOfWork.PaymentRecordRepository.CreateAsync(paymentRecord, cancellationToken).ConfigureAwait(false);
+            await sharedUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return initiatePaymentResult;
     }
 }
