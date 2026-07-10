@@ -96,7 +96,8 @@ internal sealed class VerifyEmailOtp(
             requestedSessionId,
             httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
             httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
-            string.IsNullOrWhiteSpace(req.DeviceFingerprint) ? "unknown" : req.DeviceFingerprint).ConfigureAwait(false);
+            string.IsNullOrWhiteSpace(req.DeviceFingerprint) ? "unknown" : req.DeviceFingerprint,
+            ct).ConfigureAwait(false);
 
         if (!sessionCreation.IsSuccess || sessionCreation.Data == Guid.Empty)
         {

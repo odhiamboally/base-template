@@ -74,7 +74,7 @@ internal sealed class RefreshToken(
             var sessionId = principal.FindFirstValue("session_id");
             if (!string.IsNullOrWhiteSpace(sessionId))
             {
-                var sessionValidation = await sessionService.IsSessionValidAsync(sessionId, userId).ConfigureAwait(false);
+                var sessionValidation = await sessionService.IsSessionValidAsync(sessionId, userId, cancellationToken).ConfigureAwait(false);
                 if (!sessionValidation.IsSuccess)
                 {
                     SecurityLogDefinitions.LogSecurityEvent(logger, "InvalidSessionRefreshAttempt", userId, sessionValidation.Message ?? "Invalid session");

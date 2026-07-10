@@ -32,7 +32,7 @@ internal sealed class DeleteMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
             }
 
             menu.MarkAsDeleted(command.UserId);
-            await unitOfWork.MenuRepository.UpdateAsync(menu).ConfigureAwait(false);
+            await unitOfWork.MenuRepository.UpdateAsync(menu, cancellationToken).ConfigureAwait(false);
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved ? AppResponses.Success("Menu deleted.", true) : AppResponses.Failure<bool>("Menu delete failed.");

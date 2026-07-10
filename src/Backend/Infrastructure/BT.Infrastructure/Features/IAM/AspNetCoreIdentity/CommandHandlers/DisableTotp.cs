@@ -63,7 +63,7 @@ internal sealed class DisableTotp(
                     .ConfigureAwait(false);
 
                 var activeSessions = await iamUnitOfWork.SessionRepository
-                    .GetActiveSessionsByUserIdAsync(user.Id)
+                    .GetActiveSessionsByUserIdAsync(user.Id, cancellationToken)
                     .ConfigureAwait(false);
 
                 foreach (var session in activeSessions)

@@ -174,7 +174,8 @@ internal sealed class Login(
                 sessionId,
                 httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
                 httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
-                loginRequest.DeviceFingerprint ?? "unknown").ConfigureAwait(false);
+                loginRequest.DeviceFingerprint ?? "unknown",
+                cancellationToken).ConfigureAwait(false);
 
             if (!sessionCreationResult.IsSuccess)
             {

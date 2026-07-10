@@ -36,7 +36,7 @@ internal sealed class UpdateDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
             }
 
             department.Update(code, request.Name, request.Description, request.IsActive, command.UserId);
-            await unitOfWork.DepartmentRepository.UpdateAsync(department).ConfigureAwait(false);
+            await unitOfWork.DepartmentRepository.UpdateAsync(department, cancellationToken).ConfigureAwait(false);
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved

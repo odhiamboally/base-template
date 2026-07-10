@@ -37,7 +37,7 @@ internal sealed class Logout(
             {
                 if (!string.IsNullOrWhiteSpace(sessionId))
                 {
-                    await sessionService.RevokeSessionAsync(sessionId).ConfigureAwait(false);
+                    await sessionService.RevokeSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
                 }
 
                 await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>

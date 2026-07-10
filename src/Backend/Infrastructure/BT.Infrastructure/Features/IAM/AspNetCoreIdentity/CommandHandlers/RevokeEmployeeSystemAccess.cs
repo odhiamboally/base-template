@@ -47,7 +47,7 @@ internal sealed class RevokeEmployeeSystemAccess(
                 return AppResponses.Failure<bool>(updateResult.Errors.First().Description);
             }
 
-            await sessionService.RevokeAllUserSessionsAsync(user.Id).ConfigureAwait(false);
+            await sessionService.RevokeAllUserSessionsAsync(user.Id, null, cancellationToken).ConfigureAwait(false);
             await iamUnitOfWork.TokenRepository
                 .RevokeAllUserTokensAsync(user.Id, "Employee system access revoked")
                 .ConfigureAwait(false);

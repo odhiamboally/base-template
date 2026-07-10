@@ -37,7 +37,7 @@ internal sealed class SessionValidationMiddleware(RequestDelegate next, ILogger<
         }
 
         // Now, we have an authenticated user with a session ID. Let's validate the session.
-        var sessionValidation = await sessionService.IsSessionValidAsync(sessionId, userId).ConfigureAwait(false);
+        var sessionValidation = await sessionService.IsSessionValidAsync(sessionId, userId, context.RequestAborted).ConfigureAwait(false);
         if (!sessionValidation.IsSuccess)
         {
             MiddlewareLogDefinitions.LogInvalidSession(logger, sessionId, userId, sessionValidation.Message); //

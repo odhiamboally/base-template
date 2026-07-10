@@ -53,7 +53,7 @@ internal sealed class UpdateEmployeeCommandHandler(IHrUnitOfWork unitOfWork, ILo
                 request.ManagerId,
                 command.UserId);
 
-            await unitOfWork.EmployeeRepository.UpdateAsync(employee).ConfigureAwait(false);
+            await unitOfWork.EmployeeRepository.UpdateAsync(employee, cancellationToken).ConfigureAwait(false);
             await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
             return AppResponses.Success("Employee updated.", employee.ToEmployeeResponse());
