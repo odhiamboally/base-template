@@ -44,7 +44,7 @@ internal sealed class IamSessionRepository : Repository<AppUserSession>, ISessio
     public async Task<List<AppUserSession>> GetExpiredSessionsAsync(DateTimeOffset retentionLimit, CancellationToken cancellationToken = default)
     {
         return await _iamContext.AppUserSessions
-            .Where(s => s.IsActive && s.IsRevoked && s.ExpiresAt <= DateTimeOffset.UtcNow)
+            .Where(s => s.IsActive && s.IsRevoked && s.ExpiresAt <= retentionLimit)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
     }
 

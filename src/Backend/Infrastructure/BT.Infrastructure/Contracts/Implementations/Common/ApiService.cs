@@ -332,8 +332,6 @@ internal sealed class ApiService : IApiService
             if (!apiResponse.IsSuccessStatusCode)
             {
                 var errorContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-
-                errorContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(errorContent);
 
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
