@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   build:
-    if: ${{ vars.BUILD_IMAGES == 'true' || github.event_name == 'workflow_dispatch' }}
+    if: vars['BUILD_IMAGES'] == 'true' || github.event_name == 'workflow_dispatch'
     name: Build ${{ matrix.service }} image
     runs-on: ubuntu-latest
     env:

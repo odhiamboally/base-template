@@ -15,13 +15,35 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Persistence.Features.Shared.DataContext;
 
-public class SharedDBContext(
-    DbContextOptions<SharedDBContext> options,
-    ICurrentTenantProvider? tenantProvider = null,
-    ICurrentActorProvider? actorProvider = null,
-    ILogger<SharedDBContext>? logger = null
-) : DbContext(options), ITenantFilteredDBContext
+public class SharedDBContext : DbContext, ITenantFilteredDBContext
 {
+    private readonly ICurrentTenantProvider? _tenantProvider;
+    private readonly ICurrentActorProvider? _actorProvider;
+    private readonly ILogger<SharedDBContext>? _logger;
+
+    public SharedDBContext(
+        DbContextOptions<SharedDBContext> options,
+        ICurrentTenantProvider? tenantProvider = null,
+        ICurrentActorProvider? actorProvider = null,
+        ILogger<SharedDBContext>? logger = null
+    ) : base(options)
+    {
+        _tenantProvider = tenantProvider;
+        _actorProvider = actorProvider;
+        _logger = logger;
+    }
+
+    protected SharedDBContext(
+        DbContextOptions options,
+        ICurrentTenantProvider? tenantProvider = null,
+        ICurrentActorProvider? actorProvider = null,
+        ILogger<SharedDBContext>? logger = null
+    ) : base(options)
+    {
+        _tenantProvider = tenantProvider;
+        _actorProvider = actorProvider;
+        _logger = logger;
+    }
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<FailedMessage> FailedMessages { get; set; }
     public DbSet<PaymentRecord> PaymentRecords { get; set; }
@@ -35,7 +57,7 @@ public class SharedDBContext(
     public DbSet<IdentificationTypeLookup> IdentificationTypes { get; set; }
     public DbSet<DirectorRelationTypeLookup> DirectorRelationTypes { get; set; }
     public DbSet<FailedMessageStatusLookup> FailedMessageStatuses { get; set; }
-    public Guid CurrentTenantId => tenantProvider?.TenantId ?? Guid.Empty;
+    public Guid CurrentTenantId => _tenantProvider?.TenantId ?? Guid.Empty;
 
     private List<IDomainEvent> _collectedDomainEvents = [];
     public IReadOnlyList<IDomainEvent>? GetCollectedDomainEvents() => _collectedDomainEvents?.AsReadOnly();
@@ -52,7 +74,9 @@ public class SharedDBContext(
 
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(SharedDBContext).Assembly,
-            type => type.Namespace?.StartsWith("BT.Persistence.Features.Shared", StringComparison.Ordinal) == true);
+            type => type.Namespace?.StartsWith("BT.Persistence.Features.Shared", StringComparison.Ordinal) == true &&
+                    !(type.Namespace?.Contains("SqlServer") == true) &&
+                    !(type.Namespace?.Contains("PostgreSql") == true));
 
         DBContextHelper.ApplyStandardModelConventions(modelBuilder, this);
     }
@@ -63,7 +87,7 @@ public class SharedDBContext(
         {
             var domainEvents = DBContextHelper.CollectDomainEvents(ChangeTracker);
             DBContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DBContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
+            DBContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, _actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);
@@ -74,8 +98,8 @@ public class SharedDBContext(
             foreach (var entry in ex.Entries)
             {
                 var entityId = entry.Entity is BaseEntity b ? b.Id.ToString() : "(unknown)";
-                if (logger is not null)
-                    PersistenceLogDefinitions.LogConcurrencyConflict(logger, entry.Entity.GetType().Name, entityId);
+                if (_logger is not null)
+                    PersistenceLogDefinitions.LogConcurrencyConflict(_logger, entry.Entity.GetType().Name, entityId);
                 _ = await entry.GetDatabaseValuesAsync(cancellationToken).ConfigureAwait(false);
             }
             _collectedDomainEvents?.Clear();
@@ -84,15 +108,15 @@ public class SharedDBContext(
         catch (DbUpdateException ex)
         {
             foreach (var entry in ex.Entries)
-                if (logger is not null)
-                    PersistenceLogDefinitions.LogDatabaseError(logger, entry.Entity.GetType().Name, ex);
+                if (_logger is not null)
+                    PersistenceLogDefinitions.LogDatabaseError(_logger, entry.Entity.GetType().Name, ex);
             _collectedDomainEvents?.Clear();
             throw;
         }
         catch (Exception ex)
         {
-            if (logger is not null)
-                PersistenceLogDefinitions.LogDBContextSaveChangesError(logger, nameof(SharedDBContext), ex);
+            if (_logger is not null)
+                PersistenceLogDefinitions.LogDBContextSaveChangesError(_logger, nameof(SharedDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }

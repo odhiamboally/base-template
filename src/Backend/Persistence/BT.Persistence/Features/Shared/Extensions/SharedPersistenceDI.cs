@@ -30,22 +30,47 @@ public static class SharedPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("SharedConnection (or DefaultConnection) not found.");
 
-        services.AddDbContext<SharedDBContext>(options =>
+        services.Configure<BT.Persistence.Common.Configuration.DatabaseSettings>(configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName));
+        var dbSettings = configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName).Get<BT.Persistence.Common.Configuration.DatabaseSettings>() ?? new BT.Persistence.Common.Configuration.DatabaseSettings();
+
+        void ConfigureDbContextOptions(DbContextOptionsBuilder options)
         {
-            options.UseSqlServer(connectionString, sqlOptions =>
+            if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
             {
-                sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
-                sqlOptions.CommandTimeout(30);
-                sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_Shared");
-            });
+                options.UseNpgsql(connectionString, pgOptions =>
+                {
+                    pgOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorCodesToAdd: null);
+                    pgOptions.CommandTimeout(30);
+                    pgOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                    pgOptions.MigrationsHistoryTable("__EFMigrationsHistory_Shared");
+                });
+            }
+            else
+            {
+                options.UseSqlServer(connectionString, sqlOptions =>
+                {
+                    sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+                    sqlOptions.CommandTimeout(30);
+                    sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                    sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_Shared");
+                });
+            }
 
             // Enable sensitive data logging only in non-production environments for diagnostics
             if (environment?.IsDevelopment() == true || environment?.IsStaging() == true)
             {
                 options.EnableSensitiveDataLogging();
             }
-        });
+        }
+
+        if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddDbContext<SharedDBContext, SharedPostgreSqlDBContext>(ConfigureDbContextOptions);
+        }
+        else
+        {
+            services.AddDbContext<SharedDBContext, SharedSqlServerDBContext>(ConfigureDbContextOptions);
+        }
 
         services.AddScoped<ILookupRepository, SharedLookupRepository>();
         services.AddScoped<IEmailTemplateRepository, SharedEmailTemplateRepository>();

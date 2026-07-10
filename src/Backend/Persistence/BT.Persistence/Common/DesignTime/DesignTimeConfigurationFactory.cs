@@ -47,6 +47,17 @@ internal static class DesignTimeConfigurationFactory
         sqlOptions.MigrationsHistoryTable(migrationsHistoryTable);
     }
 
+    public static void ConfigurePostgreSql(
+        Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.NpgsqlDbContextOptionsBuilder pgOptions,
+        string migrationsHistoryTable)
+    {
+        ArgumentNullException.ThrowIfNull(pgOptions);
+        ArgumentException.ThrowIfNullOrWhiteSpace(migrationsHistoryTable);
+
+        pgOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorCodesToAdd: null);
+        pgOptions.MigrationsHistoryTable(migrationsHistoryTable);
+    }
+
     private static string GetUserSecretsPath()
     {
         var applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);

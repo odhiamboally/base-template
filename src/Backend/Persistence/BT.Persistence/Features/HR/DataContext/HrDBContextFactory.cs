@@ -4,17 +4,32 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace BT.Persistence.Features.HR.DataContext;
 
-public class HrDBContextFactory : IDesignTimeDbContextFactory<HrDBContext>
+public class HrSqlServerDBContextFactory : IDesignTimeDbContextFactory<HrSqlServerDBContext>
 {
-    public HrDBContext CreateDbContext(string[] args)
+    public HrSqlServerDBContext CreateDbContext(string[] args)
     {
         var configuration = DesignTimeConfigurationFactory.Create();
-        var optionsBuilder = new DbContextOptionsBuilder<HrDBContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<HrSqlServerDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "HrConnection");
 
         optionsBuilder.UseSqlServer(
             connectionString,
             sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_HR"));
-        return new HrDBContext(optionsBuilder.Options);
+        return new HrSqlServerDBContext(optionsBuilder.Options);
+    }
+}
+
+public class HrPostgreSqlDBContextFactory : IDesignTimeDbContextFactory<HrPostgreSqlDBContext>
+{
+    public HrPostgreSqlDBContext CreateDbContext(string[] args)
+    {
+        var configuration = DesignTimeConfigurationFactory.Create();
+        var optionsBuilder = new DbContextOptionsBuilder<HrPostgreSqlDBContext>();
+        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "HrConnection");
+
+        optionsBuilder.UseNpgsql(
+            connectionString,
+            pgOptions => DesignTimeConfigurationFactory.ConfigurePostgreSql(pgOptions, "__EFMigrationsHistory_HR"));
+        return new HrPostgreSqlDBContext(optionsBuilder.Options);
     }
 }

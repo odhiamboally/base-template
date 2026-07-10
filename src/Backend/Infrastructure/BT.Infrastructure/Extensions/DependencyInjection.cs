@@ -49,6 +49,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using MediatR;
+using Microsoft.Extensions.Http.Resilience;
+using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -161,6 +163,14 @@ public static class DependencyInjection
         services.AddScoped<NoOpPaymentGateway>();
         services.AddScoped<StripePaymentGateway>();
         services.AddScoped<MpesaPaymentGateway>();
+
+        services.AddHttpClient("Payments.Mpesa")
+            .AddStandardResilienceHandler(options =>
+            {
+                options.Retry.MaxRetryAttempts = 1;
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+            });
+
         services.AddScoped<IMpesaC2BService>(provider => provider.GetRequiredService<MpesaPaymentGateway>());
         services.AddScoped<IPaymentGateway, RoutedPaymentGateway>();
         services.AddScoped<IPaymentWebhookVerifier, StripeWebhookVerifier>();
@@ -724,6 +734,8 @@ public static class DependencyInjection
         {
             options.ConnectionString = connectionString;
         });
+
+        otelBuilder.UseOtlpExporter();
 
         return services;
     }

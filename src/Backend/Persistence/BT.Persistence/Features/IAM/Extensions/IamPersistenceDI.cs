@@ -29,22 +29,47 @@ public static class IamPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("IamConnection (or DefaultConnection) not found.");
 
-        services.AddDbContext<IamDBContext>(options =>
+        services.Configure<BT.Persistence.Common.Configuration.DatabaseSettings>(configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName));
+        var dbSettings = configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName).Get<BT.Persistence.Common.Configuration.DatabaseSettings>() ?? new BT.Persistence.Common.Configuration.DatabaseSettings();
+
+        void ConfigureDbContextOptions(DbContextOptionsBuilder options)
         {
-            options.UseSqlServer(connectionString, sqlOptions =>
+            if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
             {
-                sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
-                sqlOptions.CommandTimeout(30);
-                sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_IAM");
-            });
+                options.UseNpgsql(connectionString, pgOptions =>
+                {
+                    pgOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorCodesToAdd: null);
+                    pgOptions.CommandTimeout(30);
+                    pgOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                    pgOptions.MigrationsHistoryTable("__EFMigrationsHistory_IAM");
+                });
+            }
+            else
+            {
+                options.UseSqlServer(connectionString, sqlOptions =>
+                {
+                    sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+                    sqlOptions.CommandTimeout(30);
+                    sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                    sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_IAM");
+                });
+            }
 
             // Enable sensitive data logging only in non-production environments for diagnostics
             if (environment?.IsDevelopment() == true || environment?.IsStaging() == true)
             {
                 options.EnableSensitiveDataLogging();
             }
-        });
+        }
+
+        if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddDbContext<IamDBContext, IamPostgreSqlDBContext>(ConfigureDbContextOptions);
+        }
+        else
+        {
+            services.AddDbContext<IamDBContext, IamSqlServerDBContext>(ConfigureDbContextOptions);
+        }
 
         services.AddScoped<IUserRepository, IamUserRepository>();
         services.AddScoped<ISessionRepository, IamSessionRepository>();
