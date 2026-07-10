@@ -161,6 +161,7 @@ public static class DependencyInjection
         services.AddScoped<NoOpPaymentGateway>();
         services.AddScoped<StripePaymentGateway>();
         services.AddScoped<MpesaPaymentGateway>();
+        services.AddScoped<IMpesaC2BService>(provider => provider.GetRequiredService<MpesaPaymentGateway>());
         services.AddScoped<IPaymentGateway, RoutedPaymentGateway>();
         services.AddScoped<IPaymentWebhookVerifier, StripeWebhookVerifier>();
         services.AddScoped<LocalProfilePictureStorage>();
@@ -823,20 +824,24 @@ public static class DependencyInjection
 
         services.AddHttpClient("Payments.Mpesa.Auth", client =>
         {
-            if (!string.IsNullOrWhiteSpace(settings.Mpesa.AuthEndpoint) &&
-                Uri.TryCreate(settings.Mpesa.AuthEndpoint, UriKind.Absolute, out var endpoint))
+            if (!string.IsNullOrWhiteSpace(settings.Mpesa.BaseUrl) &&
+                Uri.TryCreate(settings.Mpesa.BaseUrl, UriKind.Absolute, out var baseUri))
             {
-                client.BaseAddress = endpoint;
+                client.BaseAddress = baseUri;
             }
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.DefaultRequestHeaders.Add("User-Agent", "BaseTemplate-HttpClient/1.0");
         });
 
         services.AddHttpClient("Payments.Mpesa", client =>
         {
-            if (!string.IsNullOrWhiteSpace(settings.Mpesa.StkPushEndpoint) &&
-                Uri.TryCreate(settings.Mpesa.StkPushEndpoint, UriKind.Absolute, out var endpoint))
+            if (!string.IsNullOrWhiteSpace(settings.Mpesa.BaseUrl) &&
+                Uri.TryCreate(settings.Mpesa.BaseUrl, UriKind.Absolute, out var baseUri))
             {
-                client.BaseAddress = endpoint;
+                client.BaseAddress = baseUri;
             }
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.DefaultRequestHeaders.Add("User-Agent", "BaseTemplate-HttpClient/1.0");
         });
     }
 

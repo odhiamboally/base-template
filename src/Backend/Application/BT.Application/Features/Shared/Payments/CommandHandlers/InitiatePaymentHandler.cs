@@ -1,16 +1,19 @@
 using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
+using BT.Domain.Features.Shared.Contracts;
 using BT.Domain.Features.Shared.Payments.Entities;
-using BT.Domain.Shared.Contracts.Repositories;
 using BT.Domain.Shared.ValueObjects;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.Payments.Dtos;
+
 using MediatR;
+
+using System.Globalization;
 
 namespace BT.Application.Features.Shared.Payments.CommandHandlers;
 
 internal sealed class InitiatePaymentHandler(
     IPaymentGateway paymentGateway,
-    IRepository<PaymentRecord> paymentRepository)
+    ISharedUnitOfWork sharedUnitOfWork)
     : IRequestHandler<InitiatePaymentCommand, AppResponse<PaymentInitiationResponse>>
 {
     public async Task<AppResponse<PaymentInitiationResponse>> Handle(
@@ -19,26 +22,33 @@ internal sealed class InitiatePaymentHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var provider = request.Request.Provider ?? "Unknown";
-        var count = await paymentRepository.CountAsync(cancellationToken).ConfigureAwait(false);
+        var req = request.Request;
+        var provider = req.Provider ?? "Unknown";
         var providerPrefix = provider.Length >= 3 ? provider[..3].ToUpperInvariant() : provider.ToUpperInvariant();
-        var customerReference = $"BT-{providerPrefix}-{request.Request.Currency}-{count + 1:D6}";
-        
+        var paymentId = Guid.CreateVersion7();
+
+        // Extract a human-readable, collision-resistant reference using the current date and the Guid's entropy
+        // Format example: BT-STR-USD-260709-A1B2C3
+        var timestamp = DateTimeOffset.UtcNow.ToString("yyMMdd", CultureInfo.InvariantCulture);
+        var uniqueSuffix = paymentId.ToString("N")[^6..].ToUpperInvariant();
+        var customerReference = $"BT-{providerPrefix}-{req.Currency}-{timestamp}-{uniqueSuffix}";
+
         var money = new Money(request.Request.Amount, request.Request.Currency);
         var paymentRecord = new PaymentRecord(
-            id: Guid.CreateVersion7(),
+            id: paymentId,
             amount: money,
             description: request.Request.Description,
             customerReference: customerReference,
             provider: provider)
         {
-            CreatedBy = "System"
+            // CreatedBy is populated by the audit interceptor in SharedDBContext.SaveChangesAsync
+            // via ICurrentActorProvider; defaults to "System" for unauthenticated flows.
+            CreatedBy = string.Empty
         };
 
-        await paymentRepository.CreateAsync(paymentRecord, cancellationToken).ConfigureAwait(false);
+        await sharedUnitOfWork.PaymentRecordRepository.CreateAsync(paymentRecord, cancellationToken).ConfigureAwait(false);
+        await sharedUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
-        // We pass the generated customer reference via a modified request or pass the PaymentRecord itself.
-        // Let's pass the PaymentRecord along with the original request to the gateway.
         return await paymentGateway.InitiateAsync(paymentRecord, request.Request, cancellationToken).ConfigureAwait(false);
     }
 }

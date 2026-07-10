@@ -109,7 +109,9 @@ internal sealed class CreateCustomerCommandHandler(
                 corporateDetails,
                 address,
                 communicationPrefs,
-                string.Empty // ToDo: Should get currentuser
+                // CreatedBy is populated by the audit interceptor in BankingDBContext.SaveChangesAsync
+                // via ICurrentActorProvider; defaults to "System" for unauthenticated flows.
+                string.Empty
             );
 
             await _bankingUnitOfWork.ExecuteInTransactionAsync(async () =>

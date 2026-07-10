@@ -12,7 +12,7 @@ public static class AppResponses
         new(error);
 
     public static AppResponse<T> Failure<T>(string message, T? data = default)
-        => new(false, message, data);
+        => new(AppError.BusinessRule(message)) { Message = message, Data = data };
 
     public static AppResponse<T> ValidationFailure<T>(
         IReadOnlyDictionary<string, List<string>> validationErrors)

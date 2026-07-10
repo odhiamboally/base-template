@@ -19,6 +19,9 @@ public sealed class ApiAuthorizationTests
     [
         "IamAdminController.GetNavigationMenus",
         "PaymentsController.StripeWebhook",
+        "PaymentsController.MpesaStkCallback",
+        "PaymentsController.MpesaC2BValidation",
+        "PaymentsController.MpesaC2BConfirmation",
         "ProfileController.GetProfilePicture",
         "ProfileController.UpdateProfilePicture"
     ];
