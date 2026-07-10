@@ -43,7 +43,7 @@ internal sealed class ApiService : IApiService
         _jsonOptions = jsonOptions ?? throw new ArgumentNullException(nameof(jsonOptions));
     }
 
-    public async Task<AppResponse<TResponse?>> DeleteAsync<TResponse>(string endpoint)
+    public async Task<AppResponse<TResponse?>> DeleteAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
     {
         var responseMessage = string.Empty;
         try
@@ -56,10 +56,10 @@ internal sealed class ApiService : IApiService
 
             SetAuthorizationHeader();
 
-            var apiResponse = await _httpClient.DeleteAsync(endpoint).ConfigureAwait(false);
+            var apiResponse = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
             if (!apiResponse.IsSuccessStatusCode)
             {
-                var content = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var content = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(content);
 
                 // Provide context-appropriate error messages
@@ -71,7 +71,7 @@ internal sealed class ApiService : IApiService
 
             }
 
-            var response = await apiResponse.Content.ReadFromJsonAsync<AppResponse<TResponse>>().ConfigureAwait(false);
+            var response = await apiResponse.Content.ReadFromJsonAsync<AppResponse<TResponse>>(cancellationToken: cancellationToken).ConfigureAwait(false);
             if (response == null)
             {
                 responseMessage = "Response content is null";
@@ -89,7 +89,7 @@ internal sealed class ApiService : IApiService
         }
     }
 
-    public async Task<AppResponse<TResponse?>> GetAsync<TRequest, TResponse>(string endpoint, TRequest? request = default)
+    public async Task<AppResponse<TResponse?>> GetAsync<TRequest, TResponse>(string endpoint, TRequest? request = default, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -100,10 +100,10 @@ internal sealed class ApiService : IApiService
 
             SetAuthorizationHeader();
 
-            var apiResponse = await _httpClient.GetAsync(endpoint).ConfigureAwait(false);
+            var apiResponse = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
             if (!apiResponse.IsSuccessStatusCode)
             {
-                var content = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var content = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(content);
 
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
@@ -114,7 +114,7 @@ internal sealed class ApiService : IApiService
             }
 
 
-            var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<AppResponse<TResponse>>(responseContent, _jsonOptions);
 
             //var response = await apiResponse.Content.ReadFromJsonAsync<AppResponse<TResponse>>();
@@ -130,7 +130,7 @@ internal sealed class ApiService : IApiService
         }
     }
 
-    public async Task<AppResponse<TResponse?>> GetAsync<TResponse>(string endpoint)
+    public async Task<AppResponse<TResponse?>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
     {
         string responseMessage = string.Empty;
         try
@@ -142,10 +142,10 @@ internal sealed class ApiService : IApiService
 
             SetAuthorizationHeader();
 
-            var apiResponse = await _httpClient.GetAsync(endpoint).ConfigureAwait(false);
+            var apiResponse = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
             if (!apiResponse.IsSuccessStatusCode)
             {
-                var errorContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var errorContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(errorContent);
 
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
@@ -155,7 +155,7 @@ internal sealed class ApiService : IApiService
                 return AppResponses.Failure<TResponse?>(contextualError);
             }
 
-            var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<AppResponse<TResponse>>(responseContent, _jsonOptions);
 
             if (response == null)
@@ -174,7 +174,7 @@ internal sealed class ApiService : IApiService
         }
     }
 
-    public async Task<AppResponse<TResponse?>> PostAsync<TRequest, TResponse>(string endpoint, TRequest? request)
+    public async Task<AppResponse<TResponse?>> PostAsync<TRequest, TResponse>(string endpoint, TRequest? request, CancellationToken cancellationToken = default)
     {
         string responseMessage = string.Empty;
         string sessionId = string.Empty;
@@ -202,7 +202,7 @@ internal sealed class ApiService : IApiService
             var jsonContent = JsonSerializer.Serialize(request, _jsonOptions);
             using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-            var apiResponse = await _httpClient.PostAsync(endpoint, content).ConfigureAwait(false);
+            var apiResponse = await _httpClient.PostAsync(endpoint, content, cancellationToken).ConfigureAwait(false);
 
             // Capture X-Session-Id header
             if (apiResponse.Headers.TryGetValues("X-Session-Id", out var sessionIdValues))
@@ -213,7 +213,7 @@ internal sealed class ApiService : IApiService
 
             if (!apiResponse.IsSuccessStatusCode)
             {
-                var errorContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var errorContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(errorContent);
 
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
@@ -223,7 +223,7 @@ internal sealed class ApiService : IApiService
                 return AppResponses.Failure<TResponse?>(contextualError);
             }
 
-            var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<AppResponse<TResponse>>(responseContent, _jsonOptions);
 
             if (response == null)
@@ -243,7 +243,7 @@ internal sealed class ApiService : IApiService
         }
     }
 
-    public async Task<AppResponse<TResponse?>> PutAsync<TRequest, TResponse>(string endpoint, TRequest request)
+    public async Task<AppResponse<TResponse?>> PutAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -253,10 +253,10 @@ internal sealed class ApiService : IApiService
             var jsonContent = JsonSerializer.Serialize(request, _jsonOptions);
             using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-            var apiResponse = await _httpClient.PutAsync(endpoint, content).ConfigureAwait(false);
+            var apiResponse = await _httpClient.PutAsync(endpoint, content, cancellationToken).ConfigureAwait(false);
             if (!apiResponse.IsSuccessStatusCode)
             {
-                var errorContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var errorContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(errorContent);
 
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
@@ -266,7 +266,7 @@ internal sealed class ApiService : IApiService
                 return AppResponses.Failure<TResponse?>(contextualError);
             }
 
-            var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<AppResponse<TResponse>>(responseContent, _jsonOptions);
 
             return response switch
@@ -289,17 +289,17 @@ internal sealed class ApiService : IApiService
         }
     }
 
-    public async Task<AppResponse<PagedResponse<TResponse, TCursor>>> GetPagedAsync<TResponse, TCursor>(string endpoint)
+    public async Task<AppResponse<PagedResponse<TResponse, TCursor>>> GetPagedAsync<TResponse, TCursor>(string endpoint, CancellationToken cancellationToken = default)
     {
         string content = string.Empty;
         try
         {
             SetAuthorizationHeader();
 
-            var apiResponse = await _httpClient.GetAsync(endpoint).ConfigureAwait(false);
+            var apiResponse = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
             if (!apiResponse.IsSuccessStatusCode)
             {
-                content = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                content = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(content);
 
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
@@ -309,7 +309,7 @@ internal sealed class ApiService : IApiService
                 return AppResponses.Failure<PagedResponse<TResponse, TCursor>>(contextualError);
             }
 
-            content = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+            content = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<AppResponse<PagedResponse<TResponse, TCursor>>>(content, _jsonOptions);
 
             return response ?? AppResponses.Failure<PagedResponse<TResponse, TCursor>>("Failed to deserialize response");
@@ -322,18 +322,18 @@ internal sealed class ApiService : IApiService
 
     }
 
-    public async Task<AppResponse<PagedResponse<TResponse, TCursor>>> GetPagedAsync<TRequest, TResponse, TCursor>(string endpoint, TRequest? request)
+    public async Task<AppResponse<PagedResponse<TResponse, TCursor>>> GetPagedAsync<TRequest, TResponse, TCursor>(string endpoint, TRequest? request, CancellationToken cancellationToken = default)
     {
         try
         {
             SetAuthorizationHeader();
 
-            var apiResponse = await _httpClient.GetAsync(endpoint).ConfigureAwait(false);
+            var apiResponse = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
             if (!apiResponse.IsSuccessStatusCode)
             {
-                var errorContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var errorContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
-                errorContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                errorContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(errorContent);
 
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
@@ -343,7 +343,7 @@ internal sealed class ApiService : IApiService
                 return AppResponses.Failure<PagedResponse<TResponse, TCursor>>(contextualError);
             }
 
-            var responseContent = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseContent = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<AppResponse<PagedResponse<TResponse, TCursor>>>(responseContent, _jsonOptions);
 
             //var response = JsonSerializer.Deserialize<AppResponse<PagedResult<TResponse>>>(content, new JsonSerializerOptions{PropertyNameCaseInsensitive = true});
@@ -358,17 +358,17 @@ internal sealed class ApiService : IApiService
         }
     }
 
-    public async Task<AppResponse<TResponse>> PatchAsync<TRequest, TResponse>(string endpoint, TRequest kpi)
+    public async Task<AppResponse<TResponse>> PatchAsync<TRequest, TResponse>(string endpoint, TRequest kpi, CancellationToken cancellationToken = default)
     {
         string responseMessage = string.Empty;
         try
         {
             SetAuthorizationHeader();
 
-            var apiResponse = await _httpClient.PatchAsJsonAsync(endpoint, kpi).ConfigureAwait(false);
+            var apiResponse = await _httpClient.PatchAsJsonAsync(endpoint, kpi, cancellationToken).ConfigureAwait(false);
             if (!apiResponse.IsSuccessStatusCode)
             {
-                var content = await apiResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var content = await apiResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 var errorMessage = ExtractErrorMessage(content);
 
                 var contextualError = GetErrorMessage(apiResponse.StatusCode, errorMessage, apiResponse.ReasonPhrase);
@@ -377,7 +377,7 @@ internal sealed class ApiService : IApiService
                 return AppResponses.Failure<TResponse>(contextualError);
 
             }
-            var response = await apiResponse.Content.ReadFromJsonAsync<AppResponse<TResponse>>().ConfigureAwait(false);
+            var response = await apiResponse.Content.ReadFromJsonAsync<AppResponse<TResponse>>(cancellationToken: cancellationToken).ConfigureAwait(false);
             if (response == null)
             {
                 responseMessage = "Response content is null";

@@ -168,7 +168,7 @@ public class Repository<T>(DbContext context) : IRepository<T> where T : class
         return [..list];
     }
 
-    public async Task<T> UpdateAsync(T entity)
+    public async Task<T> UpdateAsync(T entity, CancellationToken ct = default)
     {
         // Try to find an already-tracked instance with the same primary key and merge values
         var entityType = _context.Model.FindEntityType(typeof(T));

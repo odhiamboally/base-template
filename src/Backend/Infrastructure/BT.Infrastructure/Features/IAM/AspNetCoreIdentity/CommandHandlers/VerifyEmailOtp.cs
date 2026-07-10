@@ -90,13 +90,13 @@ internal sealed class VerifyEmailOtp(
                 new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, null, true, DateTimeOffset.UtcNow, null!, []));
         }
 
-        var requestedSessionId = Guid.CreateVersion7();
         var sessionCreation = await sessionService.CreateSessionAsync(
             user.Id,
-            requestedSessionId,
+            Guid.NewGuid(),
             httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
             httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
-            string.IsNullOrWhiteSpace(req.DeviceFingerprint) ? "unknown" : req.DeviceFingerprint).ConfigureAwait(false);
+            string.IsNullOrWhiteSpace(req.DeviceFingerprint) ? "unknown" : req.DeviceFingerprint,
+            ct).ConfigureAwait(false);
 
         if (!sessionCreation.IsSuccess || sessionCreation.Data == Guid.Empty)
         {

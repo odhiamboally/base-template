@@ -18,41 +18,41 @@ internal sealed class IamSessionRepository : Repository<AppUserSession>, ISessio
         _iamContext = context;
     }
 
-    public async Task<List<AppUserSession>> GetActiveSessionsByUserIdAsync(string userId)
+    public async Task<List<AppUserSession>> GetActiveSessionsByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         return await _iamContext.AppUserSessions
             .Where(s => s.AppUserId == userId && s.IsActive && s.ExpiresAt > DateTimeOffset.UtcNow)
             .OrderByDescending(s => s.LastAccessedAt)
-            .ToListAsync().ConfigureAwait(false);
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<AppUserSession?> GetTrackedByIdAsync(Guid sessionId)
+    public async Task<AppUserSession?> GetTrackedByIdAsync(Guid sessionId, CancellationToken cancellationToken = default)
     {
         return await _iamContext.AppUserSessions
-            .FirstOrDefaultAsync(session => session.Id == sessionId)
+            .FirstOrDefaultAsync(session => session.Id == sessionId, cancellationToken)
             .ConfigureAwait(false);
     }
 
-    public async Task<AppUserSession?> GetOldestSessionByUserIdAsync(string userId)
+    public async Task<AppUserSession?> GetOldestSessionByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         return await _iamContext.AppUserSessions
             .Where(s => s.AppUserId == userId && s.IsActive)
             .OrderBy(s => s.CreatedAt)
-            .FirstOrDefaultAsync().ConfigureAwait(false);
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<List<AppUserSession>> GetExpiredSessionsAsync()
+    public async Task<List<AppUserSession>> GetExpiredSessionsAsync(DateTimeOffset retentionLimit, CancellationToken cancellationToken = default)
     {
         return await _iamContext.AppUserSessions
             .Where(s => s.IsActive && s.IsRevoked && s.ExpiresAt <= DateTimeOffset.UtcNow)
-            .ToListAsync().ConfigureAwait(false);
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<bool> PurgeOldSessionsAsync(DateTimeOffset retentionLimit)
+    public async Task<bool> PurgeOldSessionsAsync(DateTimeOffset retentionLimit, CancellationToken cancellationToken = default)
     {
         var oldSessions = await _iamContext.AppUserSessions
             .Where(s => s.CreatedAt < retentionLimit)
-            .ToListAsync().ConfigureAwait(false);
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
 
         if (!oldSessions.Any())
             return false;

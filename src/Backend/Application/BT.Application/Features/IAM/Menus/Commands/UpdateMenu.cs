@@ -67,7 +67,7 @@ internal sealed class UpdateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
                 request.DisplayOrder,
                 request.IsActive,
                 command.UserId);
-            await unitOfWork.MenuRepository.UpdateAsync(menu).ConfigureAwait(false);
+            await unitOfWork.MenuRepository.UpdateAsync(menu, cancellationToken).ConfigureAwait(false);
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved ? AppResponses.Success("Menu updated.", menu.ToMenuResponse()) : AppResponses.Failure<MenuResponse>("Menu update failed.");

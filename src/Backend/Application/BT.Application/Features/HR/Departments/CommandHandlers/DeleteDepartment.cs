@@ -32,7 +32,7 @@ internal sealed class DeleteDepartmentCommandHandler(IHrUnitOfWork unitOfWork, I
             }
 
             department.MarkAsDeleted(command.UserId);
-            await unitOfWork.DepartmentRepository.UpdateAsync(department).ConfigureAwait(false);
+            await unitOfWork.DepartmentRepository.UpdateAsync(department, cancellationToken).ConfigureAwait(false);
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved

@@ -58,7 +58,7 @@ internal sealed class UpdatePermissionCommandHandler(IIamUnitOfWork unitOfWork, 
                 command.Request.IsActive,
                 command.UserId);
 
-            await unitOfWork.PermissionRepository.UpdateAsync(permission).ConfigureAwait(false);
+            await unitOfWork.PermissionRepository.UpdateAsync(permission, cancellationToken).ConfigureAwait(false);
             var saved = await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false) > 0;
 
             return saved

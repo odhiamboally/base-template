@@ -48,42 +48,42 @@ internal sealed class DeleteReferenceCatalogItemCommandHandler(IIamUnitOfWork un
                 var context = await unitOfWork.PermissionContextRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
                 if (context is null) return false;
                 context.Update(context.Label, context.Description, false, command.UserId);
-                await unitOfWork.PermissionContextRepository.UpdateAsync(context).ConfigureAwait(false);
+                await unitOfWork.PermissionContextRepository.UpdateAsync(context, cancellationToken).ConfigureAwait(false);
                 return true;
 
             case ReferenceCatalogTypes.PermissionResources:
                 var resource = await unitOfWork.PermissionResourceRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
                 if (resource is null) return false;
                 resource.Update(resource.Label, resource.ContextKey, resource.Description, false, command.UserId);
-                await unitOfWork.PermissionResourceRepository.UpdateAsync(resource).ConfigureAwait(false);
+                await unitOfWork.PermissionResourceRepository.UpdateAsync(resource, cancellationToken).ConfigureAwait(false);
                 return true;
 
             case ReferenceCatalogTypes.PermissionActions:
                 var action = await unitOfWork.PermissionActionRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
                 if (action is null) return false;
                 action.Update(action.Label, action.Description, false, command.UserId);
-                await unitOfWork.PermissionActionRepository.UpdateAsync(action).ConfigureAwait(false);
+                await unitOfWork.PermissionActionRepository.UpdateAsync(action, cancellationToken).ConfigureAwait(false);
                 return true;
 
             case ReferenceCatalogTypes.MenuPlacements:
                 var placement = await unitOfWork.MenuPlacementRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
                 if (placement is null) return false;
                 placement.Update(placement.Label, placement.Description, false, command.UserId);
-                await unitOfWork.MenuPlacementRepository.UpdateAsync(placement).ConfigureAwait(false);
+                await unitOfWork.MenuPlacementRepository.UpdateAsync(placement, cancellationToken).ConfigureAwait(false);
                 return true;
 
             case ReferenceCatalogTypes.MenuIcons:
                 var icon = await unitOfWork.MenuIconRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
                 if (icon is null) return false;
                 icon.Update(icon.Label, icon.Description, false, command.UserId);
-                await unitOfWork.MenuIconRepository.UpdateAsync(icon).ConfigureAwait(false);
+                await unitOfWork.MenuIconRepository.UpdateAsync(icon, cancellationToken).ConfigureAwait(false);
                 return true;
 
             case ReferenceCatalogTypes.MenuRoutes:
                 var route = await unitOfWork.MenuRouteRepository.FindByIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
                 if (route is null) return false;
                 route.Update(route.Label, route.Url, route.PlacementKey, route.Description, false, command.UserId);
-                await unitOfWork.MenuRouteRepository.UpdateAsync(route).ConfigureAwait(false);
+                await unitOfWork.MenuRouteRepository.UpdateAsync(route, cancellationToken).ConfigureAwait(false);
                 return true;
 
             default:

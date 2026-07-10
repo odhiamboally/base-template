@@ -28,7 +28,7 @@ public interface IRepository<T> where T : class
     Task<List<T>> ListAsync(Func<IQueryable<T>, IQueryable<T>>? query = null, CancellationToken ct = default);
     Task<List<TResult>> ListAsync<TResult>(Func<IQueryable<T>, IQueryable<TResult>> query, CancellationToken ct = default);
     Task<Collection<T>> SearchAsync<TCursor>(ISpecification<T, TCursor> spec, CancellationToken ct = default);
-    Task<T> UpdateAsync(T entity);
+    Task<T> UpdateAsync(T entity, CancellationToken ct = default);
     Task<int> UpdateRangeAsync(Collection<T> entities, CancellationToken ct = default);
 
 }

@@ -105,7 +105,8 @@ internal sealed class VerifyTotpCode(
                 requestedSessionId,
                 httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
                 httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
-                request.DeviceFingerprint ?? "unknown").ConfigureAwait(false);
+                request.DeviceFingerprint ?? "unknown",
+                cancellationToken).ConfigureAwait(false);
 
             if (!sessionCreation.IsSuccess || sessionCreation.Data == Guid.Empty)
             {
@@ -222,7 +223,7 @@ internal sealed class VerifyTotpCode(
         await cache.RemoveAsync(attemptKey, ct).ConfigureAwait(false);
         secretEntity.MarkAsUsed();
 
-        await iamUnitOfWork.AppUserTotpSecretRepository.UpdateAsync(secretEntity).ConfigureAwait(false);
+        await iamUnitOfWork.AppUserTotpSecretRepository.UpdateAsync(secretEntity, ct).ConfigureAwait(false);
         await iamUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
 
         return true;

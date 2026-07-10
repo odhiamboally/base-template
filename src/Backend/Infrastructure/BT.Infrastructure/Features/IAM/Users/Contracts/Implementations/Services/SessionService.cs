@@ -28,12 +28,12 @@ internal sealed class SessionService(
     private readonly ILogger<SessionService> _logger = logger;
     private readonly SessionSettings _sessionSettings = sessionSettings.Value;
 
-    public async Task<AppResponse<bool>> CheckConcurrentSessionsAsync(string userId)
+    public async Task<AppResponse<bool>> CheckConcurrentSessionsAsync(string userId, CancellationToken cancellationToken = default)
     {
         try
         {
             var activeSessions = await _unitOfWork.SessionRepository
-                .GetActiveSessionsByUserIdAsync(userId)
+                .GetActiveSessionsByUserIdAsync(userId, cancellationToken)
                 .ConfigureAwait(false);
 
             return activeSessions.Count >= _sessionSettings.MaxConcurrentSessions
@@ -47,16 +47,16 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<Guid>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent)
+    public async Task<AppResponse<Guid>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent, CancellationToken cancellationToken = default)
     {
         try
         {
             // Check concurrent session limit
-            var concurrentCheck = await CheckConcurrentSessionsAsync(userId).ConfigureAwait(false);
+            var concurrentCheck = await CheckConcurrentSessionsAsync(userId, cancellationToken).ConfigureAwait(false);
             if (!concurrentCheck.IsSuccess)
             {
                 // If at limit, end the oldest sessions
-                var endSessionsResponse = await RevokeAllUserSessionsAsync(userId).ConfigureAwait(false);
+                var endSessionsResponse = await RevokeAllUserSessionsAsync(userId, null, cancellationToken).ConfigureAwait(false);
                 if (!endSessionsResponse.IsSuccess)
                 {
                     ServiceLogDefinitions.LogFailedToEndOldSessions(_logger, userId, endSessionsResponse.Message ?? string.Empty);
@@ -75,8 +75,8 @@ internal sealed class SessionService(
                 now.AddMinutes(_sessionSettings.SessionTimeoutMinutes),
                 userId);
 
-            await _unitOfWork.SessionRepository.CreateAsync(session).ConfigureAwait(false);
-            await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+            await _unitOfWork.SessionRepository.CreateAsync(session, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
             return AppResponses.Success("Session created successfully", sessionId);
         }
@@ -87,7 +87,7 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<Guid>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent, string deviceFingerprint)
+    public async Task<AppResponse<Guid>> CreateSessionAsync(string userId, Guid sessionId, string ipAddress, string userAgent, string deviceFingerprint, CancellationToken cancellationToken = default)
     {
         const int maxRetries = 3;
         try
@@ -95,7 +95,7 @@ internal sealed class SessionService(
             return await _unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
                 // Query INSIDE transaction for consistency
-                var activeSessions = await _unitOfWork.SessionRepository.GetActiveSessionsByUserIdAsync(userId).ConfigureAwait(false);
+                var activeSessions = await _unitOfWork.SessionRepository.GetActiveSessionsByUserIdAsync(userId, cancellationToken).ConfigureAwait(false);
 
                 // Check if session for THIS device exists
                 var existingSessionForDevice = activeSessions.FirstOrDefault(s => s.DeviceFingerprint == deviceFingerprint);
@@ -111,7 +111,7 @@ internal sealed class SessionService(
                         session.Revoke("New login from another device.");
                     }
 
-                    await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(sessionsToEnd)).ConfigureAwait(false);
+                    await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(sessionsToEnd), cancellationToken).ConfigureAwait(false);
                 }
 
                 var now = DateTimeOffset.UtcNow;
@@ -124,7 +124,7 @@ internal sealed class SessionService(
                         ipAddress,
                         userAgent);
 
-                    await _unitOfWork.SessionRepository.UpdateAsync(existingSessionForDevice).ConfigureAwait(false);
+                    await _unitOfWork.SessionRepository.UpdateAsync(existingSessionForDevice, cancellationToken).ConfigureAwait(false);
                     sessionId = existingSessionForDevice.Id;
                 }
                 else
@@ -138,10 +138,11 @@ internal sealed class SessionService(
                         userId,
                         deviceFingerprint);
 
-                    await _unitOfWork.SessionRepository.CreateAsync(newSession).ConfigureAwait(false);
+                    await _unitOfWork.SessionRepository.CreateAsync(newSession, cancellationToken).ConfigureAwait(false);
                 }
 
-                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                // Commit the transaction
+                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
                 return AppResponses.Success("Session created successfully", sessionId);
             }, maxRetries, 50).ConfigureAwait(false);
         }
@@ -152,7 +153,7 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<bool>> RevokeSessionAsync(string sessionId)
+    public async Task<AppResponse<bool>> RevokeSessionAsync(string sessionId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -162,7 +163,7 @@ internal sealed class SessionService(
             }
 
             var session = await _unitOfWork.SessionRepository
-                .GetTrackedByIdAsync(sessionGuid)
+                .GetTrackedByIdAsync(sessionGuid, cancellationToken)
                 .ConfigureAwait(false);
 
             if (session == null)
@@ -172,8 +173,8 @@ internal sealed class SessionService(
 
             session.Revoke("Session revoked by request");
 
-            await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
-            await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+            await _unitOfWork.SessionRepository.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
             return AppResponses.Success("Session ended successfully", true);
         }
         catch (Exception ex)
@@ -183,12 +184,12 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<bool>> RevokeAllUserSessionsAsync(string userId, string? excludeSessionId = null)
+    public async Task<AppResponse<bool>> RevokeAllUserSessionsAsync(string userId, string? excludeSessionId = null, CancellationToken cancellationToken = default)
     {
         try
         {
             var activeSessions = await _unitOfWork.SessionRepository
-                .GetActiveSessionsByUserIdAsync(userId)
+                .GetActiveSessionsByUserIdAsync(userId, cancellationToken)
                 .ConfigureAwait(false);
 
             Guid? excludeSessionGuid = null;
@@ -208,9 +209,9 @@ internal sealed class SessionService(
                     session.Revoke("Concurrent session limit exceeded");
                 }
 
-                await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(sessionsToEnd)).ConfigureAwait(false);
+                await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(sessionsToEnd), cancellationToken).ConfigureAwait(false);
 
-                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return AppResponses.Success($"Ended {sessionsToEnd.Count} sessions", true);
@@ -222,12 +223,12 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<Collection<AppUserSession>>> GetActiveSessionsAsync(string userId)
+    public async Task<AppResponse<Collection<AppUserSession>>> GetActiveSessionsAsync(string userId, CancellationToken cancellationToken = default)
     {
         try
         {
             var sessions = await _unitOfWork.SessionRepository
-                .GetActiveSessionsByUserIdAsync(userId)
+                .GetActiveSessionsByUserIdAsync(userId, cancellationToken)
                 .ConfigureAwait(false);
 
             var sessionList = new Collection<AppUserSession>(sessions);
@@ -241,14 +242,14 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<bool>> CleanupExpiredSessionsAsync()
+    public async Task<AppResponse<bool>> CleanupExpiredSessionsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var now = DateTimeOffset.UtcNow;
             var retentionLimit = now.AddDays(-30);
             var expiredSessions = await _unitOfWork.SessionRepository
-                .GetExpiredSessionsAsync()
+                .GetExpiredSessionsAsync(now, cancellationToken)
                 .ConfigureAwait(false);
 
             if (expiredSessions.Any())
@@ -258,13 +259,13 @@ internal sealed class SessionService(
                     session.Revoke("Session expired");
                 }
 
-                await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(expiredSessions)).ConfigureAwait(false);
+                await _unitOfWork.SessionRepository.UpdateRangeAsync(new Collection<AppUserSession>(expiredSessions), cancellationToken).ConfigureAwait(false);
 
                 var purgeResult = await _unitOfWork.SessionRepository
-                    .PurgeOldSessionsAsync(retentionLimit)
+                    .PurgeOldSessionsAsync(retentionLimit, cancellationToken)
                     .ConfigureAwait(false);
 
-                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return AppResponses.Success($"Cleaned up {expiredSessions.Count} expired sessions", true);
@@ -276,7 +277,7 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<bool>> IsSessionValidAsync(string sessionId, string userId)
+    public async Task<AppResponse<bool>> IsSessionValidAsync(string sessionId, string userId, CancellationToken cancellationToken = default)
     {
         if (!Guid.TryParse(sessionId, out var sessionGuid))
         {
@@ -287,7 +288,7 @@ internal sealed class SessionService(
         {
             var session = await _unitOfWork.SessionRepository
                 .FindByCondition(s => s.Id == sessionGuid)
-                .FirstOrDefaultAsync()
+                .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             if (session == null || session.AppUserId != userId)
@@ -305,8 +306,8 @@ internal sealed class SessionService(
             {
                 // Mark as expired
                 session.Expire();
-                await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
-                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                await _unitOfWork.SessionRepository.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
                 return AppResponses.Failure<bool>("Session has expired");
             }
@@ -318,8 +319,8 @@ internal sealed class SessionService(
                     ? now.AddMinutes(_sessionSettings.SessionTimeoutMinutes)
                     : null);
 
-                await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
-                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                await _unitOfWork.SessionRepository.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return AppResponses.Success("Session is valid", true);
@@ -332,7 +333,7 @@ internal sealed class SessionService(
             var freshSession = await _unitOfWork.SessionRepository
                 .FindByCondition(s => s.Id == sessionGuid)
                 .AsNoTracking()
-                .FirstOrDefaultAsync()
+                .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             return freshSession != null && freshSession.IsActive && freshSession.ExpiresAt > DateTimeOffset.UtcNow
@@ -346,7 +347,7 @@ internal sealed class SessionService(
         }
     }
 
-    public async Task<AppResponse<bool>> ValidateSessionAsync(string sessionId)
+    public async Task<AppResponse<bool>> ValidateSessionAsync(string sessionId, CancellationToken cancellationToken = default)
     {
         if (!Guid.TryParse(sessionId, out var sessionGuid))
         {
@@ -357,7 +358,7 @@ internal sealed class SessionService(
         {
             var session = await _unitOfWork.SessionRepository
                 .FindByCondition(s => s.Id == sessionGuid)
-                .FirstOrDefaultAsync().ConfigureAwait(false);
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
             if (session == null)
             {
@@ -374,8 +375,8 @@ internal sealed class SessionService(
             {
                 // Mark as expired
                 session.Expire();
-                await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
-                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                await _unitOfWork.SessionRepository.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
                 return AppResponses.Failure<bool>("Session has expired");
             }
@@ -387,8 +388,8 @@ internal sealed class SessionService(
                     ? now.AddMinutes(_sessionSettings.SessionTimeoutMinutes)
                     : null);
 
-                await _unitOfWork.SessionRepository.UpdateAsync(session).ConfigureAwait(false);
-                await _unitOfWork.CompleteAsync().ConfigureAwait(false);
+                await _unitOfWork.SessionRepository.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return AppResponses.Success("Session is valid", true);
@@ -401,7 +402,7 @@ internal sealed class SessionService(
             var freshSession = await _unitOfWork.SessionRepository
                 .FindByCondition(s => s.Id == sessionGuid)
                 .AsNoTracking()
-                .FirstOrDefaultAsync()
+                .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             if (freshSession != null && freshSession.IsActive && freshSession.ExpiresAt > DateTimeOffset.UtcNow)

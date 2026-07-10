@@ -107,7 +107,7 @@ internal sealed class UpdateCustomerCommandHandler(
 
             customer.AssignRelationshipManager(req.RelationshipManagerId);
 
-            await _bankingUnitOfWork.CustomerRepository.UpdateAsync(customer).ConfigureAwait(false);
+            await _bankingUnitOfWork.CustomerRepository.UpdateAsync(customer, ct).ConfigureAwait(false);
             await _bankingUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
 
             LogDefinitions.LogCustomerUpdated(_logger, customer.Number);
