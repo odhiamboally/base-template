@@ -1,6 +1,7 @@
 using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
 using BT.Domain.Features.Shared.Contracts;
 using BT.Domain.Features.Shared.Payments.Entities;
+using BT.Domain.Features.Shared.Payments.Enums;
 using BT.Domain.Shared.ValueObjects;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.Payments.Dtos;
@@ -46,13 +47,25 @@ internal sealed class InitiatePaymentHandler(
             CreatedBy = string.Empty
         };
 
+        // First, persist the initial payment record to ensure we have a reference.
+        await sharedUnitOfWork.PaymentRecordRepository.CreateAsync(paymentRecord, cancellationToken).ConfigureAwait(false);
+        await sharedUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+
         var initiatePaymentResult = await paymentGateway
             .InitiateAsync(paymentRecord, request.Request, cancellationToken)
             .ConfigureAwait(false);
 
         if (initiatePaymentResult.IsSuccess)
         {
-            await sharedUnitOfWork.PaymentRecordRepository.CreateAsync(paymentRecord, cancellationToken).ConfigureAwait(false);
+            // If initiation is successful, the gateway has likely updated the paymentRecord
+            // with a checkout ID. We need to persist these changes.
+            // This assumes your repository/UoW tracks changes to the paymentRecord entity.
+            await sharedUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            // If initiation fails, update the record status to Failed.
+            paymentRecord.UpdateStatus(PaymentStatus.Failed);
             await sharedUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
         }
 
