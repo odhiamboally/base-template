@@ -4,17 +4,17 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace BT.Persistence.Features.Shared.DataContext;
 
-public class SharedDBContextFactory : IDesignTimeDbContextFactory<SharedDBContext>
+public class SharedSqlServerDBContextFactory : IDesignTimeDbContextFactory<SharedSqlServerDBContext>
 {
-    public SharedDBContext CreateDbContext(string[] args)
+    public SharedSqlServerDBContext CreateDbContext(string[] args)
     {
         var configuration = DesignTimeConfigurationFactory.Create();
-        var optionsBuilder = new DbContextOptionsBuilder<SharedDBContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<SharedSqlServerDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "SharedConnection");
 
         optionsBuilder.UseSqlServer(
             connectionString,
             sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_Shared"));
-        return new SharedDBContext(optionsBuilder.Options);
+        return new SharedSqlServerDBContext(optionsBuilder.Options);
     }
 }

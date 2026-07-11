@@ -26,16 +26,41 @@ public static class HrPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("HrConnection (or DefaultConnection) not found.");
 
-        services.AddDbContext<HrDBContext>(options =>
+        services.Configure<BT.Persistence.Common.Configuration.DatabaseSettings>(configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName));
+        var dbSettings = configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName).Get<BT.Persistence.Common.Configuration.DatabaseSettings>() ?? new BT.Persistence.Common.Configuration.DatabaseSettings();
+
+        void ConfigureDbContextOptions(DbContextOptionsBuilder options)
         {
-            options.UseSqlServer(connectionString, sqlOptions =>
+            if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
             {
-                sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
-                sqlOptions.CommandTimeout(30);
-                sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_HR");
-            });
-        });
+                options.UseNpgsql(connectionString, pgOptions =>
+                {
+                    pgOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorCodesToAdd: null);
+                    pgOptions.CommandTimeout(30);
+                    pgOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                    pgOptions.MigrationsHistoryTable("__EFMigrationsHistory_HR");
+                });
+            }
+            else
+            {
+                options.UseSqlServer(connectionString, sqlOptions =>
+                {
+                    sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+                    sqlOptions.CommandTimeout(30);
+                    sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
+                    sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_HR");
+                });
+            }
+        }
+
+        if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddDbContext<HrDBContext, HrPostgreSqlDBContext>(ConfigureDbContextOptions);
+        }
+        else
+        {
+            services.AddDbContext<HrDBContext, HrSqlServerDBContext>(ConfigureDbContextOptions);
+        }
 
         services.AddScoped<IDepartmentRepository, HrDepartmentRepository>();
         services.AddScoped<IEmployeeRepository, HrEmployeeRepository>();

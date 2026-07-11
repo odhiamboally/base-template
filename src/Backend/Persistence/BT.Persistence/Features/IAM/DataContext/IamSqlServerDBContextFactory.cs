@@ -4,17 +4,17 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace BT.Persistence.Features.IAM.DataContext;
 
-public class IamDBContextFactory : IDesignTimeDbContextFactory<IamDBContext>
+public class IamSqlServerDBContextFactory : IDesignTimeDbContextFactory<IamSqlServerDBContext>
 {
-    public IamDBContext CreateDbContext(string[] args)
+    public IamSqlServerDBContext CreateDbContext(string[] args)
     {
         var configuration = DesignTimeConfigurationFactory.Create();
-        var optionsBuilder = new DbContextOptionsBuilder<IamDBContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<IamSqlServerDBContext>();
         var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "IamConnection");
 
         optionsBuilder.UseSqlServer(
             connectionString,
             sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_IAM"));
-        return new IamDBContext(optionsBuilder.Options);
+        return new IamSqlServerDBContext(optionsBuilder.Options);
     }
 }

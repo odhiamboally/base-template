@@ -13,16 +13,38 @@ using Microsoft.Extensions.Logging;
 
 namespace BT.Persistence.Features.Banking.DataContext;
 
-public class BankingDBContext(
-    DbContextOptions<BankingDBContext> options,
-    ICurrentTenantProvider? tenantProvider = null,
-    ICurrentActorProvider? actorProvider = null,
-    ILogger<BankingDBContext>? logger = null
-) : DbContext(options), ITenantFilteredDBContext
+public class BankingDBContext : DbContext, ITenantFilteredDBContext
 {
+    private readonly ICurrentTenantProvider? _tenantProvider;
+    private readonly ICurrentActorProvider? _actorProvider;
+    private readonly ILogger<BankingDBContext>? _logger;
+
+    public BankingDBContext(
+        DbContextOptions<BankingDBContext> options,
+        ICurrentTenantProvider? tenantProvider = null,
+        ICurrentActorProvider? actorProvider = null,
+        ILogger<BankingDBContext>? logger = null
+    ) : base(options)
+    {
+        _tenantProvider = tenantProvider;
+        _actorProvider = actorProvider;
+        _logger = logger;
+    }
+
+    protected BankingDBContext(
+        DbContextOptions options,
+        ICurrentTenantProvider? tenantProvider = null,
+        ICurrentActorProvider? actorProvider = null,
+        ILogger<BankingDBContext>? logger = null
+    ) : base(options)
+    {
+        _tenantProvider = tenantProvider;
+        _actorProvider = actorProvider;
+        _logger = logger;
+    }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Director> Directors { get; set; }
-    public Guid CurrentTenantId => tenantProvider?.TenantId ?? Guid.Empty;
+    public Guid CurrentTenantId => _tenantProvider?.TenantId ?? Guid.Empty;
 
     private List<IDomainEvent> _collectedDomainEvents = [];
     public IReadOnlyList<IDomainEvent>? GetCollectedDomainEvents() => _collectedDomainEvents?.AsReadOnly();
@@ -35,7 +57,9 @@ public class BankingDBContext(
 
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(BankingDBContext).Assembly,
-            type => type.Namespace?.StartsWith("BT.Persistence.Features.Banking", StringComparison.Ordinal) == true);
+            type => type.Namespace?.StartsWith("BT.Persistence.Features.Banking", StringComparison.Ordinal) == true &&
+                    !(type.Namespace?.Contains("SqlServer") == true) &&
+                    !(type.Namespace?.Contains("PostgreSql") == true));
 
         modelBuilder.Entity<Employee>()
             .ToTable("Employees", table => table.ExcludeFromMigrations());
@@ -49,7 +73,7 @@ public class BankingDBContext(
         {
             var domainEvents = DBContextHelper.CollectDomainEvents(ChangeTracker);
             DBContextHelper.ClearDomainEventsFromAggregates(ChangeTracker);
-            DBContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
+            DBContextHelper.UpdateAuditAndSoftDelete(ChangeTracker, _actorProvider?.ActorId ?? ICurrentActorProvider.SystemActor, CurrentTenantId);
             var result = await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             _collectedDomainEvents ??= [];
             _collectedDomainEvents.AddRange(domainEvents);
@@ -60,8 +84,8 @@ public class BankingDBContext(
             foreach (var entry in ex.Entries)
             {
                 var entityId = entry.Entity is BaseEntity b ? b.Id.ToString() : "(unknown)";
-                if (logger is not null)
-                    PersistenceLogDefinitions.LogConcurrencyConflict(logger, entry.Entity.GetType().Name, entityId);
+                if (_logger is not null)
+                    PersistenceLogDefinitions.LogConcurrencyConflict(_logger, entry.Entity.GetType().Name, entityId);
                 _ = await entry.GetDatabaseValuesAsync(cancellationToken).ConfigureAwait(false);
             }
             _collectedDomainEvents?.Clear();
@@ -70,15 +94,15 @@ public class BankingDBContext(
         catch (DbUpdateException ex)
         {
             foreach (var entry in ex.Entries)
-                if (logger is not null)
-                    PersistenceLogDefinitions.LogDatabaseError(logger, entry.Entity.GetType().Name, ex);
+                if (_logger is not null)
+                    PersistenceLogDefinitions.LogDatabaseError(_logger, entry.Entity.GetType().Name, ex);
             _collectedDomainEvents?.Clear();
             throw;
         }
         catch (Exception ex)
         {
-            if (logger is not null)
-                PersistenceLogDefinitions.LogDBContextSaveChangesError(logger, nameof(BankingDBContext), ex);
+            if (_logger is not null)
+                PersistenceLogDefinitions.LogDBContextSaveChangesError(_logger, nameof(BankingDBContext), ex);
             _collectedDomainEvents?.Clear();
             throw;
         }
