@@ -1,4 +1,7 @@
+using BT.Domain.Shared.Contracts.Common;
+
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BT.Persistence.Features.IAM.DataContext;
 
@@ -7,8 +10,12 @@ namespace BT.Persistence.Features.IAM.DataContext;
 /// </summary>
 public class IamPostgreSqlDBContext : IamDBContext
 {
-    public IamPostgreSqlDBContext(DbContextOptions<IamPostgreSqlDBContext> options)
-        : base(options)
+    public IamPostgreSqlDBContext(
+        DbContextOptions<IamPostgreSqlDBContext> options,
+        ICurrentTenantProvider? tenantProvider = null,
+        ICurrentActorProvider? actorProvider = null,
+        ILogger<IamDBContext>? logger = null)
+        : base(options, tenantProvider, actorProvider, logger)
     {
     }
 

@@ -1,4 +1,7 @@
+using BT.Domain.Shared.Contracts.Common;
+
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BT.Persistence.Features.Shared.DataContext;
 
@@ -7,8 +10,12 @@ namespace BT.Persistence.Features.Shared.DataContext;
 /// </summary>
 public class SharedPostgreSqlDBContext : SharedDBContext
 {
-    public SharedPostgreSqlDBContext(DbContextOptions<SharedPostgreSqlDBContext> options)
-        : base(options)
+    public SharedPostgreSqlDBContext(
+        DbContextOptions<SharedPostgreSqlDBContext> options,
+        ICurrentTenantProvider? tenantProvider = null,
+        ICurrentActorProvider? actorProvider = null,
+        ILogger<SharedDBContext>? logger = null)
+        : base(options, tenantProvider, actorProvider, logger)
     {
     }
 

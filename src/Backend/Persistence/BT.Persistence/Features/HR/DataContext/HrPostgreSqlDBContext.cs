@@ -1,4 +1,7 @@
+using BT.Domain.Shared.Contracts.Common;
+
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BT.Persistence.Features.HR.DataContext;
 
@@ -7,8 +10,12 @@ namespace BT.Persistence.Features.HR.DataContext;
 /// </summary>
 public class HrPostgreSqlDBContext : HrDBContext
 {
-    public HrPostgreSqlDBContext(DbContextOptions<HrPostgreSqlDBContext> options)
-        : base(options)
+    public HrPostgreSqlDBContext(
+        DbContextOptions<HrPostgreSqlDBContext> options,
+        ICurrentTenantProvider? tenantProvider = null,
+        ICurrentActorProvider? actorProvider = null,
+        ILogger<HrDBContext>? logger = null)
+        : base(options, tenantProvider, actorProvider, logger)
     {
     }
 

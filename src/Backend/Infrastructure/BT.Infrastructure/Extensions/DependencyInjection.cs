@@ -164,12 +164,6 @@ public static class DependencyInjection
         services.AddScoped<StripePaymentGateway>();
         services.AddScoped<MpesaPaymentGateway>();
 
-        services.AddHttpClient("Payments.Mpesa")
-            .AddStandardResilienceHandler(options =>
-            {
-                options.Retry.MaxRetryAttempts = 1;
-                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
-            });
 
         services.AddScoped<IMpesaC2BService>(provider => provider.GetRequiredService<MpesaPaymentGateway>());
         services.AddScoped<IPaymentGateway, RoutedPaymentGateway>();
@@ -854,6 +848,11 @@ public static class DependencyInjection
             }
             client.DefaultRequestHeaders.Add("Accept", "application/json");
             client.DefaultRequestHeaders.Add("User-Agent", "BaseTemplate-HttpClient/1.0");
+        })
+        .AddStandardResilienceHandler(options =>
+        {
+            options.Retry.MaxRetryAttempts = 1;
+            options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
         });
     }
 
