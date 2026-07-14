@@ -1,5 +1,11 @@
-using MediatR;
-using BT.SharedKernel.Dtos.Common;
+using System.ComponentModel.DataAnnotations;
 
 namespace BT.SharedKernel.Features.IAM.Users.Dtos;
-public abstract record ForgotPasswordRequest(string Email, string? LogoBase64) : AppRequest(), IRequest<AppResponse<bool>>;
+
+public sealed record ForgotPasswordRequest
+{
+    [Required]
+    [EmailAddress]
+    [StringLength(256)]
+    public string Email { get; init; } = string.Empty;
+}

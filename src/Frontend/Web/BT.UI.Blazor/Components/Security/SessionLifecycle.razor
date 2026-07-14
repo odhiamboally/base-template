@@ -20,10 +20,13 @@
                         <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Size="Size.Medium" />
                     </div>
                     <div class="session-lifecycle-heading">
-                        <MudText Typo="Typo.subtitle1" Class="session-lifecycle-title">Session timeout warning</MudText>
+                        <MudText Typo="Typo.h6" Class="session-lifecycle-title">Session timeout warning</MudText>
                         <MudText Typo="Typo.caption" Class="session-lifecycle-kicker">Security check</MudText>
                     </div>
-                    <span class="session-lifecycle-countdown">@_remainingWarningText</span>
+                    <div class="session-lifecycle-countdown">
+                        <small>Sign out in</small>
+                        <strong>@_remainingWarningText</strong>
+                    </div>
                 </MudStack>
 
                 <MudText Typo="Typo.body2" Class="session-lifecycle-copy">

@@ -5,6 +5,7 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject Microsoft.Extensions.Options.IOptions<BT.UI.Blazor.Configuration.BackendApiSettings> ApiOptions
+@using BT.UI.Blazor.Features.IAM.Users.Utilities
 
 <PageTitle>Profile | Base Template</PageTitle>
 
@@ -41,7 +42,7 @@
                             }
                         </MudAvatar>
                         <h2>@DisplayName</h2>
-                        <span>@(AuthSession.CurrentUser?.Roles.FirstOrDefault() ?? "Signed in")</span>
+                        <span>@PrimaryRole</span>
                         <MudChip T="string" Size="Size.Small" Color="Color.Success">Active</MudChip>
                         <div class="profile-upload-control">
                             <InputFile OnChange="OnProfilePictureSelectedAsync" accept="image/jpeg,image/png,image/webp" disabled="@_isUploading" />
@@ -69,7 +70,7 @@
                         </MudItem>
                         <MudItem xs="12" sm="6">
                             <strong>Role</strong>
-                            <p>@(AuthSession.CurrentUser?.Roles.FirstOrDefault() ?? "Signed in")</p>
+                            <p>@PrimaryRole</p>
                         </MudItem>
                         <MudItem xs="12" sm="6">
                             <strong>Two-factor</strong>
@@ -106,6 +107,8 @@
             {
                 return $"{first[0]}{last[0]}".ToUpperInvariant();
             }
+
+            private string PrimaryRole => RoleDisplay.SelectPrimaryRole(AuthSession.CurrentUser?.Roles, "Signed in");
 
             var email = AuthSession.CurrentUser?.Email;
             return string.IsNullOrWhiteSpace(email) ? "BT" : email[..1].ToUpperInvariant();

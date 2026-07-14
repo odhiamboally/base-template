@@ -2,6 +2,7 @@
 @inject IAuthSession AuthSession
 @inject NavigationManager Navigation
 @inject ILogger<UserProfileMenu> Logger
+@using BT.UI.Blazor.Features.IAM.Users.Utilities
 
 <div class="sidebar-profile">
     @if (AuthSession.IsAuthenticated)
@@ -53,7 +54,7 @@
         }
     }
 
-    private string PrimaryRole => AuthSession.CurrentUser?.Roles.FirstOrDefault() ?? "Signed in";
+    private string PrimaryRole => RoleDisplay.SelectPrimaryRole(AuthSession.CurrentUser?.Roles, "Signed in");
 
     private bool _sessionRestoreFailed;
 

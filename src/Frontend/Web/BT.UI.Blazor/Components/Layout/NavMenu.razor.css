@@ -105,16 +105,23 @@
 
 ::deep .nav-link {
     color: rgba(255, 255, 255, 0.82) !important;
+    text-decoration: none !important;
 }
 
 ::deep .nav-link:hover {
     color: #fff !important;
+    text-decoration: none !important;
 }
 
 ::deep .nav-link.active {
     background: rgba(255, 255, 255, 0.13);
     border-color: rgba(255, 255, 255, 0.18);
     color: #fff !important;
+    text-decoration: none !important;
+}
+
+::deep .nav-link:focus-visible {
+    text-decoration: none !important;
 }
 
 ::deep .nav-link .mud-icon-root,
@@ -127,6 +134,7 @@
 .nav-link:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
+    text-decoration: none;
 }
 
 .nav-link .mud-icon-root {
