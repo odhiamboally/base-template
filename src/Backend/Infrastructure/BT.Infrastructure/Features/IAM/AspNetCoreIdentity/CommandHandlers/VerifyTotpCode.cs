@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OtpNet;
+using System.Security.Cryptography;
 
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
@@ -55,7 +56,7 @@ internal sealed class VerifyTotpCode(
                 return AppResponses.Failure<VerifyOtpResponse>("User not found");
             }
 
-            bool isValidCode;
+            TotpVerificationResult verification;
 
             var tempSecret = await iamUnitOfWork.TempTotpSecretRepository
                 .GetValidTempSecretByUserIdAsync(user.Id)
@@ -64,10 +65,22 @@ internal sealed class VerifyTotpCode(
             if (tempSecret != null)
             {
                 ServiceLogDefinitions.LogUsingTempSecret(logger, user.Id);
-                var decryptedSecret = encryptionService.Decrypt(tempSecret.EncryptedSecret);
-                isValidCode = VerifyTotp(decryptedSecret, request.Code);
+                var tempSecretDecryption = await TryDecryptTotpSecretAsync(
+                        user,
+                        tempSecret.EncryptedSecret,
+                        cancellationToken)
+                    .ConfigureAwait(false);
 
-                if (isValidCode)
+                if (tempSecretDecryption.ResetRequired)
+                {
+                    return AppResponses.Failure<VerifyOtpResponse>(tempSecretDecryption.Message!);
+                }
+
+                verification = VerifyTotp(tempSecretDecryption.Secret!, request.Code)
+                    ? TotpVerificationResult.Valid()
+                    : TotpVerificationResult.Invalid();
+
+                if (verification.IsValid)
                 {
                     var newSecret = AppUserTotpSecret.Create(
                         user.Id,
@@ -90,10 +103,14 @@ internal sealed class VerifyTotpCode(
             }
             else
             {
-                isValidCode = await VerifyUserTotpAsync(user.Id, request.Code, cancellationToken).ConfigureAwait(false);
+                verification = await VerifyUserTotpAsync(user, request.Code, cancellationToken).ConfigureAwait(false);
+                if (verification.ResetRequired)
+                {
+                    return AppResponses.Failure<VerifyOtpResponse>(verification.Message!);
+                }
             }
 
-            if (!isValidCode)
+            if (!verification.IsValid)
             {
                 ServiceLogDefinitions.LogInvalidOtpCode(logger, request.UserId);
                 return AppResponses.Failure<VerifyOtpResponse>("Invalid verification code. Please try again.");
@@ -199,25 +216,36 @@ internal sealed class VerifyTotpCode(
         }
     }
 
-    private async Task<bool> VerifyUserTotpAsync(string userId, string code, CancellationToken ct)
+    private async Task<TotpVerificationResult> VerifyUserTotpAsync(AppUser user, string code, CancellationToken ct)
     {
+        var userId = user.Id;
         var attemptKey = CacheKeys.TotpAttempts(userId);
         var attempts = await cache.GetAsync<int?>(attemptKey, ct).ConfigureAwait(false) ?? 0;
 
         if (attempts >= 3)
-            return false;
+            return TotpVerificationResult.Invalid();
 
         var secretEntity = await iamUnitOfWork.AppUserTotpSecretRepository.GetActiveSecretByUserIdAsync(userId).ConfigureAwait(false);
-        if (secretEntity == null) return false;
+        if (secretEntity == null) return TotpVerificationResult.Invalid();
 
-        var decryptedSecret = encryptionService.Decrypt(secretEntity.EncryptedSecret);
-        var isValid = VerifyTotp(decryptedSecret, code);
+        var secretDecryption = await TryDecryptTotpSecretAsync(
+                user,
+                secretEntity.EncryptedSecret,
+                ct)
+            .ConfigureAwait(false);
+
+        if (secretDecryption.ResetRequired)
+        {
+            return TotpVerificationResult.Reset(secretDecryption.Message!);
+        }
+
+        var isValid = VerifyTotp(secretDecryption.Secret!, code);
 
         if (!isValid)
         {
             attempts++;
             await cache.SetAsync(attemptKey, attempts, TimeSpan.FromMinutes(10), ct).ConfigureAwait(false);
-            return false;
+            return TotpVerificationResult.Invalid();
         }
 
         await cache.RemoveAsync(attemptKey, ct).ConfigureAwait(false);
@@ -226,7 +254,38 @@ internal sealed class VerifyTotpCode(
         await iamUnitOfWork.AppUserTotpSecretRepository.UpdateAsync(secretEntity, ct).ConfigureAwait(false);
         await iamUnitOfWork.CompleteAsync(ct).ConfigureAwait(false);
 
-        return true;
+        return TotpVerificationResult.Valid();
+    }
+
+    private async Task<TotpSecretDecryptionResult> TryDecryptTotpSecretAsync(
+        AppUser user,
+        string encryptedSecret,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return TotpSecretDecryptionResult.Decrypted(encryptionService.Decrypt(encryptedSecret));
+        }
+        catch (CryptographicException ex)
+        {
+            ServiceLogDefinitions.LogTotpSecretDecryptionResetRequired(logger, user.Id, ex);
+
+            var disableResult = await userManager.SetTwoFactorEnabledAsync(user, false).ConfigureAwait(false);
+            if (!disableResult.Succeeded)
+            {
+                return TotpSecretDecryptionResult.RequiresReset(
+                    "Your authenticator setup needs to be reset. Please contact an administrator.");
+            }
+
+            await iamUnitOfWork.AppUserTotpSecretRepository.DeactivateUserSecretsAsync(user.Id).ConfigureAwait(false);
+            await iamUnitOfWork.TempTotpSecretRepository.DeleteUserTempSecretsAsync(user.Id, cancellationToken).ConfigureAwait(false);
+            await userManager.UpdateSecurityStampAsync(user).ConfigureAwait(false);
+            await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+            await signInManager.SignOutAsync().ConfigureAwait(false);
+
+            return TotpSecretDecryptionResult.RequiresReset(
+                "Your authenticator setup could not be verified. Please sign in again and set up the authenticator app.");
+        }
     }
 
     private bool VerifyTotp(string secret, string code, int windowSize = 2)
@@ -248,5 +307,21 @@ internal sealed class VerifyTotpCode(
             ServiceLogDefinitions.LogTotpPlainTextCodeVerificationError(logger, ex);
             return false;
         }
+    }
+
+    private readonly record struct TotpVerificationResult(bool IsValid, bool ResetRequired, string? Message)
+    {
+        public static TotpVerificationResult Valid() => new(true, false, null);
+
+        public static TotpVerificationResult Invalid() => new(false, false, null);
+
+        public static TotpVerificationResult Reset(string message) => new(false, true, message);
+    }
+
+    private readonly record struct TotpSecretDecryptionResult(string? Secret, bool ResetRequired, string? Message)
+    {
+        public static TotpSecretDecryptionResult Decrypted(string secret) => new(secret, false, null);
+
+        public static TotpSecretDecryptionResult RequiresReset(string message) => new(null, true, message);
     }
 }

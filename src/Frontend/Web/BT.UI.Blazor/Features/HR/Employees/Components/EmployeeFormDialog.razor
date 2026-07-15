@@ -9,8 +9,8 @@
 
 <MudDialog>
     <DialogContent>
-        <EditForm Model="_model" OnValidSubmit="SaveAsync">
-            <DataAnnotationsValidator />
+    <EditForm FormName="hr-employee-form" Model="_model" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="4">
                     <MudTextField Value="@EmployeeNumberDisplay" Label="Employee No." Margin="Margin.Dense" Variant="Variant.Outlined" ReadOnly="true" HelperText="@EmployeeNumberHelpText" />

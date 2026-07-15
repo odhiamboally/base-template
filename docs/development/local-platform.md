@@ -22,6 +22,7 @@ Run in Docker:
 - Seq when a locally installed Seq instance is not already available
 - Azurite for local Azure Blob-compatible profile-image storage
 - SQL Server when a developer does not want to use an installed SQL Server instance
+- API and Blazor app containers when testing local deployability instead of Visual Studio debugging
 
 Azure Service Bus is an Azure-managed service and does not run in Docker. The same MassTransit consumers use RabbitMQ locally and Azure Service Bus in Azure by changing `Messaging:Transport` and its provider settings.
 
@@ -35,7 +36,7 @@ Docker Desktop must be running. From the repository root:
 
 The script:
 
-1. Generates random local-only credentials in ignored `ops/local/.env`.
+1. Generates random local-only RabbitMQ, Redis, SQL Server, and Azurite credentials in ignored `ops/local/.env`.
 2. Writes matching RabbitMQ, Redis, and Mailpit provider values to API user-secrets.
 3. Pulls and starts RabbitMQ, Redis, Mailpit, and Azurite.
 4. Waits for container health checks.
@@ -43,7 +44,7 @@ The script:
 Run the script from the repository root, the folder containing `BaseTemplate.sln`, `AGENTS.md`, and the `scripts` folder:
 
 ```powershell
-cd E:\Repos\BaseTemplate
+cd path\to\BaseTemplate
 ./scripts/setup-local-platform.ps1
 ```
 
@@ -66,7 +67,56 @@ Do not use `-IncludeSqlServer` when retaining an existing SQL Server/SSMS databa
 
 The setup script is idempotent and can be run whenever Docker services or local user-secrets need to be aligned. It creates credentials only when the ignored `ops/local/.env` file does not exist; later runs reuse those credentials and safely reconcile containers. It is not required before every Visual Studio launch when the containers are already running and the secrets have not changed.
 
-The standard setup selects `ProfileImageStorage:Provider=Azurite`, uses the separate `ProfileImageStorage:Azurite` section with `UseDevelopmentStorage=true`, and targets the private `profile-images` container. Filesystem storage remains available as an explicit fallback by selecting `Provider=Local`. The `ProfileImageStorage:AzureBlob` section remains independent and preserved for Azure production.
+The standard Visual Studio setup selects `ProfileImageStorage:Provider=Azurite`, uses the separate `ProfileImageStorage:Azurite` section with `UseDevelopmentStorage=true`, and targets the private `profile-images` container. The containerized app profile uses the randomly generated `AZURITE_ACCOUNT_NAME` and `AZURITE_ACCOUNT_KEY` values from ignored `ops/local/.env`; no shared emulator key is committed. Filesystem storage remains available as an explicit fallback by selecting `Provider=Local`. The `ProfileImageStorage:AzureBlob` section remains independent and preserved for Azure production.
+
+## Local App Deployment
+
+Use this when you want the local machine to behave like a small deployment target: Docker builds the API and Blazor images, starts them with the same infrastructure dependencies, and injects configuration through environment variables instead of `dotnet user-secrets`.
+
+From the repository root:
+
+```powershell
+./scripts/setup-local-app-deployment.ps1
+```
+
+By default, the app containers expect `APP_SQL_CONNECTION_STRING` in ignored `ops/local/.env`. This should point to the SQL Server that containers can reach. For SQL Server installed on the host machine, Docker Desktop exposes the host as `host.docker.internal`, for example:
+
+```text
+APP_SQL_CONNECTION_STRING=Server=host.docker.internal;Database=BT;User Id=sa;Password=<your-local-password>;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True
+```
+
+The SQL password in `APP_SQL_CONNECTION_STRING` is not the BaseTemplate sign-in password. The development admin user is seeded from `DevelopmentSeed:AdminEmail` and `DevelopmentSeed:AdminPassword`; by default that is `aamodhiambo@gmail.com` / `Admin@12345`.
+
+If you want a fully containerized stack including SQL Server, run:
+
+```powershell
+./scripts/setup-local-app-deployment.ps1 -UseContainerSql
+```
+
+The app deployment overlay:
+
+- Builds `BT.Api` from `ops/docker/api.Dockerfile`.
+- Builds `BT.UI.Blazor` from `ops/docker/blazor.Dockerfile`.
+- Uses RabbitMQ, Redis, Mailpit, and Azurite through Docker service names.
+- Sets `DevelopmentSeed:ResetExistingAdminPassword=true` for app containers so stale local Identity password hashes and lockouts can be recovered predictably during Docker smoke tests.
+- Stores ASP.NET Core Data Protection keys in Redis using `DataProtection:KeyEncryptionMode=None` for local-only development.
+- Keeps Azure Blob, Key Vault, Service Bus, and provider production settings untouched.
+
+If the local Redis volume/key ring is deleted after an authenticator app has been enrolled, previously encrypted TOTP secrets cannot be decrypted. The API treats this as a stale local security artifact: it logs the key-ring failure, disables the stale authenticator enrollment, and asks the user to sign in again and set up the authenticator app. This does not change Visual Studio or cloud behavior; it only protects the local app-deployment flow from exposing Data Protection internals.
+
+If an authenticator enrollment is reset this way, delete the old BaseTemplate account entry from Microsoft Authenticator/Google Authenticator/1Password and scan the new QR code. Old 6-digit codes are tied to the old secret and will remain invalid.
+
+Local Identity lockout is enabled to match production behavior. Five failed password attempts lock the account for five minutes. During local testing, wait for the lockout window to expire or reset the local user row intentionally in the development database; do not keep retrying because each failed password attempt increments the Identity lockout counter.
+
+Default app endpoints:
+
+| App | Endpoint |
+| --- | --- |
+| API | `http://localhost:8080` |
+| Scalar | `http://localhost:8080/scalar/v1` |
+| Blazor UI | `http://localhost:8081` |
+
+The full app deployment is for deployability confidence and local smoke tests. For day-to-day breakpoint debugging, continue running API and Blazor from Visual Studio while keeping the infrastructure containers running.
 
 ## Local Endpoints
 
@@ -80,6 +130,8 @@ The standard setup selects `ProfileImageStorage:Provider=Azurite`, uses the sepa
 | Seq | `http://localhost:5341` | Structured logs, optional profile |
 | Azurite Blob | `http://localhost:10000` | Storage emulator, optional profile |
 | SQL Server | `localhost,14333` | Containerized database, optional profile |
+| Containerized API | `http://localhost:8080` | Optional local deployment profile |
+| Containerized Blazor | `http://localhost:8081` | Optional local deployment profile |
 
 ## Operations
 
@@ -95,6 +147,9 @@ docker compose --env-file ops/local/.env -f ops/local/docker-compose.yml ps
 
 # Restart the core platform.
 docker compose --env-file ops/local/.env -f ops/local/docker-compose.yml up -d --wait
+
+# Restart the deployable app profile.
+docker compose --env-file ops/local/.env -f ops/local/docker-compose.yml -f ops/local/docker-compose.apps.yml --profile apps up -d --wait
 ```
 
 The repository stop script deliberately exposes no volume-deletion option. It cannot prevent a developer from invoking Docker directly, so do not run `docker compose down -v` unless local RabbitMQ, Redis, SQL, Seq, and Azurite data should be permanently deleted.

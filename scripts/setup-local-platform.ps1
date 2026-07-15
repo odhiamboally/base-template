@@ -23,6 +23,17 @@ function New-LocalSecret {
     }
 }
 
+function New-LocalBase64Secret {
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $bytes = New-Object byte[] 32
+        $rng.GetBytes($bytes)
+        return [Convert]::ToBase64String($bytes)
+    } finally {
+        $rng.Dispose()
+    }
+}
+
 function Read-EnvironmentFile([string]$path) {
     $values = @{}
     foreach ($line in Get-Content -LiteralPath $path) {
@@ -45,6 +56,8 @@ if (-not (Test-Path -LiteralPath $envFile)) {
         "REDIS_PASSWORD=$redisPassword"
         'REDIS_HOST_PORT=6380'
         "MSSQL_SA_PASSWORD=$sqlPassword"
+        'AZURITE_ACCOUNT_NAME=btdevstorage'
+        "AZURITE_ACCOUNT_KEY=$(New-LocalBase64Secret)"
     ) | Set-Content -LiteralPath $envFile -Encoding ascii
 }
 
@@ -54,7 +67,23 @@ if (-not $environment.ContainsKey('REDIS_HOST_PORT')) {
     $environment = Read-EnvironmentFile $envFile
 }
 
-$requiredKeys = @('RABBITMQ_USER', 'RABBITMQ_PASSWORD', 'REDIS_PASSWORD', 'REDIS_HOST_PORT', 'MSSQL_SA_PASSWORD')
+if (-not $environment.ContainsKey('AZURITE_ACCOUNT_NAME')) {
+    Add-Content -LiteralPath $envFile -Value 'AZURITE_ACCOUNT_NAME=btdevstorage'
+}
+if (-not $environment.ContainsKey('AZURITE_ACCOUNT_KEY')) {
+    Add-Content -LiteralPath $envFile -Value "AZURITE_ACCOUNT_KEY=$(New-LocalBase64Secret)"
+}
+$environment = Read-EnvironmentFile $envFile
+
+$requiredKeys = @(
+    'RABBITMQ_USER',
+    'RABBITMQ_PASSWORD',
+    'REDIS_PASSWORD',
+    'REDIS_HOST_PORT',
+    'MSSQL_SA_PASSWORD',
+    'AZURITE_ACCOUNT_NAME',
+    'AZURITE_ACCOUNT_KEY'
+)
 foreach ($key in $requiredKeys) {
     if ([string]::IsNullOrWhiteSpace($environment[$key])) {
         throw "Local platform setting '$key' is missing from $envFile."

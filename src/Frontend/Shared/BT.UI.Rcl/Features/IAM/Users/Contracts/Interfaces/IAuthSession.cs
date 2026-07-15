@@ -8,6 +8,7 @@ public interface IAuthSession
     bool IsInitialized { get; }
     bool IsAuthenticated { get; }
     CurrentUserResponse? CurrentUser { get; }
+    string? ProfilePictureDataUri { get; }
     string? PendingTwoFactorUserId { get; }
     string? LastError { get; }
     bool HasFullAccess { get; }

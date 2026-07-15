@@ -98,8 +98,8 @@
                     <label>Manual entry key</label>
                     <div class="copy-box">@_setupInfo.ManualEntryKey</div>
 
-                    <EditForm Model="_verification" OnValidSubmit="VerifySetupAsync">
-                        <DataAnnotationsValidator />
+                <EditForm FormName="iam-security-verify-setup" Model="_verification" OnValidSubmit="VerifySetupAsync">
+                    <DataAnnotationsValidator />
                         <div class="form-stack mt-3">
                             <div>
                                 <label for="setup-code">6-digit code</label>

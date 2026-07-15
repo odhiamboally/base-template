@@ -87,6 +87,11 @@ public static class DependencyInjection
             services.Configure<IamProvisioningSettings>(configuration.GetSection(IamProvisioningSettings.SectionName));
             services.Configure<MfaSettings>(configuration.GetSection(MfaSettings.SectionName));
             services
+                .AddOptions<PasswordRecoverySettings>()
+                .Bind(configuration.GetSection(PasswordRecoverySettings.SectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+            services
                 .AddOptions<FeatureFlagSettings>()
                 .Bind(configuration.GetSection(FeatureFlagSettings.SectionName))
                 .Validate(IsValidFeatureFlagProvider, "FeatureFlags:Provider must be Configuration.")
@@ -352,6 +357,17 @@ public static class DependencyInjection
 
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/api/v1.0/iam/users/me/profile-picture/content", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            },
             OnAuthenticationFailed = context =>
             {
                 if (context.Exception is SecurityTokenExpiredException)
@@ -674,14 +690,14 @@ public static class DependencyInjection
                 configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] ??
                 configuration["ApplicationInsights:ConnectionString"];
         }
+        var hasAzureMonitor = !string.IsNullOrWhiteSpace(connectionString);
+        var hasOtlp = !string.IsNullOrWhiteSpace(observabilitySettings.Otlp?.Endpoint);
 
-        if (string.IsNullOrWhiteSpace(connectionString))
+        if (!hasAzureMonitor && !hasOtlp)
         {
             Console.WriteLine(
-                "[WARN] Observability:AzureMonitor:ConnectionString not configured. " +
-                "OpenTelemetry export to Azure Monitor is disabled. " +
-                "Set 'Observability--AzureMonitor--ConnectionString', 'ApplicationInsights--ConnectionString', or App Service 'APPLICATIONINSIGHTS_CONNECTION_STRING'.");
-
+                "[WARN] Observability is enabled but no exporter (AzureMonitor or Otlp) is configured. " +
+                "OpenTelemetry export is disabled.");
             return services;
         }
 
@@ -712,7 +728,17 @@ public static class DependencyInjection
                 })
                 .AddSource("BT.Cache");
 
-
+            if (hasOtlp)
+            {
+                tracing.AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri(observabilitySettings.Otlp!.Endpoint);
+                    if (!string.IsNullOrWhiteSpace(observabilitySettings.Otlp.Headers))
+                    {
+                        options.Headers = observabilitySettings.Otlp.Headers;
+                    }
+                });
+            }
         });
 
         otelBuilder.WithMetrics(metrics =>
@@ -722,14 +748,27 @@ public static class DependencyInjection
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
                 .AddMeter("BT.Cache");
+
+            if (hasOtlp)
+            {
+                metrics.AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri(observabilitySettings.Otlp!.Endpoint);
+                    if (!string.IsNullOrWhiteSpace(observabilitySettings.Otlp.Headers))
+                    {
+                        options.Headers = observabilitySettings.Otlp.Headers;
+                    }
+                });
+            }
         });
 
-        otelBuilder.UseAzureMonitor(options =>
+        if (hasAzureMonitor)
         {
-            options.ConnectionString = connectionString;
-        });
-
-        otelBuilder.UseOtlpExporter();
+            otelBuilder.UseAzureMonitor(options =>
+            {
+                options.ConnectionString = connectionString;
+            });
+        }
 
         return services;
     }
@@ -853,6 +892,7 @@ public static class DependencyInjection
         {
             options.Retry.MaxRetryAttempts = 1;
             options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+            options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
         });
     }
 

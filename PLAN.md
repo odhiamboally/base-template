@@ -30,6 +30,17 @@ The platform implements:
 - Domain Events (in-process) and Integration Events with MassTransit EF Outbox (cross-process).
 - Architecture-tests-as-guardrails to block regression in CI/CD.
 
+### 2.2 SaaS Tenancy And Deployment Stamps
+BaseTemplate is a SaaS-ready template, not a single-client application template. It uses a hybrid deployment-stamp model:
+
+- A tenant is a customer organization, business unit, or client workspace.
+- A deployment stamp is an isolated runtime and resource boundary.
+- A stamp may host one tenant or a controlled pool of tenants.
+- The same container image is deployed repeatedly with different stamp-scoped configuration.
+- Infrastructure must be provisioned through Bicep/Terraform-style modules, not portal copy/paste.
+
+This means configuration, Key Vault, database, storage, cache, messaging, and CI/CD decisions must follow the selected stamp model. See `docs/architecture/saas-multitenancy-strategy.md`.
+
 ```
 ┌────────────────────────────────────────────────────────┐
 │                      BT.UI.Rcl                         │ (Shared Razor Components)
@@ -55,14 +66,14 @@ The platform implements:
                      └───────────────┘
 ```
 
-### 2.2 Bounded Context Guardrails
+### 2.3 Bounded Context Guardrails
 To prevent logical modular monoliths from decaying into a "distributed big ball of mud," the following constraints are enforced:
 1. **No Cross-DbContext Queries:** Modules can never join tables belonging to another context in SQL.
 2. **References by ID Only:** Domain entities in one context (e.g., Banking `Customer`) must refer to entities in another context (e.g., IAM `AppUser`) using IDs, never navigation properties.
 3. **Communication via Events:** Cross-context mutations are synchronized asynchronously using Integration Events and the MassTransit Outbox.
 4. **Compile-time Assembly/Namespace Checks:** `NetArchTest` checks in `BT.Tests.Architecture` enforce that code inside a module namespace (e.g., `BT.Application.Features.Banking`) does not reference classes in another module namespace (e.g., `BT.Application.Features.HR`) directly.
 
-### 2.3 Feature Folder Convention
+### 2.4 Feature Folder Convention
 Code is organized horizontally by bounded context and vertically by feature:
 ```text
 src/Backend/Application/BT.Application/Features/{BoundedContext}/{Feature}
@@ -146,6 +157,10 @@ EventIds are structured by architectural layer to simplify searching in logs:
 
 ```
   ┌──────────────────────────────────────────────────────────┐
+  │ PHASE 0 - SaaS Tenancy & Deployment Stamp Model          │
+  └──────────────────────────┬───────────────────────────────┘
+                             ▼
+  ┌──────────────────────────────────────────────────────────┐
   │ PHASE 1 - IAM/Auth Enterprise Baseline                   │
   └──────────────────────────┬───────────────────────────────┘
                              ▼
@@ -165,6 +180,14 @@ EventIds are structured by architectural layer to simplify searching in logs:
   │ PHASE 5 - Template Extensibility                         │
   └──────────────────────────────────────────────────────────┘
 ```
+
+### Phase 0 - SaaS Tenancy And Deployment Stamp Model
+*Goal: certify the tenancy, configuration, and deployment-stamp model before more cloud/provider work is treated as final.*
+- [~] **SaaS Model:** Hybrid pooled/isolated deployment stamp strategy is documented.
+- [ ] **Control Plane Shape:** Define the tenant catalog fields, stamp metadata, and tenant resolution strategy.
+- [ ] **IaC Shape:** Define reusable stamp modules for Azure Container Apps/App Service, Key Vault, storage, database, Redis, messaging, and observability.
+- [ ] **Configuration Certification:** Align appsettings, POCOs, user-secrets, Key Vault names, app/ACA environment variables, and non-Azure host variables against the stamp model.
+- [ ] **Tenant Isolation Tests:** Add tests proving tenant-scoped queries and writes cannot cross tenant boundaries.
 
 ### Phase 1 - IAM/Auth Enterprise Baseline
 *Goal: certify identity, authentication, authorization, MFA, sessions, and local UI/API smoke testing.*

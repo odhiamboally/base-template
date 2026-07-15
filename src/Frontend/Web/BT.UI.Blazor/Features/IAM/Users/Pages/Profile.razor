@@ -4,7 +4,6 @@
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
-@inject Microsoft.Extensions.Options.IOptions<BT.UI.Blazor.Configuration.BackendApiSettings> ApiOptions
 @using BT.UI.Blazor.Features.IAM.Users.Utilities
 
 <PageTitle>Profile | Base Template</PageTitle>
@@ -108,28 +107,14 @@
                 return $"{first[0]}{last[0]}".ToUpperInvariant();
             }
 
-            private string PrimaryRole => RoleDisplay.SelectPrimaryRole(AuthSession.CurrentUser?.Roles, "Signed in");
-
             var email = AuthSession.CurrentUser?.Email;
             return string.IsNullOrWhiteSpace(email) ? "BT" : email[..1].ToUpperInvariant();
         }
     }
 
-    private string? ProfilePictureSource
-    {
-        get
-        {
-            var profilePictureUrl = AuthSession.CurrentUser?.ProfilePictureUrl;
-            if (profilePictureUrl is null)
-            {
-                return null;
-            }
+    private string PrimaryRole => RoleDisplay.SelectPrimaryRole(AuthSession.CurrentUser?.Roles, "Signed in");
 
-            return profilePictureUrl.IsAbsoluteUri
-                ? profilePictureUrl.ToString()
-                : new Uri(new Uri(ApiOptions.Value.BaseUrl), profilePictureUrl.ToString().TrimStart('/')).ToString();
-        }
-    }
+    private string? ProfilePictureSource => AuthSession.ProfilePictureDataUri;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

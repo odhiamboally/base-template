@@ -83,6 +83,7 @@
     padding: 0.48rem 0.55rem;
     text-align: left;
     text-decoration: none;
+    width: 100%;
 }
 
 .profile-actions a:hover,
@@ -93,4 +94,5 @@
 
 .profile-actions button {
     color: #ffd4ce;
+    justify-content: flex-start;
 }

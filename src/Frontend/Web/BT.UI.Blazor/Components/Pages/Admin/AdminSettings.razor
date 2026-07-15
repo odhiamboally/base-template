@@ -68,10 +68,10 @@
                           Margin="Margin.Dense"
                           Variant="Variant.Outlined"
                           Immediate="true" />
-            <MudSelect @bind-Value="_typeFilter" Label="Lookup Type" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+            <MudSelect @bind-Value="_typeFilter" T="string" Label="Lookup Type" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                 @foreach (var lookupType in _lookupTypes)
                 {
-                    <MudSelectItem Value="@lookupType.Key">@lookupType.Label</MudSelectItem>
+                    <MudSelectItem T="string" Value="@lookupType.Key">@lookupType.Label</MudSelectItem>
                 }
             </MudSelect>
             <MudButton Variant="Variant.Filled" Size="Size.Small" Class="bt-mud-primary bt-small-button" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => OpenLookupDialogAsync(null))" Disabled="@string.IsNullOrWhiteSpace(_typeFilter)">Create</MudButton>

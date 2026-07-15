@@ -20,4 +20,11 @@ internal interface IBackendApiClient
         string? unavailableMessage = null,
         string? timeoutMessage = null,
         CancellationToken cancellationToken = default);
+
+    Task<AppResponse<FileContentResponse>> SendFileAsync(
+        string endpoint,
+        bool requiresAuthentication = true,
+        string? unavailableMessage = null,
+        string? timeoutMessage = null,
+        CancellationToken cancellationToken = default);
 }

@@ -10,7 +10,11 @@ public interface IAuthService
 {
     Task<AppResponse<LoginResponse>> LoginAsync(LoginRequest loginRequest);
     Task<AppResponse<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
+    Task<AppResponse<ForgotPasswordResponse>> ForgotPasswordAsync(ForgotPasswordRequest request);
+    Task<AppResponse<bool>> VerifyPasswordResetOtpAsync(VerifyPasswordResetOtpRequest request);
+    Task<AppResponse<bool>> ResetPasswordAsync(ResetPasswordRequest request);
     Task<AppResponse<CurrentUserResponse>> GetCurrentUserAsync();
+    Task<AppResponse<FileContentResponse>> GetProfilePictureAsync();
     Task<AppResponse<ProfilePictureResponse>> UpdateProfilePictureAsync(byte[] content, string fileName, string contentType);
     Task<AppResponse<TwoFactorSetupInfo>> InitiateTotpSetupAsync();
     Task<AppResponse<VerifyOtpResponse>> VerifyTotpAsync(VerifyOtpRequest request);

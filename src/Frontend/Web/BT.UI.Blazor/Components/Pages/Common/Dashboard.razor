@@ -18,14 +18,36 @@
     </div>
 
     <MudGrid Spacing="3">
+        <!-- KPI Cards (Financial) -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="0" Class="pa-6 border" Style="border-radius: 10px;">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Total Savings</MudText>
+                <MudText Typo="Typo.h5" Class="mt-2" Style="font-weight: 700;">KES 1,240,000</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Tertiary" Class="d-flex align-center mt-1">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small" /> +2.5% this month
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="0" Class="pa-6 border" Style="border-radius: 10px;">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Active Loans</MudText>
+                <MudText Typo="Typo.h5" Class="mt-2" Style="font-weight: 700;">KES 450,200</MudText>
+                <MudProgressLinear Color="Color.Warning" Value="65" Class="mt-3" />
+            </MudPaper>
+        </MudItem>
+
+        <!-- POC Context Tiles -->
         @foreach (var tile in _summaryTiles)
         {
-            <MudItem xs="12" sm="6" lg="3">
-                <MudPaper Class="poc-tile" Elevation="0">
-                    <MudIcon Icon="@tile.Icon" Class="tile-icon" />
-                    <span>@tile.Label</span>
-                    <strong>@tile.Value</strong>
-                    <small>@tile.Caption</small>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-6 border" Elevation="0" Style="border-radius: 10px;">
+                    <div class="d-flex align-center justify-space-between mb-2">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@tile.Label</MudText>
+                        <MudIcon Icon="@tile.Icon" Color="Color.Primary" Size="Size.Small" />
+                    </div>
+                    <MudText Typo="Typo.h5" Style="font-weight: 700;">@tile.Value</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1 d-block">@tile.Caption</MudText>
                 </MudPaper>
             </MudItem>
         }
@@ -97,10 +119,8 @@
 @code {
     private readonly SummaryTile[] _summaryTiles =
     [
-        new("Bounded contexts", "4", "IAM, Banking, HR, Shared", Icons.Material.Filled.AccountTree),
-        new("Architecture checks", "44", "Guardrails passing", Icons.Material.Filled.FactCheck),
-        new("Admin modules", "5", "Users, roles, permissions...", Icons.Material.Filled.AdminPanelSettings),
-        new("Security setup", "2FA", "Recommended for admins", Icons.Material.Filled.Security)
+        new("Architecture", "44", "Guardrails passing", Icons.Material.Filled.FactCheck),
+        new("Admin modules", "5", "Users, roles, permissions", Icons.Material.Filled.AdminPanelSettings)
     ];
 
     private readonly FeatureRow[] _featureRows =

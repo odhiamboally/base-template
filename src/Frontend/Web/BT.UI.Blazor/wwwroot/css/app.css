@@ -1,21 +1,19 @@
 :root {
-    --bt-ink: #17211b;
-    --bt-muted: #607067;
-    --bt-cream: #f7f1e7;
-    --bt-surface: #fffaf1;
-    --bt-line: rgba(23, 33, 27, 0.12);
-    --bt-moss: #486b52;
-    --bt-moss-dark: #243b2b;
-    --bt-gold: #d79d3b;
-    --bt-danger: #9b2c2c;
+    --bt-ink: #1E293B;
+    --bt-muted: #64748B;
+    --bt-cream: #F8FAFC;
+    --bt-surface: #FFFFFF;
+    --bt-line: #E2E8F0;
+    --bt-moss: #2563EB;
+    --bt-moss-dark: #1E40AF;
+    --bt-gold: #38BDF8;
+    --bt-danger: #EF4444;
 }
 
 html, body {
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: 'Inter', sans-serif;
     color: var(--bt-ink);
-    background:
-        radial-gradient(circle at top left, rgba(215, 157, 59, 0.25), transparent 28rem),
-        linear-gradient(135deg, #f9f4ea 0%, #f3eee4 45%, #e8efe4 100%);
+    background: #F1F5F9;
 }
 
 a, .btn-link {
@@ -103,10 +101,10 @@ a, .btn-link {
 .auth-card,
 .security-card,
 .status-card {
-    background: rgba(255, 250, 241, 0.85);
+    background: #FFFFFF;
     border: 1px solid var(--bt-line);
     border-radius: 1.4rem;
-    box-shadow: 0 24px 80px rgba(36, 59, 43, 0.12);
+    box-shadow: 0 10px 40px rgba(30, 41, 59, 0.08);
 }
 
 .flow-card {
@@ -149,8 +147,8 @@ a, .btn-link {
 
 .auth-proof,
 .copy-box {
-    background: rgba(72, 107, 82, 0.1);
-    border: 1px solid rgba(72, 107, 82, 0.18);
+    background: rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.15);
     border-radius: 1rem;
     padding: 1rem;
 }
@@ -296,10 +294,10 @@ a, .btn-link {
 .admin-tile,
 .poc-panel,
 .overview-card {
-    background: rgba(255, 250, 241, 0.9) !important;
+    background: #FFFFFF !important;
     border: 1px solid var(--bt-line);
     border-radius: 1.15rem;
-    box-shadow: 0 18px 55px rgba(36, 59, 43, 0.09);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -455,7 +453,7 @@ a, .btn-link {
 
 .profile-summary-card {
     align-items: center;
-    background: rgba(255, 250, 241, 0.9) !important;
+    background: #FFFFFF !important;
     border: 1px solid var(--bt-line);
     border-radius: 1.15rem;
     display: grid;
@@ -646,10 +644,10 @@ a, .btn-link {
 }
 
 .metric-card {
-    background: rgba(255, 250, 241, 0.88);
+    background: #FFFFFF;
     border: 1px solid var(--bt-line);
     border-radius: 1.4rem;
-    box-shadow: 0 20px 60px rgba(36, 59, 43, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     padding: 1.4rem;
 }
 
@@ -832,4 +830,16 @@ h1:focus {
     position: absolute;
     right: 0.9rem;
     top: 0.6rem;
+}
+.auth-recovery-link {
+    color: var(--bt-primary, #2447bb);
+    font-size: 0.85rem;
+    font-weight: 700;
+    justify-self: end;
+    text-decoration: none;
+}
+
+.auth-recovery-link:hover,
+.auth-recovery-link:focus {
+    text-decoration: underline;
 }

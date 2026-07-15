@@ -89,7 +89,10 @@ internal static partial class DependencyInjection
 
         services.ConfigureHttpClientDefaults(http =>
         {
-            http.AddStandardResilienceHandler();
+            http.AddStandardResilienceHandler(options =>
+            {
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
+            });
         });
 
     }

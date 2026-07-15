@@ -24,26 +24,28 @@
     </div>
 
     <div class="auth-card">
-        <EditForm Model="_form" OnValidSubmit="SignInAsync">
+        <EditForm FormName="@SignInFormName" Model="FormModel" OnValidSubmit="SignInAsync">
             <DataAnnotationsValidator />
 
             <div class="form-stack">
                 <div>
                     <label for="username">Username or email</label>
-                    <InputText id="username" class="form-control form-control-lg" @bind-Value="_form.UserName" autocomplete="username" />
-                    <ValidationMessage For="@(() => _form.UserName)" />
+                    <InputText id="username" class="form-control form-control-lg" @bind-Value="FormModel!.UserName" autocomplete="username" />
+                    <ValidationMessage For="@(() => FormModel!.UserName)" />
                 </div>
 
                 <div>
                     <label for="password">Password</label>
-                    <InputText id="password" type="password" class="form-control form-control-lg" @bind-Value="_form.Password" autocomplete="current-password" />
-                    <ValidationMessage For="@(() => _form.Password)" />
+                    <InputText id="password" type="password" class="form-control form-control-lg" @bind-Value="FormModel!.Password" autocomplete="current-password" />
+                    <ValidationMessage For="@(() => FormModel!.Password)" />
                 </div>
 
                 <label class="remember-row">
-                    <InputCheckbox @bind-Value="_form.RememberMe" />
+                    <InputCheckbox @bind-Value="FormModel!.RememberMe" />
                     <span>Keep me signed in on this device</span>
                 </label>
+
+                <a class="auth-recovery-link" href="/iam/forgot-password">Forgot password?</a>
 
                 @if (!string.IsNullOrWhiteSpace(_message))
                 {
@@ -64,10 +66,19 @@
 </section>
 
 @code {
-    private SignInFormModel _form = new();
+    private const string SignInFormName = "iam-sign-in";
+
+    [SupplyParameterFromForm(FormName = SignInFormName)]
+    private SignInFormModel? FormModel { get; set; }
+
     private bool _isBusy;
     private bool _isError;
     private string? _message;
+
+    protected override void OnInitialized()
+    {
+        FormModel ??= new();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -91,7 +102,8 @@
 
         try
         {
-            var request = new PasswordLoginRequest(_form.UserName, _form.Password, _form.RememberMe, _form.ReturnUrl, "blazor-server");
+            var form = FormModel ??= new();
+            var request = new PasswordLoginRequest(form.UserName, form.Password, form.RememberMe, form.ReturnUrl, "blazor-server");
             var response = await AuthSession.SignInAsync(request);
 
             if (!response.IsSuccess || response.Data is null)

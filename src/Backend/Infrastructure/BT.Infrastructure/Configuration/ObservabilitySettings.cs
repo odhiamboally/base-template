@@ -9,5 +9,5 @@ public sealed class ObservabilitySettings
     public string ServiceNamespace { get; set; } = "BaseTemplate";
     public AzureMonitorSettings AzureMonitor { get; set; } = new();
 
-    
+    public OtlpSettings Otlp { get; set; } = new();
 }

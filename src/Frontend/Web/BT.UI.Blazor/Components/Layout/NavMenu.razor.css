@@ -15,9 +15,9 @@
 
 .brand-lockup {
     align-items: center;
-    background: #fffaf1;
+    background: #fff;
     border-radius: 0.8rem;
-    color: #173b2b;
+    color: #0f172a;
     display: flex;
     gap: 0.65rem;
     justify-content: flex-start;
@@ -28,9 +28,9 @@
 
 .brand-mark {
     align-items: center;
-    background: #173b2b;
+    background: #0f172a;
     border-radius: 0.55rem;
-    color: #fffaf1;
+    color: #fff;
     display: inline-flex;
     font-size: 0.78rem;
     font-weight: 800;
@@ -108,7 +108,9 @@
     text-decoration: none !important;
 }
 
-::deep .nav-link:hover {
+::deep .nav-link:hover,
+::deep .nav-link:focus,
+::deep .nav-link:visited {
     color: #fff !important;
     text-decoration: none !important;
 }

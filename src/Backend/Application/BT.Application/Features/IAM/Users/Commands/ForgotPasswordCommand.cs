@@ -4,4 +4,5 @@ using MediatR;
 
 namespace BT.Application.Features.IAM.Users.Commands;
 
-public sealed record ForgotPasswordCommand(ForgotPasswordRequest Request) : IRequest<AppResponse<bool>>;
+public sealed record ForgotPasswordCommand(ForgotPasswordRequest Request)
+    : IRequest<AppResponse<ForgotPasswordResponse>>;

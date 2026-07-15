@@ -124,12 +124,40 @@ public sealed class AuthController(ISender sender) : BaseController
     [HttpPost("password/reset")]
     [AllowAnonymous]
     [EnableRateLimiting("PasswordResetPolicy")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordApiRequest request)
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var response = await sender
             .Send(new ResetPasswordCommand(request))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("password/forgot")]
+    [AllowAnonymous]
+    [EnableRateLimiting("PasswordResetPolicy")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var response = await sender
+            .Send(new ForgotPasswordCommand(request))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("password/reset/verify-otp")]
+    [AllowAnonymous]
+    [EnableRateLimiting("PasswordResetPolicy")]
+    public async Task<IActionResult> VerifyPasswordResetOtp(VerifyPasswordResetOtpRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var response = await sender
+            .Send(new VerifyPasswordResetOtpCommand(request))
             .ConfigureAwait(false);
 
         return HandleResponse(response);

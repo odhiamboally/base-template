@@ -9,6 +9,7 @@ This document explains the supported deployment paths for BaseTemplate and clone
 - Azure configuration stays committed and documented even when Azure deployment is disabled.
 - Local development uses Visual Studio for app hosts and Docker Compose for replaceable infrastructure.
 - Production deployments should build immutable artifacts, run migrations as a release step, and smoke-test the deployed application.
+- Deployment stamp strategy is defined in [SaaS Multitenancy Strategy](../architecture/saas-multitenancy-strategy.md). Deployment target chooses the host; the stamp model chooses the tenant isolation and configuration boundary.
 
 ## Supported Deployment Models
 
@@ -213,6 +214,8 @@ Current image workflow:
 ```text
 Visual Studio -> GitHub Repo -> GitHub Actions -> lint Dockerfiles -> build API/UI images -> GHCR
 ```
+
+The image must remain tenant-neutral. SaaS differences belong in stamp-scoped environment variables, Key Vault references, managed identity permissions, database bindings, storage bindings, cache bindings, and messaging bindings.
 
 The workflow is `.github/workflows/container-publish.yml`.
 

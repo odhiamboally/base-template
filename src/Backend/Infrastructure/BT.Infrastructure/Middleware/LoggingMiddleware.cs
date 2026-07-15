@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace BT.Infrastructure.Middleware;
 
@@ -20,6 +22,24 @@ namespace BT.Infrastructure.Middleware;
 /// </remarks>
 internal sealed class LoggingMiddleware(RequestDelegate next,ILogger<LoggingMiddleware> logger)
 {
+    private static readonly HashSet<string> SensitiveFieldNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "accessToken",
+        "apiKey",
+        "authorization",
+        "code",
+        "consumerKey",
+        "consumerSecret",
+        "jwt",
+        "passKey",
+        "password",
+        "refreshToken",
+        "secret",
+        "secretKey",
+        "token",
+        "webhookSigningSecret"
+    };
+
     public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -44,13 +64,71 @@ internal sealed class LoggingMiddleware(RequestDelegate next,ILogger<LoggingMidd
             // Reset position so the controller reads from the beginning
             context.Request.Body.Position = 0;
 
+            var redactedBody = RedactRequestBody(body);
             HttpClientLogDefinitions.LogRequest(
                 logger,
                 context.Request.Method,
                 context.Request.Path.Value ?? string.Empty,
-                body);
+                redactedBody);
         }
 
         await next(context).ConfigureAwait(false);
+    }
+
+    private static string RedactRequestBody(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var json = JsonNode.Parse(body);
+            if (json is null)
+            {
+                return "[empty-json-body]";
+            }
+
+            RedactJsonNode(json);
+            return json.ToJsonString();
+        }
+        catch (JsonException)
+        {
+            return "[non-json-request-body-redacted]";
+        }
+    }
+
+    private static void RedactJsonNode(JsonNode node)
+    {
+        if (node is JsonObject jsonObject)
+        {
+            foreach (var property in jsonObject.ToList())
+            {
+                if (SensitiveFieldNames.Contains(property.Key))
+                {
+                    jsonObject[property.Key] = "[REDACTED]";
+                    continue;
+                }
+
+                if (property.Value is not null)
+                {
+                    RedactJsonNode(property.Value);
+                }
+            }
+
+            return;
+        }
+
+        if (node is JsonArray jsonArray)
+        {
+            foreach (var item in jsonArray)
+            {
+                if (item is not null)
+                {
+                    RedactJsonNode(item);
+                }
+            }
+        }
     }
 }
