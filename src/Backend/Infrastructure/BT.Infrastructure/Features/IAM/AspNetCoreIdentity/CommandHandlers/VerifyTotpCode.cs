@@ -65,13 +65,9 @@ internal sealed class VerifyTotpCode(
             if (tempSecret != null)
             {
                 ServiceLogDefinitions.LogUsingTempSecret(logger, user.Id);
-                var tempSecretDecryption = await TryDecryptTotpSecretAsync(
-                        user,
-                        tempSecret.EncryptedSecret,
-                        cancellationToken)
-                    .ConfigureAwait(false);
+                var tempSecretDecryption = TryDecryptTotpSecret(user, tempSecret.EncryptedSecret);
 
-                if (tempSecretDecryption.ResetRequired)
+                if (tempSecretDecryption.IsUnavailable)
                 {
                     return AppResponses.Failure<VerifyOtpResponse>(tempSecretDecryption.Message!);
                 }
@@ -104,7 +100,7 @@ internal sealed class VerifyTotpCode(
             else
             {
                 verification = await VerifyUserTotpAsync(user, request.Code, cancellationToken).ConfigureAwait(false);
-                if (verification.ResetRequired)
+                if (verification.IsUnavailable)
                 {
                     return AppResponses.Failure<VerifyOtpResponse>(verification.Message!);
                 }
@@ -228,15 +224,11 @@ internal sealed class VerifyTotpCode(
         var secretEntity = await iamUnitOfWork.AppUserTotpSecretRepository.GetActiveSecretByUserIdAsync(userId).ConfigureAwait(false);
         if (secretEntity == null) return TotpVerificationResult.Invalid();
 
-        var secretDecryption = await TryDecryptTotpSecretAsync(
-                user,
-                secretEntity.EncryptedSecret,
-                ct)
-            .ConfigureAwait(false);
+        var secretDecryption = TryDecryptTotpSecret(user, secretEntity.EncryptedSecret);
 
-        if (secretDecryption.ResetRequired)
+        if (secretDecryption.IsUnavailable)
         {
-            return TotpVerificationResult.Reset(secretDecryption.Message!);
+            return TotpVerificationResult.Unavailable(secretDecryption.Message!);
         }
 
         var isValid = VerifyTotp(secretDecryption.Secret!, code);
@@ -257,10 +249,7 @@ internal sealed class VerifyTotpCode(
         return TotpVerificationResult.Valid();
     }
 
-    private async Task<TotpSecretDecryptionResult> TryDecryptTotpSecretAsync(
-        AppUser user,
-        string encryptedSecret,
-        CancellationToken cancellationToken)
+    private TotpSecretDecryptionResult TryDecryptTotpSecret(AppUser user, string encryptedSecret)
     {
         try
         {
@@ -268,23 +257,9 @@ internal sealed class VerifyTotpCode(
         }
         catch (CryptographicException ex)
         {
-            ServiceLogDefinitions.LogTotpSecretDecryptionResetRequired(logger, user.Id, ex);
-
-            var disableResult = await userManager.SetTwoFactorEnabledAsync(user, false).ConfigureAwait(false);
-            if (!disableResult.Succeeded)
-            {
-                return TotpSecretDecryptionResult.RequiresReset(
-                    "Your authenticator setup needs to be reset. Please contact an administrator.");
-            }
-
-            await iamUnitOfWork.AppUserTotpSecretRepository.DeactivateUserSecretsAsync(user.Id).ConfigureAwait(false);
-            await iamUnitOfWork.TempTotpSecretRepository.DeleteUserTempSecretsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-            await userManager.UpdateSecurityStampAsync(user).ConfigureAwait(false);
-            await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
-            await signInManager.SignOutAsync().ConfigureAwait(false);
-
-            return TotpSecretDecryptionResult.RequiresReset(
-                "Your authenticator setup could not be verified. Please sign in again and set up the authenticator app.");
+            ServiceLogDefinitions.LogTotpSecretDecryptionFailure(logger, user.Id, ex);
+            return TotpSecretDecryptionResult.Unavailable(
+                "Authenticator verification is temporarily unavailable. Please try again or contact support.");
         }
     }
 
@@ -309,19 +284,19 @@ internal sealed class VerifyTotpCode(
         }
     }
 
-    private readonly record struct TotpVerificationResult(bool IsValid, bool ResetRequired, string? Message)
+    private readonly record struct TotpVerificationResult(bool IsValid, bool IsUnavailable, string? Message)
     {
         public static TotpVerificationResult Valid() => new(true, false, null);
 
         public static TotpVerificationResult Invalid() => new(false, false, null);
 
-        public static TotpVerificationResult Reset(string message) => new(false, true, message);
+        public static TotpVerificationResult Unavailable(string message) => new(false, true, message);
     }
 
-    private readonly record struct TotpSecretDecryptionResult(string? Secret, bool ResetRequired, string? Message)
+    private readonly record struct TotpSecretDecryptionResult(string? Secret, bool IsUnavailable, string? Message)
     {
         public static TotpSecretDecryptionResult Decrypted(string secret) => new(secret, false, null);
 
-        public static TotpSecretDecryptionResult RequiresReset(string message) => new(null, true, message);
+        public static TotpSecretDecryptionResult Unavailable(string message) => new(null, true, message);
     }
 }

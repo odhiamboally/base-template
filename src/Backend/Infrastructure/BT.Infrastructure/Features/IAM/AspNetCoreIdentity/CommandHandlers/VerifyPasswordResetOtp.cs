@@ -8,14 +8,16 @@ using Microsoft.AspNetCore.Identity;
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class VerifyPasswordResetOtp(UserManager<AppUser> userManager, ISender sender)
-    : IRequestHandler<VerifyPasswordResetOtpCommand, AppResponse<bool>>
+    : IRequestHandler<VerifyPasswordResetOtpCommand, AppResponse<PasswordResetOtpVerificationResponse>>
 {
-    public async Task<AppResponse<bool>> Handle(VerifyPasswordResetOtpCommand command, CancellationToken ct)
+    public async Task<AppResponse<PasswordResetOtpVerificationResponse>> Handle(
+        VerifyPasswordResetOtpCommand command,
+        CancellationToken ct)
     {
         var user = await userManager.FindByEmailAsync(command.Request.Email).ConfigureAwait(false);
         if (user is null || !user.IsActive || user.IsDeleted)
         {
-            return AppResponses.Failure<bool>("The recovery code is invalid or expired.");
+            return AppResponses.Failure<PasswordResetOtpVerificationResponse>("The recovery code is invalid or expired.");
         }
 
         var verification = await sender.Send(new VerifyEmailOtpCommand(new VerifyEmailOtpRequest
@@ -25,8 +27,14 @@ internal sealed class VerifyPasswordResetOtp(UserManager<AppUser> userManager, I
             Purpose = "PasswordReset"
         }), ct).ConfigureAwait(false);
 
-        return verification.IsSuccess
-            ? AppResponses.Success("Recovery code verified.", true)
-            : AppResponses.Failure<bool>("The recovery code is invalid or expired.");
+        if (!verification.IsSuccess)
+        {
+            return AppResponses.Failure<PasswordResetOtpVerificationResponse>("The recovery code is invalid or expired.");
+        }
+
+        var transitionToken = await userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
+        return AppResponses.Success(
+            "Recovery code verified.",
+            new PasswordResetOtpVerificationResponse(transitionToken));
     }
 }

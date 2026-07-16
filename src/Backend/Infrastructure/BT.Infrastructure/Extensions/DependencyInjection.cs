@@ -357,17 +357,6 @@ public static class DependencyInjection
 
         options.Events = new JwtBearerEvents
         {
-            OnMessageReceived = context =>
-            {
-                var accessToken = context.Request.Query["access_token"];
-                var path = context.HttpContext.Request.Path;
-                if (!string.IsNullOrEmpty(accessToken) &&
-                    path.StartsWithSegments("/api/v1.0/iam/users/me/profile-picture/content", StringComparison.OrdinalIgnoreCase))
-                {
-                    context.Token = accessToken;
-                }
-                return Task.CompletedTask;
-            },
             OnAuthenticationFailed = context =>
             {
                 if (context.Exception is SecurityTokenExpiredException)

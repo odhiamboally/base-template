@@ -48,8 +48,8 @@ internal static partial class ServiceLogDefinitions
     [LoggerMessage(EventId = 3420, Level = LogLevel.Error, Message = "Error verifying TOTP code with plain text secret")]
     public static partial void LogTotpPlainTextCodeVerificationError(ILogger logger, Exception ex);
 
-    [LoggerMessage(EventId = 3422, Level = LogLevel.Warning, Message = "TOTP secret could not be decrypted for user {UserId}; authenticator re-enrollment is required.")]
-    public static partial void LogTotpSecretDecryptionResetRequired(ILogger logger, string userId, Exception ex);
+    [LoggerMessage(EventId = 3422, Level = LogLevel.Error, Message = "TOTP secret decryption failed for user {UserId}; verification was denied without changing IAM state.")]
+    public static partial void LogTotpSecretDecryptionFailure(ILogger logger, string userId, Exception ex);
 
     [LoggerMessage(EventId = 3421, Level = LogLevel.Information, Message = "Added claim - {ClaimType}:{ClaimValue} to user {UserId}")]
     public static partial void LogClaimAdded(ILogger logger, string claimType, string claimValue, string userId);

@@ -5,4 +5,4 @@ using MediatR;
 namespace BT.Application.Features.IAM.Users.Commands;
 
 public sealed record VerifyPasswordResetOtpCommand(VerifyPasswordResetOtpRequest Request)
-    : IRequest<AppResponse<bool>>;
+    : IRequest<AppResponse<PasswordResetOtpVerificationResponse>>;

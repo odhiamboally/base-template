@@ -65,6 +65,7 @@ builder.Services.AddScoped<IServerTokenStore, ServerTokenStore>();
 
 builder.Services.AddScoped<IAuthSession, AuthSession>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<BT.UI.Blazor.Features.IAM.Users.State.PasswordRecoveryState>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();

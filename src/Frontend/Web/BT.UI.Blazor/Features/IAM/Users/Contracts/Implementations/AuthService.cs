@@ -63,11 +63,11 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             request);
     }
 
-    public Task<AppResponse<bool>> VerifyPasswordResetOtpAsync(VerifyPasswordResetOtpRequest request)
+    public Task<AppResponse<PasswordResetOtpVerificationResponse>> VerifyPasswordResetOtpAsync(VerifyPasswordResetOtpRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return SendRecoveryAsync<bool>(
+        return SendRecoveryAsync<PasswordResetOtpVerificationResponse>(
             Format(_apiSettings.Endpoints.Iam.Auth.VerifyPasswordResetOtp),
             request);
     }
