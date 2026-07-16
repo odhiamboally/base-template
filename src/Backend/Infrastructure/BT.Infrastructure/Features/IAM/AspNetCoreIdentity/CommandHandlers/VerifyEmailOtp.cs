@@ -79,7 +79,6 @@ internal sealed class VerifyEmailOtp(
 
         if (string.Equals(req.Purpose, "PasswordReset", StringComparison.OrdinalIgnoreCase))
         {
-            await cache.SetAsync(CacheKeys.PasswordResetVerified(user.Id), true, TimeSpan.FromMinutes(5), ct).ConfigureAwait(false);
             return AppResponses.Success("Code verified",
                 new VerifyEmailOtpResponse(string.Empty, string.Empty, user.Id, null, true, DateTimeOffset.UtcNow, null!, []));
         }

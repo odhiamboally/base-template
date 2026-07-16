@@ -54,8 +54,38 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
         return response;
     }
 
+    public Task<AppResponse<ForgotPasswordResponse>> ForgotPasswordAsync(ForgotPasswordRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return SendRecoveryAsync<ForgotPasswordResponse>(
+            Format(_apiSettings.Endpoints.Iam.Auth.ForgotPassword),
+            request);
+    }
+
+    public Task<AppResponse<PasswordResetOtpVerificationResponse>> VerifyPasswordResetOtpAsync(VerifyPasswordResetOtpRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return SendRecoveryAsync<PasswordResetOtpVerificationResponse>(
+            Format(_apiSettings.Endpoints.Iam.Auth.VerifyPasswordResetOtp),
+            request);
+    }
+
+    public Task<AppResponse<bool>> ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return SendRecoveryAsync<bool>(
+            Format(_apiSettings.Endpoints.Iam.Auth.ResetPassword),
+            request);
+    }
+
     public Task<AppResponse<CurrentUserResponse>> GetCurrentUserAsync()
         => SendWithRefreshAsync<CurrentUserResponse>(HttpMethod.Get, Format(_apiSettings.Endpoints.Iam.Auth.CurrentUser));
+
+    public Task<AppResponse<FileContentResponse>> GetProfilePictureAsync()
+        => SendFileWithRefreshAsync(Format(_apiSettings.Endpoints.Iam.Auth.ProfilePictureContent));
 
     public Task<AppResponse<ProfilePictureResponse>> UpdateProfilePictureAsync(byte[] content, string fileName, string contentType)
     {
@@ -152,6 +182,15 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             unavailableMessage: "The identity service is unavailable. Please try again.",
             timeoutMessage: "The identity service timed out. Please try again.");
 
+    private Task<AppResponse<T>> SendRecoveryAsync<T>(string endpoint, object request)
+        => apiClient.SendAsync<T>(
+            HttpMethod.Post,
+            endpoint,
+            request,
+            requiresAuthentication: false,
+            unavailableMessage: "Password recovery is temporarily unavailable. Please try again.",
+            timeoutMessage: "Password recovery timed out. Please try again.");
+
     private async Task<AppResponse<T>> SendMultipartWithRefreshAsync<T>(
         string endpoint,
         Func<MultipartFormDataContent> contentFactory)
@@ -191,6 +230,37 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
                 unavailableMessage: "The identity service is unavailable. Please try again.",
                 timeoutMessage: "The identity service timed out. Please try again.")
             .ConfigureAwait(false);
+    }
+
+    private async Task<AppResponse<FileContentResponse>> SendFileWithRefreshAsync(string endpoint)
+    {
+        var response = await apiClient.SendFileAsync(
+            endpoint,
+            unavailableMessage: "The profile picture service is unavailable. Please try again.",
+            timeoutMessage: "The profile picture request timed out. Please try again.").ConfigureAwait(false);
+
+        if (response.Error?.Type != ErrorType.Unauthorized)
+        {
+            return response;
+        }
+
+        var (accessToken, refreshToken, _) = await storage.GetAsync().ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return response;
+        }
+
+        var refreshResponse = await RefreshTokenAsync(new RefreshTokenRequest(accessToken, refreshToken)).ConfigureAwait(false);
+        if (!refreshResponse.IsSuccess)
+        {
+            await storage.ClearAsync().ConfigureAwait(false);
+            return AppResponses.Failure<FileContentResponse>(refreshResponse.Message ?? "Your session has expired. Please sign in again.");
+        }
+
+        return await apiClient.SendFileAsync(
+            endpoint,
+            unavailableMessage: "The profile picture service is unavailable. Please try again.",
+            timeoutMessage: "The profile picture request timed out. Please try again.").ConfigureAwait(false);
     }
 
     private string Format(string endpoint, params (string Key, string Value)[] parameters)

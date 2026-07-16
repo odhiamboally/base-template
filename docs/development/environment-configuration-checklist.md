@@ -2,6 +2,8 @@
 
 This checklist explains how BaseTemplate should be configured locally, when developing locally against Azure services, when deployed to Azure, and when deployed to supported non-Azure container hosts.
 
+Configuration is stamp-scoped. Before adding or renaming cloud settings, confirm the selected SaaS model in `docs/architecture/saas-multitenancy-strategy.md`: local development, pooled production stamp, or isolated tenant stamp.
+
 ## Configuration Modes
 
 BaseTemplate uses `ASPNETCORE_ENVIRONMENT` for application behavior and normal .NET configuration precedence for values.
@@ -22,6 +24,8 @@ Avoid creating a custom environment name such as `Native` unless we have a clear
 - Azure App Service settings: runtime settings, Key Vault references, and non-secret deployment configuration.
 - Non-Azure host environment/config variables: production runtime settings for DigitalOcean, Heroku, and generic Docker hosts.
 
+In Azure Container Apps and App Service, the host receives stamp-specific environment variables and Key Vault references. The same container image should run in different stamps without code changes.
+
 Never commit real passwords, account keys, connection strings, API keys, or temporary provisioning passwords.
 
 `DataProtection:ApplicationName` is a cryptographic compatibility identifier, not a display label. Rename the template before its first run, then keep this value stable after protected cookies, TOTP secrets, or tokens have been issued. A later change requires an explicit key/ciphertext migration or security reset plan.
@@ -31,6 +35,8 @@ Never commit real passwords, account keys, connection strings, API keys, or temp
 - .NET configuration sections use `:` locally, for example `DataProtection:BlobKeyUri`.
 - App Service environment variables use `__`, for example `DataProtection__BlobKeyUri`.
 - Key Vault secret names use `--`, for example `DataProtection--BlobKeyUri`.
+
+When a Key Vault belongs to an isolated stamp, keep secret names simple and aligned with the POCO section path. Use product or tenant prefixes only for genuinely shared vaults or control-plane secrets.
 
 ## Azure Services Used By The Template
 
@@ -55,6 +61,7 @@ Never commit real passwords, account keys, connection strings, API keys, or temp
 | Payments | Payment gateway abstraction with NoOp, Stripe, and M-Pesa adapters | `Payments:Provider`, `Payments:Stripe:*`, `Payments:Mpesa:*` | Code-wired; provider credentials/callback smoke tests are environment-specific certification |
 | Entra ID SSO | Corporate OIDC auth scheme | `EntraId:Enabled`, `EntraId:TenantId`, `EntraId:ClientId`, `EntraId:ClientSecret` | OIDC scheme configurable; local AppUser linking and token issuance flow remains the dedicated IAM slice |
 | Passkeys/WebAuthn | Browser passkey authentication | TBD | Pending dedicated IAM slice |
+| Password recovery | Email OTP or email reset link | `PasswordRecovery:Mode`, `PasswordRecovery:ResetPath`, `EmailSettings:ClientBaseUrl` | Implemented; exactly one mode is active per deployment |
 
 ## Recommended Local Setup
 
@@ -64,6 +71,16 @@ Use user-secrets for local development:
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<local-sql-connection>" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "JwtSettings:Secret" "<strong-local-jwt-secret>" --project src\Backend\Api\BT.Api\BT.Api.csproj
 dotnet user-secrets set "IamProvisioning:TemporaryPassword" "<temporary-password>" --project src\Backend\Api\BT.Api\BT.Api.csproj
+```
+
+Password recovery is selected once per deployment. Use `EmailOtp` to send and verify a six-digit code before accepting a new password, or `EmailLink` to send an ASP.NET Identity reset-token link. Do not expose both flows simultaneously.
+
+```powershell
+dotnet user-secrets set "PasswordRecovery:Mode" "EmailOtp" --project src\Backend\Api\BT.Api\BT.Api.csproj
+
+# Alternative deployment mode:
+dotnet user-secrets set "PasswordRecovery:Mode" "EmailLink" --project src\Backend\Api\BT.Api\BT.Api.csproj
+dotnet user-secrets set "EmailSettings:ClientBaseUrl" "https://localhost:7049" --project src\Backend\Api\BT.Api\BT.Api.csproj
 ```
 
 Local email should normally be captured by Mailpit through the setup script:
@@ -181,6 +198,8 @@ EmailSettings__SendGrid__Endpoint=https://api.sendgrid.com/v3/mail/send
 EmailSettings__SendGrid__ApiKey=<key-vault-reference-or-app-setting>
 EmailSettings__FromAddress=noreply@your-domain.example
 EmailSettings__DisplayName=BaseTemplate
+PasswordRecovery__Mode=EmailOtp
+PasswordRecovery__ResetPath=/iam/reset-password
 
 # Payments
 Payments__Provider=NoOp|Stripe|Mpesa
@@ -250,6 +269,8 @@ EmailSettings__SendGrid__Endpoint=https://api.sendgrid.com/v3/mail/send
 EmailSettings__SendGrid__ApiKey=<sendgrid-key>
 EmailSettings__FromAddress=<verified-sender>
 EmailSettings__DisplayName=BaseTemplate
+PasswordRecovery__Mode=EmailOtp
+PasswordRecovery__ResetPath=/iam/reset-password
 Messaging__Transport=RabbitMq
 Messaging__RabbitMq__Host=<rabbitmq-host>
 Messaging__RabbitMq__Username=<rabbitmq-user>

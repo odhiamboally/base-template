@@ -126,6 +126,11 @@ internal sealed class DevelopmentIdentitySeeder(
                 {
                     throw new InvalidOperationException($"Failed to update development user '{employeeUser.Email}': {FormatErrors(updateResult)}");
                 }
+
+                if (employeeUser.IsBootstrapAdmin && _settings.ResetExistingAdminPassword)
+                {
+                    await ResetExistingAdminPasswordAsync(user).ConfigureAwait(false);
+                }
             }
 
             if (employeeUser.IsBootstrapAdmin)
@@ -133,6 +138,23 @@ internal sealed class DevelopmentIdentitySeeder(
                 await EnsureAdminRoleAsync(user).ConfigureAwait(false);
                 ServiceLogDefinitions.LogDevelopmentAdminSeeded(logger, user.Email ?? employeeUser.Email);
             }
+        }
+    }
+
+    private async Task ResetExistingAdminPasswordAsync(AppUser user)
+    {
+        if (await userManager.IsLockedOutAsync(user).ConfigureAwait(false))
+        {
+            await userManager.SetLockoutEndDateAsync(user, null).ConfigureAwait(false);
+        }
+
+        await userManager.ResetAccessFailedCountAsync(user).ConfigureAwait(false);
+
+        var resetToken = await userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
+        var resetResult = await userManager.ResetPasswordAsync(user, resetToken, _settings.AdminPassword).ConfigureAwait(false);
+        if (!resetResult.Succeeded)
+        {
+            throw new InvalidOperationException($"Failed to reset development admin password: {FormatErrors(resetResult)}");
         }
     }
 

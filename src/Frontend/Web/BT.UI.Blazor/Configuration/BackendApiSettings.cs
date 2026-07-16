@@ -56,9 +56,17 @@ internal sealed class IamAuthEndpointSettings
 
     public string RefreshToken { get; init; } = "api/v{version}/iam/auth/refresh-token";
 
+    public string ForgotPassword { get; init; } = "api/v{version}/iam/auth/password/forgot";
+
+    public string VerifyPasswordResetOtp { get; init; } = "api/v{version}/iam/auth/password/reset/verify-otp";
+
+    public string ResetPassword { get; init; } = "api/v{version}/iam/auth/password/reset";
+
     public string CurrentUser { get; init; } = "api/v{version}/iam/auth/me";
 
     public string UpdateProfilePicture { get; init; } = "api/v{version}/iam/users/me/profile-picture";
+
+    public string ProfilePictureContent { get; init; } = "api/v{version}/iam/users/me/profile-picture/content";
 
     public string Logout { get; init; } = "api/v{version}/iam/auth/logout";
 }

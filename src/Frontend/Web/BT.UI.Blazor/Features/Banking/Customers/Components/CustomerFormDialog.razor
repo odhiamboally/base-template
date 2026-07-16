@@ -5,8 +5,8 @@
 
 <MudDialog>
     <DialogContent>
-        <EditForm Model="_model" OnValidSubmit="SaveAsync">
-            <DataAnnotationsValidator />
+    <EditForm FormName="banking-customer-form" Model="_model" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
             <MudTabs Rounded="true" ActivePanelIndex="@InitialTab">
                 <MudTabPanel Text="Corporate Details">
                     <MudGrid Spacing="2">

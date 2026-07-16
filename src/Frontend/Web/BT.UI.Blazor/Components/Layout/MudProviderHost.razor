@@ -1,6 +1,38 @@
 @rendermode InteractiveServer
 
-<MudThemeProvider />
+<MudThemeProvider Theme="_enterpriseTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
+
+@code {
+    private MudTheme _enterpriseTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2563EB",          // Professional Blue
+            Secondary = "#64748B",        // Slate Secondary
+            Tertiary = "#10B981",         // Success Green (for balances/growth)
+            AppbarBackground = "#FFFFFF",
+            AppbarText = "#1E293B",
+            Background = "#F1F5F9",       // Light Slate Background
+            DrawerBackground = "#FFFFFF",
+            Surface = "#FFFFFF",
+            TextPrimary = "#1E293B",      // Deep Slate for text
+            TextSecondary = "#64748B",
+            ActionDefault = "#94A3B8",
+            Divider = "#E2E8F0",
+            TableLines = "#E2E8F0"
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DefaultBorderRadius = "10px" // Softer, modern corners
+        },
+        Typography = new Typography()
+        {
+            Default = new DefaultTypography() { FontFamily = new[] { "Inter", "sans-serif" }, FontSize = ".875rem", LineHeight = "1.5" },
+            H6 = new H6Typography() { FontWeight = "600", FontSize = "1.125rem" },
+            Button = new ButtonTypography() { TextTransform = "none", FontWeight = "500" } // Fintech apps avoid ALL CAPS buttons
+        }
+    };
+}

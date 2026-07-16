@@ -3,6 +3,7 @@ using System;
 
 namespace BT.Infrastructure.Logging;
 
+
 internal static partial class ServiceLogDefinitions
 {
     [LoggerMessage(EventId = 3400, Level = LogLevel.Error, Message = "Error composing email for template {EmailTemplate}")]
@@ -47,10 +48,13 @@ internal static partial class ServiceLogDefinitions
     [LoggerMessage(EventId = 3420, Level = LogLevel.Error, Message = "Error verifying TOTP code with plain text secret")]
     public static partial void LogTotpPlainTextCodeVerificationError(ILogger logger, Exception ex);
 
+    [LoggerMessage(EventId = 3422, Level = LogLevel.Error, Message = "TOTP secret decryption failed for user {UserId}; verification was denied without changing IAM state.")]
+    public static partial void LogTotpSecretDecryptionFailure(ILogger logger, string userId, Exception ex);
+
     [LoggerMessage(EventId = 3421, Level = LogLevel.Information, Message = "Added claim - {ClaimType}:{ClaimValue} to user {UserId}")]
     public static partial void LogClaimAdded(ILogger logger, string claimType, string claimValue, string userId);
 
-    [LoggerMessage(EventId = 3422, Level = LogLevel.Warning, Message = "Failed to add claim {ClaimType}:{ClaimValue} to user {UserId}: {Errors}")]
+    [LoggerMessage(EventId = 3485, Level = LogLevel.Warning, Message = "Failed to add claim {ClaimType}:{ClaimValue} to user {UserId}: {Errors}")]
     public static partial void LogFailedToAddClaim(ILogger logger, string claimType, string claimValue, string userId, string errors);
 
     [LoggerMessage(EventId = 3423, Level = LogLevel.Error, Message = "Error adding claim to user {UserId}")]
@@ -161,7 +165,7 @@ internal static partial class ServiceLogDefinitions
     [LoggerMessage(EventId = 3452, Level = LogLevel.Information, Message = "User {UserId} signed out")]
     public static partial void LogUserSignedOut(ILogger logger, string userId);
 
-    [LoggerMessage(EventId = 3453, Level = LogLevel.Warning, Message = "Invalid email OTP for user {UserId}")]
+    [LoggerMessage(EventId = 3490, Level = LogLevel.Warning, Message = "Invalid email OTP for user {UserId}")]
     public static partial void LogInvalidEmailOtp(ILogger logger, string userId);
 
     [LoggerMessage(EventId = 3454, Level = LogLevel.Information, Message = "Email confirmed via OTP for user {UserId}")]
@@ -230,7 +234,7 @@ internal static partial class ServiceLogDefinitions
     [LoggerMessage(EventId = 3479, Level = LogLevel.Error, Message = "Error deleting role {RoleId}")]
     public static partial void LogRoleDeleteError(ILogger logger, string roleId, Exception ex);
 
-    [LoggerMessage(EventId = 3480, Level = LogLevel.Error, Message = "Error updating profile picture for user {UserId}")]
+    [LoggerMessage(EventId = 3491, Level = LogLevel.Error, Message = "Error updating profile picture for user {UserId}")]
     public static partial void LogProfilePictureUpdateError(ILogger logger, string userId, Exception ex);
 
     [LoggerMessage(EventId = 3481, Level = LogLevel.Warning, Message = "Session validation concurrency conflict occurred for session {SessionId}. Checking database status.")]

@@ -9,8 +9,8 @@
 
 <MudDialog>
     <DialogContent>
-        <EditForm Model="_model" OnValidSubmit="SaveAsync">
-            <DataAnnotationsValidator />
+    <EditForm FormName="iam-menu-form" Model="_model" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="4">
                     <MudTextField @bind-Value="_model.Title" Label="Title" Margin="Margin.Dense" Variant="Variant.Outlined" Required />

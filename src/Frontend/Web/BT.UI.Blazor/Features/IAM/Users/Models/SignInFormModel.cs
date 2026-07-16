@@ -1,9 +1,13 @@
 using System.ComponentModel.DataAnnotations;
-using BT.SharedKernel.Features.IAM.Users.Dtos;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BT.UI.Blazor.Features.IAM.Users.Models;
 
-internal sealed class SignInFormModel
+[SuppressMessage(
+    "Maintainability",
+    "CA1515:Consider making public types internal",
+    Justification = "Blazor static SSR form mapping binds this model during published/container form posts.")]
+public sealed class SignInFormModel
 {
     [Required(ErrorMessage = "Username or email is required.")]
     public string UserName { get; set; } = string.Empty;
@@ -15,11 +19,3 @@ internal sealed class SignInFormModel
 
     public string? ReturnUrl { get; set; }
 }
-
-internal sealed record PasswordLoginRequest(
-    string UserName,
-    string Password,
-    bool RememberMe,
-    string? ReturnUrl,
-    string DeviceFingerprint)
-    : LoginRequest(UserName, Password, RememberMe, ReturnUrl, DeviceFingerprint);

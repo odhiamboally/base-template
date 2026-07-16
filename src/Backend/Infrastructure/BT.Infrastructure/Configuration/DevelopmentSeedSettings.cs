@@ -18,5 +18,7 @@ public sealed class DevelopmentSeedSettings
     [Required]
     public string AdminPassword { get; init; } = "Admin@12345";
 
+    public bool ResetExistingAdminPassword { get; init; }
+
     public Guid TenantId { get; init; } = new("0194f700-0000-7000-8000-000000000001");
 }

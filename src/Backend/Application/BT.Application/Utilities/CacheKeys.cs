@@ -83,9 +83,6 @@ public static class CacheKeys
     public static string PasswordResetRateLimit(string userId) 
         => $"pwdreset:ratelimit:{NormalizeRequired(userId, nameof(userId))}";
 
-    public static string PasswordResetVerified(string userId) 
-        => $"pwdreset:verified:{NormalizeRequired(userId, nameof(userId))}";
-
     /// <summary>
     /// Assembles the full versioned list key.
     /// Called by <see cref="Behaviours.CachingBehavior{TRequest,TResponse}"/>

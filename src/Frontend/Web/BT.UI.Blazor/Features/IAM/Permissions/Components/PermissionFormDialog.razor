@@ -9,8 +9,8 @@
 
 <MudDialog>
     <DialogContent>
-        <EditForm Model="_model" OnValidSubmit="SaveAsync">
-            <DataAnnotationsValidator />
+    <EditForm FormName="iam-permission-form" Model="_model" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="4">
                     <MudSelect T="string" Value="_model.Context" ValueChanged="OnContextChanged" Label="Context" Margin="Margin.Dense" Variant="Variant.Outlined" Required>

@@ -91,15 +91,17 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
 
     private static BlobContainerClient CreateContainerClient(AzureBlobProfileImageStorageSettings settings)
     {
+        var options = new BlobClientOptions(BlobClientOptions.ServiceVersion.V2023_11_03);
+
         if (!string.IsNullOrWhiteSpace(settings.ContainerUri))
         {
-            return new BlobContainerClient(new Uri(settings.ContainerUri), new DefaultAzureCredential());
+            return new BlobContainerClient(new Uri(settings.ContainerUri), new DefaultAzureCredential(), options);
         }
 
         if (!string.IsNullOrWhiteSpace(settings.ConnectionString) &&
             !string.IsNullOrWhiteSpace(settings.ContainerName))
         {
-            return new BlobContainerClient(settings.ConnectionString, settings.ContainerName);
+            return new BlobContainerClient(settings.ConnectionString, settings.ContainerName, options);
         }
 
         throw new InvalidOperationException(

@@ -11,25 +11,26 @@
 <section class="auth-shell compact">
     <div class="auth-copy">
         <span class="eyebrow">Step-up verification</span>
-        <h1>Enter your authenticator code.</h1>
+        <h1>Verification Code</h1>
         <p>
-            Two-factor verification completes the IAM sign-in cycle and exchanges the temporary login result for a full API access token.
+            Enter the 6-digit code from your authenticator app to continue.
         </p>
     </div>
 
     <div class="auth-card">
-        <EditForm Model="_model" OnValidSubmit="VerifyAsync">
+        <EditForm FormName="@VerifyTwoFactorFormName" Model="VerificationModel" OnValidSubmit="VerifyAsync">
             <DataAnnotationsValidator />
+            <input type="hidden" name="VerificationModel.UserId" value="@VerificationModel!.UserId" />
 
             <div class="form-stack">
                 <div>
                     <label for="code">6-digit code</label>
-                    <InputText id="code" class="form-control form-control-lg otp-input" @bind-Value="_model.Code" inputmode="numeric" autocomplete="one-time-code" />
-                    <ValidationMessage For="@(() => _model.Code)" />
+                    <InputText id="code" class="form-control form-control-lg otp-input" @bind-Value="VerificationModel!.Code" inputmode="numeric" autocomplete="one-time-code" />
+                    <ValidationMessage For="@(() => VerificationModel!.Code)" />
                 </div>
 
                 <label class="remember-row">
-                    <InputCheckbox @bind-Value="_model.RememberDevice" />
+                    <InputCheckbox @bind-Value="VerificationModel!.RememberDevice" />
                     <span>Trust this device where supported</span>
                 </label>
 
@@ -47,12 +48,21 @@
 </section>
 
 @code {
+    private const string VerifyTwoFactorFormName = "iam-verify-two-factor";
+
     [SupplyParameterFromQuery(Name = "userId")]
     public string? UserId { get; set; }
 
-    private readonly TotpVerificationModel _model = new();
+    [SupplyParameterFromForm(FormName = VerifyTwoFactorFormName)]
+    private TotpVerificationModel? VerificationModel { get; set; }
+
     private bool _isBusy;
     private string? _message;
+
+    protected override void OnInitialized()
+    {
+        VerificationModel ??= new();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -63,8 +73,9 @@
 
         await AuthSession.InitializeAsync();
 
-        _model.UserId = UserId ?? AuthSession.PendingTwoFactorUserId ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(_model.UserId))
+        var model = VerificationModel ??= new();
+        model.UserId = UserId ?? AuthSession.PendingTwoFactorUserId ?? model.UserId ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(model.UserId))
         {
             Navigation.NavigateTo("/iam/sign-in");
         }
@@ -76,14 +87,15 @@
     {
         _isBusy = true;
         _message = null;
+        var model = VerificationModel ??= new();
 
         var request = new VerifyOtpRequest
         {
-            UserId = _model.UserId,
-            Code = _model.Code,
-            RememberMe = _model.RememberMe,
-            RememberDevice = _model.RememberDevice,
-            DeviceFingerprint = _model.DeviceFingerprint
+            UserId = model.UserId,
+            Code = model.Code,
+            RememberMe = model.RememberMe,
+            RememberDevice = model.RememberDevice,
+            DeviceFingerprint = model.DeviceFingerprint
         };
 
         var response = await AuthSession.CompleteTwoFactorAsync(request);

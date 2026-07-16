@@ -2,13 +2,23 @@
 @inject IAuthSession AuthSession
 @inject NavigationManager Navigation
 @inject ILogger<UserProfileMenu> Logger
+@using BT.UI.Blazor.Features.IAM.Users.Utilities
 
 <div class="sidebar-profile">
     @if (AuthSession.IsAuthenticated)
     {
         <details class="profile-card">
             <summary>
-                <MudAvatar Size="Size.Medium" Class="profile-avatar">@Initials</MudAvatar>
+                @if (ProfilePictureSource is not null)
+                {
+                    <MudAvatar Size="Size.Medium" Class="profile-avatar">
+                        <MudImage Src="@ProfilePictureSource" Alt="@Initials" />
+                    </MudAvatar>
+                }
+                else
+                {
+                    <MudAvatar Size="Size.Medium" Class="profile-avatar">@Initials</MudAvatar>
+                }
                 <span class="profile-copy">
                     <strong>@DisplayName</strong>
                     <small>@PrimaryRole</small>
@@ -53,7 +63,7 @@
         }
     }
 
-    private string PrimaryRole => AuthSession.CurrentUser?.Roles.FirstOrDefault() ?? "Signed in";
+    private string PrimaryRole => RoleDisplay.SelectPrimaryRole(AuthSession.CurrentUser?.Roles, "Signed in");
 
     private bool _sessionRestoreFailed;
 
@@ -77,6 +87,8 @@
             return string.IsNullOrWhiteSpace(email) ? "BT" : email[..1].ToUpperInvariant();
         }
     }
+
+    private string? ProfilePictureSource => AuthSession.ProfilePictureDataUri;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

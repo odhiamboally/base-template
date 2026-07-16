@@ -17,7 +17,9 @@ using BT.UI.Rcl.Features.HR.Employees.Contracts.Interfaces;
 using BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 using BT.UI.Rcl.Features.Shared.Lookups.Contracts.Interfaces;
 using BT.UI.Rcl.Features.Shared.Payments.Contracts.Interfaces;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
+using MudBlazor;
 using MudBlazor.Services;
 using System.Globalization;
 
@@ -34,8 +36,9 @@ builder.Services.AddRazorComponents()
             && builder.Configuration.GetValue("DetailedErrors", false);
     });
 
-builder.Services.AddMudServices();
+ConfigureDataProtection(builder.Services, builder.Configuration);
 
+builder.Services.AddMudServices();
 builder.Services
     .AddOptions<BackendApiSettings>()
     .Bind(builder.Configuration.GetSection(BackendApiSettings.SectionName))
@@ -62,6 +65,7 @@ builder.Services.AddScoped<IServerTokenStore, ServerTokenStore>();
 
 builder.Services.AddScoped<IAuthSession, AuthSession>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<BT.UI.Blazor.Features.IAM.Users.State.PasswordRecoveryState>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
@@ -95,6 +99,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseAntiforgery();
 
@@ -103,6 +108,35 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+static void ConfigureDataProtection(IServiceCollection services, IConfiguration configuration)
+{
+    services.AddOptions<DataProtectionSettings>()
+        .Bind(configuration.GetSection(DataProtectionSettings.SectionName))
+        .Validate(
+            settings => !string.IsNullOrWhiteSpace(settings.ApplicationName),
+            "DataProtection:ApplicationName is required and must remain stable after protected data has been issued.")
+        .ValidateOnStart();
+
+    var settings = configuration
+        .GetSection(DataProtectionSettings.SectionName)
+        .Get<DataProtectionSettings>();
+
+    var applicationName = string.IsNullOrWhiteSpace(settings?.ApplicationName)
+        ? "BaseTemplate"
+        : settings.ApplicationName.Trim();
+
+    var dataProtectionBuilder = services.AddDataProtection()
+        .SetApplicationName(applicationName);
+
+    if (string.IsNullOrWhiteSpace(settings?.KeysPath))
+    {
+        return;
+    }
+
+    Directory.CreateDirectory(settings.KeysPath);
+    dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(settings.KeysPath));
+}
 
 static void ConfigurePlatformAssignedPort(ConfigureWebHostBuilder webHost)
 {

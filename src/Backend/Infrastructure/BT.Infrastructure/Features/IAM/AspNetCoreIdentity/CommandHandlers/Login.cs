@@ -92,6 +92,12 @@ internal sealed class Login(
                 return AppResponses.Failure<LoginResponse>("Sign in not allowed. Please contact support.");
             }
 
+            if (!signInResult.Succeeded && !signInResult.RequiresTwoFactor)
+            {
+                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Sign in failed"));
+                return AppResponses.Failure<LoginResponse>("Invalid login attempt.");
+            }
+
             var twoFactorEnabled = await userManager.GetTwoFactorEnabledAsync(user).ConfigureAwait(false);
             if (!twoFactorEnabled)
             {
@@ -160,12 +166,6 @@ internal sealed class Login(
                     DateTimeOffset.UtcNow.AddMinutes(10),
                     userInfoWith2FA,
                     tempClaims.ToClaimResponses()));
-            }
-
-            if (!signInResult.Succeeded)
-            {
-                ServiceLogDefinitions.LogLoginError(logger, user.UserName ?? string.Empty, new AuthenticationException("Sign in failed"));
-                return AppResponses.Failure<LoginResponse>("Invalid login attempt.");
             }
 
             var sessionId = Guid.CreateVersion7();

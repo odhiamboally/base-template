@@ -9,6 +9,7 @@ This file is the canonical source of truth and working contract for AI coding to
 3. Read the closest relevant docs before changing code:
    - `docs/architecture/feature-folder-convention.md`
    - `docs/architecture/persistence-standards.md`
+   - `docs/architecture/saas-multitenancy-strategy.md`
    - `docs/architecture/ui-to-backend-flow.md`
    - `docs/development/environment-configuration-checklist.md`
    - `docs/development/local-platform.md`

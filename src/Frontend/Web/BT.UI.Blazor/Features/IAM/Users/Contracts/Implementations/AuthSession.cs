@@ -16,6 +16,8 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
 
     public CurrentUserResponse? CurrentUser { get; private set; }
 
+    public string? ProfilePictureDataUri { get; private set; }
+
     public string? PendingTwoFactorUserId { get; private set; }
 
     public string? LastError { get; private set; }
@@ -154,6 +156,7 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
         var response = await authService.LogoutAsync().ConfigureAwait(false);
         CurrentUser = null;
         PendingTwoFactorUserId = null;
+        ProfilePictureDataUri = null;
         LastError = null;
         IsInitialized = true;
         return response;
@@ -186,6 +189,15 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
         var currentUser = await authService.GetCurrentUserAsync().ConfigureAwait(false);
         CurrentUser = currentUser.IsSuccess ? currentUser.Data : null;
         LastError = currentUser.IsSuccess ? null : GetMeaningfulMessage(currentUser.Message, "The API did not return a current user profile.");
+        ProfilePictureDataUri = null;
+        if (CurrentUser?.ProfilePictureUrl is not null)
+        {
+            var picture = await authService.GetProfilePictureAsync().ConfigureAwait(false);
+            if (picture.IsSuccess && picture.Data is not null)
+            {
+                ProfilePictureDataUri = $"data:{picture.Data.ContentType};base64,{Convert.ToBase64String(picture.Data.Content)}";
+            }
+        }
     }
 
     private async Task TryClearStorageAsync()

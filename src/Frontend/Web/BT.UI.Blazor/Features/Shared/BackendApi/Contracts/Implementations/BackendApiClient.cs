@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Features.Shared.Common.Enums;
 using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Interfaces;
 using BT.UI.Blazor.Features.Shared.Messaging;
 using BT.UI.Blazor.Logging;
@@ -129,6 +130,68 @@ internal sealed class BackendApiClient(
         {
             BackendApiLogDefinitions.LogRequestTimedOut(logger, HttpMethod.Post.Method, endpoint, ex);
             return AppResponses.Failure<T>(timeoutMessage ?? "The backend service timed out. Please try again.");
+        }
+    }
+
+    public async Task<AppResponse<FileContentResponse>> SendFileAsync(
+        string endpoint,
+        bool requiresAuthentication = true,
+        string? unavailableMessage = null,
+        string? timeoutMessage = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+
+        using var message = new HttpRequestMessage(HttpMethod.Get, endpoint);
+        if (requiresAuthentication)
+        {
+            var (accessToken, _, sessionId) = await storage.GetAsync().ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                return AppResponses.Failure<FileContentResponse>("Please sign in to continue.");
+            }
+
+            message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                message.Headers.TryAddWithoutValidation("X-Session-Id", sessionId);
+            }
+        }
+
+        try
+        {
+            using var response = await httpClient.SendAsync(
+                message,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var userMessage = UserMessageSanitizer.Normalize(
+                    await ReadErrorMessageAsync(response, cancellationToken).ConfigureAwait(false),
+                    "The profile picture could not be loaded.");
+
+                return response.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                    ? AppResponses.Failure<FileContentResponse>(new AppError(
+                        ErrorType.Unauthorized,
+                        "UNAUTHORIZED",
+                        userMessage))
+                    : AppResponses.Failure<FileContentResponse>(userMessage);
+            }
+
+            var content = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+            return AppResponses.Success("Profile picture loaded.", new FileContentResponse(content, contentType));
+        }
+        catch (HttpRequestException ex)
+        {
+            BackendApiLogDefinitions.LogRequestFailed(logger, HttpMethod.Get.Method, endpoint, ex);
+            return AppResponses.Failure<FileContentResponse>(unavailableMessage ?? "The backend service is unavailable. Please try again.");
+        }
+        catch (TaskCanceledException ex)
+        {
+            BackendApiLogDefinitions.LogRequestTimedOut(logger, HttpMethod.Get.Method, endpoint, ex);
+            return AppResponses.Failure<FileContentResponse>(timeoutMessage ?? "The backend service timed out. Please try again.");
         }
     }
 

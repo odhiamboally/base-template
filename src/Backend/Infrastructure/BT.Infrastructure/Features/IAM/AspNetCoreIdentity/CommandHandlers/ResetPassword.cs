@@ -39,15 +39,6 @@ internal sealed class ResetPassword(
                 return AppResponses.Failure<bool>("Invalid reset request");
             }
 
-            var verifiedKey = CacheKeys.PasswordResetVerified(user.Id);
-            var isVerified = await cacheService.GetAsync<bool?>(verifiedKey, ct).ConfigureAwait(false);
-
-            if (isVerified != true)
-            {
-                ServiceLogDefinitions.LogInvalidToken(logger);
-                return AppResponses.Failure<bool>("Reset code not verified or expired. Please request a new code.");
-            }
-
             var password = request.Password ?? request.NewPassword ?? string.Empty;
 
             var isSamePassword = await userManager.CheckPasswordAsync(user, password).ConfigureAwait(false);
@@ -56,20 +47,17 @@ internal sealed class ResetPassword(
                 return AppResponses.Failure<bool>("New password must be different from your current password");
             }
 
-            var removeResult = await userManager.RemovePasswordAsync(user).ConfigureAwait(false);
-            if (!removeResult.Succeeded)
+            if (string.IsNullOrWhiteSpace(request.Token))
             {
-                var errors = string.Join(", ", removeResult.Errors.Select(e => e.Description));
-                ServiceLogDefinitions.LogErrorUpdatingClaim(logger, user.Id,
-                    new InvalidOperationException($"Failed to remove old password: {errors}"));
-
-                return AppResponses.Failure<bool>("Password reset failed");
+                ServiceLogDefinitions.LogInvalidToken(logger);
+                return AppResponses.Failure<bool>("The password reset request is invalid or expired.");
             }
 
-            var addResult = await userManager.AddPasswordAsync(user, password).ConfigureAwait(false);
-            if (!addResult.Succeeded)
+            var passwordResult = await userManager.ResetPasswordAsync(user, request.Token, password).ConfigureAwait(false);
+
+            if (!passwordResult.Succeeded)
             {
-                var errors = string.Join(", ", addResult.Errors.Select(e => e.Description));
+                var errors = string.Join(", ", passwordResult.Errors.Select(e => e.Description));
                 ServiceLogDefinitions.LogFailedToAddClaim(logger, "password", "reset", user.Id, errors);
                 return AppResponses.Failure<bool>("Password reset failed. Please ensure your password meets all requirements.");
             }
@@ -90,7 +78,6 @@ internal sealed class ResetPassword(
 
             }).ConfigureAwait(false);
 
-            await cacheService.RemoveAsync(verifiedKey, ct).ConfigureAwait(false);
             await cacheService.RemoveAsync(CacheKeys.PasswordResetOtp(user.Id), ct).ConfigureAwait(false);
             await cacheService.RemoveAsync(CacheKeys.PasswordResetRateLimit(user.Id), ct).ConfigureAwait(false);
             await cacheService.RemoveAsync(CacheKeys.UserInfo(user.Id), ct).ConfigureAwait(false);

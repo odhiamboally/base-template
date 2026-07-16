@@ -5,8 +5,8 @@
 
 <MudDialog>
     <DialogContent>
-        <EditForm Model="_model" OnValidSubmit="SaveAsync">
-            <DataAnnotationsValidator />
+    <EditForm FormName="iam-admin-user-form" Model="_model" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.FirstName" Label="First Name" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
                 <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.LastName" Label="Last Name" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>

@@ -13,8 +13,8 @@
 }
 
 .session-lifecycle-warning {
-    width: min(34rem, calc(100vw - 2rem));
-    padding: 1.5rem;
+    width: min(28rem, calc(100vw - 2rem));
+    padding: 1.35rem;
     border: 1px solid rgba(35, 72, 49, 0.18);
     border-radius: 1.35rem;
     background:
@@ -48,6 +48,7 @@
     color: #173322;
     letter-spacing: 0.02em;
     font-weight: 700;
+    line-height: 1.2;
 }
 
 .session-lifecycle-kicker {
@@ -59,13 +60,27 @@
 
 .session-lifecycle-countdown {
     flex: 0 0 auto;
-    padding: 0.35rem 0.65rem;
+    display: grid;
+    justify-items: end;
+    gap: 0.1rem;
+    min-width: 5.75rem;
+    padding: 0.35rem 0.65rem 0.3rem;
     border: 1px solid rgba(111, 71, 0, 0.18);
     border-radius: 999px;
     color: #6f4700;
     background: rgba(255, 227, 163, 0.72);
-    font-size: 0.82rem;
-    font-weight: 700;
+    line-height: 1.1;
+}
+
+.session-lifecycle-countdown small {
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.session-lifecycle-countdown strong {
+    font-size: 0.9rem;
+    font-weight: 800;
 }
 
 .session-lifecycle-copy {
@@ -74,7 +89,8 @@
 }
 
 .session-lifecycle-actions {
-    padding-top: 0.35rem;
+    align-items: center;
+    padding-top: 0.15rem;
 }
 
 .session-lifecycle-primary {
@@ -99,5 +115,14 @@
 
     .session-lifecycle-countdown {
         display: none;
+    }
+
+    .session-lifecycle-actions {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .session-lifecycle-actions ::deep .mud-button-root {
+        width: 100%;
     }
 }

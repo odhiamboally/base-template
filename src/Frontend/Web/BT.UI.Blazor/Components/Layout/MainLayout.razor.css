@@ -7,8 +7,8 @@
 
 .sidebar {
     background:
-        radial-gradient(circle at 20% 0%, rgba(215, 157, 59, 0.28), transparent 16rem),
-        linear-gradient(180deg, #122617 0%, #1c3423 55%, #0d1811 100%);
+        radial-gradient(circle at 20% 0%, rgba(79, 70, 229, 0.15), transparent 16rem),
+        linear-gradient(180deg, #0f172a 0%, #1e293b 55%, #020617 100%);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     color: #fff;
     flex: 0 0 15rem;
@@ -23,7 +23,7 @@
     height: 100vh;
     min-width: 0;
     overflow-y: auto;
-    scrollbar-color: rgba(72, 107, 82, 0.35) transparent;
+    scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
     scrollbar-width: thin;
 }
 
@@ -32,7 +32,7 @@
 }
 
 .workspace::-webkit-scrollbar-thumb {
-    background: rgba(72, 107, 82, 0.28);
+    background: rgba(148, 163, 184, 0.25);
     border-radius: 999px;
 }
 
@@ -67,7 +67,7 @@
 
 .topbar-meta {
     align-items: center;
-    color: #486b52;
+    color: #475569;
     display: flex;
     gap: 0.45rem;
     font-weight: 700;
@@ -124,7 +124,7 @@
 }
 
 #blazor-error-ui a {
-    color: #244b31;
+    color: #4f46e5;
     margin-left: 0.5rem;
 }
 

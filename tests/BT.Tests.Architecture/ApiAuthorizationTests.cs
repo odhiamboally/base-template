@@ -28,6 +28,7 @@ public sealed class ApiAuthorizationTests
 
     private static readonly string[] AuthControllerAllowedActions =
     [
+        "ForgotPassword",
         "GetCurrentUser",
         "GetOtpStatus",
         "Login",
@@ -36,6 +37,7 @@ public sealed class ApiAuthorizationTests
         "ResetPassword",
         "SendEmailOtp",
         "VerifyEmailOtp",
+        "VerifyPasswordResetOtp",
         "VerifyPassword"
     ];
 

@@ -31,6 +31,7 @@ The goal is steady progress through working vertical slices.
 - Every meaningful implementation should end with a concise commit message.
 - Local build/test/architecture checks should run whenever practical before calling work complete.
 - Persistence work should follow `docs/architecture/persistence-standards.md`.
+- SaaS tenancy and deployment-stamp decisions must be settled before cloud configuration, Key Vault, or deployment workflows are called production-ready.
 
 ---
 
@@ -38,23 +39,25 @@ The goal is steady progress through working vertical slices.
 
 This is the default execution path unless a blocker forces a dependency detour.
 
-1. Local running solution
-2. IAM/authentication completeness
-3. Customer CRUD reference flow
-4. Exception handling and validation consistency
-5. Pipeline behaviours and transaction conventions
-6. RBAC/ABAC/permission-based authorization
-7. Feature flags
-8. Dynamic menu/module loading
-9. Health checks, audit, observability, and security hardening
-10. Docker/local developer platform
-11. Azure deployment, Key Vault, monitoring, and APIM
-12. Entra ID SSO
-13. Rich reusable template capabilities: SignalR, reporting, payment abstractions, mobile
+1. SaaS tenancy and deployment-stamp model
+2. Local running solution
+3. IAM/authentication completeness
+4. Customer CRUD reference flow
+5. Exception handling and validation consistency
+6. Pipeline behaviours and transaction conventions
+7. RBAC/ABAC/permission-based authorization
+8. Feature flags
+9. Dynamic menu/module loading
+10. Health checks, audit, observability, and security hardening
+11. Docker/local developer platform
+12. Azure deployment, Key Vault, monitoring, and APIM
+13. Entra ID SSO
+14. Rich reusable template capabilities: SignalR, reporting, payment abstractions, mobile
 
 Current near-term focus:
 
 - Keep the local API and Blazor UI runnable from Visual Studio.
+- Treat SaaS stamp configuration as the source of truth for Key Vault, resource groups, ACA/App Service settings, database, cache, storage, and messaging.
 - Certify the IAM/Auth baseline with local browser/email smoke testing.
 - Close platform storage hardening: profile media provider configuration and Data Protection key persistence.
 - Reconcile API security, exception propagation, validation coverage, MassTransit/outbox, and health checks before moving into deployment work.
@@ -66,6 +69,8 @@ Current near-term focus:
 
 | Work Item | Depends On | Why |
 | --- | --- | --- |
+| Cloud configuration and Key Vault alignment | SaaS tenancy and deployment-stamp model | Secret names, managed identities, resource groups, and provider settings depend on whether a stamp is pooled or isolated. |
+| IaC modules | SaaS tenancy and deployment-stamp model | Bicep/Terraform modules need stable stamp boundaries and optional add-on rules. |
 | Blazor authenticated shell | IAM login, token/session handling | The shell needs reliable current-user state. |
 | Customer CRUD reference flow | API auth, customer endpoints, DTO contracts | It proves UI to API to Application to Persistence and back. |
 | Admin users/roles/permissions UI | IAM API completeness, authorization model | Admin screens must manage real identity data, not placeholders. |
@@ -95,6 +100,17 @@ Current near-term focus:
 ---
 
 ## 5. Readiness Gates
+
+### Gate 0 - SaaS Tenancy And Stamp Model Ready
+
+Required before calling cloud configuration, Key Vault alignment, or deployment workflows production-ready:
+
+- Tenant, deployment stamp, pooled stamp, and isolated stamp are defined.
+- Configuration ownership is clear for user-secrets, environment variables, host settings, and Key Vault.
+- Resource group, Key Vault, storage, cache, database, messaging, and observability boundaries are documented.
+- Control-plane tenant catalog fields are identified.
+- IaC module boundaries and optional add-on rules are defined.
+- Tenant isolation tests are planned or implemented.
 
 ### Gate 1 - Local Running Solution
 
@@ -251,11 +267,12 @@ At the end of a session:
 
 Recommended immediate order:
 
-1. Certify Phase 1: IAM/Auth and local UI/API smoke testing.
-2. Certify Phase 2: platform storage, cache, exception, validation, and messaging hardening.
-3. Certify Phase 3: health checks, observability, API security/deprecation/throttling, and operational diagnostics.
-4. Certify Phase 4: CI/CD deployment readiness, migration bundles, Docker local platform, and Azure App Service release flow.
-5. Move product-specific work such as SACCO loans, KYC/CRB, AML, payroll, or full HR into downstream solutions cloned from BaseTemplate.
+1. Certify Phase 0: SaaS tenancy, deployment-stamp model, and configuration ownership.
+2. Certify Phase 1: IAM/Auth and local UI/API smoke testing.
+3. Certify Phase 2: platform storage, cache, exception, validation, and messaging hardening.
+4. Certify Phase 3: health checks, observability, API security/deprecation/throttling, and operational diagnostics.
+5. Certify Phase 4: CI/CD deployment readiness, migration bundles, Docker local platform, and Azure App Service release flow.
+6. Move product-specific work such as SACCO loans, KYC/CRB, AML, payroll, or full HR into downstream solutions cloned from BaseTemplate.
 
 ---
 

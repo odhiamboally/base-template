@@ -2,8 +2,8 @@
 
 <MudDialog>
     <DialogContent>
-        <EditForm Model="_model" OnValidSubmit="Save">
-            <DataAnnotationsValidator />
+    <EditForm FormName="iam-reference-catalog-form" Model="_model" OnValidSubmit="Save">
+        <DataAnnotationsValidator />
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="6">
                     <MudTextField @bind-Value="_model.Key"
