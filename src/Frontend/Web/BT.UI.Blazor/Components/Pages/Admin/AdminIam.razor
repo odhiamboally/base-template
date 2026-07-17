@@ -62,6 +62,15 @@
     private AdminPermissions? _permissionsTab;
     private AdminUsers? _usersTab;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthSession.InitializeAsync();
+            StateHasChanged();
+        }
+    }
+
     private void OnTabChanged(int index)
     {
         _activeTab = index;

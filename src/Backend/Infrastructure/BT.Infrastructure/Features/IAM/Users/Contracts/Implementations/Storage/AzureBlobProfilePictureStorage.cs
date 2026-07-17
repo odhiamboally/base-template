@@ -94,9 +94,7 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
         {
             return null;
         }
-        catch (Exception ex) when (
-            !cancellationToken.IsCancellationRequested &&
-            ex is RequestFailedException or HttpRequestException or AggregateException)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested && ex is RequestFailedException or HttpRequestException or AggregateException or System.IO.IOException or TimeoutException)
         {
             throw new HttpRequestException("Profile image storage is unavailable.", ex);
         }
