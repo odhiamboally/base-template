@@ -6,22 +6,23 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<div class="list-toolbar">
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-        @if (AuthSession.HasPermission("roles.create"))
-        {
-            <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.AddModerator" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenRoleDialogAsync(null))">Create role</MudButton>
-        }
-        <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
+<div class="panel-heading">
+    <div>
+        <span class="eyebrow">Role list</span>
+        <h2>Platform roles</h2>
     </div>
-            <MudTextField @bind-Value="_searchText"
-                          Placeholder="Search role name..."
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
-                          Margin="Margin.Dense"
-                          Variant="Variant.Outlined"
-                          Immediate="true" />
-        </div>
+    <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
+</div>
+
+<div class="list-toolbar">
+    <MudTextField @bind-Value="_searchText"
+                  Placeholder="Search role name..."
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"
+                  Immediate="true" />
+</div>
 
         @if (_isLoading)
         {
@@ -73,6 +74,8 @@
     private bool _isLoading = true;
     private string? _message;
     private string? _searchText;
+
+    public Task OpenCreateDialogAsync() => OpenRoleDialogAsync(null);
 
     private string StatusLabel => _isLoading ? "Loading" : $"{FilteredRoles.Count} shown";
 

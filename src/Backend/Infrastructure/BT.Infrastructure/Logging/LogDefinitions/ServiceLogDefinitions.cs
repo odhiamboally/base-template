@@ -237,6 +237,9 @@ internal static partial class ServiceLogDefinitions
     [LoggerMessage(EventId = 3491, Level = LogLevel.Error, Message = "Error updating profile picture for user {UserId}")]
     public static partial void LogProfilePictureUpdateError(ILogger logger, string userId, Exception ex);
 
+    [LoggerMessage(EventId = 3492, Level = LogLevel.Warning, Message = "Profile picture storage is unavailable while reading the image for user {UserId}")]
+    public static partial void LogProfilePictureReadUnavailable(ILogger logger, string userId, Exception ex);
+
     [LoggerMessage(EventId = 3481, Level = LogLevel.Warning, Message = "Session validation concurrency conflict occurred for session {SessionId}. Checking database status.")]
     public static partial void LogSessionConcurrencyConflict(ILogger logger, string sessionId, Exception ex);
 

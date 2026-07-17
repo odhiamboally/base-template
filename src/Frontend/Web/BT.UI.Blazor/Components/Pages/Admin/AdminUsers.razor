@@ -6,30 +6,31 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<div class="list-toolbar">
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-        @if (AuthSession.HasPermission("users.create"))
-        {
-            <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenUserDialogAsync(null))">Create user</MudButton>
-        }
-        <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
+<div class="panel-heading">
+    <div>
+        <span class="eyebrow">User list</span>
+        <h2>Application users</h2>
     </div>
-            <MudTextField @bind-Value="_searchText"
-                          Placeholder="Search name, username, email, phone..."
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
-                          Margin="Margin.Dense"
-                          Variant="Variant.Outlined"
-                          Immediate="false"
-                          DebounceInterval="400"
-                          OnDebounceIntervalElapsed="ApplyFiltersAsync"
-                          OnKeyDown="HandleSearchKeyDown" />
-            <MudIconButton Icon="@Icons.Material.Filled.FilterList" Size="Size.Small" Color="@(_showFilters ? Color.Success : Color.Default)" OnClick="ToggleFilters" title="Advanced filters" />
-            @if (HasActiveFilters)
-            {
-                <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Color="Color.Error" OnClick="ClearFiltersAsync" title="Clear filters" />
-            }
-        </div>
+    <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
+</div>
+
+<div class="list-toolbar">
+    <MudTextField @bind-Value="_searchText"
+                  Placeholder="Search name, username, email, phone..."
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"
+                  Immediate="false"
+                  DebounceInterval="400"
+                  OnDebounceIntervalElapsed="ApplyFiltersAsync"
+                  OnKeyDown="HandleSearchKeyDown" />
+    <MudIconButton Icon="@Icons.Material.Filled.FilterList" Size="Size.Small" Color="@(_showFilters ? Color.Success : Color.Default)" OnClick="ToggleFilters" title="Advanced filters" />
+    @if (HasActiveFilters)
+    {
+        <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Color="Color.Error" OnClick="ClearFiltersAsync" title="Clear filters" />
+    }
+</div>
 
         @if (_showFilters)
         {
@@ -134,6 +135,8 @@
         </div>
 
 @code {
+    public Task OpenCreateDialogAsync() => OpenUserDialogAsync(null);
+
     private static readonly string[] StatusOptions = ["Active", "Inactive"];
     private static readonly string[] TwoFactorOptions = ["Enabled", "Recommended"];
     private static readonly string[] LinkedRecordOptions = ["Employee", "Customer", "System"];

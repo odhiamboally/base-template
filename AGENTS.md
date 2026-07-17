@@ -95,6 +95,7 @@ This file is the canonical source of truth and working contract for AI coding to
 - Use `wwwroot/css` for app CSS.
 - Avoid JavaScript unless Blazor cannot access the browser capability directly.
 - Tables should support compact layout, horizontal overflow, pagination/search/filter patterns, and consistent actions.
+- Listing pages follow the Customer hierarchy: create actions occupy a separate top-right page action row, shown-count badges occupy the list heading's right edge, and search/filter controls occupy a full-width row below the heading.
 
 ## Azure And Configuration
 

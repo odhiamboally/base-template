@@ -2,6 +2,7 @@
 
 @rendermode InteractiveServer
 @using BT.UI.Blazor.Components.Pages.Admin
+@inject IAuthSession AuthSession
 
 <PageTitle>Identity & Access | Base Template</PageTitle>
 
@@ -13,6 +14,18 @@
                 <h1>Identity & Access.</h1>
                 <p>Manage roles, permissions, users, and trusted devices across the platform.</p>
             </div>
+            @if (_activeTab == 0 && AuthSession.HasPermission("roles.create"))
+            {
+                <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.AddModerator" Class="bt-mud-primary bt-small-button" OnClick="OpenRoleCreateDialogAsync">Create role</MudButton>
+            }
+            else if (_activeTab == 1 && AuthSession.HasPermission("roles.manage_permissions"))
+            {
+                <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.LockPerson" Class="bt-mud-primary bt-small-button" OnClick="OpenPermissionCreateDialogAsync">Create permission</MudButton>
+            }
+            else if (_activeTab == 2 && AuthSession.HasPermission("users.create"))
+            {
+                <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" Class="bt-mud-primary bt-small-button" OnClick="OpenUserCreateDialogAsync">Create user</MudButton>
+            }
         </div>
 
         <MudPaper Class="poc-panel" Elevation="0">
@@ -25,15 +38,15 @@
 
             @if (_activeTab == 0)
             {
-                <AdminRoles />
+                <AdminRoles @ref="_rolesTab" />
             }
             else if (_activeTab == 1)
             {
-                <AdminPermissions />
+                <AdminPermissions @ref="_permissionsTab" />
             }
             else if (_activeTab == 2)
             {
-                <AdminUsers />
+                <AdminUsers @ref="_usersTab" />
             }
             else if (_activeTab == 3)
             {
@@ -45,9 +58,21 @@
 
 @code {
     private int _activeTab;
+    private AdminRoles? _rolesTab;
+    private AdminPermissions? _permissionsTab;
+    private AdminUsers? _usersTab;
 
     private void OnTabChanged(int index)
     {
         _activeTab = index;
     }
+
+    private Task OpenRoleCreateDialogAsync() =>
+        _rolesTab?.OpenCreateDialogAsync() ?? Task.CompletedTask;
+
+    private Task OpenPermissionCreateDialogAsync() =>
+        _permissionsTab?.OpenCreateDialogAsync() ?? Task.CompletedTask;
+
+    private Task OpenUserCreateDialogAsync() =>
+        _usersTab?.OpenCreateDialogAsync() ?? Task.CompletedTask;
 }
