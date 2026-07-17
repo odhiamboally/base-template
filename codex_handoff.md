@@ -261,3 +261,5 @@ Address PR security review findings without redoing completed integration work.
 - Created and switched to `codex/storage-iam-ui-resilience` for this focused PR.
 - Staged the intended profile-storage resilience, IAM listing hierarchy, timeout dialog, `AGENTS.md`, and handoff files. The user-owned `DBContextHelper` edit remains unstaged.
 - Staging-only scope check passed: 12 intended files are staged. `DBContextHelper.cs` and the no-content-diff `app.css` remain unstaged and will not enter the commit. Existing successful backend/frontend verification is authoritative; do not rerun it.
+- Created commit `450c90f` (`fix: harden profile storage and polish IAM UI`) on `codex/storage-iam-ui-resilience` and pushed it to `origin`.
+- Opened PR #39, `Harden profile storage and polish IAM UI`: https://github.com/odhiamboally/base-template/pull/39. Final packaging step: commit this handoff update and push it to the same PR; do not rerun verification.
