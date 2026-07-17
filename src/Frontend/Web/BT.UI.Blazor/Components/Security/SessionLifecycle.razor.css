@@ -12,18 +12,23 @@
     pointer-events: auto;
 }
 
-.session-lifecycle-warning {
-    width: min(28rem, calc(100vw - 2rem));
-    padding: 1.35rem;
+.session-lifecycle-dialog {
+    width: min(27rem, calc(100vw - 2rem));
+}
+
+::deep .session-lifecycle-warning {
+    width: 100%;
+    padding: 1.5rem;
     border: 1px solid rgba(35, 72, 49, 0.18);
-    border-radius: 1.35rem;
+    border-radius: 1.25rem;
     background:
         linear-gradient(145deg, rgba(255, 250, 240, 0.98) 0%, rgba(249, 243, 232, 0.98) 100%);
     box-shadow: 0 2rem 5rem rgba(18, 43, 28, 0.28);
+    overflow: hidden;
     pointer-events: auto;
 }
 
-.session-lifecycle-header {
+::deep .session-lifecycle-header {
     min-width: 0;
 }
 
@@ -44,14 +49,14 @@
     flex: 1;
 }
 
-.session-lifecycle-title {
+::deep .session-lifecycle-title {
     color: #173322;
-    letter-spacing: 0.02em;
+    letter-spacing: -0.01em;
     font-weight: 700;
     line-height: 1.2;
 }
 
-.session-lifecycle-kicker {
+::deep .session-lifecycle-kicker {
     display: block;
     color: #6b7a70;
     letter-spacing: 0.08em;
@@ -83,33 +88,32 @@
     font-weight: 800;
 }
 
-.session-lifecycle-copy {
+::deep .session-lifecycle-copy {
     color: #526458;
     line-height: 1.55;
+    overflow-wrap: anywhere;
 }
 
-.session-lifecycle-actions {
+::deep .session-lifecycle-actions {
     align-items: center;
-    padding-top: 0.15rem;
 }
 
-.session-lifecycle-primary {
+::deep .session-lifecycle-primary {
     color: #fffaf0 !important;
     background: #244a32 !important;
     box-shadow: 0 0.5rem 1rem rgba(36, 74, 50, 0.18);
 }
 
-.session-lifecycle-secondary {
+::deep .session-lifecycle-secondary {
     color: #244a32 !important;
 }
 
 @media (max-width: 640px) {
     .session-lifecycle-host {
-        align-items: end;
         padding: 1rem;
     }
 
-    .session-lifecycle-warning {
+    ::deep .session-lifecycle-warning {
         padding: 1.15rem;
     }
 
@@ -117,7 +121,7 @@
         display: none;
     }
 
-    .session-lifecycle-actions {
+    ::deep .session-lifecycle-actions {
         display: grid;
         gap: 0.5rem;
     }

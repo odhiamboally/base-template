@@ -6,18 +6,23 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<div class="list-toolbar">
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
+<div class="panel-heading">
+    <div>
+        <span class="eyebrow">Device list</span>
+        <h2>Trusted devices</h2>
     </div>
-            <MudTextField @bind-Value="_searchText"
-                          Placeholder="Search user, email, device, IP..."
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
-                          Margin="Margin.Dense"
-                          Variant="Variant.Outlined"
-                          Immediate="true" />
-        </div>
+    <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
+</div>
+
+<div class="list-toolbar">
+    <MudTextField @bind-Value="_searchText"
+                  Placeholder="Search user, email, device, IP..."
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"
+                  Immediate="true" />
+</div>
 
         @if (_isLoading)
         {

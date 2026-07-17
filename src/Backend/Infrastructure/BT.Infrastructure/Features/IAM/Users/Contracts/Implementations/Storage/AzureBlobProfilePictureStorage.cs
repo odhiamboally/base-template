@@ -1,3 +1,4 @@
+using Azure;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
@@ -64,6 +65,7 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
 
         if (!profilePictureUri.IsAbsoluteUri)
         {
+            // ToDo: Log warning about invalid profile picture URI
             return null;
         }
 
@@ -71,27 +73,42 @@ internal sealed class AzureBlobProfilePictureStorage(IOptions<ProfileImageStorag
         var blobName = GetBlobName(profilePictureUri, container.Uri);
         if (string.IsNullOrWhiteSpace(blobName))
         {
+            // ToDo: Log warning about profile picture URI not matching container URI
             return null;
         }
 
         var blob = container.GetBlobClient(blobName);
-        if (!await blob.ExistsAsync(cancellationToken).ConfigureAwait(false))
+        try
+        {
+            var download = await blob
+                .DownloadStreamingAsync(cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            var contentType = string.IsNullOrWhiteSpace(download.Value.Details.ContentType)
+                ? "application/octet-stream"
+                : download.Value.Details.ContentType;
+            var fileName = Path.GetFileName(blobName);
+
+            return new ProfilePictureFile(download.Value.Content, contentType, fileName);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
         {
             return null;
         }
-
-        var download = await blob.DownloadStreamingAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-        var contentType = string.IsNullOrWhiteSpace(download.Value.Details.ContentType)
-            ? "application/octet-stream"
-            : download.Value.Details.ContentType;
-        var fileName = Path.GetFileName(blobName);
-
-        return new ProfilePictureFile(download.Value.Content, contentType, fileName);
+        catch (Exception ex) when (
+            !cancellationToken.IsCancellationRequested &&
+            ex is RequestFailedException or HttpRequestException or AggregateException)
+        {
+            throw new HttpRequestException("Profile image storage is unavailable.", ex);
+        }
     }
 
     private static BlobContainerClient CreateContainerClient(AzureBlobProfileImageStorageSettings settings)
     {
         var options = new BlobClientOptions(BlobClientOptions.ServiceVersion.V2023_11_03);
+        options.Retry.MaxRetries = 2;
+        options.Retry.Delay = TimeSpan.FromMilliseconds(200);
+        options.Retry.MaxDelay = TimeSpan.FromSeconds(1);
+        options.Retry.NetworkTimeout = TimeSpan.FromSeconds(5);
 
         if (!string.IsNullOrWhiteSpace(settings.ContainerUri))
         {
