@@ -101,7 +101,7 @@ internal static class DBContextHelper
     private static void ApplyQueryFilters(ModelBuilder modelBuilder, IMutableEntityType entityType, ITenantFilteredDBContext context)
     {
         var entityClrType = entityType.ClrType;
-#pragma warning disable CS0618 // EF Core 10 obsoletes unnamed filters; keep composing existing filters until we migrate to named filters solution-wide.
+#pragma warning disable CS0618 // ToDo: EF Core 10 obsoletes unnamed filters; keep composing existing filters until we migrate to named filters solution-wide.
         var queryFilter = entityType.GetQueryFilter();
 #pragma warning restore CS0618
 
