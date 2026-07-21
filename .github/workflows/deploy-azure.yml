@@ -120,11 +120,11 @@ jobs:
 
       - name: Build EF Core Migration Bundles
         run: |
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context IamDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-iam --configuration Release
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context HrDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-hr --configuration Release
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context SharedDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-shared --configuration Release
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context BankingDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-banking --configuration Release
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context ControlPlaneDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-controlplane --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context IamSqlServerDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-iam --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context HrSqlServerDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-hr --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context SharedSqlServerDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-shared --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context BankingSqlServerDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-banking --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context ControlPlaneSqlServerDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-controlplane --configuration Release
         env:
           ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=BT;User Id=sa;Password=Password123!;TrustServerCertificate=True;"
 
