@@ -14,8 +14,10 @@ using BT.Domain.Features.Banking.Customers.Contracts.Repositories;
 using BT.Domain.Features.HR.Employees.Contracts.Repositories;
 using BT.Domain.Features.IAM.Users.Contracts.Repositories;
 using BT.Domain.Shared.Contracts.Repositories;
+using BT.Domain.Shared.Contracts.Settings;
 using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Contracts.Implementations.Common;
+using BT.Infrastructure.Contracts.Implementations.Settings;
 using BT.Infrastructure.Contracts.Implementations.Caching;
 using BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Services;
 using BT.Infrastructure.Features.IAM.Users.Contracts.Implementations.Storage;
@@ -172,6 +174,7 @@ public static class DependencyInjection
 
         services.AddScoped<IMpesaC2BService>(provider => provider.GetRequiredService<MpesaPaymentGateway>());
         services.AddScoped<IPaymentGateway, RoutedPaymentGateway>();
+        services.AddScoped<IPaymentProviderCatalog, PaymentProviderCatalog>();
         services.AddScoped<IPaymentWebhookVerifier, StripeWebhookVerifier>();
         services.AddScoped<LocalProfilePictureStorage>();
         services.AddScoped<AzureBlobProfilePictureStorage>();
@@ -212,6 +215,7 @@ public static class DependencyInjection
                     _.GetRequiredService<ILogger<BackgroundJobService>>())
                 : new NoOpBackgroundJobService());
         services.AddScoped<IEncryptionService, EncryptionService>();
+        services.AddScoped<ITenantSettingsProvider, CachedTenantSettingsProvider>();
 
         return services;
     }

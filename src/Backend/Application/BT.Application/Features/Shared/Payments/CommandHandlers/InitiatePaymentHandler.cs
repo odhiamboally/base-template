@@ -25,6 +25,34 @@ internal sealed class InitiatePaymentHandler(
 
         var req = request.Request;
         var provider = req.Provider ?? "Unknown";
+        var idempotencyKey = string.IsNullOrWhiteSpace(req.IdempotencyKey)
+            ? null
+            : req.IdempotencyKey.Trim();
+
+        if (idempotencyKey is not null)
+        {
+            var existingRecord = await sharedUnitOfWork.PaymentRecordRepository
+                .FirstOrDefaultAsync(record => record.IdempotencyKey == idempotencyKey, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (existingRecord is not null)
+            {
+                if (!IsMatchingRequest(existingRecord, req, provider))
+                {
+                    return AppResponses.Failure<PaymentInitiationResponse>(
+                        "The idempotency key has already been used for a different payment request.");
+                }
+
+                return AppResponses.Success(
+                    "The existing payment request was returned.",
+                    new PaymentInitiationResponse(
+                        existingRecord.Provider,
+                        existingRecord.CustomerReference,
+                        existingRecord.CheckoutUrl ?? string.Empty,
+                        existingRecord.Status.ToString()));
+            }
+        }
+
         var providerPrefix = provider.Length >= 3 ? provider[..3].ToUpperInvariant() : provider.ToUpperInvariant();
         var paymentId = Guid.CreateVersion7();
 
@@ -36,11 +64,13 @@ internal sealed class InitiatePaymentHandler(
 
         var money = new Money(request.Request.Amount, request.Request.Currency);
         var paymentRecord = new PaymentRecord(
+
             id: paymentId,
             amount: money,
             description: request.Request.Description,
             customerReference: customerReference,
-            provider: provider)
+            provider: provider,
+            idempotencyKey: idempotencyKey)
         {
             // CreatedBy is populated by the audit interceptor in SharedDBContext.SaveChangesAsync
             // via ICurrentActorProvider; defaults to "System" for unauthenticated flows.
@@ -57,18 +87,26 @@ internal sealed class InitiatePaymentHandler(
 
         if (initiatePaymentResult.IsSuccess)
         {
-            // If initiation is successful, the gateway has likely updated the paymentRecord
-            // with a checkout ID. We need to persist these changes.
-            // This assumes your repository/UoW tracks changes to the paymentRecord entity.
+            paymentRecord.SetCheckoutUrl(initiatePaymentResult.Data?.CheckoutUrl);
+            paymentRecord.SetProviderReference(initiatePaymentResult.Data?.PaymentReference);
             await sharedUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
         }
         else
         {
             // If initiation fails, update the record status to Failed.
-            paymentRecord.UpdateStatus(PaymentStatus.Failed);
+            paymentRecord.UpdateStatus(PaymentStatus.Failed, statusMessage: initiatePaymentResult.Message);
             await sharedUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return initiatePaymentResult;
     }
+
+    private static bool IsMatchingRequest(
+        PaymentRecord record,
+        PaymentInitiationRequest request,
+        string provider) =>
+        record.Amount.Amount == request.Amount &&
+        string.Equals(record.Amount.Currency, request.Currency, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(record.Provider, provider, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(record.Description, request.Description, StringComparison.Ordinal);
 }

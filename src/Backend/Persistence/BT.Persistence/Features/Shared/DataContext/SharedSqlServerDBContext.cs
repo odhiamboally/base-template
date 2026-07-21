@@ -7,8 +7,12 @@ namespace BT.Persistence.Features.Shared.DataContext;
 /// </summary>
 public class SharedSqlServerDBContext : SharedDBContext
 {
-    public SharedSqlServerDBContext(DbContextOptions<SharedSqlServerDBContext> options)
-        : base(options)
+    public SharedSqlServerDBContext(
+        DbContextOptions<SharedSqlServerDBContext> options,
+        BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider tenantProvider,
+        BT.Domain.Shared.Contracts.Common.ICurrentActorProvider actorProvider,
+        Microsoft.Extensions.Logging.ILogger<SharedDBContext>? logger = null)
+        : base(options, tenantProvider, actorProvider, logger)
     {
     }
 

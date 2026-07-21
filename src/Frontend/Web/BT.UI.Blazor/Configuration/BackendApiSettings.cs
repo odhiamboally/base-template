@@ -181,6 +181,9 @@ internal sealed class SharedEndpointSettings
     [Required]
     public PaymentEndpointSettings Payments { get; init; } = new();
 
+    [Required]
+    public TenantSettingsEndpointSettings TenantSettings { get; init; } = new();
+
     public string LookupCatalogTypes { get; init; } = "api/v{version}/shared/lookups/catalog-types";
 
     public string LookupByType { get; init; } = "api/v{version}/shared/lookups/{lookupType}";
@@ -192,11 +195,25 @@ internal sealed class SharedEndpointSettings
     public string LookupDelete { get; init; } = "api/v{version}/shared/lookups/{lookupType}/{id}";
 }
 
+internal sealed class TenantSettingsEndpointSettings
+{
+    public string Root { get; init; } = "api/v{version}/shared/tenant-settings";
+    public string Detail { get; init; } = "api/v{version}/shared/tenant-settings/{key}";
+}
+
 internal sealed class PaymentEndpointSettings
 {
     public string Checkout { get; init; } = "api/v{version}/shared/payments/checkout";
 
     public string Status { get; init; } = "api/v{version}/shared/payments/{provider}/{paymentReference}";
+
+    public string Capabilities { get; init; } = "api/v{version}/shared/payments/capabilities";
+
+    public string History { get; init; } = "api/v{version}/shared/payments/history";
+
+    public string RegisterMpesaC2BUrls { get; init; } = "api/v{version}/shared/payments/mpesa/c2b/register-urls";
+
+    public string SimulateMpesaC2B { get; init; } = "api/v{version}/shared/payments/mpesa/c2b/simulate";
 }
 
 internal sealed class CustomerEndpointSettings

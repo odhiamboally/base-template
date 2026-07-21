@@ -130,6 +130,7 @@ internal sealed class StripeWebhookVerifier(
         var eventType = root.GetProperty("type").GetString() ?? string.Empty;
         var paymentObject = root.GetProperty("data").GetProperty("object");
         var paymentReference = paymentObject.GetProperty("id").GetString() ?? string.Empty;
+        var customerReference = GetOptionalString(paymentObject, "client_reference_id") ?? string.Empty;
         var status = GetOptionalString(paymentObject, "payment_status")
             ?? GetOptionalString(paymentObject, "status")
             ?? "unknown";
@@ -138,6 +139,7 @@ internal sealed class StripeWebhookVerifier(
             "Stripe",
             eventId,
             eventType,
+            customerReference,
             paymentReference,
             status);
     }

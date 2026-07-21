@@ -36,7 +36,7 @@ internal static class DBContextHelper
 
         var now = DateTimeOffset.UtcNow;
 
-        foreach (var entry in changeTracker.Entries<BaseEntity>())
+        foreach (var entry in changeTracker.Entries<IAuditable>())
         {
             switch (entry.State)
             {

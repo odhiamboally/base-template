@@ -124,6 +124,7 @@ jobs:
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context HrDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-hr --configuration Release
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context SharedDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-shared --configuration Release
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context BankingDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-banking --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context ControlPlaneDBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-controlplane --configuration Release
         env:
           ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=BT;User Id=sa;Password=Password123!;TrustServerCertificate=True;"
 
@@ -235,6 +236,7 @@ jobs:
           chmod +x ./api-app/efbundle-hr
           chmod +x ./api-app/efbundle-shared
           chmod +x ./api-app/efbundle-banking
+          chmod +x ./api-app/efbundle-controlplane
 
           run_bundle() {
             local bundle="$1"
@@ -274,12 +276,14 @@ jobs:
           run_bundle efbundle-hr
           run_bundle efbundle-shared
           run_bundle efbundle-banking
+          run_bundle efbundle-controlplane
         env:
           AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           ConnectionStrings__IamConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           ConnectionStrings__HrConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           ConnectionStrings__SharedConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           ConnectionStrings__BankingConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          ConnectionStrings__ControlPlaneConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           ConnectionStrings__DefaultConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
 
       - name: Remove temporary Azure SQL firewall rule

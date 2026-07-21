@@ -17,14 +17,14 @@ internal static class MenuItemSeed
         Create(AdminId, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, 2),
         Create(OverviewId, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, 3),
 
-        // Billing
-        Create("018fd81d-2c94-7ad0-a4a3-f1edb9c10401", null, null, "billing", "Billing", "Manage subscription and payments.", "/billing", "CreditCard", "Sidebar", null, 4),
+        Create("018fd81d-2c94-7ad0-a4a3-f1edb9c10401", null, null, "features", "Features", "Reusable platform capability showcases.", "/features", "MenuOpen", "Sidebar", null, 4),
+        Create("018fd81d-2c94-7ad0-a4a3-f1edb9c10402", Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10401"), null, "features-payments", "Payments", "Test card and mobile-money payment flows.", "/features/payments", "CreditCard", "Sidebar", "payments.view", 10),
 
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c20101", AdminId, null, "admin-customers", "Customers", "Customer records and onboarding.", "/admin/customers", "Business", "AdminCenter", null, 10),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c20102", AdminId, null, "admin-departments", "Departments", "Department catalog and staff grouping.", "/admin/departments", "AccountTree", "AdminCenter", null, 20),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c20103", AdminId, null, "admin-employees", "Employees", "Staff records and system access.", "/admin/employees", "Badge", "AdminCenter", null, 30),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c20104", AdminId, null, "admin-menus", "Menus", "Navigation catalog and menu visibility.", "/admin/menus", "MenuOpen", "AdminCenter", null, 40),
-        Create("018fd81d-2c94-7ad0-a4a3-f1edb9c20107", AdminId, null, "admin-settings", "Settings", "Platform configuration surface.", "/admin/settings", "Settings", "AdminCenter", null, 50),
+        Create("018fd81d-2c94-7ad0-a4a3-f1edb9c20107", AdminId, null, "admin-tenant-settings", "Tenant Settings", "Tenant-specific configuration surface.", "/admin/tenant-settings", "Settings", "AdminCenter", null, 50),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c20111", AdminId, null, "admin-iam", "Identity & Access", "Manage users, roles, permissions, and trusted devices.", "/admin/iam", "Group", "AdminCenter", null, 60),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c20110", AdminId, null, "admin-access-catalog", "Access Catalog", "Source-of-truth permission and menu reference data.", "/admin/access-catalog", "LockPerson", "AdminCenter", null, 70)
     ];

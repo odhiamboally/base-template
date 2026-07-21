@@ -21,6 +21,7 @@ public class IamPostgreSqlDBContext : IamDBContext
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
         base.OnModelCreating(builder);
         builder.ApplyConfigurationsFromAssembly(
             typeof(IamPostgreSqlDBContext).Assembly,

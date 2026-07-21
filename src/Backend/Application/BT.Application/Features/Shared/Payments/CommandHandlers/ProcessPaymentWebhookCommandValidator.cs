@@ -2,9 +2,9 @@ using FluentValidation;
 
 namespace BT.Application.Features.Shared.Payments.CommandHandlers;
 
-public sealed class VerifyPaymentWebhookCommandValidator : AbstractValidator<VerifyPaymentWebhookCommand>
+public sealed class ProcessPaymentWebhookCommandValidator : AbstractValidator<ProcessPaymentWebhookCommand>
 {
-    public VerifyPaymentWebhookCommandValidator()
+    public ProcessPaymentWebhookCommandValidator()
     {
         RuleFor(command => command.Provider)
             .NotEmpty()

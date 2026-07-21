@@ -284,3 +284,134 @@ Address PR security review findings without redoing completed integration work.
 - Stripe success/cancel pages exist, but cancel links to `/payments/card`, which has no page. Together with the dead seeded `/billing` route, this confirms the frontend showcase/navigation is incomplete rather than absent backend capability.
 - `PermissionSeed` definitively lacks the controller-required `payments.view`, `payments.create`, and `payments.admin` entries. `MenuRoute` is DB-backed route metadata, not executable routing; only approved routes implemented in Blazor should be seeded/managed.
 - Audit recommendation ready: replace the dead Billing entry with a DB-backed `Features` parent and implemented `Payments` child; add payment permission/catalog seeds and admin assignment; add a provider-capabilities endpoint; implement Stripe Checkout, M-Pesa STK, status lookup, and paged payment history UI; keep credentials/endpoints/provider wire DTOs in typed configuration/code, not the database. No product code or verification was performed for this read-only audit.
+
+## 26. Reusable payment feature showcase implementation
+
+- User approved implementing the complete audited payment showcase as a focused vertical slice and requested a dedicated local and remote branch.
+- The first combined Git/plan/document read exceeded the useful output budget and produced no reliable state evidence. No code changed. Continue with narrow sequential reads only; do not repeat the combined command.
+- Handoff recovery completed. The implementation scope is fixed: branch isolation, provider capabilities and payment history APIs, permission and DB-backed menu alignment, Stripe/M-Pesa showcase UI including admin C2B tools, focused tests, migrations, and one final verification run.
+- Next: inspect only current Git branch/status and GitHub PR state, then create or reuse a focused `codex/` branch without staging the known user-owned `DBContextHelper` edit.
+- Git state inspected. The workspace remains on `codex/storage-iam-ui-resilience`; PR #40 for that branch is merged. Two local modifications remain: this handoff and `AzureBlobProfilePictureStorage.cs`.
+- The payment work must therefore use a new focused branch based on current `main`, not the merged branch. Before switching, inspect the remaining storage diff to determine whether it is an uncommitted user change that must be preserved.
+- The remaining storage diff is a valid, unrelated resilience adjustment that broadens transient-failure translation to `OperationCanceledException` and uses the imported `IOException`. Preserve it as an unstaged user-owned change; do not include it in the payment commit.
+- Next: stash both local changes temporarily, update `main`, create and publish a dedicated `codex/payment-feature-showcase` branch, then restore the stash and keep the storage file excluded.
+- Branch isolation completed. Updated `main` to merged PR #40, created `codex/payment-feature-showcase`, restored the handoff and unrelated storage edit, and published the branch to `origin` (the push command timed out after remote tracking was established, and the subsequent local upstream check confirmed the remote branch exists).
+- `AzureBlobProfilePictureStorage.cs` remains an unstaged user-owned change and must stay out of the payment commit.
+- Next: read the phase/configuration documents required by `AGENTS.md`, then inspect only the existing payment and seed patterns needed for implementation.
+- The first combined convention-document read was truncated and yielded no reliable guidance. Do not repeat it. Narrow literal searches against each required document are allowed before implementation.
+- Next: read only payment-relevant feature-folder, UI-to-backend, and typed-provider configuration excerpts, updating this handoff after each successful read.
+- Feature-folder convention read completed. Payments correctly remains a `Shared/Payments` reusable capability across layers; shared transport DTOs stay in `SharedKernel/Features/Shared/Payments`, provider adapters remain feature-owned, persistence artifacts remain under the same Shared feature path, and Shared UoW coordinates writes.
+- Next: read only the UI-to-backend flow rules relevant to a DB-backed payment showcase.
+- UI-to-backend flow read completed. The showcase must use a typed Blazor HTTP client over the real API boundary, keep shared contracts in `BT.SharedKernel`, retain presentation state in UI, and leave payment rules/orchestration in Application/Domain.
+- Next: read only typed provider/configuration rules, then inspect the existing payment slice file inventory.
+- The broad keyword scan of `docs/development/configuration-code-conventions.md` overflowed and produced no reliable result. Do not repeat broad reads or broad `Select-String` scans of this file; inspect only headings and small targeted line ranges.
+- Next: complete one narrow configuration-convention read, record it, then build a concrete implementation plan from the existing payment files.
+- Targeted configuration-convention read completed. Provider/mode strings must be parsed once into typed enums, per-operation payment provider selection must use the existing router/factory, provider-specific wire DTOs stay beside adapters, and unsupported values fail fast. Secrets/endpoints remain typed configuration rather than DB records.
+- Next: inspect the exact existing payment controller/contracts/handlers/persistence, permission/menu seeds, and Blazor service/page patterns needed for implementation.
+- Exact payment inspection confirmed the existing controller/router/UoW flow, provider-neutral DTOs, and tenant-scoped `PaymentRecord`. Missing backend capabilities are provider metadata, paged local history, and idempotent initiation. Permission and menu seeds still lack the payment permissions and an implemented Features/Payments route.
+- The first role-assignment search used two nonexistent guessed IAM subdirectories and failed after returning the valid seed/config inventory. Do not repeat those paths; inspect `AppRoleConfiguration`, IAM seeding services, and reference data directly.
+- Next: locate existing role-permission seeding and paging/specification patterns, then finalize the concrete edit set.
+- A combined role/paging/specification inspection overflowed and produced no reliable implementation evidence. Do not repeat it. Continue with one exact file or narrowly located interface at a time.
+- Next: inspect `AppRoleConfiguration.cs`, then locate the existing role-permission seeder and generic repository/specification interfaces with filename-only queries.
+- `AppRoleConfiguration` contains only role table/property/index mapping and no permission assignment seed. The development identity seeder has no direct `PermissionSeed`, role-claim, or permission assignment references.
+- Filename lookup located the canonical generic repository and specification contracts under `BT.Domain/Shared/Contracts`; use those exact files for the history design.
+- Next: inspect `IRepository.cs` and `Specification.cs`, then locate the permission-role assignment source by exact symbol search in Persistence and Domain only.
+- Generic persistence supports composed `ListAsync` projection/filter/order/paging, expression-based counts/existence checks, and cursor specifications. Payment history can therefore use the existing Shared UoW repository without a new concrete repository method.
+- Next: locate exact permission assignment entities/configuration and payment UI/API endpoint constants, then begin edits.
+- Permission/reference catalogs are EF-seeded from `PermissionSeed` and `IamReferenceDataSeed`; both need Shared/payments entries plus approved `/features` and `/features/payments` routes. The typed Blazor payment service currently exposes only checkout and provider status.
+- Next: inspect the exact payment file inventory, menu seed, UoW contract, and endpoint settings once, then apply the backend/domain/catalog edit set.
+- The combined UoW/MenuItemSeed/BackendApiSettings read overflowed and produced no reliable implementation evidence. Do not repeat that combined command; read each exact file separately.
+- Next: read `ISharedUnitOfWork.cs` only, record it, then continue with `MenuItemSeed.cs` and the payment endpoint settings separately.
+- The guessed Application path for `ISharedUnitOfWork.cs` does not exist. The handoff reread succeeded, but no UoW content was obtained. Do not retry that path; use a filename-only lookup.
+- Next: locate `ISharedUnitOfWork.cs` by filename, then read only the returned file.
+- Located the Shared UoW contract at `src/Backend/Domain/BT.Domain/Features/Shared/Contracts/ISharedUnitOfWork.cs`.
+- Next: read that exact contract only.
+- Shared UoW inspection completed. `PaymentRecordRepository` is already exposed and the unit supports both normal transactional completion and integration-event completion, so no new persistence abstraction is needed for history or idempotency.
+- Next: locate and read `MenuItemSeed.cs` only to preserve its exact IDs/hierarchy conventions.
+- Located `MenuItemSeed.cs` at `src/Backend/Persistence/BT.Persistence/Features/IAM/Menus/Seeds/MenuItemSeed.cs`.
+- Next: read that exact seed file only.
+- Menu seed inspection completed. The dead top-level `Billing` item uses stable ID `...10401`; it can be safely repurposed as the `Features` parent while a new stable child ID is added for `Payments`, preserving deterministic seed behavior.
+- Next: locate `BackendApiSettings.cs`, then read only its payment endpoint members.
+- Located the typed Blazor API settings at `src/Frontend/Web/BT.UI.Blazor/Configuration/BackendApiSettings.cs`.
+- Next: read only the payment-related declarations with narrow context.
+- Endpoint settings inspection completed. The Blazor client currently defines only checkout and status routes; capabilities, history, and C2B administration routes must be added to the existing typed `PaymentEndpointSettings` section.
+- Exact pre-edit inspection is complete. Next: enumerate only `Features/Shared/Payments` files and apply the backend/domain/catalog implementation in focused batches.
+- Payment inventory enumeration completed. The slice already has isolated Stripe/M-Pesa adapters, provider routing, callbacks, C2B commands, status query, persistence, and a typed Blazor service. The implementation will extend these patterns rather than duplicate them.
+- Next: read the exact controller, initiation handler, entity/configuration, and Blazor service contracts needed for the first edit batch.
+- Core flow inspection completed. `PaymentRecord` is tracked across provider initiation, the controller already has permission-gated C2B endpoints, and the Blazor abstraction is ready to extend. Idempotency requires persisted key/checkout URL; history can project from the existing repository.
+- Next: inspect exact Stripe/M-Pesa settings and C2B command shapes, then implement shared DTOs, provider catalog, history, idempotency, and controller endpoints.
+- Located typed payment settings in Infrastructure. C2B registration takes no body; sandbox simulation requires amount, phone, and bill reference.
+- Next: read the three settings POCOs and the payment DI registration block only.
+### Payment showcase continuation note
+
+- The previous combined read of payment settings and DI registration exceeded the tool output limit, so it produced no reliable evidence and must not be treated as completed.
+- Read `PaymentSettings`, `StripePaymentSettings`, `MpesaPaymentSettings`, and the payment DI registration separately before editing.
+- `PaymentSettings` read completed. The section is `Payments`, with a default provider, production NoOp guard, and nested Stripe/M-Pesa settings. Provider capability reporting can derive from this single typed options object.
+- Next: read `StripePaymentSettings.cs` only.
+- `StripePaymentSettings` read completed. Stripe readiness is determined by `SecretKey`, checkout endpoint, webhook secret, and success/cancel URLs; the capability response must expose readiness without exposing any of these values.
+- Next: read `MpesaPaymentSettings.cs` only.
+- `MpesaPaymentSettings` read completed. M-Pesa capability metadata can safely report sandbox/live environment and supported STK/C2B operations while readiness is derived from credentials, shortcode/passkey, and callback base URL. Provider endpoints remain internal typed configuration.
+- Next: locate and read only the payment registrations in Infrastructure DI.
+- Payment DI inspection completed. The existing registrations bind/validate `PaymentSettings`, register the routed gateway plus all provider adapters/C2B/webhook services, and configure named Stripe/M-Pesa clients. The new provider catalog only needs one scoped registration and should reuse `IOptions<PaymentSettings>`.
+- Pre-edit discovery is now complete. Next: implement shared contracts and backend query/catalog/idempotency changes.
+- Shared payment contracts implemented: provider capability metadata, paged history response/items, and an optional initiation idempotency key. Each public type is in its own correctly named file.
+- Next: extend the payment aggregate and EF mapping for persisted idempotency and checkout continuation data.
+- Payment aggregate/EF mapping completed after one path/signature correction: records now persist a normalized optional idempotency key and checkout URL, with a tenant-scoped filtered unique idempotency index. No provider secret or wire payload was added to persistence.
+- Next: add provider catalog and payment history application contracts/queries, then expose them through the controller.
+- Existing application pattern inspection completed. Payment requests use `AppResponse<T>` MediatR handlers under `CommandHandlers`/`QueryHandlers`; initiation currently persists before provider I/O and status delegates to the routed gateway.
+- Next: use the already-approved generic repository projection/paging methods to implement capabilities, history, and idempotent initiation.
+- A prior attempt to read the handoff tail returned an unrelated oversized-output error and yielded no usable evidence. This retry succeeded; no implementation work was lost or repeated.
+- Next: read only the generic repository and `AppResponse<T>` factory signatures needed by the payment handlers.
+- The assumed `IRepository.cs` and `AppResponse.cs` paths did not exist. No signatures were read and no code was changed; locate the authoritative files by symbol before implementing handlers.
+- Authoritative signatures confirmed in `Domain/Shared/Contracts/Repositories/IRepository.cs` and `SharedKernel/Dtos/Common/AppResponse*.cs`: database-side projection, count, first-result, paging composition, and established success/failure factories are available.
+- Next: implement provider capability catalog, payment history query, and idempotent initiation using the shared Unit of Work and generic repository.
+- Payment feature inventory confirmed the existing bounded-context `IPaymentRecordRepository` is exposed through `ISharedUnitOfWork`; no new repository abstraction is needed. A read targeted the wrong filename (`InitiatePayment.cs`); the authoritative file is `InitiatePaymentHandler.cs`.
+- Next: read the exact initiation handler, controller, settings, and payment registration contexts, then implement the backend slice.
+- Exact backend surfaces confirmed. `PaymentsController` already applies `payments.create`, `payments.view`, and `payments.admin`; initiation persists before provider I/O but does not yet save checkout continuation data or handle idempotency.
+- Next: add the capability/history application slice and harden initiation idempotency/continuation persistence.
+
+### 23. Payment showcase backend continuation
+
+- Reconciled the interrupted payment patch against the working tree. It completed successfully: provider capability and payment-history query contracts/handlers, provider catalog registration, controller read endpoints, and initiation idempotency/checkout persistence are present.
+- Preserved the unrelated `AzureBlobProfilePictureStorage.cs` modification without inspection or alteration.
+- Next: inspect the completed backend payment diff for narrow correctness issues, then update payment permissions/menu seeds and create the corresponding migration.
+- Backend payment diff inspection completed. Capability metadata derives from typed settings without exposing secrets; history composes count/order/page queries before materialization; and initiation returns a prior matching record for the same tenant-scoped idempotency key while persisting the checkout continuation.
+- Next: inspect exact permission, reference-catalog, and menu seed files to add the DB-backed Features/Payments navigation and payment permissions.
+- A combined seed-file read exceeded the tool output limit, so no seed source was treated as inspected or changed. Next: read the permission, menu, and route/reference seed sources separately before making the catalog patch.
+- Permission seed inspected separately. It uses deterministic IDs, a platform-default tenant, and a `Create` helper; payment permissions can be added as `Shared/payments` `view`, `create`, and `admin` entries.
+- Menu seed inspected separately. The existing top-level Billing seed has a stable ID and can be repurposed as the top-level `Features` parent; the Payments child will use its own stable ID and `payments.view` visibility requirement.
+- Route/reference seed location and usage confirmed. Next: read `IamReferenceDataSeed.cs` directly to add the approved `/features` and `/features/payments` routes and any missing reference keys.
+- Reference seed inspected separately. It needs the `Shared` context, `payments` resource, `admin` action, `CreditCard` icon, and approved Features/Payments routes to match the proposed menu and permission model.
+- IAM catalog seeds updated: Shared/payments permissions, Shared context, payments resource, admin action, credit-card icon, approved Features/Payments routes, and a permission-gated Payments sidebar child were added. The former Billing parent now consistently represents Features.
+- The narrow Persistence filename search for role-permission seed files returned no matches. No role assignment source was treated as inspected and no code changed.
+- Search by the `System Administrator` role value found no Persistence seed source; assignments appear to be handled through IAM authorization/runtime configuration instead. No assignment code changed.
+- Permission constants inspection confirmed dynamic permission policies use the `permission` claim type and explicitly recognize the `System Administrator` role. The authorization handler is the remaining source to inspect before deciding whether any role-permission mapping is necessary.
+- Permission authorization inspection completed. The established administrator bypass succeeds every dynamic permission requirement for the `System Administrator` role, while other roles require matching `permission` claims. No role-permission seed change is needed for the payment showcase.
+- Migration conventions confirmed: the contexts are `SharedDBContext` and `IamDBContext`, with generated migrations under `Migrations/Shared` and `Migrations/IAM` respectively.
+- Design-time factories are provider-specific and use `SharedSqlServerDBContextFactory`/`IamSqlServerDBContextFactory` for the local SQL Server path. The concrete factory setup remains to be read before generating migrations.
+- SQL Server design-time factories confirmed. EF migrations must target `SharedSqlServerDBContext` using `SharedConnection` and `IamSqlServerDBContext` using `IamConnection`, not their provider-neutral base contexts.
+- Shared SQL Server migration `AddPaymentFeatureShowcase` generated successfully. EF emitted an existing namespace advisory because both provider contexts use the same migration folder; the repository's existing migration layout was preserved.
+- IAM SQL Server migration `AddPaymentFeatureCatalog` generated successfully. It produced the same known namespace advisory from the repository's existing multi-context migration layout; no migration generation failure occurred.
+- Frontend inventory confirmed an existing provider-neutral `PaymentCheckoutService`, Payment success/cancel pages, and shared `BackendApiClient`; the new showcase can extend these rather than introducing a parallel client pattern.
+- Existing UI conventions confirmed: the payment service already routes through `IBackendApiClient`; page components use InteractiveServer, MudBlazor, protected session permissions, compact panel headers, right-aligned actions/count chips, responsive toolbars, and horizontally scrollable dense tables.
+- A filename-only frontend search for payment contracts/settings returned no matches because its combined pattern was too restrictive. No source was treated as inspected and no code changed.
+- Payment contract/registration symbols are located in the RCL interface, Blazor `Program.cs`, and the existing `Billing.razor` page. No endpoint settings source has yet been inspected.
+- The first broad `BackendApiSettings.cs` read exceeded the output limit. It is not treated as a completed settings inspection and no frontend source was changed.
+- Payment endpoint settings inspection completed. The existing typed section defines checkout and provider-status routes only; it needs capability/history and C2B administration endpoints added alongside those existing routes.
+- Payment service interface inspection completed. It is provider-neutral and currently exposes checkout and status methods only, so capabilities/history/C2B operations should extend this interface rather than introduce another frontend client abstraction.
+- Payment service implementation inspection completed. It consistently uses `IBackendApiClient`, `EndpointFormatter`, typed endpoint settings, and sanitized availability/timeout messages. New calls must preserve this pattern.
+- Payment registration inspection completed. `IPaymentCheckoutService` is already registered as scoped in the Blazor host, so extending its interface and implementation requires no DI shape change.
+- Existing `Billing.razor` inspection completed. It is an older authenticated one-time checkout form with hardcoded provider choices and no capability, readiness, history, permission, or C2B-administration support. Replace its route with a DB-backed Features/Payments showcase rather than retaining a competing Billing surface.
+- Next: inspect payment controller request types and route shapes for the C2B operations, then implement the frontend contract and showcase page.
+
+### 24. Payment showcase frontend continuation
+
+- Re-read the handoff before resuming frontend implementation. The backend capability/history/idempotency work, IAM catalog seeds, and both migrations remain complete; the unrelated Azure profile-storage file remains excluded.
+- Next: inspect the exact C2B controller route and request shapes with a narrow symbol search, then extend the existing typed payment client and implement the showcase UI.
+- Payment controller route inspection completed. The existing API exposes permission-gated `GET capabilities`, `GET history`, `POST checkout`, `POST mobile-money/admin/register-c2b-urls`, and `POST mobile-money/admin/simulate-c2b`; simulation accepts `SimulateMpesaC2BPaymentCommand`.
+- `SimulateMpesaC2BPaymentCommand` inspection completed. The API body shape is `Amount`, `PhoneNumber`, and `BillRefNumber`, returning `AppResponse<string>`.
+- Razor route inspection completed. The legacy payment flow is rooted at `Components/Pages/Common/Billing.razor` with `/billing`; no `/features` route exists yet.
+- Existing payment client and legacy Billing page were re-read. The client uses the expected typed backend boundary; Billing is the only legacy checkout route and will become a compatibility redirect. The initial endpoint-settings path guess was wrong, so no settings file was treated as re-inspected.
+- Authoritative endpoint settings and permission-check conventions were located. `PaymentEndpointSettings` is nested in `Configuration/BackendApiSettings.cs`; UI pages use `IAuthSession.HasPermission(...)` for action visibility.
+- Payment DTO shapes confirmed: capability metadata contains enabled/configured/readiness flags; history is paged; checkout returns provider/reference/URL/status.
+- Next: apply the frontend contract and showcase page in one focused edit, retaining `/billing` as a compatibility redirect.

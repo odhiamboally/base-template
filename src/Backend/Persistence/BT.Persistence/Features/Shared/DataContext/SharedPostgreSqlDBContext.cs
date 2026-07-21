@@ -12,8 +12,8 @@ public class SharedPostgreSqlDBContext : SharedDBContext
 {
     public SharedPostgreSqlDBContext(
         DbContextOptions<SharedPostgreSqlDBContext> options,
-        ICurrentTenantProvider? tenantProvider = null,
-        ICurrentActorProvider? actorProvider = null,
+        ICurrentTenantProvider tenantProvider,
+        ICurrentActorProvider actorProvider,
         ILogger<SharedDBContext>? logger = null)
         : base(options, tenantProvider, actorProvider, logger)
     {

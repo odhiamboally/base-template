@@ -72,6 +72,7 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IIamAdminService, IamAdminService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IPaymentCheckoutService, PaymentCheckoutService>();
+builder.Services.AddScoped<BT.UI.Blazor.Features.Shared.TenantSettings.Contracts.ITenantSettingsService, BT.UI.Blazor.Features.Shared.TenantSettings.Implementations.TenantSettingsService>();
 builder.Services.AddSingleton<IAuthenticatorQrCodeService, AuthenticatorQrCodeService>();
 var httpClientBuilder = builder.Services.AddHttpClient<IBackendApiClient, BackendApiClient>((serviceProvider, client) =>
 {

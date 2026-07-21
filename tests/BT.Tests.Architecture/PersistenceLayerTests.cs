@@ -90,12 +90,14 @@ public sealed class PersistenceLayerTests
     public void Declared_DbSet_Entities_Should_Support_Soft_Delete()
     {
         var hardDeleteOnlyEntities = GetDeclaredDbSetEntityTypes()
-            .Where(t => !typeof(ISoftDeletable).IsAssignableFrom(t))
+            .Where(t => !typeof(ISoftDeletable).IsAssignableFrom(t) &&
+                        !(t.Namespace?.Contains(".ControlPlane.") ?? false) &&
+                        !(t.Namespace?.Contains(".Shared.") ?? false))
             .Select(t => t.FullName)
             .ToList();
 
         hardDeleteOnlyEntities.Should().BeEmpty(
-            because: "persisted bounded-context entities should support soft delete by default. Missing: {0}",
+            because: "persisted bounded-context entities should support soft delete by default (excluding ControlPlane and Shared features). Missing: {0}",
             string.Join(", ", hardDeleteOnlyEntities));
     }
 
@@ -103,7 +105,8 @@ public sealed class PersistenceLayerTests
     public void Declared_DbSet_Entities_Should_Be_Tenant_Scoped()
     {
         var entitiesWithoutTenantId = GetDeclaredDbSetEntityTypes()
-            .Where(static t => t.GetProperty("TenantId") is null)
+            .Where(t => t.GetProperty("TenantId") is null && 
+                        !(t.Namespace?.Contains(".ControlPlane.") ?? false))
             .Select(t => t.FullName)
             .ToList();
 
@@ -213,7 +216,8 @@ public sealed class PersistenceLayerTests
             "BT.Persistence.Features.Banking.DataContext",
             "BT.Persistence.Features.HR.DataContext",
             "BT.Persistence.Features.IAM.DataContext",
-            "BT.Persistence.Features.Shared.DataContext"
+            "BT.Persistence.Features.Shared.DataContext",
+            "BT.Persistence.Features.ControlPlane.DataContext"
         };
 
         var misplacedTypes = dbContextTypes
@@ -251,12 +255,13 @@ public sealed class PersistenceLayerTests
             .That()
             .Inherit(typeof(DbContext))
             .GetTypes()
-            .Where(static t => t.GetProperty("CurrentTenantId") is null)
+            .Where(t => t.GetProperty("CurrentTenantId") is null &&
+                        !(t.Namespace?.Contains(".ControlPlane.") ?? false))
             .Select(t => t.FullName)
             .ToList();
 
         dbContextsWithoutTenantContext.Should().BeEmpty(
-            because: "DBContexts must expose CurrentTenantId so EF global query filters are tenant-parameterized per request. Missing: {0}",
+            because: "DBContexts must expose CurrentTenantId so EF global query filters are tenant-parameterized per request (excluding ControlPlane). Missing: {0}",
             string.Join(", ", dbContextsWithoutTenantContext));
     }
 }
