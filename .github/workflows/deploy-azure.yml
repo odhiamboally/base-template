@@ -488,7 +488,7 @@ jobs:
 
       - name: Deploy API to ACA (ACR)
         if: needs.setup.outputs.target == 'aca-acr'
-        uses: azure/container-apps-deploy-action@v3
+        uses: azure/container-apps-deploy-action@v1
         with:
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           containerAppName: ${{ vars.AZURE_ACA_API_NAME }}
@@ -497,7 +497,7 @@ jobs:
 
       - name: Deploy UI to ACA (ACR)
         if: needs.setup.outputs.target == 'aca-acr'
-        uses: azure/container-apps-deploy-action@v3
+        uses: azure/container-apps-deploy-action@v1
         with:
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           containerAppName: ${{ vars.AZURE_ACA_UI_NAME }}
@@ -506,7 +506,7 @@ jobs:
 
       - name: Deploy API to ACA (GHCR)
         if: needs.setup.outputs.target == 'aca-ghcr'
-        uses: azure/container-apps-deploy-action@v3
+        uses: azure/container-apps-deploy-action@v1
         with:
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           containerAppName: ${{ vars.AZURE_ACA_API_NAME }}
@@ -517,7 +517,7 @@ jobs:
 
       - name: Deploy UI to ACA (GHCR)
         if: needs.setup.outputs.target == 'aca-ghcr'
-        uses: azure/container-apps-deploy-action@v3
+        uses: azure/container-apps-deploy-action@v1
         with:
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           containerAppName: ${{ vars.AZURE_ACA_UI_NAME }}
