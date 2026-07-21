@@ -12,12 +12,21 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using Serilog;
 using System.Globalization;
+using BT.Domain.Shared.Contracts.Common;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace BT.Tests.Integration;
 
 public class OutboxIntegrationTests
 {
+    private sealed class DummyTenantProvider : ICurrentTenantProvider
+    {
+        public Guid TenantId => Guid.Empty;
+    }
+    private sealed class DummyActorProvider : ICurrentActorProvider
+    {
+        public string ActorId => "TestActor";
+    }
     [Fact]
     public async Task Should_Persist_Event_To_Outbox()
     {
@@ -26,6 +35,8 @@ public class OutboxIntegrationTests
         await connection.OpenAsync();
 
         await using var provider = new ServiceCollection()
+            .AddSingleton<ICurrentTenantProvider, DummyTenantProvider>()
+            .AddSingleton<ICurrentActorProvider, DummyActorProvider>()
             .AddDbContext<SharedDBContext>(o => o.UseSqlite(connection))
             .AddMassTransitTestHarness(x =>
             {
@@ -69,6 +80,8 @@ public class OutboxIntegrationTests
         await connection.OpenAsync();
 
         await using var provider = new ServiceCollection()
+            .AddSingleton<ICurrentTenantProvider, DummyTenantProvider>()
+            .AddSingleton<ICurrentActorProvider, DummyActorProvider>()
             .AddDbContext<SharedDBContext>(options =>
                 options.UseSqlite(connection))
             .AddMassTransit(x =>
