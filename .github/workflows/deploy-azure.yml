@@ -260,13 +260,13 @@ jobs:
           AZURE_POSTGRES_CONNECTION_STRING: ${{ secrets.AZURE_POSTGRES_CONNECTION_STRING }}
         run: |
           set -euo pipefail
-          
+
           if [ "$DATABASE_PROVIDER" == "PostgreSql" ]; then
             export TARGET_CONNECTION_STRING="$AZURE_POSTGRES_CONNECTION_STRING"
           else
             export TARGET_CONNECTION_STRING="$AZURE_SQL_CONNECTION_STRING"
           fi
-          
+
           export ConnectionStrings__IamConnection="$TARGET_CONNECTION_STRING"
           export ConnectionStrings__HrConnection="$TARGET_CONNECTION_STRING"
           export ConnectionStrings__SharedConnection="$TARGET_CONNECTION_STRING"

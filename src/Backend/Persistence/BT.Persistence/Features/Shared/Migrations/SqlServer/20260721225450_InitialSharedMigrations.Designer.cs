@@ -4,16 +4,19 @@ using BT.Persistence.Features.Shared.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BT.Persistence.Migrations.Shared
+namespace BT.Persistence.Features.Shared.Migrations.SqlServer
 {
     [DbContext(typeof(SharedSqlServerDBContext))]
-    partial class SharedSqlServerDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260721225450_InitialSharedMigrations")]
+    partial class InitialSharedMigrations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

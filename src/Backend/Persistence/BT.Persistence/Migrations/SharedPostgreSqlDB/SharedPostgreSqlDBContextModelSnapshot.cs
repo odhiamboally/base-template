@@ -1168,11 +1168,11 @@ namespace BT.Persistence.Migrations.SharedPostgreSqlDB
                         .IsUnique();
 
                     b.HasIndex("ProviderReference")
-                        .HasFilter("[ProviderReference] IS NOT NULL");
+                        .HasFilter("ProviderReference IS NOT NULL");
 
                     b.HasIndex("TenantId", "IdempotencyKey")
                         .IsUnique()
-                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+                        .HasFilter("IdempotencyKey IS NOT NULL");
 
                     b.ToTable("PaymentRecords", (string)null);
                 });
