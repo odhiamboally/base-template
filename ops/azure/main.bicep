@@ -61,6 +61,17 @@ module appService 'modules/appservice.bicep' = if (deploymentTarget == 'app-serv
   }
 }
 
+var serviceBusName = '${resourcePrefix}-sb-${uniqueString(resourceGroup().id)}'
+
+module serviceBus 'modules/servicebus.bicep' = {
+  name: 'serviceBusDeploy'
+  params: {
+    namespaceName: serviceBusName
+    location: location
+    sku: 'Standard'
+  }
+}
+
 output sqlServerFqdn string = sql.outputs.serverFullyQualifiedDomainName
 output sqlDatabaseName string = sql.outputs.databaseName
 
