@@ -6,10 +6,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace BT.Persistence.Migrations.SharedPostgreSqlDB
+namespace BT.Persistence.Features.Shared.Migrations.PostgreSql
 {
     /// <inheritdoc />
-    public partial class AddPaymentStatusMessage : Migration
+    public partial class InitialSharedMigrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -310,6 +310,26 @@ namespace BT.Persistence.Migrations.SharedPostgreSqlDB
                 });
 
             migrationBuilder.CreateTable(
+                name: "TenantSettings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Key = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    Value = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TenantSettings", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OutboxMessage",
                 columns: table => new
                 {
@@ -581,14 +601,20 @@ namespace BT.Persistence.Migrations.SharedPostgreSqlDB
                 name: "IX_PaymentRecords_ProviderReference",
                 table: "PaymentRecords",
                 column: "ProviderReference",
-                filter: "[ProviderReference] IS NOT NULL");
+                filter: "ProviderReference IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PaymentRecords_TenantId_IdempotencyKey",
                 table: "PaymentRecords",
                 columns: new[] { "TenantId", "IdempotencyKey" },
                 unique: true,
-                filter: "[IdempotencyKey] IS NOT NULL");
+                filter: "IdempotencyKey IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TenantSettings_TenantId_Key",
+                table: "TenantSettings",
+                columns: new[] { "TenantId", "Key" },
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -632,6 +658,9 @@ namespace BT.Persistence.Migrations.SharedPostgreSqlDB
 
             migrationBuilder.DropTable(
                 name: "PaymentRecords");
+
+            migrationBuilder.DropTable(
+                name: "TenantSettings");
 
             migrationBuilder.DropTable(
                 name: "InboxState");
