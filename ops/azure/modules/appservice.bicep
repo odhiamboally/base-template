@@ -10,6 +10,9 @@ param uiAppName string
 @description('Location for all resources.')
 param location string = resourceGroup().location
 
+@description('The database provider to configure for the API.')
+param databaseProvider string
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: appServicePlanName
   location: location
@@ -32,6 +35,12 @@ resource apiApp 'Microsoft.Web/sites@2022-09-01' = {
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|8.0' // CI will push the bits, use 8.0/9.0 as the base
       alwaysOn: true
+      appSettings: [
+        {
+          name: 'DatabaseSettings__Provider'
+          value: databaseProvider
+        }
+      ]
     }
   }
 }

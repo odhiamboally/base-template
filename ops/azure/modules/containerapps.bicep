@@ -16,6 +16,9 @@ param uiAppName string
 @description('Location for all resources.')
 param location string = resourceGroup().location
 
+@description('The database provider to configure for the API.')
+param databaseProvider string
+
 // Container Registry
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: containerRegistryName
@@ -72,6 +75,12 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
         {
           name: 'api'
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'DatabaseSettings__Provider'
+              value: databaseProvider
+            }
+          ]
           resources: {
             cpu: json('0.5')
             memory: '1.0Gi'

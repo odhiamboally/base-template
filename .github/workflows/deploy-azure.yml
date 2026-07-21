@@ -125,7 +125,7 @@ jobs:
             PROVIDER="PostgreSql"
           fi
           echo "Building migration bundles for provider: $PROVIDER"
-          
+
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Iam${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-iam --configuration Release
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Hr${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-hr --configuration Release
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Shared${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-api/efbundle-shared --configuration Release
@@ -174,17 +174,26 @@ jobs:
       - name: Validate migration configuration
         shell: bash
         env:
+          DATABASE_PROVIDER: ${{ vars.DATABASE_PROVIDER }}
           AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
           AZURE_SQL_NETWORK_MODE: ${{ vars.AZURE_SQL_NETWORK_MODE }}
           AZURE_SQL_SERVER_NAME: ${{ vars.AZURE_SQL_SERVER_NAME }}
           AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          AZURE_POSTGRES_CONNECTION_STRING: ${{ secrets.AZURE_POSTGRES_CONNECTION_STRING }}
         run: |
           set -euo pipefail
 
-          required_values=(
-            AZURE_SQL_NETWORK_MODE
-            AZURE_SQL_CONNECTION_STRING
-          )
+          if [ "$DATABASE_PROVIDER" == "PostgreSql" ]; then
+            required_values=(
+              AZURE_SQL_NETWORK_MODE
+              AZURE_POSTGRES_CONNECTION_STRING
+            )
+          else
+            required_values=(
+              AZURE_SQL_NETWORK_MODE
+              AZURE_SQL_CONNECTION_STRING
+            )
+          fi
 
           for name in "${required_values[@]}"; do
             if [ -z "${!name:-}" ]; then
@@ -210,11 +219,12 @@ jobs:
               ;;
           esac
 
-      - name: Allow this runner through the Azure SQL firewall
+      - name: Allow this runner through the database firewall
         if: vars.AZURE_SQL_NETWORK_MODE == 'PublicRunner'
-        id: sql-firewall
+        id: db-firewall
         shell: bash
         env:
+          DATABASE_PROVIDER: ${{ vars.DATABASE_PROVIDER }}
           AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
           AZURE_SQL_SERVER_NAME: ${{ vars.AZURE_SQL_SERVER_NAME }}
         run: |
@@ -223,20 +233,46 @@ jobs:
           runner_ip="$(curl --fail --silent --show-error https://api.ipify.org)"
           rule_name="github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
-          az sql server firewall-rule create \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --server "$AZURE_SQL_SERVER_NAME" \
-            --name "$rule_name" \
-            --start-ip-address "$runner_ip" \
-            --end-ip-address "$runner_ip" \
-            --output none
+          if [ "$DATABASE_PROVIDER" == "PostgreSql" ]; then
+            az postgres flexible-server firewall-rule create \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --name "$AZURE_SQL_SERVER_NAME" \
+              --rule-name "$rule_name" \
+              --start-ip-address "$runner_ip" \
+              --end-ip-address "$runner_ip" \
+              --output none
+          else
+            az sql server firewall-rule create \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --server "$AZURE_SQL_SERVER_NAME" \
+              --name "$rule_name" \
+              --start-ip-address "$runner_ip" \
+              --end-ip-address "$runner_ip" \
+              --output none
+          fi
 
           echo "rule_name=$rule_name" >> "$GITHUB_OUTPUT"
 
       - name: Execute Migration Bundles
-        shell: bash
+        env:
+          DATABASE_PROVIDER: ${{ vars.DATABASE_PROVIDER }}
+          AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          AZURE_POSTGRES_CONNECTION_STRING: ${{ secrets.AZURE_POSTGRES_CONNECTION_STRING }}
         run: |
           set -euo pipefail
+          
+          if [ "$DATABASE_PROVIDER" == "PostgreSql" ]; then
+            export TARGET_CONNECTION_STRING="$AZURE_POSTGRES_CONNECTION_STRING"
+          else
+            export TARGET_CONNECTION_STRING="$AZURE_SQL_CONNECTION_STRING"
+          fi
+          
+          export ConnectionStrings__IamConnection="$TARGET_CONNECTION_STRING"
+          export ConnectionStrings__HrConnection="$TARGET_CONNECTION_STRING"
+          export ConnectionStrings__SharedConnection="$TARGET_CONNECTION_STRING"
+          export ConnectionStrings__BankingConnection="$TARGET_CONNECTION_STRING"
+          export ConnectionStrings__ControlPlaneConnection="$TARGET_CONNECTION_STRING"
+          export ConnectionStrings__DefaultConnection="$TARGET_CONNECTION_STRING"
 
           chmod +x ./api-app/efbundle-iam
           chmod +x ./api-app/efbundle-hr
@@ -254,7 +290,7 @@ jobs:
               echo "Running ${bundle} migration bundle (attempt ${attempt}/${max_attempts})..."
               log_file="$(mktemp)"
 
-              if "./api-app/${bundle}" --connection "$AZURE_SQL_CONNECTION_STRING" 2>&1 | tee "$log_file"; then
+              if "./api-app/${bundle}" --connection "$TARGET_CONNECTION_STRING" 2>&1 | tee "$log_file"; then
                 rm -f "$log_file"
                 return 0
               fi
@@ -272,7 +308,7 @@ jobs:
                 return 1
               fi
 
-              echo "Azure SQL may still be resuming. Retrying in ${delay_seconds} seconds..."
+              echo "Database may still be resuming. Retrying in ${delay_seconds} seconds..."
               sleep "$delay_seconds"
               delay_seconds=$((delay_seconds * 2))
             done
@@ -283,28 +319,30 @@ jobs:
           run_bundle efbundle-shared
           run_bundle efbundle-banking
           run_bundle efbundle-controlplane
-        env:
-          AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__IamConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__HrConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__SharedConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__BankingConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__ControlPlaneConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          ConnectionStrings__DefaultConnection: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
 
-      - name: Remove temporary Azure SQL firewall rule
-        if: always() && vars.AZURE_SQL_NETWORK_MODE == 'PublicRunner' && steps.sql-firewall.outputs.rule_name != ''
+      - name: Remove temporary database firewall rule
+        if: always() && vars.AZURE_SQL_NETWORK_MODE == 'PublicRunner' && steps.db-firewall.outputs.rule_name != ''
         shell: bash
         env:
+          DATABASE_PROVIDER: ${{ vars.DATABASE_PROVIDER }}
           AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
           AZURE_SQL_SERVER_NAME: ${{ vars.AZURE_SQL_SERVER_NAME }}
-          FIREWALL_RULE_NAME: ${{ steps.sql-firewall.outputs.rule_name }}
+          FIREWALL_RULE_NAME: ${{ steps.db-firewall.outputs.rule_name }}
         run: |
-          az sql server firewall-rule delete \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --server "$AZURE_SQL_SERVER_NAME" \
-            --name "$FIREWALL_RULE_NAME" \
-            --output none
+          if [ "$DATABASE_PROVIDER" == "PostgreSql" ]; then
+            az postgres flexible-server firewall-rule delete \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --name "$AZURE_SQL_SERVER_NAME" \
+              --rule-name "$FIREWALL_RULE_NAME" \
+              --output none \
+              --yes
+          else
+            az sql server firewall-rule delete \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --server "$AZURE_SQL_SERVER_NAME" \
+              --name "$FIREWALL_RULE_NAME" \
+              --output none
+          fi
 
   deploy-app-service-api:
     name: Deploy API to Azure App Service

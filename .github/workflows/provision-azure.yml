@@ -44,4 +44,5 @@ jobs:
             sqlAdministratorLogin="btadmin"
             sqlAdministratorLoginPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD }}"
             deploymentTarget="${{ inputs.deployment_target }}"
+            databaseProvider="${{ vars.DATABASE_PROVIDER || 'SqlServer' }}"
             resourcePrefix="btprod"

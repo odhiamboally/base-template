@@ -18,6 +18,13 @@ param sqlAdministratorLoginPassword string
 ])
 param deploymentTarget string = 'container-apps'
 
+@description('The database provider to provision and configure.')
+@allowed([
+  'SqlServer'
+  'PostgreSql'
+])
+param databaseProvider string = 'SqlServer'
+
 // Resource Names
 var sqlServerName = '${resourcePrefix}-sql-${uniqueString(resourceGroup().id)}'
 var acrName = '${resourcePrefix}acr${uniqueString(resourceGroup().id)}'
@@ -27,11 +34,23 @@ var apiAppName = '${resourcePrefix}-api'
 var uiAppName = '${resourcePrefix}-ui'
 var appServicePlanName = '${resourcePrefix}-asp'
 
-module sql 'modules/sql.bicep' = {
+module sql 'modules/sql.bicep' = if (databaseProvider == 'SqlServer') {
   name: 'sqlDeploy'
   params: {
     serverName: sqlServerName
     databaseName: 'BT'
+    administratorLogin: sqlAdministratorLogin
+    administratorLoginPassword: sqlAdministratorLoginPassword
+    location: location
+    allowAzureIps: true
+  }
+}
+
+module postgres 'modules/postgres.bicep' = if (databaseProvider == 'PostgreSql') {
+  name: 'postgresDeploy'
+  params: {
+    serverName: sqlServerName // Using same naming convention for simplicity
+    databaseName: 'bt'
     administratorLogin: sqlAdministratorLogin
     administratorLoginPassword: sqlAdministratorLoginPassword
     location: location
@@ -48,6 +67,7 @@ module containerApps 'modules/containerapps.bicep' = if (deploymentTarget == 'co
     apiAppName: apiAppName
     uiAppName: uiAppName
     location: location
+    databaseProvider: databaseProvider
   }
 }
 
@@ -58,6 +78,7 @@ module appService 'modules/appservice.bicep' = if (deploymentTarget == 'app-serv
     apiAppName: apiAppName
     uiAppName: uiAppName
     location: location
+    databaseProvider: databaseProvider
   }
 }
 
@@ -72,8 +93,8 @@ module serviceBus 'modules/servicebus.bicep' = {
   }
 }
 
-output sqlServerFqdn string = sql.outputs.serverFullyQualifiedDomainName
-output sqlDatabaseName string = sql.outputs.databaseName
+output sqlServerFqdn string = databaseProvider == 'SqlServer' ? sql.outputs.serverFullyQualifiedDomainName : postgres.outputs.serverFullyQualifiedDomainName
+output sqlDatabaseName string = databaseProvider == 'SqlServer' ? sql.outputs.databaseName : postgres.outputs.databaseName
 
 output acrLoginServer string = deploymentTarget == 'container-apps' ? containerApps.outputs.acrLoginServer : ''
 output apiHost string = deploymentTarget == 'container-apps' ? containerApps.outputs.apiFqdn : appService.outputs.apiDefaultHostName

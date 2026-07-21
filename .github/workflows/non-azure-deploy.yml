@@ -127,7 +127,7 @@ jobs:
             PROVIDER="SqlServer"
           fi
           echo "Building migration bundles for provider: $PROVIDER"
-          
+
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Iam${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-iam --configuration Release
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Hr${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-hr --configuration Release
           dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Shared${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-shared --configuration Release
