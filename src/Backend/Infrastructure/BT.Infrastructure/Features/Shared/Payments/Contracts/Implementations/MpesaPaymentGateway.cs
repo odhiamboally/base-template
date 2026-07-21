@@ -267,8 +267,7 @@ internal sealed class MpesaPaymentGateway(
             var request = new MpesaC2BSimulateRequest(
                 _settings.C2BShortCode,
                 "CustomerPayBillOnline",
-                //decimal.ToInt32(decimal.Round(amount, 0, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture),
-                amount.ToString("F2", CultureInfo.InvariantCulture),
+                decimal.ToInt32(decimal.Round(amount, 0, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture),
                 NormalizeMpesaPhone(phoneNumber),
                 billRefNumber);
 

@@ -79,4 +79,35 @@ internal static partial class LogDefinitions
     [LoggerMessage(EventId = 2323, Level = LogLevel.Error, Message = "Registration failed for employee {Email}. Rolling back changes.")]
     public static partial void LogEmployeeRegistrationFailed(ILogger logger, string email, Exception ex);
 
+    [LoggerMessage(EventId = 2324, Level = LogLevel.Information, Message = "PaymentEventConsumer: Received PaymentCompletedEvent for CustomerReference: {CustomerReference}, Amount: {Amount} {Currency}")]
+    public static partial void LogPaymentCompleted(ILogger logger, string customerReference, decimal amount, string currency);
+
+    [LoggerMessage(EventId = 2325, Level = LogLevel.Warning, Message = "PaymentEventConsumer: Received PaymentFailedEvent for CustomerReference: {CustomerReference}, Reason: {FailureReason}")]
+    public static partial void LogPaymentFailed(ILogger logger, string customerReference, string failureReason);
+
+    [LoggerMessage(EventId = 2333, Level = LogLevel.Information, Message = "PaymentEventConsumer: Received PaymentCancelledEvent for CustomerReference: {CustomerReference}, Reason: {Reason}")]
+    public static partial void LogPaymentCancelled(ILogger logger, string customerReference, string reason);
+
+    // Mpesa STK Callback
+    [LoggerMessage(EventId = 2326, Level = LogLevel.Warning, Message = "Invalid M-Pesa STK callback payload received.")]
+    public static partial void LogMpesaStkInvalidPayload(ILogger logger);
+
+    [LoggerMessage(EventId = 2327, Level = LogLevel.Warning, Message = "M-Pesa STK Callback received for unknown CheckoutRequestID: {CheckoutRequestId}")]
+    public static partial void LogMpesaStkUnknownCheckoutRequestId(ILogger logger, string checkoutRequestId);
+
+    [LoggerMessage(EventId = 2328, Level = LogLevel.Error, Message = "Error processing M-Pesa STK callback.")]
+    public static partial void LogMpesaStkCallbackProcessingError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 2329, Level = LogLevel.Information, Message = "M-Pesa STK Callback processed successfully for CheckoutRequestID: {CheckoutRequestId} with ResultCode: {ResultCode}")]
+    public static partial void LogMpesaStkCallbackProcessed(ILogger logger, string checkoutRequestId, int resultCode);
+
+    // Mpesa C2B Confirmation
+    [LoggerMessage(EventId = 2330, Level = LogLevel.Information, Message = "M-Pesa C2B Confirmation received for TransID: {TransId}, BillRefNumber: {BillRefNumber}")]
+    public static partial void LogMpesaC2bConfirmationReceived(ILogger logger, string transId, string billRefNumber);
+
+    [LoggerMessage(EventId = 2331, Level = LogLevel.Warning, Message = "M-Pesa C2B Confirmation missing essential fields.")]
+    public static partial void LogMpesaC2bInvalidPayload(ILogger logger);
+
+    [LoggerMessage(EventId = 2332, Level = LogLevel.Error, Message = "Error processing M-Pesa C2B confirmation.")]
+    public static partial void LogMpesaC2bConfirmationError(ILogger logger, Exception ex);
 }

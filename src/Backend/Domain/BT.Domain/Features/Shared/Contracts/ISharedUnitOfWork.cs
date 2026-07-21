@@ -5,6 +5,7 @@ using BT.Domain.Features.Shared.EmailTemplates.Contracts.Repositories;
 using BT.Domain.Features.Shared.FailedMessages.Contracts.Repositories;
 using BT.Domain.Features.Shared.Lookups.Contracts.Repositories;
 using BT.Domain.Features.Shared.Payments.Contracts.Repositories;
+using BT.Domain.Features.Shared.TenantSettings.Contracts.Repositories;
 
 namespace BT.Domain.Features.Shared.Contracts;
 
@@ -14,6 +15,7 @@ public interface ISharedUnitOfWork : ITransactionalUnitOfWork
     IEmailTemplateRepository EmailTemplateRepository { get; }
     IFailedMessageRepository FailedMessageRepository { get; }
     IPaymentRecordRepository PaymentRecordRepository { get; }
+    ITenantSettingRepository TenantSettingRepository { get; }
 
     Task<int> CompleteWithEventsAsync(List<IIntegrationEvent>? appEvents = null, CancellationToken ct = default);
 }

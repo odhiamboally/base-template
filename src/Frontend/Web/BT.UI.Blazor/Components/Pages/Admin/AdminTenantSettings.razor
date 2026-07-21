@@ -1,0 +1,205 @@
+@page "/admin/tenant-settings"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@using BT.SharedKernel.Features.Shared.TenantSettings.Dtos
+@using BT.UI.Blazor.Features.Shared.TenantSettings.Contracts
+@using BT.UI.Blazor.Features.Shared.TenantSettings.Components
+@using Microsoft.AspNetCore.Authorization
+@inject ITenantSettingsService TenantSettingsService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Tenant Settings</PageTitle>
+
+<div class="panel-heading">
+    <div>
+        <span class="eyebrow">Tenant settings</span>
+        <h2>Manage settings</h2>
+    </div>
+    <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Class="bt-mud-primary bt-small-button" OnClick="OpenCreateDialogAsync">Create Setting</MudButton>
+</div>
+
+<div class="list-toolbar">
+    <MudTextField @bind-Value="_searchText"
+                  Placeholder="Search key, description..."
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"
+                  Immediate="false"
+                  DebounceInterval="400"
+                  OnDebounceIntervalElapsed="ApplyFiltersAsync"
+                  OnKeyDown="HandleSearchKeyDown" />
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" OnClick="LoadSettingsAsync" title="Refresh" />
+</div>
+
+@if (_isLoading)
+{
+    <MudProgressLinear Color="Color.Success" Indeterminate="true" Class="my-2" />
+}
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <MudAlert Severity="@_messageSeverity" Variant="Variant.Outlined" Dense="true" Class="my-2">@_message</MudAlert>
+}
+
+<div class="bt-table-scroll">
+    <MudTable Items="_filteredSettings" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="20" Height="calc(100vh - 25rem)" Style="min-width: 800px;" Breakpoint="Breakpoint.None">
+        <HeaderContent>
+            <MudTh>Key</MudTh>
+            <MudTh>Value</MudTh>
+            <MudTh>Description</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh Style="width: 8rem;">Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Key">@context.Key</MudTd>
+            <MudTd DataLabel="Value">
+                @if(context.Value == "***")
+                {
+                    <span class="text-muted">***</span>
+                }
+                else
+                {
+                    <span class="text-truncate" style="max-width: 250px; display: inline-block;">@context.Value</span>
+                }
+            </MudTd>
+            <MudTd DataLabel="Description">@context.Description</MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip T="string" Size="Size.Small" Color="Color.Success">Active</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Actions">
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true">
+                    <MudMenuItem OnClick="@(() => OpenEditDialogAsync(context))">Edit</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => ConfirmDeleteAsync(context))">Delete</MudMenuItem>
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[] { 20, 50, 100 }" />
+        </PagerContent>
+    </MudTable>
+</div>
+
+@code {
+    private List<TenantSettingResponse> _settings = [];
+    private List<TenantSettingResponse> _filteredSettings = [];
+    private bool _isLoading;
+    private string? _message;
+    private Severity _messageSeverity = Severity.Error;
+    private string _searchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettingsAsync();
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        _isLoading = true;
+        _message = null;
+        StateHasChanged();
+
+        var response = await TenantSettingsService.GetTenantSettingsAsync();
+        
+        if (response.IsSuccess && response.Data != null)
+        {
+            _settings = response.Data.ToList();
+            await ApplyFiltersAsync();
+        }
+        else
+        {
+            _message = response.Message ?? "Failed to load tenant settings.";
+            _messageSeverity = Severity.Error;
+            _settings = [];
+            _filteredSettings = [];
+        }
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private Task ApplyFiltersAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_searchText))
+        {
+            _filteredSettings = _settings;
+        }
+        else
+        {
+            var search = _searchText.ToLowerInvariant();
+            _filteredSettings = _settings.Where(s => 
+                (s.Key?.ToLowerInvariant().Contains(search) == true) ||
+                (s.Description?.ToLowerInvariant().Contains(search) == true)
+            ).ToList();
+        }
+        
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyFiltersAsync();
+        }
+    }
+
+    private async Task OpenCreateDialogAsync()
+    {
+        var parameters = new DialogParameters { { "ExistingSetting", null } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        var dialog = await DialogService.ShowAsync<TenantSettingFormDialog>("Create Tenant Setting", parameters, options);
+        var result = await dialog.Result;
+        
+        if (result != null && !result.Canceled)
+        {
+            await LoadSettingsAsync();
+        }
+    }
+
+    private async Task OpenEditDialogAsync(TenantSettingResponse setting)
+    {
+        var parameters = new DialogParameters { { "ExistingSetting", setting } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        var dialog = await DialogService.ShowAsync<TenantSettingFormDialog>("Edit Tenant Setting", parameters, options);
+        var result = await dialog.Result;
+        
+        if (result != null && !result.Canceled)
+        {
+            await LoadSettingsAsync();
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(TenantSettingResponse setting)
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Delete Confirmation",
+            $"Are you sure you want to delete the setting '{setting.Key}'?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+        
+        if (result == true)
+        {
+            _isLoading = true;
+            StateHasChanged();
+            
+            var response = await TenantSettingsService.DeleteTenantSettingAsync(setting.Id);
+            
+            if (response.IsSuccess)
+            {
+                Snackbar.Add("Setting deleted successfully.", Severity.Success);
+                await LoadSettingsAsync();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Failed to delete setting.", Severity.Error);
+                _isLoading = false;
+                StateHasChanged();
+            }
+        }
+    }
+}

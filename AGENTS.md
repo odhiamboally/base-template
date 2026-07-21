@@ -115,6 +115,7 @@ This file is the canonical source of truth and working contract for AI coding to
 
 - Preserve user changes. Do not revert unrelated work.
 - Prefer small, focused commits with clear messages.
+- When adding or modifying constructor dependencies for core abstractions (like `DbContext`), ensure the dependency injection configurations in the integration tests are also updated to provide those services.
 - Before opening or updating a PR, run:
   - `dotnet build src\Backend\Api\BT.Api\BT.Api.csproj --no-restore -p:UseSharedCompilation=false`
   - `dotnet test tests\BT.Tests.Architecture\BT.Tests.Architecture.csproj --no-restore -p:UseSharedCompilation=false`

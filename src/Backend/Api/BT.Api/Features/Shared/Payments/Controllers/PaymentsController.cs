@@ -50,6 +50,30 @@ public sealed class PaymentsController(ISender sender, ILogger<PaymentsControlle
         return HandleResponse(response);
     }
 
+    [HttpGet("capabilities")]
+    [RequirePermission("payments.view")]
+    [EnableRateLimiting("ApiPolicy")]
+    public async Task<IActionResult> Capabilities(CancellationToken ct)
+    {
+        var response = await sender
+            .Send(new GetPaymentCapabilitiesQuery(), ct)
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpGet("history")]
+    [RequirePermission("payments.view")]
+    [EnableRateLimiting("ApiPolicy")]
+    public async Task<IActionResult> History([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    {
+        var response = await sender
+            .Send(new GetPaymentHistoryQuery(page, pageSize), ct)
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
     [HttpPost("stripe/webhook")]
     [AllowAnonymous]
     [EnableRateLimiting("ApiPolicy")]
@@ -64,7 +88,7 @@ public sealed class PaymentsController(ISender sender, ILogger<PaymentsControlle
         Request.Body.Position = 0;
 
         var response = await sender
-            .Send(new VerifyPaymentWebhookCommand("Stripe", payload, signatureHeader), ct)
+            .Send(new ProcessPaymentWebhookCommand("Stripe", payload, signatureHeader), ct)
             .ConfigureAwait(false);
 
         return HandleResponse(response);
@@ -113,7 +137,7 @@ public sealed class PaymentsController(ISender sender, ILogger<PaymentsControlle
             onError: error =>
             {
                 PaymentLogDefinitions.LogMpesaC2bConfirmationError(logger, error.Code);
-                return Ok(new { ResultCode = "0", ResultDesc = "Accepted" });
+                return Ok(new { ResultCode = "0", ResultDesc = "Accepted" }); 
             });
     }
 

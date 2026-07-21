@@ -11,6 +11,8 @@ using BT.Infrastructure.Extensions;
 using BT.Infrastructure.Features.HR.Extensions;
 using BT.Infrastructure.Features.IAM.Extensions;
 using BT.Infrastructure.Features.IAM.Users.Seeding;
+using BT.Infrastructure.Middleware;
+using BT.Persistence.Features.ControlPlane.Extensions;
 using BT.Persistence.Features.Shared.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -81,6 +83,7 @@ try
     builder.Services.AddHrModule(builder.Configuration);
     builder.Services.AddBankingModule(builder.Configuration);
     builder.Services.AddSharedPersistence(builder.Configuration, builder.Environment);
+    builder.Services.AddControlPlanePersistence(builder.Configuration, builder.Environment);
     builder.Services.ConfigureOutBoxMessagingWithGlobalRetry(builder.Configuration);
 
     builder.Services.AddControllers()
@@ -249,6 +252,8 @@ try
     }
 
     app.UseRouting();
+
+    app.UseMiddleware<TenantResolutionMiddleware>();
 
     app.UseOutputCache();
 

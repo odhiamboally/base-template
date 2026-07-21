@@ -7,6 +7,7 @@ using BT.Domain.Features.Banking.Customers.Contracts.Repositories;
 using BT.Domain.Features.HR.Employees.Contracts.Repositories;
 using BT.Domain.Features.IAM.Users.Contracts.Repositories;
 using BT.Domain.Features.Shared.Payments.Contracts.Repositories;
+using BT.Domain.Features.Shared.TenantSettings.Contracts.Repositories;
 using BT.Domain.Shared.Contracts.Repositories;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
@@ -23,6 +24,7 @@ public sealed class SharedUnitOfWork(
     IEmailTemplateRepository emailTemplateRepository,
     IFailedMessageRepository failedMessageRepository,
     IPaymentRecordRepository paymentRecordRepository,
+    ITenantSettingRepository tenantSettingRepository,
     IPublisher publisher,
     ILogger<SharedUnitOfWork> logger
 ) : BaseUnitOfWork<SharedDBContext>(context, publisher, logger), ISharedUnitOfWork
@@ -35,6 +37,7 @@ public sealed class SharedUnitOfWork(
     public IEmailTemplateRepository EmailTemplateRepository { get; } = emailTemplateRepository;
     public IFailedMessageRepository FailedMessageRepository { get; } = failedMessageRepository;
     public IPaymentRecordRepository PaymentRecordRepository { get; } = paymentRecordRepository;
+    public ITenantSettingRepository TenantSettingRepository { get; } = tenantSettingRepository;
 
     public async Task<int> CompleteWithEventsAsync(List<IIntegrationEvent>? appEvents = null, CancellationToken ct = default)
     {

@@ -12,7 +12,8 @@ internal static class IamReferenceDataSeed
         CreateContext("018fd81d-2c94-7ad0-a4a3-f1edb9d10101", "Banking", "Banking", "Customer, accounts, loans, and financial operations."),
         CreateContext("018fd81d-2c94-7ad0-a4a3-f1edb9d10102", "HR", "Human Resources", "Departments, employees, and staff operations."),
         CreateContext("018fd81d-2c94-7ad0-a4a3-f1edb9d10103", "IAM", "Identity and Access", "Users, roles, permissions, sessions, and devices."),
-        CreateContext("018fd81d-2c94-7ad0-a4a3-f1edb9d10104", "Platform", "Platform", "Cross-cutting platform configuration and navigation.")
+        CreateContext("018fd81d-2c94-7ad0-a4a3-f1edb9d10104", "Platform", "Platform", "Cross-cutting platform configuration and navigation."),
+        CreateContext("018fd81d-2c94-7ad0-a4a3-f1edb9d10105", "Shared", "Shared", "Cross-cutting platform services and reusable capability showcases.")
     ];
 
     internal static IReadOnlyList<PermissionResource> PermissionResources =>
@@ -23,7 +24,8 @@ internal static class IamReferenceDataSeed
         CreateResource("018fd81d-2c94-7ad0-a4a3-f1edb9d10204", "menus", "Menus", "Platform", "Navigation registry and menu visibility."),
         CreateResource("018fd81d-2c94-7ad0-a4a3-f1edb9d10205", "permissions", "Permissions", "IAM", "Permission catalog and assignment surface."),
         CreateResource("018fd81d-2c94-7ad0-a4a3-f1edb9d10206", "roles", "Roles", "IAM", "Role catalog and permission bundles."),
-        CreateResource("018fd81d-2c94-7ad0-a4a3-f1edb9d10207", "users", "Users", "IAM", "Application user accounts.")
+        CreateResource("018fd81d-2c94-7ad0-a4a3-f1edb9d10207", "users", "Users", "IAM", "Application user accounts."),
+        CreateResource("018fd81d-2c94-7ad0-a4a3-f1edb9d10208", "payments", "Payments", "Shared", "Payment checkout, status, and provider administration." )
     ];
 
     internal static IReadOnlyList<PermissionAction> PermissionActions =>
@@ -34,7 +36,8 @@ internal static class IamReferenceDataSeed
         CreateAction("018fd81d-2c94-7ad0-a4a3-f1edb9d10304", "delete", "Delete", "Soft-delete or remove records."),
         CreateAction("018fd81d-2c94-7ad0-a4a3-f1edb9d10305", "deactivate", "Deactivate", "Disable active records or accounts."),
         CreateAction("018fd81d-2c94-7ad0-a4a3-f1edb9d10306", "manage_permissions", "Manage permissions", "Assign or revoke permissions."),
-        CreateAction("018fd81d-2c94-7ad0-a4a3-f1edb9d10307", "manage_roles", "Manage roles", "Assign or revoke roles.")
+        CreateAction("018fd81d-2c94-7ad0-a4a3-f1edb9d10307", "manage_roles", "Manage roles", "Assign or revoke roles."),
+        CreateAction("018fd81d-2c94-7ad0-a4a3-f1edb9d10308", "admin", "Administer", "Perform restricted provider administration actions.")
     ];
 
     internal static IReadOnlyList<MenuPlacement> MenuPlacements =>
@@ -56,7 +59,8 @@ internal static class IamReferenceDataSeed
         CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10509", "LockPerson", "Security lock"),
         CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10510", "Menu", "Generic menu"),
         CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10511", "MenuOpen", "Menu"),
-        CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10512", "Settings", "Settings")
+        CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10512", "Settings", "Settings"),
+        CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10513", "CreditCard", "Credit card")
     ];
 
     internal static IReadOnlyList<MenuRoute> MenuRoutes =>
@@ -73,7 +77,9 @@ internal static class IamReferenceDataSeed
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10610", "admin-settings", "Settings", "/admin/settings", "AdminCenter"),
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10611", "admin-user-devices", "User Devices", "/admin/user-devices", "AdminCenter"),
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10612", "admin-users", "Users", "/admin/users", "AdminCenter"),
-        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10613", "admin-access-catalog", "Access Catalog", "/admin/access-catalog", "AdminCenter")
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10613", "admin-access-catalog", "Access Catalog", "/admin/access-catalog", "AdminCenter"),
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10614", "features", "Features", "/features", "Sidebar"),
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10615", "features-payments", "Payments", "/features/payments", "Sidebar")
     ];
 
     private static PermissionContext CreateContext(string id, string key, string label, string description)

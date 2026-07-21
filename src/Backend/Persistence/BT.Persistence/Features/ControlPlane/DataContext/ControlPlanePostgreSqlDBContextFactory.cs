@@ -1,0 +1,20 @@
+using BT.Persistence.Common.DesignTime;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace BT.Persistence.Features.ControlPlane.DataContext;
+
+public class ControlPlanePostgreSqlDBContextFactory : IDesignTimeDbContextFactory<ControlPlanePostgreSqlDBContext>
+{
+    public ControlPlanePostgreSqlDBContext CreateDbContext(string[] args)
+    {
+        var configuration = DesignTimeConfigurationFactory.Create();
+        var optionsBuilder = new DbContextOptionsBuilder<ControlPlanePostgreSqlDBContext>();
+        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "ControlPlaneConnection");
+
+        optionsBuilder.UseNpgsql(
+            connectionString,
+            pgOptions => DesignTimeConfigurationFactory.ConfigurePostgreSql(pgOptions, "__EFMigrationsHistory_ControlPlane"));
+        return new ControlPlanePostgreSqlDBContext(optionsBuilder.Options);
+    }
+}
