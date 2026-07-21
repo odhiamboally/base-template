@@ -48,11 +48,8 @@ public class TenantResolutionMiddleware
                 var tenant = await uow.Tenants
                     .FirstOrDefaultAsync(t => t.HostName == host && t.Status == TenantStatus.Active);
 
-                if (tenant != null)
-                {
-                    tenantId = tenant.Id;
-                    _cache.Set(cacheKey, tenantId, TimeSpan.FromMinutes(5));
-                }
+                tenantId = tenant?.Id ?? Guid.Empty;
+                _cache.Set(cacheKey, tenantId, TimeSpan.FromMinutes(5));
             }
 
             if (tenantId != Guid.Empty)

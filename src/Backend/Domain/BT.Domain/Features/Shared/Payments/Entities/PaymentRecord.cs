@@ -65,7 +65,7 @@ public class PaymentRecord : BaseEntity, IAuditable, ISoftDeletable, IHasDomainE
         }
         if (statusMessage != null)
         {
-            StatusMessage = statusMessage.Trim();
+            StatusMessage = string.IsNullOrWhiteSpace(statusMessage) ? null : statusMessage.Trim();
         }
 
         if (status == PaymentStatus.Success)

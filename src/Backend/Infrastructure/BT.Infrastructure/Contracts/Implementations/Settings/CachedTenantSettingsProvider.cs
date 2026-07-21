@@ -69,7 +69,14 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
 
             if (setting != null)
             {
-                plainTextValue = _encryptionService.Decrypt(setting.Value);
+                try
+                {
+                    plainTextValue = _encryptionService.Decrypt(setting.Value);
+                }
+                catch
+                {
+                    plainTextValue = setting.Value;
+                }
             }
         }
         catch (Exception ex)
@@ -119,9 +126,14 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
                 return (T)(object)stringValue;
             }
             
-            if (typeof(T).IsPrimitive || typeof(T) == typeof(decimal) || typeof(T) == typeof(Guid))
+            if (typeof(T) == typeof(Guid))
             {
-                return (T)Convert.ChangeType(stringValue, typeof(T));
+                return (T)(object)Guid.Parse(stringValue);
+            }
+
+            if (typeof(T).IsPrimitive || typeof(T) == typeof(decimal))
+            {
+                return (T)Convert.ChangeType(stringValue, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
             }
 
             // Otherwise assume JSON

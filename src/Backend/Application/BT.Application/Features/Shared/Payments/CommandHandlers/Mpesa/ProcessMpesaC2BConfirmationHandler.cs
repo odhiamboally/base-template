@@ -54,7 +54,7 @@ internal sealed class ProcessMpesaC2BConfirmationHandler(
                 // Unsolicited C2B payment (e.g. they just sent money to the PayBill without checking out first)
                 var money = new Money(amountValue, "KES");
                 var newRecord = new PaymentRecord(
-                    id: Guid.NewGuid(),
+                    id: Guid.CreateVersion7(),
                     amount: money,
                     description: "M-Pesa C2B Payment",
                     customerReference: string.IsNullOrWhiteSpace(billRefNumber) ? transId : billRefNumber,

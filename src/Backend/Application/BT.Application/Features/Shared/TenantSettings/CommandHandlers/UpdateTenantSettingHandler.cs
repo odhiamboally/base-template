@@ -36,11 +36,13 @@ internal sealed class UpdateTenantSettingHandler(
         // Only update the value if it's not the obscured mask "***"
         if (request.Request.Value != "***")
         {
-            setting.Value = encryptionService.Encrypt(request.Request.Value);
+            setting.Value = TenantSettingMapping.IsSensitiveKey(request.Request.Key)
+                ? encryptionService.Encrypt(request.Request.Value)
+                : request.Request.Value;
         }
 
         setting.Description = request.Request.Description;
-        setting.GetType().GetMethod("SetUpdatedInfo", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.Invoke(setting, [request.UserId]);
+
 
         await unitOfWork.TenantSettingRepository.UpdateAsync(setting, cancellationToken).ConfigureAwait(false);
         await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
