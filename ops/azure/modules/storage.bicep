@@ -49,7 +49,7 @@ resource dataProtectionContainer 'Microsoft.Storage/storageAccounts/blobServices
 var storageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 
 // Grant API App access to Storage Blob Data Contributor
-resource apiStorageAccess 'Microsoft.Authorization/roleAssignments@2022-04-01-preview' = if (!empty(apiPrincipalId)) {
+resource apiStorageAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(apiPrincipalId)) {
   name: guid(storageAccount.id, apiPrincipalId, storageBlobDataContributorRoleId)
   scope: storageAccount
   properties: {
@@ -60,7 +60,7 @@ resource apiStorageAccess 'Microsoft.Authorization/roleAssignments@2022-04-01-pr
 }
 
 // Grant UI App access to Storage Blob Data Contributor
-resource uiStorageAccess 'Microsoft.Authorization/roleAssignments@2022-04-01-preview' = if (!empty(uiPrincipalId)) {
+resource uiStorageAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(uiPrincipalId)) {
   name: guid(storageAccount.id, uiPrincipalId, storageBlobDataContributorRoleId)
   scope: storageAccount
   properties: {

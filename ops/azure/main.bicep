@@ -105,8 +105,8 @@ module keyVault 'modules/keyvault.bicep' = {
   params: {
     keyVaultName: keyVaultName
     location: location
-    apiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.apiPrincipalId : appService.outputs.apiPrincipalId
-    uiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.uiPrincipalId : appService.outputs.uiPrincipalId
+    apiPrincipalId: deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiPrincipalId ?? '') : (appService.outputs.?apiPrincipalId ?? '')
+    uiPrincipalId: deploymentTarget == 'container-apps' ? (containerApps.outputs.?uiPrincipalId ?? '') : (appService.outputs.?uiPrincipalId ?? '')
   }
 }
 
@@ -115,14 +115,14 @@ module storageAccount 'modules/storage.bicep' = {
   params: {
     storageAccountName: storageAccountName
     location: location
-    apiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.apiPrincipalId : appService.outputs.apiPrincipalId
-    uiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.uiPrincipalId : appService.outputs.uiPrincipalId
+    apiPrincipalId: deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiPrincipalId ?? '') : (appService.outputs.?apiPrincipalId ?? '')
+    uiPrincipalId: deploymentTarget == 'container-apps' ? (containerApps.outputs.?uiPrincipalId ?? '') : (appService.outputs.?uiPrincipalId ?? '')
   }
 }
 
-output sqlServerFqdn string = databaseProvider == 'SqlServer' ? sql.outputs.serverFullyQualifiedDomainName : postgres.outputs.serverFullyQualifiedDomainName
-output sqlDatabaseName string = databaseProvider == 'SqlServer' ? sql.outputs.databaseName : postgres.outputs.databaseName
+output sqlServerFqdn string = databaseProvider == 'SqlServer' ? (sql.outputs.?serverFullyQualifiedDomainName ?? '') : (postgres.outputs.?serverFullyQualifiedDomainName ?? '')
+output sqlDatabaseName string = databaseProvider == 'SqlServer' ? (sql.outputs.?databaseName ?? '') : (postgres.outputs.?databaseName ?? '')
 
-output acrLoginServer string = deploymentTarget == 'container-apps' ? containerApps.outputs.acrLoginServer : ''
-output apiHost string = deploymentTarget == 'container-apps' ? containerApps.outputs.apiFqdn : appService.outputs.apiDefaultHostName
-output uiHost string = deploymentTarget == 'container-apps' ? containerApps.outputs.uiFqdn : appService.outputs.uiDefaultHostName
+output acrLoginServer string = deploymentTarget == 'container-apps' ? (containerApps.outputs.?acrLoginServer ?? '') : ''
+output apiHost string = deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiFqdn ?? '') : (appService.outputs.?apiDefaultHostName ?? '')
+output uiHost string = deploymentTarget == 'container-apps' ? (containerApps.outputs.?uiFqdn ?? '') : (appService.outputs.?uiDefaultHostName ?? '')

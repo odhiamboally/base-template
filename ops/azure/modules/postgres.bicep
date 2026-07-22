@@ -31,9 +31,6 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-03-01-pr
     storage: {
       storageSizeGB: 32
     }
-    network: {
-      publicNetworkAccess: 'Enabled'
-    }
   }
 }
 

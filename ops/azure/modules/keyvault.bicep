@@ -29,7 +29,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
 
 // Grant API App access to Key Vault Secrets
-resource apiKeyVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04-01-preview' = if (!empty(apiPrincipalId)) {
+resource apiKeyVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(apiPrincipalId)) {
   name: guid(keyVault.id, apiPrincipalId, keyVaultSecretsUserRoleId)
   scope: keyVault
   properties: {
@@ -40,7 +40,7 @@ resource apiKeyVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04-01-p
 }
 
 // Grant UI App access to Key Vault Secrets
-resource uiKeyVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04-01-preview' = if (!empty(uiPrincipalId)) {
+resource uiKeyVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(uiPrincipalId)) {
   name: guid(keyVault.id, uiPrincipalId, keyVaultSecretsUserRoleId)
   scope: keyVault
   properties: {
