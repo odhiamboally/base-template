@@ -69,6 +69,10 @@ resource apiApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'AllowedOrigins__0'
           value: 'https://${uiAppName}.azurewebsites.net'
         }
+        {
+          name: 'Messaging__Enabled'
+          value: 'false'
+        }
       ]
     }
   }

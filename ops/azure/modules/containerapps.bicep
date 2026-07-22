@@ -109,6 +109,10 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'AllowedOrigins__0'
               value: 'https://${uiAppName}.${containerAppEnv.properties.defaultDomain}'
             }
+            {
+              name: 'Messaging__Enabled'
+              value: 'false'
+            }
           ]
           resources: {
             cpu: json('0.5')
