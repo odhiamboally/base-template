@@ -105,6 +105,10 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'DataProtection__BlobKeyUri'
               value: empty(storageAccountName) ? '' : 'https://${storageAccountName}.blob.${environment().suffixes.storage}/dataprotection-keys/keyring.xml'
             }
+            {
+              name: 'AllowedOrigins__0'
+              value: 'https://${uiAppName}.${containerAppEnv.properties.defaultDomain}'
+            }
           ]
           resources: {
             cpu: json('0.5')
@@ -140,6 +144,12 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
         {
           name: 'ui'
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'ApiSettings__BaseUrl'
+              value: 'https://${apiAppName}.${containerAppEnv.properties.defaultDomain}/'
+            }
+          ]
           resources: {
             cpu: json('0.5')
             memory: '1.0Gi'

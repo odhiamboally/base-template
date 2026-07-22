@@ -65,6 +65,10 @@ resource apiApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'DataProtection__BlobKeyUri'
           value: empty(storageAccountName) ? '' : 'https://${storageAccountName}.blob.${environment().suffixes.storage}/dataprotection-keys/keyring.xml'
         }
+        {
+          name: 'AllowedOrigins__0'
+          value: 'https://${uiAppName}.azurewebsites.net'
+        }
       ]
     }
   }
@@ -82,6 +86,12 @@ resource uiApp 'Microsoft.Web/sites@2022-09-01' = {
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|8.0'
       alwaysOn: true
+      appSettings: [
+        {
+          name: 'ApiSettings__BaseUrl'
+          value: 'https://${apiAppName}.azurewebsites.net/'
+        }
+      ]
     }
   }
 }
