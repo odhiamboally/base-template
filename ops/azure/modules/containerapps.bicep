@@ -110,8 +110,8 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: 'https://${uiAppName}.${containerAppEnv.properties.defaultDomain}'
             }
             {
-              name: 'Messaging__Enabled'
-              value: 'false'
+              name: 'Messaging__Transport'
+              value: 'AzureServiceBus'
             }
           ]
           resources: {
