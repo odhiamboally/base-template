@@ -88,7 +88,7 @@ resource uiApp 'Microsoft.Web/sites@2022-09-01' = {
       alwaysOn: true
       appSettings: [
         {
-          name: 'ApiSettings__BaseUrl'
+          name: 'BackendApi__BaseUrl'
           value: 'https://${apiAppName}.azurewebsites.net/'
         }
       ]

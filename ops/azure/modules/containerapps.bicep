@@ -146,7 +146,7 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
           env: [
             {
-              name: 'ApiSettings__BaseUrl'
+              name: 'BackendApi__BaseUrl'
               value: 'https://${apiAppName}.${containerAppEnv.properties.defaultDomain}/'
             }
           ]
