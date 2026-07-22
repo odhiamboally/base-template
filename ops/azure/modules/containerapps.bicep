@@ -22,6 +22,9 @@ param databaseProvider string
 @description('The URI of the Key Vault (optional)')
 param keyVaultUri string = ''
 
+@description('The name of the Storage Account (optional)')
+param storageAccountName string = ''
+
 // Container Registry
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: containerRegistryName
@@ -89,6 +92,18 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'KeyVault__Uri'
               value: keyVaultUri
+            }
+            {
+              name: 'ProfileImageStorage__AzureBlob__ContainerUri'
+              value: empty(storageAccountName) ? '' : 'https://${storageAccountName}.blob.${environment().suffixes.storage}/profile-images'
+            }
+            {
+              name: 'ProfileImageStorage__Provider'
+              value: 'AzureBlob'
+            }
+            {
+              name: 'DataProtection__BlobKeyUri'
+              value: empty(storageAccountName) ? '' : 'https://${storageAccountName}.blob.${environment().suffixes.storage}/dataprotection-keys/keyring.xml'
             }
           ]
           resources: {

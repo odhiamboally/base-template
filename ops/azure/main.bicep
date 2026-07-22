@@ -35,6 +35,7 @@ var uiAppName = '${resourcePrefix}-ui'
 var appServicePlanName = '${resourcePrefix}-asp'
 var keyVaultName = take('${resourcePrefix}kv${uniqueString(resourceGroup().id)}', 24)
 var keyVaultUri = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
+var storageAccountName = take('${resourcePrefix}st${uniqueString(resourceGroup().id)}', 24)
 
 module sql 'modules/sql.bicep' = if (databaseProvider == 'SqlServer') {
   name: 'sqlDeploy'
@@ -71,6 +72,7 @@ module containerApps 'modules/containerapps.bicep' = if (deploymentTarget == 'co
     location: location
     databaseProvider: databaseProvider
     keyVaultUri: keyVaultUri
+    storageAccountName: storageAccountName
   }
 }
 
@@ -83,6 +85,7 @@ module appService 'modules/appservice.bicep' = if (deploymentTarget == 'app-serv
     location: location
     databaseProvider: databaseProvider
     keyVaultUri: keyVaultUri
+    storageAccountName: storageAccountName
   }
 }
 
@@ -101,6 +104,16 @@ module keyVault 'modules/keyvault.bicep' = {
   name: 'keyVaultDeploy'
   params: {
     keyVaultName: keyVaultName
+    location: location
+    apiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.apiPrincipalId : appService.outputs.apiPrincipalId
+    uiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.uiPrincipalId : appService.outputs.uiPrincipalId
+  }
+}
+
+module storageAccount 'modules/storage.bicep' = {
+  name: 'storageAccountDeploy'
+  params: {
+    storageAccountName: storageAccountName
     location: location
     apiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.apiPrincipalId : appService.outputs.apiPrincipalId
     uiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.uiPrincipalId : appService.outputs.uiPrincipalId
