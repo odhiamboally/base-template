@@ -33,6 +33,8 @@ var acaEnvName = '${resourcePrefix}-env-${uniqueString(resourceGroup().id)}'
 var apiAppName = '${resourcePrefix}-api'
 var uiAppName = '${resourcePrefix}-ui'
 var appServicePlanName = '${resourcePrefix}-asp'
+var keyVaultName = take('${resourcePrefix}kv${uniqueString(resourceGroup().id)}', 24)
+var keyVaultUri = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
 
 module sql 'modules/sql.bicep' = if (databaseProvider == 'SqlServer') {
   name: 'sqlDeploy'
@@ -68,6 +70,7 @@ module containerApps 'modules/containerapps.bicep' = if (deploymentTarget == 'co
     uiAppName: uiAppName
     location: location
     databaseProvider: databaseProvider
+    keyVaultUri: keyVaultUri
   }
 }
 
@@ -79,6 +82,7 @@ module appService 'modules/appservice.bicep' = if (deploymentTarget == 'app-serv
     uiAppName: uiAppName
     location: location
     databaseProvider: databaseProvider
+    keyVaultUri: keyVaultUri
   }
 }
 
@@ -90,6 +94,16 @@ module serviceBus 'modules/servicebus.bicep' = {
     namespaceName: serviceBusName
     location: location
     sku: 'Standard'
+  }
+}
+
+module keyVault 'modules/keyvault.bicep' = {
+  name: 'keyVaultDeploy'
+  params: {
+    keyVaultName: keyVaultName
+    location: location
+    apiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.apiPrincipalId : appService.outputs.apiPrincipalId
+    uiPrincipalId: deploymentTarget == 'container-apps' ? containerApps.outputs.uiPrincipalId : appService.outputs.uiPrincipalId
   }
 }
 

@@ -13,6 +13,9 @@ param location string = resourceGroup().location
 @description('The database provider to configure for the API.')
 param databaseProvider string
 
+@description('The URI of the Key Vault (optional)')
+param keyVaultUri string = ''
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: appServicePlanName
   location: location
@@ -30,6 +33,9 @@ resource apiApp 'Microsoft.Web/sites@2022-09-01' = {
   name: apiAppName
   location: location
   kind: 'app,linux'
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
@@ -40,6 +46,10 @@ resource apiApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'DatabaseSettings__Provider'
           value: databaseProvider
         }
+        {
+          name: 'KeyVault__Uri'
+          value: keyVaultUri
+        }
       ]
     }
   }
@@ -49,6 +59,9 @@ resource uiApp 'Microsoft.Web/sites@2022-09-01' = {
   name: uiAppName
   location: location
   kind: 'app,linux'
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
@@ -60,3 +73,5 @@ resource uiApp 'Microsoft.Web/sites@2022-09-01' = {
 
 output apiDefaultHostName string = apiApp.properties.defaultHostName
 output uiDefaultHostName string = uiApp.properties.defaultHostName
+output apiPrincipalId string = apiApp.identity.principalId
+output uiPrincipalId string = uiApp.identity.principalId

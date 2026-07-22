@@ -19,6 +19,9 @@ param location string = resourceGroup().location
 @description('The database provider to configure for the API.')
 param databaseProvider string
 
+@description('The URI of the Key Vault (optional)')
+param keyVaultUri string = ''
+
 // Container Registry
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: containerRegistryName
@@ -62,6 +65,9 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
 resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: apiAppName
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
@@ -79,6 +85,10 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'DatabaseSettings__Provider'
               value: databaseProvider
+            }
+            {
+              name: 'KeyVault__Uri'
+              value: keyVaultUri
             }
           ]
           resources: {
@@ -99,6 +109,9 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
 resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: uiAppName
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
@@ -129,3 +142,5 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
 output acrLoginServer string = acr.properties.loginServer
 output apiFqdn string = apiApp.properties.configuration.ingress.fqdn
 output uiFqdn string = uiApp.properties.configuration.ingress.fqdn
+output apiPrincipalId string = apiApp.identity.principalId
+output uiPrincipalId string = uiApp.identity.principalId
