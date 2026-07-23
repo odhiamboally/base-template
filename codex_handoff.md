@@ -446,3 +446,4 @@ Address PR security review findings without redoing completed integration work.
 - Publish status checked: the deployment hardening changes remain uncommitted on `ops/azure-sandbox-deployment`; no push or PR update has been made in this task. The current PR query returned no active PR for this branch.
 - The permitted Bicep re-check was invoked once, but the Azure CLI command timed out after 14 seconds before producing a compiler result. Treat deployment-stamp compilation as unverified, not passed; do not run another compilation in this task without an explicit new retry decision.
 - The requested publish set was staged on `ops/azure-sandbox-deployment`: provisioning workflow, deployment Bicep modules, and this handoff. No unrelated working-tree files were staged.
+- Deployment hardening committed as `60f5a39` (`Harden Azure deployment runtime configuration`). The Bicep smoke remains unverified because the permitted retry timed out before compiler output.
