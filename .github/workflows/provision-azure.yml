@@ -39,8 +39,11 @@ jobs:
           subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP }}
           template: ./ops/azure/main.bicep
+          failOnStdErr: false
           parameters: >
             sqlAdministratorLogin="btadmin"
             sqlAdministratorLoginPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD }}"
             deploymentTarget="${{ inputs.deployment_target }}"
+            databaseProvider="${{ vars.DATABASE_PROVIDER || 'SqlServer' }}"
+            azureCacheConnectionString="${{ secrets.AZURE_REDIS_CONNECTION_STRING }}"
             resourcePrefix="btprod"

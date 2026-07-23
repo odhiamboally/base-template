@@ -16,6 +16,18 @@ param uiAppName string
 @description('Location for all resources.')
 param location string = resourceGroup().location
 
+@description('The database provider to configure for the API.')
+param databaseProvider string
+
+@description('The URI of the Key Vault (optional)')
+param keyVaultUri string = ''
+
+@description('The name of the Storage Account (optional)')
+param storageAccountName string = ''
+
+@description('The versionless Key Vault key identifier used to encrypt Data Protection keys.')
+param dataProtectionKeyIdentifier string = ''
+
 // Container Registry
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: containerRegistryName
@@ -24,7 +36,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
     name: 'Basic'
   }
   properties: {
-    adminUserEnabled: true
+    adminUserEnabled: false
   }
 }
 
@@ -59,9 +71,19 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
 resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: apiAppName
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
+      activeRevisionsMode: 'Single'
+      registries: [
+        {
+          server: acr.properties.loginServer
+          identity: 'system'
+        }
+      ]
       ingress: {
         external: true
         targetPort: 8080
@@ -72,6 +94,48 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
         {
           name: 'api'
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'DatabaseSettings__Provider'
+              value: databaseProvider
+            }
+            {
+              name: 'KeyVault__Uri'
+              value: keyVaultUri
+            }
+            {
+              name: 'ProfileImageStorage__AzureBlob__ContainerUri'
+              value: empty(storageAccountName) ? '' : 'https://${storageAccountName}.blob.${environment().suffixes.storage}/profile-images'
+            }
+            {
+              name: 'ProfileImageStorage__Provider'
+              value: 'AzureBlob'
+            }
+            {
+              name: 'DataProtection__BlobKeyUri'
+              value: empty(storageAccountName) ? '' : 'https://${storageAccountName}.blob.${environment().suffixes.storage}/dataprotection-keys/keyring.xml'
+            }
+            {
+              name: 'DataProtection__KeyEncryptionMode'
+              value: 'KeyVault'
+            }
+            {
+              name: 'DataProtection__KeyVaultKeyIdentifier'
+              value: dataProtectionKeyIdentifier
+            }
+            {
+              name: 'CacheSettings__Provider'
+              value: 'Auto'
+            }
+            {
+              name: 'AllowedOrigins__0'
+              value: 'https://${uiAppName}.${containerAppEnv.properties.defaultDomain}'
+            }
+            {
+              name: 'Messaging__Transport'
+              value: 'AzureServiceBus'
+            }
+          ]
           resources: {
             cpu: json('0.5')
             memory: '1.0Gi'
@@ -90,12 +154,25 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
 resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: uiAppName
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
+      activeRevisionsMode: 'Single'
+      registries: [
+        {
+          server: acr.properties.loginServer
+          identity: 'system'
+        }
+      ]
       ingress: {
         external: true
         targetPort: 8080
+        stickySessions: {
+          affinity: 'sticky'
+        }
       }
     }
     template: {
@@ -103,6 +180,12 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
         {
           name: 'ui'
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'BackendApi__BaseUrl'
+              value: 'https://${apiAppName}.${containerAppEnv.properties.defaultDomain}/'
+            }
+          ]
           resources: {
             cpu: json('0.5')
             memory: '1.0Gi'
@@ -117,6 +200,30 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
   }
 }
 
+var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+
+resource apiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, apiApp.name, acrPullRoleId)
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
+    principalId: apiApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource uiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, uiApp.name, acrPullRoleId)
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
+    principalId: uiApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 output acrLoginServer string = acr.properties.loginServer
 output apiFqdn string = apiApp.properties.configuration.ingress.fqdn
 output uiFqdn string = uiApp.properties.configuration.ingress.fqdn
+output apiPrincipalId string = apiApp.identity.principalId
+output uiPrincipalId string = uiApp.identity.principalId

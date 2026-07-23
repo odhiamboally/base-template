@@ -122,10 +122,16 @@ jobs:
 
       - name: Build EF Core Migration Bundles
         run: |
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context IamPostgreSqlDBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-iam --configuration Release
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context HrPostgreSqlDBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-hr --configuration Release
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context SharedPostgreSqlDBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-shared --configuration Release
-          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context BankingPostgreSqlDBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-banking --configuration Release
+          PROVIDER="PostgreSql"
+          if [ "${{ vars.DATABASE_PROVIDER }}" == "SqlServer" ]; then
+            PROVIDER="SqlServer"
+          fi
+          echo "Building migration bundles for provider: $PROVIDER"
+
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Iam${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-iam --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Hr${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-hr --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Shared${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-shared --configuration Release
+          dotnet ef migrations bundle --project src/Backend/Persistence/BT.Persistence/BT.Persistence.csproj --startup-project src/Backend/Api/BT.Api/BT.Api.csproj --context Banking${PROVIDER}DBContext --self-contained -r linux-x64 -o ./publish-migrations/efbundle-banking --configuration Release
         env:
           DatabaseSettings__Provider: "PostgreSql"
           ConnectionStrings__DefaultConnection: "Host=localhost;Database=postgres;Username=postgres;Password=password"

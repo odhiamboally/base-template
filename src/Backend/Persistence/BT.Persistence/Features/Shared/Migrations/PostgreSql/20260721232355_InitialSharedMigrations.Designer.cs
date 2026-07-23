@@ -3,17 +3,20 @@ using System;
 using BT.Persistence.Features.Shared.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace BT.Persistence.Migrations.SharedPostgreSqlDB
+namespace BT.Persistence.Features.Shared.Migrations.PostgreSql
 {
     [DbContext(typeof(SharedPostgreSqlDBContext))]
-    partial class SharedPostgreSqlDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260721232355_InitialSharedMigrations")]
+    partial class InitialSharedMigrations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1168,11 +1171,11 @@ namespace BT.Persistence.Migrations.SharedPostgreSqlDB
                         .IsUnique();
 
                     b.HasIndex("ProviderReference")
-                        .HasFilter("[ProviderReference] IS NOT NULL");
+                        .HasFilter("ProviderReference IS NOT NULL");
 
                     b.HasIndex("TenantId", "IdempotencyKey")
                         .IsUnique()
-                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+                        .HasFilter("IdempotencyKey IS NOT NULL");
 
                     b.ToTable("PaymentRecords", (string)null);
                 });

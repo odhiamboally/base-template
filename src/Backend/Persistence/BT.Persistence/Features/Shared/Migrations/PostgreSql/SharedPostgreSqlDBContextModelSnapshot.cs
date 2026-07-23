@@ -3,20 +3,17 @@ using System;
 using BT.Persistence.Features.Shared.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace BT.Persistence.Migrations.SharedPostgreSqlDB
+namespace BT.Persistence.Features.Shared.Migrations.PostgreSql
 {
     [DbContext(typeof(SharedPostgreSqlDBContext))]
-    [Migration("20260719173045_AddPaymentStatusMessage")]
-    partial class AddPaymentStatusMessage
+    partial class SharedPostgreSqlDBContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1171,13 +1168,62 @@ namespace BT.Persistence.Migrations.SharedPostgreSqlDB
                         .IsUnique();
 
                     b.HasIndex("ProviderReference")
-                        .HasFilter("[ProviderReference] IS NOT NULL");
+                        .HasFilter("ProviderReference IS NOT NULL");
 
                     b.HasIndex("TenantId", "IdempotencyKey")
                         .IsUnique()
-                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+                        .HasFilter("IdempotencyKey IS NOT NULL");
 
                     b.ToTable("PaymentRecords", (string)null);
+                });
+
+            modelBuilder.Entity("BT.Domain.Features.Shared.TenantSettings.Entities.TenantSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("TenantSettings", (string)null);
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.InboxState", b =>

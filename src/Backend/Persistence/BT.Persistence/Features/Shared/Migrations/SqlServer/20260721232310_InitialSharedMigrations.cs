@@ -5,10 +5,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace BT.Persistence.Migrations.Shared
+namespace BT.Persistence.Features.Shared.Migrations.SqlServer
 {
     /// <inheritdoc />
-    public partial class Init_Shared : Migration
+    public partial class InitialSharedMigrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -53,6 +53,9 @@ namespace BT.Persistence.Migrations.Shared
                     IsResolved = table.Column<bool>(type: "bit", nullable: false),
                     ResolvedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     ResolutionNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    DeletedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -94,6 +97,7 @@ namespace BT.Persistence.Migrations.Shared
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
@@ -112,6 +116,7 @@ namespace BT.Persistence.Migrations.Shared
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
@@ -130,6 +135,7 @@ namespace BT.Persistence.Migrations.Shared
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
@@ -148,6 +154,7 @@ namespace BT.Persistence.Migrations.Shared
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
@@ -166,6 +173,7 @@ namespace BT.Persistence.Migrations.Shared
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
@@ -184,6 +192,7 @@ namespace BT.Persistence.Migrations.Shared
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
@@ -202,6 +211,7 @@ namespace BT.Persistence.Migrations.Shared
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
@@ -220,6 +230,7 @@ namespace BT.Persistence.Migrations.Shared
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
@@ -233,6 +244,25 @@ namespace BT.Persistence.Migrations.Shared
                 });
 
             migrationBuilder.CreateTable(
+                name: "LookupCatalogTypes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Key = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Label = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    DeletedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LookupCatalogTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OutboxState",
                 columns: table => new
                 {
@@ -241,12 +271,61 @@ namespace BT.Persistence.Migrations.Shared
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
                     Created = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Delivered = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastSequenceNumber = table.Column<long>(type: "bigint", nullable: true),
-                    BusName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true)
+                    LastSequenceNumber = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_OutboxState", x => x.OutboxId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PaymentRecords",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Currency = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    CustomerReference = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Provider = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    ProviderReference = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    StatusMessage = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    IdempotencyKey = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    CheckoutUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    DeletedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PaymentRecords", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TenantSettings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Key = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Value = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TenantSettings", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -293,104 +372,119 @@ namespace BT.Persistence.Migrations.Shared
 
             migrationBuilder.InsertData(
                 table: "Lkp_CustomerStatuses",
-                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted" },
+                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted", "TenantId" },
                 values: new object[,]
                 {
-                    { 1, "Draft", null, null, "Draft", 1, false },
-                    { 2, "Active", null, null, "Active", 3, false },
-                    { 3, "Suspended", null, null, "Suspended", 4, false },
-                    { 4, "Closed", null, null, "Closed", 5, false },
-                    { 5, "PendingApproval", null, null, "Pending Approval", 2, false }
+                    { 1, "Draft", null, null, "Draft", 1, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, "Active", null, null, "Active", 3, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, "Suspended", null, null, "Suspended", 4, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 4, "Closed", null, null, "Closed", 5, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 5, "PendingApproval", null, null, "Pending Approval", 2, false, new Guid("0194f700-0000-7000-8000-000000000001") }
                 });
 
             migrationBuilder.InsertData(
                 table: "Lkp_CustomerTypes",
-                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted" },
+                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted", "TenantId" },
                 values: new object[,]
                 {
-                    { 1, "Individual", null, null, "Individual", 1, false },
-                    { 2, "Corporate", null, null, "Corporate", 2, false },
-                    { 3, "Institutional", null, null, "Institutional", 3, false },
-                    { 4, "SmallMediumEnterprise", null, null, "Small & Medium Enterprise", 4, false },
-                    { 5, "Enterprise", null, null, "Enterprise", 5, false }
+                    { 1, "Individual", null, null, "Individual", 1, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, "Corporate", null, null, "Corporate", 2, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, "Institutional", null, null, "Institutional", 3, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 4, "SmallMediumEnterprise", null, null, "Small & Medium Enterprise", 4, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 5, "Enterprise", null, null, "Enterprise", 5, false, new Guid("0194f700-0000-7000-8000-000000000001") }
                 });
 
             migrationBuilder.InsertData(
                 table: "Lkp_DirectorRelationTypes",
-                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted" },
+                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted", "TenantId" },
                 values: new object[,]
                 {
-                    { 1, "Director", null, null, "Director", 1, false },
-                    { 2, "Shareholder", null, null, "Shareholder", 2, false },
-                    { 3, "Signatory", null, null, "Signatory", 3, false },
-                    { 4, "BeneficialOwner", null, null, "Beneficial Owner", 4, false },
-                    { 5, "Guarantor", null, null, "Guarantor", 5, false }
+                    { 1, "Director", null, null, "Director", 1, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, "Shareholder", null, null, "Shareholder", 2, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, "Signatory", null, null, "Signatory", 3, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 4, "BeneficialOwner", null, null, "Beneficial Owner", 4, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 5, "Guarantor", null, null, "Guarantor", 5, false, new Guid("0194f700-0000-7000-8000-000000000001") }
                 });
 
             migrationBuilder.InsertData(
                 table: "Lkp_FailedMessageStatuses",
-                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted" },
+                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted", "TenantId" },
                 values: new object[,]
                 {
-                    { 1, "Transient", null, null, "Transient", 1, false },
-                    { 2, "Permanent", null, null, "Permanent", 2, false },
-                    { 3, "ManualRetry", null, null, "Manual Retry", 3, false }
+                    { 1, "Transient", null, null, "Transient", 1, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, "Permanent", null, null, "Permanent", 2, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, "ManualRetry", null, null, "Manual Retry", 3, false, new Guid("0194f700-0000-7000-8000-000000000001") }
                 });
 
             migrationBuilder.InsertData(
                 table: "Lkp_IdentificationTypes",
-                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted" },
+                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted", "TenantId" },
                 values: new object[,]
                 {
-                    { 1, "CertificateOfIncorporation", null, null, "Certificate of Incorporation", 1, false },
-                    { 2, "TIN", null, null, "Tax Identification Number", 2, false },
-                    { 3, "BusinessLicense", null, null, "Business License", 3, false },
-                    { 4, "CompanyRegistrationCertificate", null, null, "Company Registration Certificate", 4, false }
+                    { 1, "CertificateOfIncorporation", null, null, "Certificate of Incorporation", 1, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, "TIN", null, null, "Tax Identification Number", 2, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, "BusinessLicense", null, null, "Business License", 3, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 4, "CompanyRegistrationCertificate", null, null, "Company Registration Certificate", 4, false, new Guid("0194f700-0000-7000-8000-000000000001") }
                 });
 
             migrationBuilder.InsertData(
                 table: "Lkp_LineOfBusiness",
-                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted" },
+                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted", "TenantId" },
                 values: new object[,]
                 {
-                    { 1, "Agriculture", null, null, "Agriculture", 1, false },
-                    { 2, "Manufacturing", null, null, "Manufacturing", 2, false },
-                    { 3, "Technology", null, null, "Technology", 3, false },
-                    { 4, "FinancialServices", null, null, "Financial Services", 4, false },
-                    { 5, "Retail", null, null, "Retail", 5, false },
-                    { 6, "Services", null, null, "Services", 6, false },
-                    { 7, "Proprietary", null, null, "Proprietary", 7, false },
-                    { 8, "Trading", null, null, "Trading", 8, false }
+                    { 1, "Agriculture", null, null, "Agriculture", 1, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, "Manufacturing", null, null, "Manufacturing", 2, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, "Technology", null, null, "Technology", 3, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 4, "FinancialServices", null, null, "Financial Services", 4, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 5, "Retail", null, null, "Retail", 5, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 6, "Services", null, null, "Services", 6, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 7, "Proprietary", null, null, "Proprietary", 7, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 8, "Trading", null, null, "Trading", 8, false, new Guid("0194f700-0000-7000-8000-000000000001") }
                 });
 
             migrationBuilder.InsertData(
                 table: "Lkp_SegmentTypes",
-                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted" },
+                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted", "TenantId" },
                 values: new object[,]
                 {
-                    { 1, "PublicLimitedCompany", null, null, "Public Limited Company", 1, false },
-                    { 2, "PrivateLimitedCompany", null, null, "Private Limited Company", 2, false },
-                    { 3, "SoleProprietorship", null, null, "Sole Proprietorship", 3, false },
-                    { 4, "Corporate", null, null, "Corporate", 4, false },
-                    { 5, "Retail", null, null, "Retail", 5, false },
-                    { 6, "SME", null, null, "Small & Medium Enterprise", 6, false },
-                    { 7, "Individual", null, null, "Individual", 7, false }
+                    { 1, "PublicLimitedCompany", null, null, "Public Limited Company", 1, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, "PrivateLimitedCompany", null, null, "Private Limited Company", 2, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, "SoleProprietorship", null, null, "Sole Proprietorship", 3, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 4, "Corporate", null, null, "Corporate", 4, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 5, "Retail", null, null, "Retail", 5, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 6, "SME", null, null, "Small & Medium Enterprise", 6, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 7, "Individual", null, null, "Individual", 7, false, new Guid("0194f700-0000-7000-8000-000000000001") }
                 });
 
             migrationBuilder.InsertData(
                 table: "Lkp_SubSegmentTypes",
-                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted" },
+                columns: new[] { "Id", "Code", "DeletedAt", "DeletedBy", "Description", "DisplayOrder", "IsDeleted", "TenantId" },
                 values: new object[,]
                 {
-                    { 1, "Local", null, null, "Local", 1, false },
-                    { 2, "Multinational", null, null, "Multinational", 2, false },
-                    { 3, "GovernmentOwned", null, null, "Government Owned", 3, false },
-                    { 4, "Partnership", null, null, "Partnership", 4, false },
-                    { 5, "PrivateLimitedCompany", null, null, "Private Limited Company", 5, false },
-                    { 6, "PublicLimitedCompany", null, null, "Public Limited Company", 6, false },
-                    { 7, "SoleProprietorship", null, null, "Sole Proprietorship", 7, false },
-                    { 8, "NGO", null, null, "Non-Governmental Organisation", 8, false },
-                    { 9, "Individual", null, null, "Individual", 9, false }
+                    { 1, "Local", null, null, "Local", 1, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, "Multinational", null, null, "Multinational", 2, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, "GovernmentOwned", null, null, "Government Owned", 3, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 4, "Partnership", null, null, "Partnership", 4, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 5, "PrivateLimitedCompany", null, null, "Private Limited Company", 5, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 6, "PublicLimitedCompany", null, null, "Public Limited Company", 6, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 7, "SoleProprietorship", null, null, "Sole Proprietorship", 7, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 8, "NGO", null, null, "Non-Governmental Organisation", 8, false, new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 9, "Individual", null, null, "Individual", 9, false, new Guid("0194f700-0000-7000-8000-000000000001") }
+                });
+
+            migrationBuilder.InsertData(
+                table: "LookupCatalogTypes",
+                columns: new[] { "Id", "DeletedAt", "DeletedBy", "Description", "IsActive", "IsDeleted", "Key", "Label", "TenantId" },
+                values: new object[,]
+                {
+                    { 1, null, null, "Lifecycle statuses available to customer records.", true, false, "CustomerStatus", "Customer statuses", new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 2, null, null, "Classification values used when creating and segmenting customers.", true, false, "CustomerType", "Customer types", new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 3, null, null, "Relationship labels used for customer directors and signatories.", true, false, "DirectorRelationType", "Director relation types", new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 4, null, null, "Operational statuses for failed message tracking.", true, false, "FailedMessageStatus", "Failed message statuses", new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 5, null, null, "Identity document types used across onboarding and verification.", true, false, "IdentificationType", "Identification types", new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 6, null, null, "Business line values used by banking and reporting flows.", true, false, "LineOfBusiness", "Lines of business", new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 7, null, null, "Primary customer segmentation values.", true, false, "SegmentType", "Segment types", new Guid("0194f700-0000-7000-8000-000000000001") },
+                    { 8, null, null, "Secondary customer segmentation values.", true, false, "SubSegmentType", "Sub-segment types", new Guid("0194f700-0000-7000-8000-000000000001") }
                 });
 
             migrationBuilder.CreateIndex(
@@ -416,51 +510,57 @@ namespace BT.Persistence.Migrations.Shared
                 column: "Delivered");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CustomerStatusLookup_Code",
+                name: "UX_CustomerStatusLookup_TenantId_Code",
                 table: "Lkp_CustomerStatuses",
-                column: "Code",
+                columns: new[] { "TenantId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_CustomerTypeLookup_Code",
+                name: "UX_CustomerTypeLookup_TenantId_Code",
                 table: "Lkp_CustomerTypes",
-                column: "Code",
+                columns: new[] { "TenantId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_DirectorRelationTypeLookup_Code",
+                name: "UX_DirectorRelationTypeLookup_TenantId_Code",
                 table: "Lkp_DirectorRelationTypes",
-                column: "Code",
+                columns: new[] { "TenantId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_FailedMessageStatusLookup_Code",
+                name: "UX_FailedMessageStatusLookup_TenantId_Code",
                 table: "Lkp_FailedMessageStatuses",
-                column: "Code",
+                columns: new[] { "TenantId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_IdentificationTypeLookup_Code",
+                name: "UX_IdentificationTypeLookup_TenantId_Code",
                 table: "Lkp_IdentificationTypes",
-                column: "Code",
+                columns: new[] { "TenantId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_LineOfBusinessLookup_Code",
+                name: "UX_LineOfBusinessLookup_TenantId_Code",
                 table: "Lkp_LineOfBusiness",
-                column: "Code",
+                columns: new[] { "TenantId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_SegmentTypeLookup_Code",
+                name: "UX_SegmentTypeLookup_TenantId_Code",
                 table: "Lkp_SegmentTypes",
-                column: "Code",
+                columns: new[] { "TenantId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_SubSegmentTypeLookup_Code",
+                name: "UX_SubSegmentTypeLookup_TenantId_Code",
                 table: "Lkp_SubSegmentTypes",
-                column: "Code",
+                columns: new[] { "TenantId", "Code" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "UX_LookupCatalogTypes_TenantId_Key",
+                table: "LookupCatalogTypes",
+                columns: new[] { "TenantId", "Key" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -488,14 +588,34 @@ namespace BT.Persistence.Migrations.Shared
                 filter: "[OutboxId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OutboxState_BusName_Created",
-                table: "OutboxState",
-                columns: new[] { "BusName", "Created" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_OutboxState_Created",
                 table: "OutboxState",
                 column: "Created");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PaymentRecords_CustomerReference",
+                table: "PaymentRecords",
+                column: "CustomerReference",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PaymentRecords_ProviderReference",
+                table: "PaymentRecords",
+                column: "ProviderReference",
+                filter: "ProviderReference IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PaymentRecords_TenantId_IdempotencyKey",
+                table: "PaymentRecords",
+                columns: new[] { "TenantId", "IdempotencyKey" },
+                unique: true,
+                filter: "IdempotencyKey IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TenantSettings_TenantId_Key",
+                table: "TenantSettings",
+                columns: new[] { "TenantId", "Key" },
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -532,7 +652,16 @@ namespace BT.Persistence.Migrations.Shared
                 name: "Lkp_SubSegmentTypes");
 
             migrationBuilder.DropTable(
+                name: "LookupCatalogTypes");
+
+            migrationBuilder.DropTable(
                 name: "OutboxMessage");
+
+            migrationBuilder.DropTable(
+                name: "PaymentRecords");
+
+            migrationBuilder.DropTable(
+                name: "TenantSettings");
 
             migrationBuilder.DropTable(
                 name: "InboxState");
