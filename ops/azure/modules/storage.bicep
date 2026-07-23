@@ -7,9 +7,6 @@ param location string
 @description('The Principal ID of the API application (to grant access)')
 param apiPrincipalId string = ''
 
-@description('The Principal ID of the UI application (to grant access)')
-param uiPrincipalId string = ''
-
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
   location: location
@@ -55,17 +52,6 @@ resource apiStorageAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleId)
     principalId: apiPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// Grant UI App access to Storage Blob Data Contributor
-resource uiStorageAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(uiPrincipalId)) {
-  name: guid(storageAccount.id, uiPrincipalId, storageBlobDataContributorRoleId)
-  scope: storageAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleId)
-    principalId: uiPrincipalId
     principalType: 'ServicePrincipal'
   }
 }

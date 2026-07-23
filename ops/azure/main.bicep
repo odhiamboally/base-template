@@ -25,6 +25,10 @@ param deploymentTarget string = 'container-apps'
 ])
 param databaseProvider string = 'SqlServer'
 
+@description('Optional Azure Cache for Redis connection string. When empty, cache falls back to the configured non-Azure provider.')
+@secure()
+param azureCacheConnectionString string = ''
+
 // Resource Names
 var sqlServerName = '${resourcePrefix}-sql-${uniqueString(resourceGroup().id)}'
 var acrName = '${resourcePrefix}acr${uniqueString(resourceGroup().id)}'
@@ -36,6 +40,7 @@ var appServicePlanName = '${resourcePrefix}-asp'
 var keyVaultName = take('${resourcePrefix}kv${uniqueString(resourceGroup().id)}', 24)
 var keyVaultUri = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
 var storageAccountName = take('${resourcePrefix}st${uniqueString(resourceGroup().id)}', 24)
+var apiPrincipalId = deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiPrincipalId ?? '') : (appService.outputs.?apiPrincipalId ?? '')
 
 module sql 'modules/sql.bicep' = if (databaseProvider == 'SqlServer') {
   name: 'sqlDeploy'
@@ -73,6 +78,7 @@ module containerApps 'modules/containerapps.bicep' = if (deploymentTarget == 'co
     databaseProvider: databaseProvider
     keyVaultUri: keyVaultUri
     storageAccountName: storageAccountName
+    dataProtectionKeyIdentifier: '${keyVaultUri}keys/dataprotection'
   }
 }
 
@@ -86,6 +92,7 @@ module appService 'modules/appservice.bicep' = if (deploymentTarget == 'app-serv
     databaseProvider: databaseProvider
     keyVaultUri: keyVaultUri
     storageAccountName: storageAccountName
+    dataProtectionKeyIdentifier: '${keyVaultUri}keys/dataprotection'
   }
 }
 
@@ -105,8 +112,12 @@ module keyVault 'modules/keyvault.bicep' = {
   params: {
     keyVaultName: keyVaultName
     location: location
-    apiPrincipalId: deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiPrincipalId ?? '') : (appService.outputs.?apiPrincipalId ?? '')
-    uiPrincipalId: deploymentTarget == 'container-apps' ? (containerApps.outputs.?uiPrincipalId ?? '') : (appService.outputs.?uiPrincipalId ?? '')
+    apiPrincipalId: apiPrincipalId
+    databaseConnectionString: databaseProvider == 'SqlServer'
+      ? 'Server=tcp:${sql.outputs.?serverFullyQualifiedDomainName ?? ''},1433;Initial Catalog=${sql.outputs.?databaseName ?? ''};Persist Security Info=False;User ID=${sqlAdministratorLogin};Password=${sqlAdministratorLoginPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+      : 'Host=${postgres.outputs.?serverFullyQualifiedDomainName ?? ''};Port=5432;Database=${postgres.outputs.?databaseName ?? ''};Username=${sqlAdministratorLogin};Password=${sqlAdministratorLoginPassword};Ssl Mode=Require;Trust Server Certificate=false;'
+    serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
+    azureCacheConnectionString: azureCacheConnectionString
   }
 }
 
@@ -115,8 +126,7 @@ module storageAccount 'modules/storage.bicep' = {
   params: {
     storageAccountName: storageAccountName
     location: location
-    apiPrincipalId: deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiPrincipalId ?? '') : (appService.outputs.?apiPrincipalId ?? '')
-    uiPrincipalId: deploymentTarget == 'container-apps' ? (containerApps.outputs.?uiPrincipalId ?? '') : (appService.outputs.?uiPrincipalId ?? '')
+    apiPrincipalId: apiPrincipalId
   }
 }
 

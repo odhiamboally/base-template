@@ -25,6 +25,9 @@ param keyVaultUri string = ''
 @description('The name of the Storage Account (optional)')
 param storageAccountName string = ''
 
+@description('The versionless Key Vault key identifier used to encrypt Data Protection keys.')
+param dataProtectionKeyIdentifier string = ''
+
 // Container Registry
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: containerRegistryName
@@ -33,7 +36,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
     name: 'Basic'
   }
   properties: {
-    adminUserEnabled: true
+    adminUserEnabled: false
   }
 }
 
@@ -74,6 +77,13 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
+      activeRevisionsMode: 'Single'
+      registries: [
+        {
+          server: acr.properties.loginServer
+          identity: 'system'
+        }
+      ]
       ingress: {
         external: true
         targetPort: 8080
@@ -104,6 +114,18 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'DataProtection__BlobKeyUri'
               value: empty(storageAccountName) ? '' : 'https://${storageAccountName}.blob.${environment().suffixes.storage}/dataprotection-keys/keyring.xml'
+            }
+            {
+              name: 'DataProtection__KeyEncryptionMode'
+              value: 'KeyVault'
+            }
+            {
+              name: 'DataProtection__KeyVaultKeyIdentifier'
+              value: dataProtectionKeyIdentifier
+            }
+            {
+              name: 'CacheSettings__Provider'
+              value: 'Auto'
             }
             {
               name: 'AllowedOrigins__0'
@@ -138,9 +160,19 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
+      activeRevisionsMode: 'Single'
+      registries: [
+        {
+          server: acr.properties.loginServer
+          identity: 'system'
+        }
+      ]
       ingress: {
         external: true
         targetPort: 8080
+        stickySessions: {
+          affinity: 'sticky'
+        }
       }
     }
     template: {
@@ -165,6 +197,28 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
         maxReplicas: 10
       }
     }
+  }
+}
+
+var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+
+resource apiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, apiApp.name, acrPullRoleId)
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
+    principalId: apiApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource uiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, uiApp.name, acrPullRoleId)
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
+    principalId: uiApp.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 

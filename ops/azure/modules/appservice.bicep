@@ -19,6 +19,9 @@ param keyVaultUri string = ''
 @description('The name of the Storage Account (optional)')
 param storageAccountName string = ''
 
+@description('The versionless Key Vault key identifier used to encrypt Data Protection keys.')
+param dataProtectionKeyIdentifier string = ''
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: appServicePlanName
   location: location
@@ -42,7 +45,7 @@ resource apiApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|8.0' // CI will push the bits, use 8.0/9.0 as the base
+      linuxFxVersion: 'DOTNETCORE|10.0'
       alwaysOn: true
       appSettings: [
         {
@@ -64,6 +67,18 @@ resource apiApp 'Microsoft.Web/sites@2022-09-01' = {
         {
           name: 'DataProtection__BlobKeyUri'
           value: empty(storageAccountName) ? '' : 'https://${storageAccountName}.blob.${environment().suffixes.storage}/dataprotection-keys/keyring.xml'
+        }
+        {
+          name: 'DataProtection__KeyEncryptionMode'
+          value: 'KeyVault'
+        }
+        {
+          name: 'DataProtection__KeyVaultKeyIdentifier'
+          value: dataProtectionKeyIdentifier
+        }
+        {
+          name: 'CacheSettings__Provider'
+          value: 'Auto'
         }
         {
           name: 'AllowedOrigins__0'
@@ -88,7 +103,7 @@ resource uiApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|8.0'
+      linuxFxVersion: 'DOTNETCORE|10.0'
       alwaysOn: true
       appSettings: [
         {

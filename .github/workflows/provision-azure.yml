@@ -45,4 +45,5 @@ jobs:
             sqlAdministratorLoginPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD }}"
             deploymentTarget="${{ inputs.deployment_target }}"
             databaseProvider="${{ vars.DATABASE_PROVIDER || 'SqlServer' }}"
+            azureCacheConnectionString="${{ secrets.AZURE_REDIS_CONNECTION_STRING }}"
             resourcePrefix="btprod"
