@@ -16,6 +16,11 @@ on:
         required: true
         default: false
         type: boolean
+      recreate_failed_container_apps:
+        description: "Delete only terminally failed Container Apps before an explicit repair. Never select for healthy apps."
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -36,6 +41,36 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Remove terminally failed Container Apps for explicit repair
+        if: ${{ inputs.manage_container_apps && inputs.recreate_failed_container_apps }}
+        shell: bash
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          RESOURCE_PREFIX: btprod
+        run: |
+          set -euo pipefail
+
+          for app_name in "${RESOURCE_PREFIX}-api" "${RESOURCE_PREFIX}-ui"; do
+            state="$(az containerapp show \
+              --resource-group "${RESOURCE_GROUP}" \
+              --name "${app_name}" \
+              --query 'properties.provisioningState' \
+              --output tsv 2>/dev/null || true)"
+
+            if [[ "${state}" == "Failed" ]]; then
+              echo "Deleting terminally failed Container App: ${app_name}"
+              az containerapp delete \
+                --resource-group "${RESOURCE_GROUP}" \
+                --name "${app_name}" \
+                --yes
+            elif [[ -n "${state}" ]]; then
+              echo "::error::${app_name} is '${state}', not 'Failed'. Refusing to delete a non-failed Container App."
+              exit 1
+            else
+              echo "${app_name} does not exist; Bicep will create it."
+            fi
+          done
 
       - name: Run Bicep Deployment
         uses: azure/arm-deploy@v2
