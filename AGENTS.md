@@ -119,6 +119,7 @@ This file is the canonical source of truth and working contract for AI coding to
 - Before opening or updating a PR, run:
   - `dotnet build src\Backend\Api\BT.Api\BT.Api.csproj --no-restore -p:UseSharedCompilation=false`
   - `dotnet test tests\BT.Tests.Architecture\BT.Tests.Architecture.csproj --no-restore -p:UseSharedCompilation=false`
+- Azure migrations and deployments are manual-only. Pushes and pull-request merges must not invoke `deploy-azure.yml`; select `app-service`, `aca-acr`, or `aca-ghcr` in its manual dispatch input.
 - PRs should explain what changed, why, impact, and checks.
 - If a review comment is valid and small, update the same PR branch.
 - If a review comment changes scope materially, discuss before expanding the PR.

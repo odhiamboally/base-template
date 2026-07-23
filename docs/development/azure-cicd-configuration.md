@@ -69,7 +69,7 @@ Add these environment variables:
 | `AZURE_SQL_NETWORK_MODE` | `PublicRunner` | `PublicRunner` or `PrivateRunner` migration networking strategy |
 | `AZURE_API_APP_NAME` | `base-template-api-dev` | Exact API App Service resource name (for app-service) |
 | `AZURE_UI_APP_NAME` | `base-template-web-dev` | Exact UI App Service resource name (for app-service) |
-| `AZURE_DEPLOYMENT_TARGET` | `app-service`, `aca-acr`, `aca-ghcr` | Deployment mechanism selection (default: app-service) |
+| `AZURE_DEPLOYMENT_TARGET` | Deprecated | Not read by `deploy-azure.yml`; select `app-service`, `aca-acr`, or `aca-ghcr` in the manual **Run workflow** dialog. Remove this GitHub environment variable to avoid confusion. |
 | `AZURE_CONTAINER_REGISTRY_NAME` | `acrbasetemplate` | ACR Name for container deployments (for aca-acr) |
 | `AZURE_ACA_API_NAME` | `ca-base-template-api` | Exact API Container App resource name (for ACA flows) |
 | `AZURE_ACA_UI_NAME` | `ca-base-template-blazor` | Exact UI Container App resource name (for ACA flows) |

@@ -163,7 +163,7 @@ dotnet user-secrets set "ProfileImageStorage:Provider" "Local" --project src\Bac
 ./scripts/setup-local-platform.ps1
 ```
 
-Azure deployment is intentionally gated by the GitHub repository variable `AZURE_DEPLOYMENT_ENABLED`. Leave it unset or `false` while Azure is unavailable; set it to `true` only after completing the production Azure checklist.
+Azure deployment is intentionally manual-only. After completing the production Azure checklist, use **Actions > Deploy to Azure > Run workflow** and explicitly select `app-service`, `aca-acr`, or `aca-ghcr`. Pushes and pull-request merges run CI only.
 
 ## Recommended Azure-Backed Local Setup
 
@@ -329,7 +329,7 @@ When checking screenshots or app settings, verify:
 
 ## CI/CD Pipeline and Deployments
 
-BaseTemplate includes an automated CI/CD pipeline in `.github/workflows/deploy-azure.yml` that handles compiling, testing, migrating Azure SQL, and deploying both the backend API and frontend Blazor UI to Azure App Services on pushes or merges to `main`.
+BaseTemplate includes a manually dispatched CI/CD pipeline in `.github/workflows/deploy-azure.yml` that handles compiling, testing, migrating Azure SQL, and deploying the backend API and frontend Blazor UI to the explicitly selected target. Pushes and pull-request merges run CI only; they do not migrate or deploy Azure resources.
 
 ### Deployment Prerequisites
 

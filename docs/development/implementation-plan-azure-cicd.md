@@ -9,7 +9,7 @@ This document records the intended CI/CD architecture. The executable source of 
 - Build self-contained Linux EF migration bundles for IAM, HR, Shared, and Banking.
 - Authenticate GitHub to Azure with short-lived OIDC credentials.
 - Apply migrations before deploying application packages.
-- Deploy API and UI packages to configuration-driven Azure App Service names.
+- Deploy API and UI to the explicitly selected target: Azure App Service, Azure Container Apps with ACR, or Azure Container Apps with GHCR.
 - Avoid startup migrations, App Service publish-profile secrets, and long-lived Azure client secrets.
 
 ## Pipeline Shape
@@ -25,9 +25,9 @@ This document records the intended CI/CD architecture. The executable source of 
    - Execute each context bundle against its dedicated migrations history table.
    - Retry while an Azure SQL serverless database resumes.
    - Remove the temporary firewall rule even after failure.
-3. **Deploy API and UI**
-   - Authenticate each deployment job independently through OIDC.
-   - Deploy the previously tested artifacts with `azure/webapps-deploy@v3`.
+3. **Deploy API and UI to the selected target**
+  - Authenticate each deployment job independently through OIDC.
+  - Deploy the previously tested packages with `azure/webapps-deploy@v3` for App Service, or update the Container Apps revisions for an ACA target.
 
 ## Security Decisions
 
@@ -46,6 +46,6 @@ This pipeline is complete only when:
 - OIDC login succeeds without client secrets.
 - All four migration bundles run successfully and retain separate history tables.
 - The temporary SQL firewall rule is removed.
-- API and UI deploy to the intended App Services.
+- API and UI deploy only to the explicitly selected target.
 - Post-deployment health and smoke checks pass.
 - Rollback and deployment-slot promotion are documented and tested.

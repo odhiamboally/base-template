@@ -16,7 +16,7 @@ This document explains the supported deployment paths for BaseTemplate and clone
 | Model | Flow | Status | Best Use |
 | --- | --- | --- | --- |
 | Azure DevOps to Azure Container Apps | Visual Studio -> Azure Repos -> Azure Pipelines -> Docker image -> ACR or Docker Hub -> Azure Container Apps | Planned | Azure-first clients who standardize on Azure DevOps |
-| GitHub Actions to Azure Container Apps or App Service | Visual Studio -> GitHub -> GitHub Actions -> Docker image or app artifact -> ACR/GHCR/Docker Hub -> Azure | Partly wired; gated by `AZURE_DEPLOYMENT_ENABLED` | Recommended Azure path once subscription is active |
+| GitHub Actions to Azure Container Apps or App Service | Visual Studio -> GitHub -> GitHub Actions -> Docker image or app artifact -> ACR/GHCR/Docker Hub -> Azure | Wired; manually dispatch `deploy-azure.yml` and select the target | Recommended Azure path once subscription is active |
 | GitHub Actions to non-Azure container host | Visual Studio -> GitHub -> GitHub Actions -> Docker image -> GHCR/Heroku Registry -> Heroku, DigitalOcean, or VPS | Wired for manual deployment certification | When Azure is unavailable or a client chooses another host |
 | Local Docker deployment | Visual Studio or CLI -> local Docker image -> local Docker Compose runtime | Planned | Local demos, smoke testing, and offline proof-of-concept work |
 
@@ -25,7 +25,7 @@ This document explains the supported deployment paths for BaseTemplate and clone
 Use this sequence until Azure credits or a paid subscription are available:
 
 1. Keep Azure deployment workflows and settings in the repository.
-2. Leave `AZURE_DEPLOYMENT_ENABLED=false` or unset.
+2. Do not dispatch the Azure deployment workflow until the chosen Azure target is ready.
 3. Run the app from Visual Studio with local Docker infrastructure.
 4. Use the provider-neutral container publish workflow to build/lint API/UI images and push them to GHCR when publishing is enabled.
 5. Add a local app-compose profile only after the Dockerfiles have passed CI and local smoke.
@@ -56,12 +56,13 @@ Use this model for enterprise Azure clients who want all governance inside Azure
 
 This is the current preferred Azure path for this repository.
 
-The existing deployment workflow is intentionally gated:
+The existing deployment workflow is intentionally manual-only:
 
-- `AZURE_DEPLOYMENT_ENABLED` missing, empty, or `false`: CI can run, deployment is skipped.
-- `AZURE_DEPLOYMENT_ENABLED=true`: the deployment job may build, migrate, and deploy to Azure after the required secrets, variables, environments, and Azure permissions are ready.
+- Use **Actions > Deploy to Azure > Run workflow**.
+- Select `app-service`, `aca-acr`, or `aca-ghcr` for `deployment_target`.
+- The selected input is the only deployment-target decision. A push or pull-request merge runs CI only and never migrates or deploys Azure resources.
 
-This workflow should remain in the repo even while Azure is unavailable. It becomes active when the subscription and cost setup are ready.
+This workflow should remain in the repo even while Azure is unavailable. It can be deliberately dispatched once the selected target's subscription, cost setup, permissions, and configuration are ready.
 
 #### Container Apps Provisioning Rule
 
@@ -212,13 +213,13 @@ For local callback testing, use a tunnel such as ngrok or Cloudflare Tunnel. The
 When Azure is disabled:
 
 - Backend, frontend, mobile, full-solution, and architecture workflows can still run.
-- Azure deployment jobs should skip because `AZURE_DEPLOYMENT_ENABLED` is not `true`.
+- Azure deployment does not run unless someone explicitly dispatches `deploy-azure.yml`.
 - Container publish jobs can still build and publish images to GHCR without deploying to Azure.
 - The non-Azure deployment workflow can deploy to DigitalOcean, Heroku, or hand off GHCR images to a generic Docker host when manually dispatched.
 
-When Azure is enabled:
+When Azure is ready:
 
-- The deployment workflow may run migrations and deploy according to the protected GitHub environment.
+- A user selects the target in the **Run workflow** dialog; the workflow may then run migrations and deploy according to the protected GitHub environment.
 - Azure failures should be treated as deployment-environment failures, not local-development failures.
 
 ## Container Publish Baseline
