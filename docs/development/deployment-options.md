@@ -63,6 +63,15 @@ The existing deployment workflow is intentionally gated:
 
 This workflow should remain in the repo even while Azure is unavailable. It becomes active when the subscription and cost setup are ready.
 
+#### Container Apps Provisioning Rule
+
+`Provision Azure Infrastructure` creates the Container Apps Environment, registry, identity boundaries, and the initial public bootstrap revisions. It has a `manage_container_apps` input:
+
+- Select `true` only for the first Container Apps provisioning run or an intentional bootstrap-revision repair.
+- Select `false` for later infrastructure-only runs. This preserves the API and UI revisions, images, and registry configuration last applied by `Deploy to Azure`.
+
+The deployment workflow, not the provisioning workflow, owns the production application image and its GHCR or ACR registry credentials. This prevents an infrastructure refresh from sending traffic back to a placeholder image.
+
 ## Non-Azure Container Hosts
 
 ### DigitalOcean
