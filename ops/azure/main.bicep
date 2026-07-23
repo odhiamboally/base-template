@@ -40,6 +40,7 @@ var appServicePlanName = '${resourcePrefix}-asp'
 var keyVaultName = take('${resourcePrefix}kv${uniqueString(resourceGroup().id)}', 24)
 var keyVaultUri = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
 var storageAccountName = take('${resourcePrefix}st${uniqueString(resourceGroup().id)}', 24)
+#disable-next-line BCP318
 var apiPrincipalId = deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiPrincipalId ?? '') : (appService.outputs.?apiPrincipalId ?? '')
 
 module sql 'modules/sql.bicep' = if (databaseProvider == 'SqlServer') {
@@ -114,7 +115,9 @@ module keyVault 'modules/keyvault.bicep' = {
     location: location
     apiPrincipalId: apiPrincipalId
     databaseConnectionString: databaseProvider == 'SqlServer'
+#disable-next-line BCP318
       ? 'Server=tcp:${sql.outputs.?serverFullyQualifiedDomainName ?? ''},1433;Initial Catalog=${sql.outputs.?databaseName ?? ''};Persist Security Info=False;User ID=${sqlAdministratorLogin};Password=${sqlAdministratorLoginPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+#disable-next-line BCP318
       : 'Host=${postgres.outputs.?serverFullyQualifiedDomainName ?? ''};Port=5432;Database=${postgres.outputs.?databaseName ?? ''};Username=${sqlAdministratorLogin};Password=${sqlAdministratorLoginPassword};Ssl Mode=Require;Trust Server Certificate=false;'
     serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
     azureCacheConnectionString: azureCacheConnectionString
@@ -130,9 +133,14 @@ module storageAccount 'modules/storage.bicep' = {
   }
 }
 
+#disable-next-line BCP318
 output sqlServerFqdn string = databaseProvider == 'SqlServer' ? (sql.outputs.?serverFullyQualifiedDomainName ?? '') : (postgres.outputs.?serverFullyQualifiedDomainName ?? '')
+#disable-next-line BCP318
 output sqlDatabaseName string = databaseProvider == 'SqlServer' ? (sql.outputs.?databaseName ?? '') : (postgres.outputs.?databaseName ?? '')
 
+#disable-next-line BCP318
 output acrLoginServer string = deploymentTarget == 'container-apps' ? (containerApps.outputs.?acrLoginServer ?? '') : ''
+#disable-next-line BCP318
 output apiHost string = deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiFqdn ?? '') : (appService.outputs.?apiDefaultHostName ?? '')
+#disable-next-line BCP318
 output uiHost string = deploymentTarget == 'container-apps' ? (containerApps.outputs.?uiFqdn ?? '') : (appService.outputs.?uiDefaultHostName ?? '')

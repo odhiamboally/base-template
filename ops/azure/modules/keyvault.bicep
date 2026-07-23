@@ -42,7 +42,7 @@ resource serviceBusAuthorizationRule 'Microsoft.ServiceBus/namespaces/Authorizat
   name: 'RootManageSharedAccessKey'
 }
 
-var serviceBusConnectionString = listKeys(serviceBusAuthorizationRule.id, serviceBusAuthorizationRule.apiVersion).primaryConnectionString
+var serviceBusConnectionString = serviceBusAuthorizationRule.listKeys().primaryConnectionString
 
 // Built-in Role ID for "Key Vault Secrets User"
 var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'

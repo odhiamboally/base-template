@@ -93,7 +93,7 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
       containers: [
         {
           name: 'api'
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          image: 'mcr.microsoft.com/dotnet/samples:aspnetapp'
           env: [
             {
               name: 'DatabaseSettings__Provider'
@@ -179,7 +179,7 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
       containers: [
         {
           name: 'ui'
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          image: 'mcr.microsoft.com/dotnet/samples:aspnetapp'
           env: [
             {
               name: 'BackendApi__BaseUrl'
