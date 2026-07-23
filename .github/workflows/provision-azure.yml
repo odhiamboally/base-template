@@ -11,6 +11,11 @@ on:
         options:
           - container-apps
           - app-service
+      manage_container_apps:
+        description: "Create or explicitly repair Container Apps (leave false for infrastructure-only reruns after deployment)"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -46,4 +51,5 @@ jobs:
             deploymentTarget="${{ inputs.deployment_target }}"
             databaseProvider="${{ vars.DATABASE_PROVIDER || 'SqlServer' }}"
             azureCacheConnectionString="${{ secrets.AZURE_REDIS_CONNECTION_STRING }}"
+            manageContainerApps=${{ inputs.manage_container_apps }}
             resourcePrefix="btprod"

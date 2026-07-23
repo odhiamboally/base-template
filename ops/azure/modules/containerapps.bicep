@@ -28,6 +28,9 @@ param storageAccountName string = ''
 @description('The versionless Key Vault key identifier used to encrypt Data Protection keys.')
 param dataProtectionKeyIdentifier string = ''
 
+@description('Creates or repairs the public bootstrap Container Apps. Set to false after the first successful deployment so infrastructure-only runs do not replace deployed application revisions.')
+param manageContainerApps bool = true
+
 // Container Registry
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: containerRegistryName
@@ -67,8 +70,9 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
   }
 }
 
-// Stub for API App (to be overwritten by CI)
-resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
+// Public bootstrap image used only for the initial app creation or an explicit repair.
+// Normal image and registry changes are owned by the deployment workflow.
+resource apiApp 'Microsoft.App/containerApps@2023-05-01' = if (manageContainerApps) {
   name: apiAppName
   location: location
   identity: {
@@ -78,12 +82,8 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
       activeRevisionsMode: 'Single'
-      registries: [
-        {
-          server: acr.properties.loginServer
-          identity: 'system'
-        }
-      ]
+      // Bootstrap with a public image. The deployment workflow configures the
+      // selected private registry only when it replaces this revision.
       ingress: {
         external: true
         targetPort: 8080
@@ -150,8 +150,9 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
   }
 }
 
-// Stub for UI App (to be overwritten by CI)
-resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
+// Public bootstrap image used only for the initial app creation or an explicit repair.
+// Normal image and registry changes are owned by the deployment workflow.
+resource uiApp 'Microsoft.App/containerApps@2023-05-01' = if (manageContainerApps) {
   name: uiAppName
   location: location
   identity: {
@@ -161,12 +162,8 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
       activeRevisionsMode: 'Single'
-      registries: [
-        {
-          server: acr.properties.loginServer
-          identity: 'system'
-        }
-      ]
+      // Bootstrap with a public image. The deployment workflow configures the
+      // selected private registry only when it replaces this revision.
       ingress: {
         external: true
         targetPort: 8080
@@ -200,6 +197,23 @@ resource uiApp 'Microsoft.App/containerApps@2023-05-01' = {
   }
 }
 
+resource existingApiApp 'Microsoft.App/containerApps@2023-05-01' existing = if (!manageContainerApps) {
+  name: apiAppName
+}
+
+resource existingUiApp 'Microsoft.App/containerApps@2023-05-01' existing = if (!manageContainerApps) {
+  name: uiAppName
+}
+
+#disable-next-line BCP318
+var apiPrincipalId = manageContainerApps ? apiApp.identity.principalId : existingApiApp.identity.principalId
+#disable-next-line BCP318
+var uiPrincipalId = manageContainerApps ? uiApp.identity.principalId : existingUiApp.identity.principalId
+#disable-next-line BCP318
+var apiFqdn = manageContainerApps ? apiApp.properties.configuration.ingress.fqdn : existingApiApp.properties.configuration.ingress.fqdn
+#disable-next-line BCP318
+var uiFqdn = manageContainerApps ? uiApp.properties.configuration.ingress.fqdn : existingUiApp.properties.configuration.ingress.fqdn
+
 var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
 resource apiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
@@ -207,7 +221,7 @@ resource apiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   scope: acr
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
-    principalId: apiApp.identity.principalId
+    principalId: apiPrincipalId
     principalType: 'ServicePrincipal'
   }
 }
@@ -217,13 +231,13 @@ resource uiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   scope: acr
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
-    principalId: uiApp.identity.principalId
+    principalId: uiPrincipalId
     principalType: 'ServicePrincipal'
   }
 }
 
 output acrLoginServer string = acr.properties.loginServer
-output apiFqdn string = apiApp.properties.configuration.ingress.fqdn
-output uiFqdn string = uiApp.properties.configuration.ingress.fqdn
-output apiPrincipalId string = apiApp.identity.principalId
-output uiPrincipalId string = uiApp.identity.principalId
+output apiFqdn string = apiFqdn
+output uiFqdn string = uiFqdn
+output apiPrincipalId string = apiPrincipalId
+output uiPrincipalId string = uiPrincipalId

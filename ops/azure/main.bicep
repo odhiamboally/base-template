@@ -18,6 +18,9 @@ param sqlAdministratorLoginPassword string
 ])
 param deploymentTarget string = 'container-apps'
 
+@description('Creates or explicitly repairs the public Container App bootstrap revisions. Keep false for infrastructure-only reruns after application images have been deployed.')
+param manageContainerApps bool = true
+
 @description('The database provider to provision and configure.')
 @allowed([
   'SqlServer'
@@ -80,6 +83,7 @@ module containerApps 'modules/containerapps.bicep' = if (deploymentTarget == 'co
     keyVaultUri: keyVaultUri
     storageAccountName: storageAccountName
     dataProtectionKeyIdentifier: '${keyVaultUri}keys/dataprotection'
+    manageContainerApps: manageContainerApps
   }
 }
 
