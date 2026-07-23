@@ -1,11 +1,6 @@
 name: Deploy to Azure
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - ".github/workflows/deploy-azure.yml"
   workflow_dispatch:
     inputs:
       deployment_target:
@@ -34,21 +29,12 @@ jobs:
   setup:
     name: Setup deployment target
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || vars.AZURE_DEPLOYMENT_ENABLED == 'true'
     outputs:
       target: ${{ steps.resolve.outputs.target }}
       image_tag: latest
     steps:
       - id: resolve
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "target=${{ inputs.deployment_target }}" >> $GITHUB_OUTPUT
-          else
-            TARGET="${{ vars.AZURE_DEPLOYMENT_TARGET }}"
-            if [ -z "$TARGET" ]; then TARGET="app-service"; fi
-            echo "target=$TARGET" >> $GITHUB_OUTPUT
-          fi
+        run: echo "target=${{ inputs.deployment_target }}" >> "$GITHUB_OUTPUT"
 
   build-and-test:
     name: Build & Test

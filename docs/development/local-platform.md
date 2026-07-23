@@ -173,14 +173,15 @@ The script reads generated RabbitMQ credentials from the ignored local environme
 
 The ordinary integration suite skips this external test when Docker credentials are unavailable. This keeps CI deterministic while the dedicated script certifies the complete local transport path.
 
-## Azure Deployment Gate
+## Azure Deployment Dispatch
 
-The Azure deployment workflow remains committed but is gated by the GitHub repository variable `AZURE_DEPLOYMENT_ENABLED`.
+The Azure deployment workflow remains committed but is manual-only. Normal backend, frontend, mobile, full-solution, and architecture CI remain independent of Azure deployment.
 
-- Missing, empty, or `false`: pushes to `main` may register the workflow, but the deployment job is skipped. Normal backend, frontend, mobile, full-solution, and architecture CI remain independent.
-- `true`: a qualifying push to `main` automatically builds, tests, creates migration bundles, runs migrations, and deploys the API and UI through the protected `production` environment.
+1. Open **Actions > Deploy to Azure > Run workflow**.
+2. Select `app-service`, `aca-acr`, or `aca-ghcr` for `deployment_target`.
+3. Confirm the selected target's OIDC variables, SQL connection secret, managed identities, and production environment approval are ready before dispatching.
 
-Set it in GitHub under **Settings > Secrets and variables > Actions > Variables > New repository variable**. Use the name `AZURE_DEPLOYMENT_ENABLED` and value `true` only after the Azure subscription, OIDC variables, SQL connection secret, managed identities, and production environment approval are ready.
+Pushes and pull-request merges must not create migration bundles, run Azure migrations, or deploy resources.
 
 ## Provider Mapping
 
