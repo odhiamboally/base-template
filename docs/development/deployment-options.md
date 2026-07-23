@@ -70,6 +70,13 @@ This workflow should remain in the repo even while Azure is unavailable. It beco
 - Select `true` only for the first Container Apps provisioning run or an intentional bootstrap-revision repair.
 - Select `false` for later infrastructure-only runs. This preserves the API and UI revisions, images, and registry configuration last applied by `Deploy to Azure`.
 
+If an existing Container App has reached Azure's terminal `Failed` provisioning state, ARM cannot read it to update it. The workflow therefore has a second, intentionally separate `recreate_failed_container_apps` input:
+
+- Select both `manage_container_apps=true` and `recreate_failed_container_apps=true` only to recover a terminally failed bootstrap app.
+- The workflow deletes only `${resourcePrefix}-api` and `${resourcePrefix}-ui` when Azure reports their state as exactly `Failed`; it refuses to delete a healthy or unknown-state app.
+- This removes Container App revision history for those two compute resources only. It does not delete the Container Apps Environment, registry, SQL database, Key Vault, Storage account, Service Bus, or Redis.
+- Immediately run `Deploy to Azure` after a successful repair so the temporary public bootstrap images are replaced by the production API and UI images.
+
 The deployment workflow, not the provisioning workflow, owns the production application image and its GHCR or ACR registry credentials. This prevents an infrastructure refresh from sending traffic back to a placeholder image.
 
 ## Non-Azure Container Hosts
