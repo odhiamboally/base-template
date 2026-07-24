@@ -511,7 +511,7 @@ jobs:
           containerAppName: ${{ vars.AZURE_ACA_API_NAME }}
           registryUrl: ghcr.io
           registryUsername: ${{ github.actor }}
-          registryPassword: ${{ secrets.GITHUB_TOKEN }}
+          registryPassword: ${{ secrets.GHCR_PAT }}
           imageToDeploy: ghcr.io/${{ env.IMAGE_NAMESPACE }}/${{ env.API_IMAGE }}:sha-${{ github.sha }}
 
       - name: Deploy UI to ACA (GHCR)
@@ -522,5 +522,5 @@ jobs:
           containerAppName: ${{ vars.AZURE_ACA_UI_NAME }}
           registryUrl: ghcr.io
           registryUsername: ${{ github.actor }}
-          registryPassword: ${{ secrets.GITHUB_TOKEN }}
+          registryPassword: ${{ secrets.GHCR_PAT }}
           imageToDeploy: ghcr.io/${{ env.IMAGE_NAMESPACE }}/${{ env.BLAZOR_IMAGE }}:sha-${{ github.sha }}
