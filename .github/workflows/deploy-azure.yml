@@ -32,6 +32,7 @@ jobs:
   setup:
     name: Setup deployment target
     runs-on: ubuntu-latest
+    environment: azure-prod
     outputs:
       target: ${{ steps.resolve.outputs.target }}
       image_tag: latest
@@ -40,7 +41,7 @@ jobs:
         run: |
           TARGET="${{ inputs.deployment_target }}"
           if [ -z "$TARGET" ]; then
-            TARGET="${{ vars.DEFAULT_DEPLOYMENT_TARGET || 'app-service' }}"
+            TARGET="${{ vars.AZURE_DEPLOYMENT_TARGET || 'app-service' }}"
           fi
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
 
