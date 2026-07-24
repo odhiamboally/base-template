@@ -912,6 +912,7 @@ public static class DependencyInjection
 
     private static void ConfigureQuartz(IServiceCollection services, IConfiguration configuration)
     {
+        var dbProvider = configuration.GetValue<string>($"{BT.Persistence.Common.Configuration.DatabaseSettings.SectionName}:Provider") ?? "SqlServer";
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection string not found in configuration");
 
@@ -928,11 +929,20 @@ public static class DependencyInjection
 
                 s.UseNewtonsoftJsonSerializer();
 
-                s.UseSqlServer(sq =>
+                if (dbProvider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
                 {
-                    sq.ConnectionString = connectionString;
-                });
-
+                    s.UsePostgres(sq =>
+                    {
+                        sq.ConnectionString = connectionString;
+                    });
+                }
+                else
+                {
+                    s.UseSqlServer(sq =>
+                    {
+                        sq.ConnectionString = connectionString;
+                    });
+                }
             });
         });
 
