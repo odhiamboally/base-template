@@ -400,6 +400,7 @@ jobs:
     needs: setup
     if: needs.setup.outputs.target == 'aca-acr' || needs.setup.outputs.target == 'aca-ghcr'
     runs-on: ubuntu-latest
+    environment: azure-prod
     permissions:
       contents: read
       packages: write
