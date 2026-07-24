@@ -1,6 +1,9 @@
 name: Deploy to Azure
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       deployment_target:
@@ -34,7 +37,12 @@ jobs:
       image_tag: latest
     steps:
       - id: resolve
-        run: echo "target=${{ inputs.deployment_target }}" >> "$GITHUB_OUTPUT"
+        run: |
+          TARGET="${{ inputs.deployment_target }}"
+          if [ -z "$TARGET" ]; then
+            TARGET="${{ vars.DEFAULT_DEPLOYMENT_TARGET || 'app-service' }}"
+          fi
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
 
   build-and-test:
     name: Build & Test
