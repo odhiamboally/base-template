@@ -17,8 +17,6 @@ namespace BT.Persistence.Features.Shared.Migrations.SqlServer
 -- and then recreating them from scratch.
 -- Should you only require it to create the tables, set @DropDb to 0.
 
-USE [enter_db_name_here];
-GO
 
 DECLARE @DropDb BIT = 1; -- Set this to 0 to skip DROP statements, 1 to include them
 
