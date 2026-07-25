@@ -422,3 +422,7 @@ FodyWeavers.xsd
 /.appdata/
 /.dotnet-home/
 src/Backend/Api/BT.Api/temp-keys/
+
+# Azure Container App and CLI outputs
+containerapp.yaml
+api_logs.txt
