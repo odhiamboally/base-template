@@ -68,6 +68,7 @@ This file is the canonical source of truth and working contract for AI coding to
 - Use `CountAsync` only when the count is returned, logged, or used for a decision.
 - Avoid N+1 query patterns. Batch identifiers and map results in memory.
 - Cursor pagination must fetch `pageSize + 1` before trimming.
+- **BaseTemplate supports multiple database providers (PostgreSQL and SQL Server).** When adding EF Core migrations, you MUST generate separate migrations for each provider's DbContext and specify the correct output directory. For example, for the IAM bounded context: `dotnet ef migrations add <Name> -c IamSqlServerDBContext -o Migrations/IAM` and `dotnet ef migrations add <Name> -c IamPostgreSqlDBContext -o Migrations/IamPostgreSqlDB`. Do not rely on default output directories.
 
 ## Validation, Logging, And Caching
 
