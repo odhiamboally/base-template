@@ -789,7 +789,7 @@ public static class DependencyInjection
             .AddOptions<EmailSettings>()
             .Bind(configuration.GetSection(EmailSettings.SectionName))
             .ValidateDataAnnotations()
-            .Validate(IsValidEmailProvider, "EmailSettings:Provider must be NoOp, LocalMailpit, or SendGrid.")
+            .Validate(IsValidEmailProvider, "EmailSettings:Provider must be NoOp, LocalMailpit, SendGrid, AzureCommunication, or Resend.")
             .ValidateOnStart();
 
         var settings = configuration.GetSection(EmailSettings.SectionName).Get<EmailSettings>() ?? new EmailSettings();
@@ -801,6 +801,20 @@ public static class DependencyInjection
                 client.BaseAddress = endpoint;
             }
         });
+
+        services.AddHttpClient("Email.Resend", client =>
+        {
+            if (!string.IsNullOrWhiteSpace(settings.Resend.Endpoint) &&
+                Uri.TryCreate(settings.Resend.Endpoint, UriKind.Absolute, out var endpoint))
+            {
+                client.BaseAddress = endpoint;
+            }
+        });
+
+        if (GetEmailProvider(settings) == EmailProvider.AzureCommunication)
+        {
+            services.AddSingleton(new Azure.Communication.Email.EmailClient(settings.AzureCommunication.ConnectionString));
+        }
     }
 
     private static bool IsValidEmailProvider(EmailSettings settings)
@@ -814,6 +828,9 @@ public static class DependencyInjection
                       settings.LocalMailpit.Port > 0,
                   EmailProvider.SendGrid => !string.IsNullOrWhiteSpace(settings.SendGrid.Endpoint) &&
                       Uri.TryCreate(settings.SendGrid.Endpoint, UriKind.Absolute, out _),
+                  EmailProvider.AzureCommunication => !string.IsNullOrWhiteSpace(settings.AzureCommunication.ConnectionString),
+                  EmailProvider.Resend => !string.IsNullOrWhiteSpace(settings.Resend.Endpoint) &&
+                      Uri.TryCreate(settings.Resend.Endpoint, UriKind.Absolute, out _),
                   _ => false
               });
     }
@@ -1024,6 +1041,8 @@ public static class DependencyInjection
             var provider when provider.Equals("NoOp", StringComparison.OrdinalIgnoreCase) => EmailProvider.NoOp,
             var provider when provider.Equals("LocalMailpit", StringComparison.OrdinalIgnoreCase) => EmailProvider.LocalMailpit,
             var provider when provider.Equals("SendGrid", StringComparison.OrdinalIgnoreCase) => EmailProvider.SendGrid,
+            var provider when provider.Equals("AzureCommunication", StringComparison.OrdinalIgnoreCase) => EmailProvider.AzureCommunication,
+            var provider when provider.Equals("Resend", StringComparison.OrdinalIgnoreCase) => EmailProvider.Resend,
             _ => EmailProvider.Invalid
         };
     }
@@ -1033,6 +1052,8 @@ public static class DependencyInjection
         NoOp,
         LocalMailpit,
         SendGrid,
+        AzureCommunication,
+        Resend,
         Invalid
     }
 

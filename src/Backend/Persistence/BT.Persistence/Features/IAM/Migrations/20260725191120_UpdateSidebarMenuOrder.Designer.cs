@@ -3,17 +3,20 @@ using System;
 using BT.Persistence.Features.IAM.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace BT.Persistence.Migrations.IamPostgreSqlDB
+namespace BT.Persistence.Features.IAM.Migrations
 {
     [DbContext(typeof(IamPostgreSqlDBContext))]
-    partial class IamPostgreSqlDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260725191120_UpdateSidebarMenuOrder")]
+    partial class UpdateSidebarMenuOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

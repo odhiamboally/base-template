@@ -13,9 +13,9 @@ internal static class MenuItemSeed
 
     internal static IReadOnlyList<MenuItem> Items =>
     [
-        Create(DashboardId, null, null, "dashboard", "Dashboard", "Operations dashboard.", "/dashboard", "Dashboard", "Sidebar", null, 1),
-        Create(AdminId, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, 2),
-        Create(OverviewId, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, 3),
+        Create(OverviewId, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, 1),
+        Create(DashboardId, null, null, "dashboard", "Dashboard", "Operations dashboard.", "/dashboard", "Dashboard", "Sidebar", null, 2),
+        Create(AdminId, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, 3),
 
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c10401", null, null, "features", "Features", "Reusable platform capability showcases.", "/features", "MenuOpen", "Sidebar", null, 4),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c10402", Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10401"), null, "features-payments", "Payments", "Test card and mobile-money payment flows.", "/features/payments", "CreditCard", "Sidebar", "payments.view", 10),

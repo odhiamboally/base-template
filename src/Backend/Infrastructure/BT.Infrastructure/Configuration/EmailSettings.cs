@@ -14,4 +14,6 @@ public sealed class EmailSettings
 
     public LocalMailpitEmailSettings LocalMailpit { get; set; } = new();
     public SendGridEmailSettings SendGrid { get; set; } = new();
+    public AzureCommunicationEmailSettings AzureCommunication { get; set; } = new();
+    public ResendEmailSettings Resend { get; set; } = new();
 }
