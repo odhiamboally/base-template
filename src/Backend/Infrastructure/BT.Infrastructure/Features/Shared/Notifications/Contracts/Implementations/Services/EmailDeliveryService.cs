@@ -10,6 +10,9 @@ using Microsoft.Extensions.Options;
 using MimeKit;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Azure.Communication.Email;
+using Azure;
 
 namespace BT.Infrastructure.Features.Shared.Notifications.Contracts.Implementations.Services;
 
@@ -17,6 +20,7 @@ internal sealed class EmailDeliveryService(
     IOptions<EmailSettings> options,
     IHttpClientFactory httpClientFactory,
     IHostEnvironment environment,
+    IServiceProvider serviceProvider,
     ILogger<EmailDeliveryService> logger) : IEmailService
 {
     private readonly EmailSettings _settings = options.Value;
@@ -42,6 +46,8 @@ internal sealed class EmailDeliveryService(
                 EmailProvider.NoOp => SendNoOp(sendEmailRequest),
                 EmailProvider.LocalMailpit => await SendToMailpitAsync(sendEmailRequest, toAddress, cancellationToken).ConfigureAwait(false),
                 EmailProvider.SendGrid => await SendViaSendGridAsync(sendEmailRequest, toAddress, cancellationToken).ConfigureAwait(false),
+                EmailProvider.AzureCommunication => await SendViaAcsAsync(sendEmailRequest, toAddress, cancellationToken).ConfigureAwait(false),
+                EmailProvider.Resend => await SendViaResendAsync(sendEmailRequest, toAddress, cancellationToken).ConfigureAwait(false),
                 _ => AppResponses.Failure<SendEmailResponse>(
                     $"Email provider '{_settings.Provider}' is not supported.")
             };
@@ -158,6 +164,8 @@ internal sealed class EmailDeliveryService(
 
         if (!response.IsSuccessStatusCode)
         {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            logger.LogWarning("SendGrid rejected the email payload. Status: {StatusCode}. Response: {Response}", response.StatusCode, content);
             return AppResponses.Failure<SendEmailResponse>(
                 "Email could not be accepted by the delivery provider.");
         }
@@ -173,6 +181,105 @@ internal sealed class EmailDeliveryService(
                 string.IsNullOrWhiteSpace(messageId) ? Guid.NewGuid().ToString() : messageId,
                 request));
     }
+
+    private async Task<AppResponse<SendEmailResponse>> SendViaAcsAsync(
+        SendEmailRequest request,
+        MailboxAddress toAddress,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.AzureCommunication.ConnectionString))
+        {
+            return AppResponses.Failure<SendEmailResponse>(
+                "Email delivery is not configured for this environment.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_settings.FromAddress))
+        {
+            return AppResponses.Failure<SendEmailResponse>(
+                "Email sender address is not configured correctly.");
+        }
+
+        var emailClient = serviceProvider.GetService<EmailClient>();
+        if (emailClient == null)
+        {
+             return AppResponses.Failure<SendEmailResponse>("EmailClient is not registered.");
+        }
+
+        var emailMessage = new EmailMessage(
+            senderAddress: _settings.FromAddress,
+            content: new EmailContent(request.Subject ?? string.Empty)
+            {
+                Html = request.Body ?? string.Empty
+            },
+            recipients: new EmailRecipients(new List<EmailAddress> { new EmailAddress(toAddress.Address, toAddress.Name) }));
+
+        try
+        {
+            var emailSendOperation = await emailClient.SendAsync(WaitUntil.Completed, emailMessage, cancellationToken).ConfigureAwait(false);
+            ServiceLogDefinitions.LogEmailSent(logger, request.To ?? string.Empty);
+            return AppResponses.Success("Email queued successfully.", CreateResponse(emailSendOperation.Id ?? Guid.NewGuid().ToString(), request));
+        }
+        catch (RequestFailedException ex)
+        {
+            logger.LogWarning("ACS rejected the email payload. Status: {Status}. Error: {Message}", ex.Status, ex.Message);
+            return AppResponses.Failure<SendEmailResponse>("Email could not be accepted by the delivery provider.");
+        }
+    }
+
+    private async Task<AppResponse<SendEmailResponse>> SendViaResendAsync(
+        SendEmailRequest request,
+        MailboxAddress toAddress,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.Resend.ApiKey))
+        {
+            return AppResponses.Failure<SendEmailResponse>(
+                "Email delivery is not configured for this environment.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_settings.FromAddress) ||
+            !MailboxAddress.TryParse(_settings.FromAddress, out var fromAddress))
+        {
+            return AppResponses.Failure<SendEmailResponse>(
+                "Email sender address is not configured correctly.");
+        }
+
+        using var httpClient = httpClientFactory.CreateClient("Email.Resend");
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _settings.Resend.ApiKey);
+
+        var payload = new
+        {
+            from = $"{_settings.DisplayName} <{fromAddress.Address}>",
+            to = new[] { toAddress.Address },
+            subject = request.Subject ?? string.Empty,
+            html = request.Body ?? string.Empty
+        };
+
+        using var response = await httpClient
+            .PostAsJsonAsync(string.Empty, payload, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            logger.LogWarning("Resend rejected the email payload. Status: {StatusCode}. Response: {Response}", response.StatusCode, content);
+            return AppResponses.Failure<SendEmailResponse>(
+                "Email could not be accepted by the delivery provider.");
+        }
+        
+        var responseContent = await response.Content.ReadFromJsonAsync<ResendResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
+        var messageId = responseContent?.Id;
+
+        ServiceLogDefinitions.LogEmailSent(logger, request.To ?? string.Empty);
+
+        return AppResponses.Success("Email queued successfully.",
+            CreateResponse(
+                string.IsNullOrWhiteSpace(messageId) ? Guid.NewGuid().ToString() : messageId,
+                request));
+    }
+
+    private sealed record ResendResponse(string Id);
 
     private static SendEmailResponse CreateResponse(string messageId, SendEmailRequest request) =>
         new(
@@ -193,6 +300,8 @@ internal sealed class EmailDeliveryService(
             var provider when provider.Equals("NoOp", StringComparison.OrdinalIgnoreCase) => EmailProvider.NoOp,
             var provider when provider.Equals("LocalMailpit", StringComparison.OrdinalIgnoreCase) => EmailProvider.LocalMailpit,
             var provider when provider.Equals("SendGrid", StringComparison.OrdinalIgnoreCase) => EmailProvider.SendGrid,
+            var provider when provider.Equals("AzureCommunication", StringComparison.OrdinalIgnoreCase) => EmailProvider.AzureCommunication,
+            var provider when provider.Equals("Resend", StringComparison.OrdinalIgnoreCase) => EmailProvider.Resend,
             _ => EmailProvider.Invalid
         };
     }
@@ -202,6 +311,8 @@ internal sealed class EmailDeliveryService(
         NoOp,
         LocalMailpit,
         SendGrid,
+        AzureCommunication,
+        Resend,
         Invalid
     }
 }

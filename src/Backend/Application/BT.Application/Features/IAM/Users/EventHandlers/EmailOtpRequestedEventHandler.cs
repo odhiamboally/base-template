@@ -29,21 +29,28 @@ internal sealed class EmailOtpRequestedEventHandler(
         var (subject, body) = e.Purpose.ToEnum<OtpPurpose>() switch
         {
             OtpPurpose.Login => ("Your login code",
-                $"Hi {e.FirstName},\n\nYour code is: {e.Code}\n\nExpires at {e.ExpiresAt:HH:mm} UTC. Do not share it."),
+                $"<p>Hi {e.FirstName},</p><p>Your code is: <strong>{e.Code}</strong></p><p>Expires at {e.ExpiresAt:HH:mm} UTC. Do not share it.</p>"),
             OtpPurpose.EmailConfirmation => ("Confirm your email",
-                $"Hi {e.FirstName},\n\nYour confirmation code is: {e.Code}\n\nExpires in 5 minutes."),
+                $"<p>Hi {e.FirstName},</p><p>Your confirmation code is: <strong>{e.Code}</strong></p><p>Expires in 5 minutes.</p>"),
             OtpPurpose.PasswordReset => ("Password reset code",
-                $"Hi {e.FirstName},\n\nYour password reset code is: {e.Code}\n\nExpires in 5 minutes."),
-            _ => ("Your verification code", $"Your code is: {e.Code}")
+                $"<p>Hi {e.FirstName},</p><p>Your password reset code is: <strong>{e.Code}</strong></p><p>Expires in 5 minutes.</p>"),
+            _ => ("Your verification code", $"<p>Your code is: <strong>{e.Code}</strong></p>")
         };
 
-        await emailService.SendEmailAsync(new SendEmailRequest
+        var result = await emailService.SendEmailAsync(new SendEmailRequest
         {
             To = e.Email,
             Subject = subject,
             Body = body
         }, ct).ConfigureAwait(false);
 
-        LogDefinitions.LogEmailOtpDelivered(logger, e.Purpose, e.UserId);
+        if (result.IsSuccess)
+        {
+            LogDefinitions.LogEmailOtpDelivered(logger, e.Purpose, e.UserId);
+        }
+        else
+        {
+            logger.LogWarning("Failed to deliver OTP email for {Purpose} to {UserId}: {Message}", e.Purpose, e.UserId, result.Message);
+        }
     }
 }

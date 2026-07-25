@@ -1,11 +1,16 @@
 <div class="table-actions">
     @if (CanView && ViewActions.Count > 0)
     {
-        <MudMenu Dense="true" Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Class="table-action-button view-action" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-            @foreach (var action in ViewActions)
-            {
-                <MudMenuItem OnClick="@(() => OnViewAction.InvokeAsync(action))">@action</MudMenuItem>
-            }
+        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+            <ActivatorContent>
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Class="table-action-button view-action" />
+            </ActivatorContent>
+            <ChildContent>
+                @foreach (var action in ViewActions)
+                {
+                    <MudMenuItem OnClick="@(() => OnViewAction.InvokeAsync(action))">@action</MudMenuItem>
+                }
+            </ChildContent>
         </MudMenu>
     }
     else if (CanView)
@@ -17,11 +22,16 @@
 
     @if (CanEdit && EditActions.Count > 0)
     {
-        <MudMenu Dense="true" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="table-action-button edit-action" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-            @foreach (var action in EditActions)
-            {
-                <MudMenuItem OnClick="@(() => OnEditAction.InvokeAsync(action))">@action</MudMenuItem>
-            }
+        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+            <ActivatorContent>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="table-action-button edit-action" />
+            </ActivatorContent>
+            <ChildContent>
+                @foreach (var action in EditActions)
+                {
+                    <MudMenuItem OnClick="@(() => OnEditAction.InvokeAsync(action))">@action</MudMenuItem>
+                }
+            </ChildContent>
         </MudMenu>
     }
     else if (CanEdit)
@@ -40,11 +50,16 @@
 
     @if (ExtraActions.Count > 0)
     {
-        <MudMenu Dense="true" Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Class="table-action-button" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-            @foreach (var action in ExtraActions)
-            {
-                <MudMenuItem OnClick="@(() => OnExtraAction.InvokeAsync(action))">@action</MudMenuItem>
-            }
+        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+            <ActivatorContent>
+                <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Class="table-action-button" />
+            </ActivatorContent>
+            <ChildContent>
+                @foreach (var action in ExtraActions)
+                {
+                    <MudMenuItem OnClick="@(() => OnExtraAction.InvokeAsync(action))">@action</MudMenuItem>
+                }
+            </ChildContent>
         </MudMenu>
     }
 </div>
