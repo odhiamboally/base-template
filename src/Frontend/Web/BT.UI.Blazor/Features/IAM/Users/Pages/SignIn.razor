@@ -40,10 +40,6 @@
                     <ValidationMessage For="@(() => FormModel!.Password)" />
                 </div>
 
-                <label class="remember-row">
-                    <InputCheckbox @bind-Value="FormModel!.RememberMe" />
-                    <span>Keep me signed in on this device</span>
-                </label>
 
                 <a class="auth-recovery-link" href="/iam/forgot-password">Forgot password?</a>
 

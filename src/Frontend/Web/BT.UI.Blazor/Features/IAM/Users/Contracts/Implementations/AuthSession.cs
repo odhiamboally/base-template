@@ -51,6 +51,15 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
                     {
                         CurrentUser = currentUser.Data;
                         LastError = null;
+                        
+                        if (CurrentUser?.ProfilePictureUrl is not null)
+                        {
+                            var picture = await authService.GetProfilePictureAsync().ConfigureAwait(false);
+                            if (picture.IsSuccess && picture.Data is not null)
+                            {
+                                ProfilePictureDataUri = $"data:{picture.Data.ContentType};base64,{Convert.ToBase64String(picture.Data.Content)}";
+                            }
+                        }
                     }
                     else
                     {

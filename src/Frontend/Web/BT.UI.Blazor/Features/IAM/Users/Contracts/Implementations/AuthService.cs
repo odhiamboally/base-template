@@ -81,6 +81,16 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             request);
     }
 
+    public Task<AppResponse<bool>> ChangePasswordAsync(ChangePasswordRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return SendWithRefreshDataAsync<bool>(
+            HttpMethod.Post,
+            Format(_apiSettings.Endpoints.Iam.Auth.ChangePassword),
+            request);
+    }
+
     public Task<AppResponse<CurrentUserResponse>> GetCurrentUserAsync()
         => SendWithRefreshAsync<CurrentUserResponse>(HttpMethod.Get, Format(_apiSettings.Endpoints.Iam.Auth.CurrentUser));
 
@@ -181,6 +191,43 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             requiresAuthentication: true,
             unavailableMessage: "The identity service is unavailable. Please try again.",
             timeoutMessage: "The identity service timed out. Please try again.");
+
+    private async Task<AppResponse<T>> SendWithRefreshDataAsync<T>(HttpMethod method, string endpoint, object data)
+    {
+        var response = await apiClient.SendAsync<T>(
+            method,
+            endpoint,
+            data,
+            requiresAuthentication: true,
+            unavailableMessage: "The identity service is unavailable. Please try again.",
+            timeoutMessage: "The identity service timed out. Please try again.").ConfigureAwait(false);
+
+        if (response.Error?.Type != ErrorType.Unauthorized)
+        {
+            return response;
+        }
+
+        var (accessToken, refreshToken, _) = await storage.GetAsync().ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return response;
+        }
+
+        var refreshResponse = await RefreshTokenAsync(new RefreshTokenRequest(accessToken, refreshToken)).ConfigureAwait(false);
+        if (!refreshResponse.IsSuccess)
+        {
+            await storage.ClearAsync().ConfigureAwait(false);
+            return AppResponses.Failure<T>(refreshResponse.Message ?? "Your session has expired. Please sign in again.");
+        }
+
+        return await apiClient.SendAsync<T>(
+            method,
+            endpoint,
+            data,
+            requiresAuthentication: true,
+            unavailableMessage: "The identity service is unavailable. Please try again.",
+            timeoutMessage: "The identity service timed out. Please try again.").ConfigureAwait(false);
+    }
 
     private Task<AppResponse<T>> SendRecoveryAsync<T>(string endpoint, object request)
         => apiClient.SendAsync<T>(

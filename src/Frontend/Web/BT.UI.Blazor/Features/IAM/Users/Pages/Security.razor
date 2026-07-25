@@ -1,6 +1,7 @@
 @page "/iam/security"
 @rendermode InteractiveServer
 @using BT.UI.Blazor.Features.Shared.Messaging
+@using BT.UI.Blazor.Features.IAM.Users.Models
 @inject IAuthSession AuthSession
 @inject IAuthService AuthService
 @inject IAuthenticatorQrCodeService QrCodeService
@@ -21,6 +22,42 @@
         </div>
 
         <div class="security-grid">
+            <article class="security-card">
+                <div class="card-heading">
+                    <span>Password</span>
+                </div>
+                <p>Change your account password.</p>
+
+                <EditForm Model="_passwordModel" OnValidSubmit="ChangePasswordAsync">
+                    <DataAnnotationsValidator />
+                    <div class="form-stack mt-3">
+                        <div>
+                            <label for="current-password">Current password</label>
+                            <InputText id="current-password" type="password" class="form-control" @bind-Value="_passwordModel.CurrentPassword" />
+                            <ValidationMessage For="@(() => _passwordModel.CurrentPassword)" />
+                        </div>
+                        <div>
+                            <label for="new-password">New password</label>
+                            <InputText id="new-password" type="password" class="form-control" @bind-Value="_passwordModel.NewPassword" />
+                            <ValidationMessage For="@(() => _passwordModel.NewPassword)" />
+                        </div>
+                        <div>
+                            <label for="confirm-new-password">Confirm new password</label>
+                            <InputText id="confirm-new-password" type="password" class="form-control" @bind-Value="_passwordModel.ConfirmNewPassword" />
+                            <ValidationMessage For="@(() => _passwordModel.ConfirmNewPassword)" />
+                        </div>
+
+                        <MudButton Variant="Variant.Filled" Class="bt-mud-primary" ButtonType="ButtonType.Submit" Disabled="@_isChangingPassword">
+                            @(_isChangingPassword ? "Changing..." : "Change password")
+                        </MudButton>
+                    </div>
+                </EditForm>
+                @if (!string.IsNullOrWhiteSpace(_passwordMessage))
+                {
+                    <MudAlert Severity="@(_passwordIsError ? Severity.Error : Severity.Success)" Variant="Variant.Outlined" Class="mt-3">@_passwordMessage</MudAlert>
+                }
+            </article>
+
             <article class="security-card">
                 <div class="card-heading">
                     <span>Two-factor authentication</span>
@@ -132,6 +169,11 @@
     private BT.SharedKernel.Features.IAM.Users.Dtos.OtpStatusResponse? _otpStatus;
     private BT.SharedKernel.Features.IAM.Users.Dtos.TwoFactorSetupInfo? _setupInfo;
     private readonly TotpVerificationModel _verification = new();
+    
+    private bool _isChangingPassword;
+    private bool _passwordIsError;
+    private string? _passwordMessage;
+    private readonly ChangePasswordFormModel _passwordModel = new();
 
     private bool IsTotpEnabled => _otpStatus?.IsEnabled == true;
 
@@ -245,6 +287,32 @@
         await AuthSession.RefreshAsync();
         await LoadOtpStatusAsync();
         Navigation.NavigateTo("/dashboard", replace: true);
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        _isChangingPassword = true;
+        _passwordIsError = false;
+        _passwordMessage = null;
+
+        var request = new BT.SharedKernel.Features.IAM.Users.Dtos.ChangePasswordRequest(
+            _passwordModel.CurrentPassword,
+            _passwordModel.NewPassword);
+
+        var response = await AuthService.ChangePasswordAsync(request);
+        _isChangingPassword = false;
+
+        if (!response.IsSuccess)
+        {
+            _passwordIsError = true;
+            _passwordMessage = UserMessageSanitizer.Normalize(response.Message, "Could not change password.");
+            return;
+        }
+
+        _passwordModel.CurrentPassword = string.Empty;
+        _passwordModel.NewPassword = string.Empty;
+        _passwordModel.ConfirmNewPassword = string.Empty;
+        _passwordMessage = "Password changed successfully.";
     }
 
     private async Task DisableTotpAsync()

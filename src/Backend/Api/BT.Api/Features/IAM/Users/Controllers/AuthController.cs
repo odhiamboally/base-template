@@ -121,6 +121,20 @@ public sealed class AuthController(ISender sender) : BaseController
         return HandleResponse(response);
     }
 
+    [HttpPost("password/change")]
+    [Authorize]
+    [EnableRateLimiting("AuthPolicy")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var response = await sender
+            .Send(new ChangePasswordCommand(request))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
     [HttpPost("password/reset")]
     [AllowAnonymous]
     [EnableRateLimiting("PasswordResetPolicy")]
