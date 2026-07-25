@@ -12,7 +12,14 @@
                 <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.LastName" Label="Last Name" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
                 <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Username" Label="Username" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
                 <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Email" Label="Email" Margin="Margin.Dense" Variant="Variant.Outlined" Required /></MudItem>
-                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.PhoneNumber" Label="Phone" Margin="Margin.Dense" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="12">
+                    <BT.UI.Blazor.Features.Shared.Phone.Components.PhoneNumberInput @bind-CountryCode="_model.CountryCode"
+                                                                                    @bind-NationalNumber="_model.PhoneNationalNumber"
+                                                                                    @bind-E164="_model.PhoneNumber"
+                                                                                    Required="false"
+                                                                                    CountryColumns="6"
+                                                                                    PhoneColumns="6" />
+                </MudItem>
                 <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.IdNumber" Label="ID Number" Margin="Margin.Dense" Variant="Variant.Outlined" /></MudItem>
                 <MudItem xs="12" sm="4">
                     <MudSelect @bind-Value="_model.Gender" Label="Gender" Variant="Variant.Outlined" Margin="Margin.Dense">
@@ -88,6 +95,26 @@
         {
             Snackbar.Add("Name, username, email, and password are required.", Severity.Warning);
             return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_model.CountryCode) && !string.IsNullOrWhiteSpace(_model.PhoneNationalNumber))
+        {
+            try
+            {
+                var phone = BT.SharedKernel.Features.Shared.Phone.PhoneNumberFormatter.Normalize(_model.CountryCode, _model.PhoneNationalNumber, _model.PhoneNumber ?? string.Empty);
+                _model.CountryCode = phone.CountryCode;
+                _model.PhoneNationalNumber = phone.NationalNumber;
+                _model.PhoneNumber = phone.E164;
+            }
+            catch (ArgumentException)
+            {
+                Snackbar.Add("Enter a valid phone number for the selected country.", Severity.Warning);
+                return;
+            }
+        }
+        else if (string.IsNullOrWhiteSpace(_model.PhoneNationalNumber))
+        {
+            _model.PhoneNumber = null;
         }
 
         _isSaving = true;

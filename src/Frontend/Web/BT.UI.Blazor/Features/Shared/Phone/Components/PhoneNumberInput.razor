@@ -108,7 +108,14 @@
     }
 
     private Task<IEnumerable<CountryCallingCode>> SearchCountriesAsync(string? value, CancellationToken cancellationToken)
-        => Task.FromResult<IEnumerable<CountryCallingCode>>(CountryCallingCodeCatalog.Search(value));
+    {
+        if (string.Equals(value, FormatCountry(_selectedCountry), StringComparison.Ordinal))
+        {
+            value = null; // Return all items when clicking dropdown arrow
+        }
+        
+        return Task.FromResult<IEnumerable<CountryCallingCode>>(CountryCallingCodeCatalog.Search(value));
+    }
 
     private static string FormatCountry(CountryCallingCode? country)
         => country is null ? string.Empty : $"{country.Flag} {country.DisplayName}";
