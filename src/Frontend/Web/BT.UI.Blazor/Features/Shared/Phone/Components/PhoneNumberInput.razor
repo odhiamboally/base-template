@@ -17,7 +17,15 @@
                          CoerceText="true"
                          ResetValueOnEmptyText="false"
                          MaxItems="12"
-                         Required="@Required" />
+                         OpenIcon="@Icons.Material.Filled.ArrowDropDown"
+                         Required="@Required">
+            <ItemTemplate>
+                <div class="d-flex align-center">
+                    <span class="me-2">@context.Flag</span>
+                    <span>@context.DisplayName</span>
+                </div>
+            </ItemTemplate>
+        </MudAutocomplete>
     </MudItem>
     <MudItem xs="12" sm="@PhoneColumns">
         <MudTextField T="string"
@@ -103,7 +111,7 @@
         => Task.FromResult<IEnumerable<CountryCallingCode>>(CountryCallingCodeCatalog.Search(value));
 
     private static string FormatCountry(CountryCallingCode? country)
-        => country?.DisplayName ?? string.Empty;
+        => country is null ? string.Empty : $"{country.Flag} {country.DisplayName}";
 
     private async Task OnCountryChangedAsync(CountryCallingCode? country)
     {

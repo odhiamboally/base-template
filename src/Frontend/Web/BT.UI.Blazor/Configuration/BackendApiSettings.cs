@@ -58,6 +58,8 @@ internal sealed class IamAuthEndpointSettings
 
     public string ForgotPassword { get; init; } = "api/v{version}/iam/auth/password/forgot";
 
+    public string ChangePassword { get; init; } = "api/v{version}/iam/users/password/change";
+
     public string VerifyPasswordResetOtp { get; init; } = "api/v{version}/iam/auth/password/reset/verify-otp";
 
     public string ResetPassword { get; init; } = "api/v{version}/iam/auth/password/reset";

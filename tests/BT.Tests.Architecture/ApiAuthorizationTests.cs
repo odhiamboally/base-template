@@ -38,7 +38,8 @@ public sealed class ApiAuthorizationTests
         "SendEmailOtp",
         "VerifyEmailOtp",
         "VerifyPasswordResetOtp",
-        "VerifyPassword"
+        "VerifyPassword",
+        "ChangePassword"
     ];
 
     [Fact]

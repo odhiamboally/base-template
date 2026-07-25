@@ -160,11 +160,8 @@
     private string? _message;
     private Severity _messageSeverity = Severity.Info;
 
-    private IReadOnlyList<string> AvailableRoles =>
-        [.. _users
-            .SelectMany(static user => user.Roles)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Order(StringComparer.OrdinalIgnoreCase)];
+    private IReadOnlyList<string> AvailableRoles => _availableRoles;
+    private readonly List<string> _availableRoles = [];
 
     private bool HasActiveFilters =>
         !string.IsNullOrWhiteSpace(_searchText)
@@ -198,6 +195,7 @@
         }
 
         ResetPagination();
+        await LoadRolesAsync();
         await LoadUsersAsync();
     }
 
@@ -248,6 +246,16 @@
         _currentCursor = _nextCursor;
         _currentPage++;
         await LoadUsersAsync();
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        var response = await IamAdminService.GetRolesAsync();
+        if (response.IsSuccess && response.Data is not null)
+        {
+            _availableRoles.Clear();
+            _availableRoles.AddRange(response.Data.Select(r => r.Name).Order(StringComparer.OrdinalIgnoreCase));
+        }
     }
 
     private async Task LoadUsersAsync()
