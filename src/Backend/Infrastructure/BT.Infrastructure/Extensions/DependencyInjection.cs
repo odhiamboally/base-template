@@ -811,9 +811,17 @@ public static class DependencyInjection
             }
         });
 
-        if (GetEmailProvider(settings) == EmailProvider.AzureCommunication)
+        if (!string.IsNullOrWhiteSpace(settings.AzureCommunication.ConnectionString) && 
+            settings.AzureCommunication.ConnectionString != "SET_IN_USER_SECRETS")
         {
-            services.AddSingleton(new Azure.Communication.Email.EmailClient(settings.AzureCommunication.ConnectionString));
+            try
+            {
+                services.AddSingleton(new Azure.Communication.Email.EmailClient(settings.AzureCommunication.ConnectionString));
+            }
+            catch
+            {
+                // Ignore invalid connection string at startup. If the provider is set to AzureCommunication, ValidateOnStart will catch it.
+            }
         }
     }
 
