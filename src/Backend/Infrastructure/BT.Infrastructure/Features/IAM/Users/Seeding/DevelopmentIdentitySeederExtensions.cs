@@ -10,11 +10,6 @@ public static class DevelopmentIdentitySeederExtensions
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        if (!app.Environment.IsDevelopment())
-        {
-            return;
-        }
-
         var scope = app.Services.CreateAsyncScope();
         try
         {

@@ -15,6 +15,7 @@ using BT.Infrastructure.Middleware;
 using BT.Persistence.Features.ControlPlane.Extensions;
 using BT.Persistence.Features.Shared.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Serilog;
@@ -217,6 +218,13 @@ try
         healthChecks.AddCheck<KeyVaultHealthCheck>("key-vault", tags: ["ready", "dependency"]);
     }
 
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+
     var app = builder.Build();
 
     await app.SeedDevelopmentIdentityAsync().ConfigureAwait(false);
@@ -230,6 +238,8 @@ try
         app.UseExceptionHandler();
         app.UseHsts();
     }
+
+    app.UseForwardedHeaders();
 
     app.UseInfrastructureLoggingMiddleware();
 
