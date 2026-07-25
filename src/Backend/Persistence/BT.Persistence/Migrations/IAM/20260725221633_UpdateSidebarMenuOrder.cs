@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace BT.Persistence.Features.IAM.Migrations
+namespace BT.Persistence.Migrations.IAM
 {
     /// <inheritdoc />
     public partial class UpdateSidebarMenuOrder : Migration
