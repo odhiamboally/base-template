@@ -9,10 +9,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace BT.Persistence.Features.IAM.Migrations
+namespace BT.Persistence.Migrations.IamPostgreSqlDB
 {
     [DbContext(typeof(IamPostgreSqlDBContext))]
-    [Migration("20260725191120_UpdateSidebarMenuOrder")]
+    [Migration("20260725221717_UpdateSidebarMenuOrder")]
     partial class UpdateSidebarMenuOrder
     {
         /// <inheritdoc />
