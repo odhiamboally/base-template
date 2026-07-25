@@ -16,6 +16,10 @@ internal sealed class AdminUserFormModel
 
     public string? PhoneNumber { get; set; }
 
+    public string CountryCode { get; set; } = BT.SharedKernel.Features.Shared.Phone.PhoneNumberFormatter.DefaultCountryCode;
+
+    public string PhoneNationalNumber { get; set; } = string.Empty;
+
     public string? IdNumber { get; set; }
 
     public string Gender { get; set; } = "Other";
@@ -27,7 +31,7 @@ internal sealed class AdminUserFormModel
         ArgumentNullException.ThrowIfNull(user);
 
         var names = user.FullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-        return new AdminUserFormModel
+        var model = new AdminUserFormModel
         {
             Username = user.UserName,
             Email = user.Email,
@@ -36,6 +40,18 @@ internal sealed class AdminUserFormModel
             PhoneNumber = user.PhoneNumber,
             Role = user.Roles.Count > 0 ? user.Roles[0] : "User"
         };
+        
+        if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+        {
+            var country = BT.SharedKernel.Features.Shared.Phone.CountryCallingCodeCatalog.FindByE164(user.PhoneNumber);
+            if (country is not null)
+            {
+                model.CountryCode = country.DialCode;
+                model.PhoneNationalNumber = user.PhoneNumber[country.DialCode.Length..];
+            }
+        }
+        
+        return model;
     }
 
     public CreateAppUserRequest ToRequest() => new(
