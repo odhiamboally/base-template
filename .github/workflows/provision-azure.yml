@@ -78,6 +78,21 @@ jobs:
             fi
           done
 
+      - name: Resolve Deployment Target
+        id: resolve-target
+        shell: bash
+        run: |
+          TARGET="${{ inputs.deployment_target }}"
+          if [ -z "$TARGET" ]; then
+            TARGET="${{ vars.AZURE_DEPLOYMENT_TARGET }}"
+          fi
+          
+          if [[ "$TARGET" == "app-service" ]]; then
+            echo "bicep_target=app-service" >> "$GITHUB_OUTPUT"
+          else
+            echo "bicep_target=container-apps" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run Bicep Deployment
         uses: azure/arm-deploy@v2
         with:
@@ -89,7 +104,7 @@ jobs:
           parameters: >
             sqlAdministratorLogin="btadmin"
             sqlAdministratorLoginPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD }}"
-            deploymentTarget="${{ inputs.deployment_target || vars.AZURE_DEPLOYMENT_TARGET || 'container-apps' }}"
+            deploymentTarget="${{ steps.resolve-target.outputs.bicep_target }}"
             databaseProvider="${{ vars.DATABASE_PROVIDER || 'SqlServer' }}"
             azureCacheConnectionString="${{ secrets.AZURE_REDIS_CONNECTION_STRING }}"
             manageContainerApps=${{ inputs.manage_container_apps || 'false' }}
