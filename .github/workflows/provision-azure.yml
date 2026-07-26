@@ -89,8 +89,8 @@ jobs:
           parameters: >
             sqlAdministratorLogin="btadmin"
             sqlAdministratorLoginPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD }}"
-            deploymentTarget="${{ inputs.deployment_target }}"
+            deploymentTarget="${{ inputs.deployment_target || vars.AZURE_DEPLOYMENT_TARGET || 'container-apps' }}"
             databaseProvider="${{ vars.DATABASE_PROVIDER || 'SqlServer' }}"
             azureCacheConnectionString="${{ secrets.AZURE_REDIS_CONNECTION_STRING }}"
-            manageContainerApps=${{ inputs.manage_container_apps }}
+            manageContainerApps=${{ inputs.manage_container_apps || 'false' }}
             resourcePrefix="btprod"
