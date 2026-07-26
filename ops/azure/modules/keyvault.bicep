@@ -18,6 +18,13 @@ param serviceBusNamespaceName string
 @secure()
 param azureCacheConnectionString string = ''
 
+@description('Azure Communication Services Connection String.')
+@secure()
+param communicationConnectionString string = ''
+
+@description('Azure Communication Services Managed Domain From Address.')
+param communicationFromAddress string = ''
+
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
   location: location
@@ -82,6 +89,22 @@ resource azureCacheConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-0
   name: 'CacheSettings--Azure--ConnectionString'
   properties: {
     value: azureCacheConnectionString
+  }
+}
+
+resource communicationConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(communicationConnectionString)) {
+  parent: keyVault
+  name: 'EmailSettings--AzureCommunication--ConnectionString'
+  properties: {
+    value: communicationConnectionString
+  }
+}
+
+resource communicationFromAddressSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(communicationFromAddress)) {
+  parent: keyVault
+  name: 'EmailSettings--FromAddress'
+  properties: {
+    value: communicationFromAddress
   }
 }
 
