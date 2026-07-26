@@ -1,6 +1,12 @@
 name: Provision Azure Infrastructure
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ops/azure/**'
+      - '.github/workflows/provision-azure.yml'
   workflow_dispatch:
     inputs:
       deployment_target:
