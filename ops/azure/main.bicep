@@ -112,6 +112,17 @@ module serviceBus 'modules/servicebus.bicep' = {
   }
 }
 
+var communicationServiceName = '${resourcePrefix}-email-${uniqueString(resourceGroup().id)}'
+
+module communication 'modules/communication.bicep' = {
+  name: 'communicationDeploy'
+  params: {
+    communicationServiceName: communicationServiceName
+    emailServiceName: '${communicationServiceName}-es'
+    location: 'global'
+  }
+}
+
 module keyVault 'modules/keyvault.bicep' = {
   name: 'keyVaultDeploy'
   params: {
@@ -125,6 +136,8 @@ module keyVault 'modules/keyvault.bicep' = {
       : 'Host=${postgres.outputs.?serverFullyQualifiedDomainName ?? ''};Port=5432;Database=${postgres.outputs.?databaseName ?? ''};Username=${sqlAdministratorLogin};Password=${sqlAdministratorLoginPassword};Ssl Mode=Require;Trust Server Certificate=false;'
     serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
     azureCacheConnectionString: azureCacheConnectionString
+    communicationConnectionString: communication.outputs.communicationConnectionString
+    communicationFromAddress: communication.outputs.communicationFromAddress
   }
 }
 
