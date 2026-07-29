@@ -1,0 +1,149 @@
+@using MudBlazor
+@using BT.UI.Blazor.Components.Common
+@using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos
+@using BT.SharedKernel.Features.ControlPlane.Stamps.Dtos
+@using BT.UI.Blazor.Features.ControlPlane.Tenants.Contracts
+@using BT.UI.Blazor.Features.ControlPlane.Stamps.Contracts
+@inject ITenantService TenantService
+@inject IDeploymentStampService StampService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+    <EditForm FormName="control-plane-tenant-form" Model="_model" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.DisplayName" Label="Display Name" Margin="Margin.Dense" Variant="Variant.Outlined" Required />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.HostName" Label="Hostname" Margin="Margin.Dense" Variant="Variant.Outlined" Required />
+                </MudItem>
+                @if (ExistingTenant is null)
+                {
+                    <MudItem xs="12">
+                        <MudSelect @bind-Value="_model.SubscriptionTier" Label="Subscription Tier" Margin="Margin.Dense" Variant="Variant.Outlined" Required>
+                            <MudSelectItem Value="@("Pooled")">Pooled</MudSelectItem>
+                            <MudSelectItem Value="@("Isolated")">Isolated</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudSelect @bind-Value="_model.DeploymentStampId" Label="Deployment Stamp" Margin="Margin.Dense" Variant="Variant.Outlined" Required>
+                            @foreach (var stamp in _stamps)
+                            {
+                                <MudSelectItem Value="@stamp.Id">@stamp.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+                }
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Size="Size.Small" Class="bt-mud-primary" Disabled="_isSaving" OnClick="SaveAsync">@(_isSaving ? "Saving..." : SaveLabel)</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private TenantFormModel _model = new();
+    private bool _isSaving;
+    private List<DeploymentStampResponse> _stamps = [];
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public TenantResponse? ExistingTenant { get; set; }
+
+    private string SaveLabel => ExistingTenant is null ? "Create" : "Update";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _model = ExistingTenant is null
+            ? new TenantFormModel()
+            : TenantFormModel.From(ExistingTenant);
+
+        if (ExistingTenant is null)
+        {
+            var stampsResponse = await StampService.GetAllAsync();
+            if (stampsResponse.IsSuccess && stampsResponse.Data is not null)
+            {
+                _stamps = stampsResponse.Data;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_model.DisplayName) || string.IsNullOrWhiteSpace(_model.HostName))
+        {
+            Snackbar.Add("Display Name and Hostname are required.", Severity.Warning);
+            return;
+        }
+
+        if (ExistingTenant is null && _model.DeploymentStampId == Guid.Empty)
+        {
+            Snackbar.Add("A deployment stamp must be selected.", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        var response = ExistingTenant is null
+            ? await TenantService.CreateAsync(_model.ToCreateRequest())
+            : await TenantService.UpdateAsync(_model.Id, _model.ToUpdateRequest());
+        _isSaving = false;
+
+        if (!response.IsSuccess)
+        {
+            Snackbar.Add(response.Message ?? "Tenant save failed.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add(ExistingTenant is null ? "Tenant created." : "Tenant updated.", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(response.Data));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class TenantFormModel
+    {
+        public Guid Id { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
+        public string HostName { get; set; } = string.Empty;
+        public string SubscriptionTier { get; set; } = "Standard";
+        public string Identifier { get; set; } = string.Empty;
+        public Guid DeploymentStampId { get; set; }
+        
+
+        public static TenantFormModel From(TenantResponse tenant)
+            => new()
+            {
+                Id = tenant.Id,
+                DisplayName = tenant.DisplayName,
+                HostName = tenant.HostName,
+                SubscriptionTier = tenant.SubscriptionTier,
+                Identifier = tenant.Identifier
+            };
+
+        public CreateTenantRequest ToCreateRequest()
+            => new()
+            {
+                DisplayName = DisplayName,
+                HostName = HostName,
+                SubscriptionTier = SubscriptionTier,
+                Identifier = Identifier,
+                DeploymentStampId = DeploymentStampId
+            };
+
+        public UpdateTenantRequest ToUpdateRequest()
+            => new()
+            {
+                DisplayName = DisplayName,
+                HostName = HostName,
+                SubscriptionTier = SubscriptionTier
+            };
+    }
+}
+

@@ -1,0 +1,78 @@
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos;
+using BT.UI.Blazor.Features.ControlPlane.Tenants.Contracts;
+using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Interfaces;
+
+namespace BT.UI.Blazor.Features.ControlPlane.Tenants.Implementations;
+
+internal class TenantService(IBackendApiClient client) : ITenantService
+{
+    private const string BasePath = "api/v1/control-plane/tenants";
+
+    public async Task<AppResponse<List<TenantResponse>>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<List<TenantResponse>>(
+            HttpMethod.Get,
+            BasePath,
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to retrieve tenants.",
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<AppResponse<TenantResponse>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<TenantResponse>(
+            HttpMethod.Get,
+            $"{BasePath}/{id}",
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to retrieve tenant.",
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<AppResponse<TenantResponse>> CreateAsync(CreateTenantRequest request, CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<TenantResponse>(
+            HttpMethod.Post,
+            BasePath,
+            request: request,
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to create tenant.",
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<AppResponse<TenantResponse>> UpdateAsync(Guid id, UpdateTenantRequest request, CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<TenantResponse>(
+            HttpMethod.Put,
+            $"{BasePath}/{id}",
+            request: request,
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to update tenant.",
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<AppResponse<TenantResponse>> SuspendAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<TenantResponse>(
+            HttpMethod.Patch,
+            $"{BasePath}/{id}/suspend",
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to suspend tenant.",
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<AppResponse<TenantResponse>> ActivateAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<TenantResponse>(
+            HttpMethod.Patch,
+            $"{BasePath}/{id}/activate",
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to activate tenant.",
+            cancellationToken: cancellationToken);
+    }
+}

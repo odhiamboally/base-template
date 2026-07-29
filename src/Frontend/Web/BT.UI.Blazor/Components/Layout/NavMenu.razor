@@ -39,7 +39,11 @@
     [
         new(Guid.Empty, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, 1, true, []),
         new(Guid.Empty, null, null, "dashboard", "Dashboard", "Operations dashboard.", "/dashboard", "Dashboard", "Sidebar", null, 2, true, []),
-        new(Guid.Empty, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, 3, true, [])
+        new(Guid.Empty, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, 3, true, []),
+        new(Guid.Empty, null, null, "control-panel", "Control Panel", "Platform management.", "/system/control-panel/tenants", "Dns", "Sidebar", "Permissions.ControlPlane.Manage", 4, true, [
+            new(Guid.Empty, null, null, "control-panel-tenants", "Tenants", "Manage SaaS tenants.", "/system/control-panel/tenants", "Business", "Sidebar", "Permissions.ControlPlane.Manage", 1, true, []),
+            new(Guid.Empty, null, null, "control-panel-stamps", "Stamps", "Deployment stamps.", "/system/control-panel/stamps", "Dns", "Sidebar", "Permissions.ControlPlane.Manage", 2, true, [])
+        ])
     ];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

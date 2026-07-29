@@ -9,6 +9,7 @@ internal static class MenuItemSeed
 
     private static readonly Guid DashboardId = Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10101");
     private static readonly Guid AdminId = Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10201");
+    private static readonly Guid ControlPanelId = Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10501");
     private static readonly Guid OverviewId = Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10301");
 
     internal static IReadOnlyList<MenuItem> Items =>
@@ -16,6 +17,9 @@ internal static class MenuItemSeed
         Create(OverviewId, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, 1),
         Create(DashboardId, null, null, "dashboard", "Dashboard", "Operations dashboard.", "/dashboard", "Dashboard", "Sidebar", null, 2),
         Create(AdminId, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, 3),
+        Create(ControlPanelId, null, null, "control-panel", "Control Panel", "Platform management.", "/system/control-panel/tenants", "Dns", "Sidebar", "Permissions.ControlPlane.Manage", 4),
+        Create("018fd81d-2c94-7ad0-a4a3-f1edb9c30101", ControlPanelId, null, "control-panel-tenants", "Tenants", "Manage SaaS tenants.", "/system/control-panel/tenants", "Business", "Sidebar", "Permissions.ControlPlane.Manage", 10),
+        Create("018fd81d-2c94-7ad0-a4a3-f1edb9c30102", ControlPanelId, null, "control-panel-stamps", "Stamps", "Deployment stamps.", "/system/control-panel/stamps", "Dns", "Sidebar", "Permissions.ControlPlane.Manage", 20),
 
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c10401", null, null, "features", "Features", "Reusable platform capability showcases.", "/features", "MenuOpen", "Sidebar", null, 4),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9c10402", Guid.Parse("018fd81d-2c94-7ad0-a4a3-f1edb9c10401"), null, "features-payments", "Payments", "Test card and mobile-money payment flows.", "/features/payments", "CreditCard", "Sidebar", "payments.view", 10),
