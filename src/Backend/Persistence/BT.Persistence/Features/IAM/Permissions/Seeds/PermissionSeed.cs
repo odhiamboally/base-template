@@ -38,9 +38,9 @@ internal static class PermissionSeed
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9b10604", "Platform", "menus", "delete", "Delete menu items."),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9b10701", "Shared", "payments", "view", "View payment history and provider readiness."),
         Create("018fd81d-2c94-7ad0-a4a3-f1edb9b10702", "Shared", "payments", "create", "Initiate payment checkout flows."),
-        Create("018fd81d-2c94-7ad0-a4a3-f1edb9b10703", "Shared", "payments", "admin", "Manage M-Pesa payment administration actions.")
+        Create("018fd81d-2c94-7ad0-a4a3-f1edb9b10703", "Shared", "payments", "admin", "Manage M-Pesa payment administration actions."),
+        Create("018fd81d-2c94-7ad0-a4a3-f1edb9b10801", "ControlPlane", "manage", "manage", "Manage Control Plane Tenants and Stamps.")
     ];
-
     private static Permission Create(string id, string context, string resource, string action, string description)
     {
         var permission = Permission.Create(null, context, resource, action, description, "System");

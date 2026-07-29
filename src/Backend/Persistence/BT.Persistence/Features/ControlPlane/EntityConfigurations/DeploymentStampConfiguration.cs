@@ -41,5 +41,18 @@ internal class DeploymentStampConfiguration : IEntityTypeConfiguration<Deploymen
 
         builder.Property(x => x.RowVersion)
             .IsRowVersion();
+
+        builder.HasIndex(x => x.Name).IsUnique();
+
+        // Seed default stamp
+        builder.HasData(new DeploymentStamp
+        {
+            Id = Guid.Parse("0194f700-0000-7000-8000-000000000001"),
+            Name = "default-pooled-stamp",
+            TargetResourceGroup = "rg-basetemplate-dev",
+            IsolationTier = BT.Domain.Features.ControlPlane.Tenants.Enums.IsolationTier.Pooled,
+            CreatedBy = "System",
+            CreatedAt = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        });
     }
 }

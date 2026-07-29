@@ -3,6 +3,7 @@ using System;
 using BT.Persistence.Features.ControlPlane.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BT.Persistence.Features.ControlPlane.Migrations.PostgreSql
 {
     [DbContext(typeof(ControlPlanePostgreSqlDBContext))]
-    partial class ControlPlanePostgreSqlDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260729055853_UpdateControlPlaneWithSaaSEntities")]
+    partial class UpdateControlPlaneWithSaaSEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

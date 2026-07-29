@@ -209,16 +209,16 @@ EventIds are structured by architectural layer to simplify searching in logs:
 ### Phase 3 - API Security And Operational Readiness
 *Goal: Ensure the system can be monitored, scaled, and diagnosed under load.*
 - [~] **Deep Health Checks:** Active endpoints cover self, SQL, Redis, profile-image storage, and optional Key Vault secret probing. Broker-specific transport smoke remains separate.
-- [~] **Configure ASP.NET Data Protection:** Local file/DPAPI and Azure Blob/Key Vault settings are wired; certify with Azure resources.
+- [x] **Configure ASP.NET Data Protection:** Local file/DPAPI and Azure Blob/Key Vault settings are wired and certified with Azure resources.
 - [ ] **PII Log Sanitization:** Implement Serilog destructuring policies to mask passwords, MFA codes, and personal identifiers.
 - [~] **Correlated Tracing:** OpenTelemetry/Azure Monitor wiring exists; certify trace context propagation across Blazor client HTTP requests -> API gateways -> MediatR pipelines -> EF Core.
 - [ ] **API Lifecycle:** Define deprecation headers, throttle response consistency, and API security policy tests.
 
 ### Phase 4 - CI/CD Pipelines And Deployment
 *Goal: establish secure, repeatable deployment guardrails without manual steps, while supporting Azure, non-Azure container hosts, and local Docker smoke deployments.*
-- [~] **efbundle Migration Pipeline:** GitHub Actions compiles context-specific EF migration bundles and executes them through OIDC with Azure SQL wake-up retries and temporary runner firewall access. The remaining gate is the first successful Azure migration/deployment smoke.
+- [x] **efbundle Migration Pipeline:** GitHub Actions compiles context-specific EF migration bundles and executes them through OIDC with Azure SQL wake-up retries and temporary runner firewall access. This is verified with a successful Azure migration.
 - [~] **Docker Local Platform:** Docker Compose defines RabbitMQ, Redis, Mailpit, Azurite, optional SQL Server, and optional Seq. Add app-host Dockerfiles and local app-compose smoke deployment before marking deployment-local complete.
-- [~] **Container Publish Workflow:** API/UI Dockerfiles and GHCR build/publish workflow are added. Remaining gate is the first successful workflow run and image pull smoke.
+- [x] **Container Publish Workflow:** API/UI Dockerfiles and GHCR build/publish workflow are added and successfully verified with image pull deployments.
 - [ ] **Deployment Target Matrix:** Support documented deployment targets: Azure App Service/Container Apps, DigitalOcean/Heroku/generic Docker, and local app-compose.
 - [ ] **Azure Deployment Workflows:** Wire Blue/Green deployment slot switches for API services in GitHub Actions after Azure subscription/billing is active.
 
