@@ -27,14 +27,15 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
 
     public async Task<AppResponse<DeploymentStampResponse>> Handle(UpdateDeploymentStampCommand request, CancellationToken cancellationToken)
     {
-        var stamp = await _unitOfWork.DeploymentStamps.FindByIdAsync(request.Id, cancellationToken);
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
+        var stamp = await _unitOfWork.DeploymentStamps.FindByIdAsync(request.Id, cancellationToken).ConfigureAwait(false);
 
         if (stamp == null)
         {
             return AppResponses.Failure<DeploymentStampResponse>("Deployment stamp not found.");
         }
 
-        var duplicateName = await _unitOfWork.DeploymentStamps.AnyAsync(s => s.Name == request.Request.Name && s.Id != request.Id, cancellationToken);
+        var duplicateName = await _unitOfWork.DeploymentStamps.AnyAsync(s => s.Name == request.Request.Name && s.Id != request.Id, cancellationToken).ConfigureAwait(false);
 
         if (duplicateName)
         {
@@ -54,14 +55,12 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
         stamp.Name = request.Request.Name;
         stamp.TargetResourceGroup = request.Request.TargetResourceGroup;
         stamp.IsolationTier = parsedTier;
-        stamp.DatabaseConnectionString = request.Request.DatabaseConnectionString;
         stamp.KeyVaultUri = request.Request.KeyVaultUri;
-        stamp.CacheConnectionString = request.Request.CacheConnectionString;
         stamp.UpdatedAt = DateTimeOffset.UtcNow;
         stamp.UpdatedBy = "System";
 
-        await _unitOfWork.DeploymentStamps.UpdateAsync(stamp, cancellationToken);
-        await _unitOfWork.CompleteAsync(cancellationToken);
+        await _unitOfWork.DeploymentStamps.UpdateAsync(stamp, cancellationToken).ConfigureAwait(false)  ;
+        await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation("Updated deployment stamp {StampId} ({Name})", stamp.Id, stamp.Name);
 
@@ -71,6 +70,7 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
             Name = stamp.Name,
             TargetResourceGroup = stamp.TargetResourceGroup,
             IsolationTier = stamp.IsolationTier.ToDisplayString(),
+            KeyVaultUri = stamp.KeyVaultUri,
             CreatedAt = stamp.CreatedAt,
             UpdatedAt = stamp.UpdatedAt
         };

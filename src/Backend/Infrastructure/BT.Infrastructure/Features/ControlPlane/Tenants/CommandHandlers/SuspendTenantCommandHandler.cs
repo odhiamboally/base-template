@@ -27,7 +27,8 @@ public class SuspendTenantCommandHandler : IRequestHandler<SuspendTenantCommand,
 
     public async Task<AppResponse<TenantResponse>> Handle(SuspendTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenant = await _unitOfWork.Tenants.FindByIdAsync(request.Id, cancellationToken);
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
+        var tenant = await _unitOfWork.Tenants.FindByIdAsync(request.Id, cancellationToken).ConfigureAwait(false);
 
         if (tenant == null)
         {
@@ -38,8 +39,8 @@ public class SuspendTenantCommandHandler : IRequestHandler<SuspendTenantCommand,
         tenant.UpdatedAt = DateTimeOffset.UtcNow;
         tenant.UpdatedBy = "System";
 
-        await _unitOfWork.Tenants.UpdateAsync(tenant, cancellationToken);
-        await _unitOfWork.CompleteAsync(cancellationToken);
+        await _unitOfWork.Tenants.UpdateAsync(tenant, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation("Suspended tenant {TenantId} ({Identifier})", tenant.Id, tenant.Identifier);
 

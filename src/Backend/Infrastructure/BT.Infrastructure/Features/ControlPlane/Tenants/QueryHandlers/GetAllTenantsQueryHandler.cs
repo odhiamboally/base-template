@@ -25,7 +25,7 @@ public class GetAllTenantsQueryHandler : IRequestHandler<GetAllTenantsQuery, App
     {
         var rawTenants = await _unitOfWork.Tenants.FindAll()
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
 
         var tenants = rawTenants
             .Select(t => new TenantResponse

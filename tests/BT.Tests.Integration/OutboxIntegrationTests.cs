@@ -53,7 +53,7 @@ public class OutboxIntegrationTests
             })
             .BuildServiceProvider(true);
 
-        using var scope = provider.CreateScope();
+        await using var scope = provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<SharedDBContext>();
 
         await db.Database.EnsureCreatedAsync();
@@ -99,7 +99,7 @@ public class OutboxIntegrationTests
             })
             .BuildServiceProvider(true);
 
-        using var scope = provider.CreateScope();
+        await using var scope = provider.CreateAsyncScope();
 
         var db = scope.ServiceProvider.GetRequiredService<SharedDBContext>();
         var publisher = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();

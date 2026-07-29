@@ -6,7 +6,5 @@ public class CreateDeploymentStampRequest
     public required string TargetResourceGroup { get; set; }
     public required string IsolationTier { get; set; }
 
-    public string? DatabaseConnectionString { get; set; }
     public string? KeyVaultUri { get; set; }
-    public string? CacheConnectionString { get; set; }
 }

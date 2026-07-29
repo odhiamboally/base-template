@@ -24,12 +24,7 @@
                 </MudItem>
                 @if (ExistingStamp is null)
                 {
-                    <MudItem xs="12">
-                        <MudTextField @bind-Value="_model.DatabaseConnectionString" Label="Database Connection String" Margin="Margin.Dense" Variant="Variant.Outlined" HelperText="Leave blank to use default or manage via Key Vault later" />
-                    </MudItem>
-                    <MudItem xs="12">
-                        <MudTextField @bind-Value="_model.CacheConnectionString" Label="Cache Connection String" Margin="Margin.Dense" Variant="Variant.Outlined" />
-                    </MudItem>
+
                     <MudItem xs="12">
                         <MudTextField @bind-Value="_model.KeyVaultUri" Label="Key Vault URI" Margin="Margin.Dense" Variant="Variant.Outlined" />
                     </MudItem>
@@ -94,8 +89,6 @@
         public string Name { get; set; } = string.Empty;
         public string TargetResourceGroup { get; set; } = string.Empty;
         public string IsolationTier { get; set; } = "Pooled";
-        public string? DatabaseConnectionString { get; set; }
-        public string? CacheConnectionString { get; set; }
         public string? KeyVaultUri { get; set; }
 
         public static StampFormModel From(DeploymentStampResponse stamp)
@@ -104,7 +97,8 @@
                 Id = stamp.Id,
                 Name = stamp.Name,
                 TargetResourceGroup = stamp.TargetResourceGroup,
-                IsolationTier = stamp.IsolationTier
+                IsolationTier = stamp.IsolationTier,
+                KeyVaultUri = stamp.KeyVaultUri
             };
 
         public CreateDeploymentStampRequest ToCreateRequest()
@@ -113,8 +107,6 @@
                 Name = Name,
                 TargetResourceGroup = TargetResourceGroup,
                 IsolationTier = IsolationTier,
-                DatabaseConnectionString = DatabaseConnectionString,
-                CacheConnectionString = CacheConnectionString,
                 KeyVaultUri = KeyVaultUri
             };
 
@@ -124,7 +116,8 @@
                 
                 Name = Name,
                 TargetResourceGroup = TargetResourceGroup,
-                IsolationTier = IsolationTier
+                IsolationTier = IsolationTier,
+                KeyVaultUri = KeyVaultUri
             };
     }
 }

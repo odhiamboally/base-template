@@ -25,7 +25,7 @@ public class GetAllDeploymentStampsQueryHandler : IRequestHandler<GetAllDeployme
     {
         var rawStamps = await _unitOfWork.DeploymentStamps.FindAll()
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
 
         var stamps = rawStamps
             .Select(s => new DeploymentStampResponse
@@ -34,6 +34,7 @@ public class GetAllDeploymentStampsQueryHandler : IRequestHandler<GetAllDeployme
                 Name = s.Name,
                 TargetResourceGroup = s.TargetResourceGroup,
                 IsolationTier = s.IsolationTier.ToDisplayString(),
+                KeyVaultUri = s.KeyVaultUri,
                 CreatedAt = s.CreatedAt,
                 UpdatedAt = s.UpdatedAt
             })

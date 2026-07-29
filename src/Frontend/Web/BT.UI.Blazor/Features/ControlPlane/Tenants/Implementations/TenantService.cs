@@ -21,7 +21,7 @@ internal class TenantService(IBackendApiClient client) : ITenantService
             BasePath,
             requiresAuthentication: true,
             unavailableMessage: "Unable to retrieve tenants.",
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AppResponse<TenantResponse>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -31,7 +31,7 @@ internal class TenantService(IBackendApiClient client) : ITenantService
             $"{BasePath}/{id}",
             requiresAuthentication: true,
             unavailableMessage: "Unable to retrieve tenant.",
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AppResponse<TenantResponse>> CreateAsync(CreateTenantRequest request, CancellationToken cancellationToken = default)
@@ -42,7 +42,7 @@ internal class TenantService(IBackendApiClient client) : ITenantService
             request: request,
             requiresAuthentication: true,
             unavailableMessage: "Unable to create tenant.",
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AppResponse<TenantResponse>> UpdateAsync(Guid id, UpdateTenantRequest request, CancellationToken cancellationToken = default)
@@ -53,7 +53,7 @@ internal class TenantService(IBackendApiClient client) : ITenantService
             request: request,
             requiresAuthentication: true,
             unavailableMessage: "Unable to update tenant.",
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AppResponse<TenantResponse>> SuspendAsync(Guid id, CancellationToken cancellationToken = default)
@@ -63,7 +63,7 @@ internal class TenantService(IBackendApiClient client) : ITenantService
             $"{BasePath}/{id}/suspend",
             requiresAuthentication: true,
             unavailableMessage: "Unable to suspend tenant.",
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AppResponse<TenantResponse>> ActivateAsync(Guid id, CancellationToken cancellationToken = default)
@@ -73,6 +73,6 @@ internal class TenantService(IBackendApiClient client) : ITenantService
             $"{BasePath}/{id}/activate",
             requiresAuthentication: true,
             unavailableMessage: "Unable to activate tenant.",
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }

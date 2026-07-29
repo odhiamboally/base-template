@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.45.15.27210",
-      "templateHash": "7585838531547602467"
+      "templateHash": "1618285683006371517"
     }
   },
   "parameters": {
@@ -74,12 +74,13 @@
   },
   "variables": {
     "sqlServerName": "[format('{0}-sql-{1}', parameters('resourcePrefix'), uniqueString(resourceGroup().id))]",
-    "acrName": "[format('{0}acr{1}', parameters('resourcePrefix'), uniqueString(resourceGroup().id))]",
     "logAnalyticsName": "[format('{0}-law-{1}', parameters('resourcePrefix'), uniqueString(resourceGroup().id))]",
     "acaEnvName": "[format('{0}-env-{1}', parameters('resourcePrefix'), uniqueString(resourceGroup().id))]",
     "apiAppName": "[format('{0}-api', parameters('resourcePrefix'))]",
     "uiAppName": "[format('{0}-ui', parameters('resourcePrefix'))]",
     "appServicePlanName": "[format('{0}-asp', parameters('resourcePrefix'))]",
+    "redisName": "[format('{0}-redis-{1}', parameters('resourcePrefix'), uniqueString(resourceGroup().id))]",
+    "appInsightsName": "[format('{0}-ai-{1}', parameters('resourcePrefix'), uniqueString(resourceGroup().id))]",
     "keyVaultName": "[take(format('{0}kv{1}', parameters('resourcePrefix'), uniqueString(resourceGroup().id)), 24)]",
     "keyVaultUri": "[format('https://{0}{1}/', variables('keyVaultName'), environment().suffixes.keyvaultDns)]",
     "storageAccountName": "[take(format('{0}st{1}', parameters('resourcePrefix'), uniqueString(resourceGroup().id)), 24)]",
@@ -367,6 +368,78 @@
       }
     },
     {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "logAnalyticsDeploy",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "logAnalyticsWorkspaceName": {
+            "value": "[variables('logAnalyticsName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.45.15.27210",
+              "templateHash": "9772354710304753533"
+            }
+          },
+          "parameters": {
+            "logAnalyticsWorkspaceName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Log Analytics Workspace"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for all resources."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2022-10-01",
+              "name": "[parameters('logAnalyticsWorkspaceName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30
+              }
+            }
+          ],
+          "outputs": {
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]"
+            },
+            "customerId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2022-10-01').customerId]"
+            },
+            "primarySharedKey": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2022-10-01').primarySharedKey]"
+            }
+          }
+        }
+      }
+    },
+    {
       "condition": "[equals(parameters('deploymentTarget'), 'container-apps')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
@@ -380,11 +453,11 @@
           "environmentName": {
             "value": "[variables('acaEnvName')]"
           },
-          "logAnalyticsWorkspaceName": {
-            "value": "[variables('logAnalyticsName')]"
+          "logAnalyticsCustomerId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logAnalyticsDeploy'), '2025-04-01').outputs.customerId.value]"
           },
-          "containerRegistryName": {
-            "value": "[variables('acrName')]"
+          "logAnalyticsSharedKey": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logAnalyticsDeploy'), '2025-04-01').outputs.primarySharedKey.value]"
           },
           "apiAppName": {
             "value": "[variables('apiAppName')]"
@@ -418,7 +491,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.45.15.27210",
-              "templateHash": "17634665947553482933"
+              "templateHash": "9013156339466093895"
             }
           },
           "parameters": {
@@ -428,16 +501,16 @@
                 "description": "Name of the Container Apps Environment"
               }
             },
-            "logAnalyticsWorkspaceName": {
+            "logAnalyticsCustomerId": {
               "type": "string",
               "metadata": {
-                "description": "Name of the Log Analytics Workspace"
+                "description": "The Customer ID of the Log Analytics Workspace"
               }
             },
-            "containerRegistryName": {
-              "type": "string",
+            "logAnalyticsSharedKey": {
+              "type": "securestring",
               "metadata": {
-                "description": "Name of the Azure Container Registry (must be globally unique and alphanumeric only)"
+                "description": "The Shared Key of the Log Analytics Workspace"
               }
             },
             "apiAppName": {
@@ -494,34 +567,7 @@
               }
             }
           },
-          "variables": {
-            "acrPullRoleId": "7f951dda-4ed3-4680-a7ca-43fe172d538d"
-          },
           "resources": [
-            {
-              "type": "Microsoft.ContainerRegistry/registries",
-              "apiVersion": "2023-07-01",
-              "name": "[parameters('containerRegistryName')]",
-              "location": "[parameters('location')]",
-              "sku": {
-                "name": "Basic"
-              },
-              "properties": {
-                "adminUserEnabled": false
-              }
-            },
-            {
-              "type": "Microsoft.OperationalInsights/workspaces",
-              "apiVersion": "2022-10-01",
-              "name": "[parameters('logAnalyticsWorkspaceName')]",
-              "location": "[parameters('location')]",
-              "properties": {
-                "sku": {
-                  "name": "PerGB2018"
-                },
-                "retentionInDays": 30
-              }
-            },
             {
               "type": "Microsoft.App/managedEnvironments",
               "apiVersion": "2023-05-01",
@@ -531,14 +577,11 @@
                 "appLogsConfiguration": {
                   "destination": "log-analytics",
                   "logAnalyticsConfiguration": {
-                    "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2022-10-01').customerId]",
-                    "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2022-10-01').primarySharedKey]"
+                    "customerId": "[parameters('logAnalyticsCustomerId')]",
+                    "sharedKey": "[parameters('logAnalyticsSharedKey')]"
                   }
                 }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]"
-              ]
+              }
             },
             {
               "condition": "[parameters('manageContainerApps')]",
@@ -668,43 +711,9 @@
               "dependsOn": [
                 "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]"
               ]
-            },
-            {
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName'))]",
-              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName')), parameters('apiAppName'), variables('acrPullRoleId'))]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('acrPullRoleId'))]",
-                "principalId": "[if(parameters('manageContainerApps'), reference(resourceId('Microsoft.App/containerApps', parameters('apiAppName')), '2023-05-01', 'full').identity.principalId, reference(resourceId('Microsoft.App/containerApps', parameters('apiAppName')), '2023-05-01', 'full').identity.principalId)]",
-                "principalType": "ServicePrincipal"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName'))]",
-                "[resourceId('Microsoft.App/containerApps', parameters('apiAppName'))]"
-              ]
-            },
-            {
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName'))]",
-              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName')), parameters('uiAppName'), variables('acrPullRoleId'))]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('acrPullRoleId'))]",
-                "principalId": "[if(parameters('manageContainerApps'), reference(resourceId('Microsoft.App/containerApps', parameters('uiAppName')), '2023-05-01', 'full').identity.principalId, reference(resourceId('Microsoft.App/containerApps', parameters('uiAppName')), '2023-05-01', 'full').identity.principalId)]",
-                "principalType": "ServicePrincipal"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName'))]",
-                "[resourceId('Microsoft.App/containerApps', parameters('uiAppName'))]"
-              ]
             }
           ],
           "outputs": {
-            "acrLoginServer": {
-              "type": "string",
-              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName')), '2023-07-01').loginServer]"
-            },
             "apiFqdn": {
               "type": "string",
               "value": "[if(parameters('manageContainerApps'), reference(resourceId('Microsoft.App/containerApps', parameters('apiAppName')), '2023-05-01').configuration.ingress.fqdn, reference(resourceId('Microsoft.App/containerApps', parameters('apiAppName')), '2023-05-01').configuration.ingress.fqdn)]"
@@ -723,7 +732,10 @@
             }
           }
         }
-      }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logAnalyticsDeploy')]"
+      ]
     },
     {
       "condition": "[equals(parameters('deploymentTarget'), 'app-service')]",
@@ -951,6 +963,149 @@
       }
     },
     {
+      "condition": "[empty(parameters('azureCacheConnectionString'))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "redisDeploy",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "redisCacheName": {
+            "value": "[variables('redisName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.45.15.27210",
+              "templateHash": "4139479196462193855"
+            }
+          },
+          "parameters": {
+            "redisCacheName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Azure Cache for Redis instance"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The location for the Redis Cache"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Cache/redis",
+              "apiVersion": "2023-08-01",
+              "name": "[parameters('redisCacheName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "Basic",
+                  "family": "C",
+                  "capacity": 0
+                },
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2"
+              }
+            }
+          ],
+          "outputs": {
+            "redisConnectionString": {
+              "type": "string",
+              "value": "[format('{0},abortConnect=false,ssl=true,password={1}', reference(resourceId('Microsoft.Cache/redis', parameters('redisCacheName')), '2023-08-01').hostName, listKeys(resourceId('Microsoft.Cache/redis', parameters('redisCacheName')), '2023-08-01').primaryKey)]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "appInsightsDeploy",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "appInsightsName": {
+            "value": "[variables('appInsightsName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logAnalyticsDeploy'), '2025-04-01').outputs.logAnalyticsWorkspaceId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.45.15.27210",
+              "templateHash": "6681090560098529527"
+            }
+          },
+          "parameters": {
+            "appInsightsName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Application Insights component"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The location for the Application Insights component"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the Log Analytics Workspace to link to"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[parameters('appInsightsName')]",
+              "location": "[parameters('location')]",
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web",
+                "WorkspaceResourceId": "[parameters('logAnalyticsWorkspaceId')]"
+              }
+            }
+          ],
+          "outputs": {
+            "appInsightsConnectionString": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('appInsightsName')), '2020-02-02').ConnectionString]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logAnalyticsDeploy')]"
+      ]
+    },
+    {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "serviceBusDeploy",
@@ -1162,14 +1317,15 @@
           "serviceBusNamespaceName": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'serviceBusDeploy'), '2025-04-01').outputs.serviceBusNamespaceName.value]"
           },
-          "azureCacheConnectionString": {
-            "value": "[parameters('azureCacheConnectionString')]"
-          },
+          "azureCacheConnectionString": "[if(not(empty(parameters('azureCacheConnectionString'))), createObject('value', parameters('azureCacheConnectionString')), createObject('value', reference(resourceId('Microsoft.Resources/deployments', 'redisDeploy'), '2025-04-01').outputs.redisConnectionString.value))]",
           "communicationConnectionString": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'communicationDeploy'), '2025-04-01').outputs.communicationConnectionString.value]"
           },
           "communicationFromAddress": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'communicationDeploy'), '2025-04-01').outputs.communicationFromAddress.value]"
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'appInsightsDeploy'), '2025-04-01').outputs.appInsightsConnectionString.value]"
           }
         },
         "template": {
@@ -1179,7 +1335,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.45.15.27210",
-              "templateHash": "8527762320336186186"
+              "templateHash": "4615712646435723266"
             }
           },
           "parameters": {
@@ -1233,6 +1389,13 @@
               "defaultValue": "",
               "metadata": {
                 "description": "Azure Communication Services Managed Domain From Address."
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Application Insights Connection String."
               }
             }
           },
@@ -1332,6 +1495,18 @@
               ]
             },
             {
+              "condition": "[not(empty(parameters('appInsightsConnectionString')))]",
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'ApplicationInsights--ConnectionString')]",
+              "properties": {
+                "value": "[parameters('appInsightsConnectionString')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
               "condition": "[not(empty(parameters('apiPrincipalId')))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
@@ -1375,10 +1550,12 @@
         }
       },
       "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'appInsightsDeploy')]",
         "[resourceId('Microsoft.Resources/deployments', 'appServiceDeploy')]",
         "[resourceId('Microsoft.Resources/deployments', 'communicationDeploy')]",
         "[resourceId('Microsoft.Resources/deployments', 'acaDeploy')]",
         "[resourceId('Microsoft.Resources/deployments', 'postgresDeploy')]",
+        "[resourceId('Microsoft.Resources/deployments', 'redisDeploy')]",
         "[resourceId('Microsoft.Resources/deployments', 'serviceBusDeploy')]",
         "[resourceId('Microsoft.Resources/deployments', 'sqlDeploy')]"
       ]
@@ -1519,10 +1696,6 @@
     "sqlDatabaseName": {
       "type": "string",
       "value": "[if(equals(parameters('databaseProvider'), 'SqlServer'), coalesce(tryGet(tryGet(reference(resourceId('Microsoft.Resources/deployments', 'sqlDeploy'), '2025-04-01').outputs, 'databaseName'), 'value'), ''), coalesce(tryGet(tryGet(reference(resourceId('Microsoft.Resources/deployments', 'postgresDeploy'), '2025-04-01').outputs, 'databaseName'), 'value'), ''))]"
-    },
-    "acrLoginServer": {
-      "type": "string",
-      "value": "[if(equals(parameters('deploymentTarget'), 'container-apps'), coalesce(tryGet(tryGet(reference(resourceId('Microsoft.Resources/deployments', 'acaDeploy'), '2025-04-01').outputs, 'acrLoginServer'), 'value'), ''), '')]"
     },
     "apiHost": {
       "type": "string",

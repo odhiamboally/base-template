@@ -23,13 +23,7 @@ internal class DeploymentStampConfiguration : IEntityTypeConfiguration<Deploymen
         builder.Property(x => x.IsolationTier)
             .IsRequired();
 
-        builder.Property(x => x.DatabaseConnectionString)
-            .HasMaxLength(1024);
-
         builder.Property(x => x.KeyVaultUri)
-            .HasMaxLength(1024);
-
-        builder.Property(x => x.CacheConnectionString)
             .HasMaxLength(1024);
 
         builder.Property(x => x.CreatedBy)

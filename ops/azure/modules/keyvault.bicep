@@ -25,6 +25,10 @@ param communicationConnectionString string = ''
 @description('Azure Communication Services Managed Domain From Address.')
 param communicationFromAddress string = ''
 
+@description('Application Insights Connection String.')
+@secure()
+param appInsightsConnectionString string = ''
+
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
   location: location
@@ -105,6 +109,14 @@ resource communicationFromAddressSecret 'Microsoft.KeyVault/vaults/secrets@2023-
   name: 'EmailSettings--FromAddress'
   properties: {
     value: communicationFromAddress
+  }
+}
+
+resource appInsightsConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(appInsightsConnectionString)) {
+  parent: keyVault
+  name: 'ApplicationInsights--ConnectionString'
+  properties: {
+    value: appInsightsConnectionString
   }
 }
 

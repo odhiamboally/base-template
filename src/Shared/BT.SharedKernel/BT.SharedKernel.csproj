@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="libphonenumber-csharp" Version="9.0.31" />
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="2.3.9" />
+    <PackageReference Include="libphonenumber-csharp" Version="9.0.35" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="2.3.11" />
   </ItemGroup>
 
   <ItemGroup>

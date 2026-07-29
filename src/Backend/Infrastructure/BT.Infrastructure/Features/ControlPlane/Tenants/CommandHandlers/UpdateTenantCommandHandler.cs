@@ -27,14 +27,15 @@ public class UpdateTenantCommandHandler : IRequestHandler<UpdateTenantCommand, A
 
     public async Task<AppResponse<TenantResponse>> Handle(UpdateTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenant = await _unitOfWork.Tenants.FindByIdAsync(request.Id, cancellationToken);
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
+        var tenant = await _unitOfWork.Tenants.FindByIdAsync(request.Id, cancellationToken).ConfigureAwait(false);
 
         if (tenant == null)
         {
             return AppResponses.Failure<TenantResponse>("Tenant not found.");
         }
 
-        var duplicateHostName = await _unitOfWork.Tenants.AnyAsync(t => t.HostName == request.Request.HostName && t.Id != request.Id, cancellationToken);
+        var duplicateHostName = await _unitOfWork.Tenants.AnyAsync(t => t.HostName == request.Request.HostName && t.Id != request.Id, cancellationToken).ConfigureAwait(false);
 
         if (duplicateHostName)
         {
@@ -59,8 +60,8 @@ public class UpdateTenantCommandHandler : IRequestHandler<UpdateTenantCommand, A
         tenant.UpdatedAt = DateTimeOffset.UtcNow;
         tenant.UpdatedBy = "System";
 
-        await _unitOfWork.Tenants.UpdateAsync(tenant, cancellationToken);
-        await _unitOfWork.CompleteAsync(cancellationToken);
+        await _unitOfWork.Tenants.UpdateAsync(tenant, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation("Updated tenant {TenantId} ({Identifier})", tenant.Id, tenant.Identifier);
 

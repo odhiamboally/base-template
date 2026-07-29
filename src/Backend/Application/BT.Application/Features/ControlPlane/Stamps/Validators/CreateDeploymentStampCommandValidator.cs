@@ -15,13 +15,7 @@ public class CreateDeploymentStampCommandValidator : AbstractValidator<CreateDep
             .NotEmpty().WithMessage("Target Resource Group is required.")
             .MaximumLength(256).WithMessage("Target Resource Group must not exceed 256 characters.");
 
-        RuleFor(v => v.Request.DatabaseConnectionString)
-            .MaximumLength(1024).WithMessage("Database Connection String must not exceed 1024 characters.");
-
         RuleFor(v => v.Request.KeyVaultUri)
             .MaximumLength(1024).WithMessage("Key Vault URI must not exceed 1024 characters.");
-
-        RuleFor(v => v.Request.CacheConnectionString)
-            .MaximumLength(1024).WithMessage("Cache Connection String must not exceed 1024 characters.");
     }
 }

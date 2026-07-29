@@ -178,16 +178,16 @@ EventIds are structured by architectural layer to simplify searching in logs:
                              ▼
   ┌──────────────────────────────────────────────────────────┐
   │ PHASE 5 - Template Extensibility                         │
-  └──────────────────────────────────────────────────────────┘
+  └──────────────────────────┴──────────────────────────┘
 ```
 
 ### Phase 0 - SaaS Tenancy And Deployment Stamp Model
 *Goal: certify the tenancy, configuration, and deployment-stamp model before more cloud/provider work is treated as final.*
-- [~] **SaaS Model:** Hybrid pooled/isolated deployment stamp strategy is documented.
-- [ ] **Control Plane Shape:** Define the tenant catalog fields, stamp metadata, and tenant resolution strategy.
-- [ ] **IaC Shape:** Define reusable stamp modules for Azure Container Apps/App Service, Key Vault, storage, database, Redis, messaging, and observability.
-- [ ] **Configuration Certification:** Align appsettings, POCOs, user-secrets, Key Vault names, app/ACA environment variables, and non-Azure host variables against the stamp model.
-- [ ] **Tenant Isolation Tests:** Add tests proving tenant-scoped queries and writes cannot cross tenant boundaries.
+- [x] **SaaS Model:** Hybrid pooled/isolated deployment stamp strategy is documented.
+- [x] **Control Plane Shape:** Define the tenant catalog fields, stamp metadata, and tenant resolution strategy.
+- [x] **IaC Shape:** Define reusable stamp modules for Azure Container Apps/App Service, Key Vault, storage, database, Redis, messaging, and observability.
+- [x] **Configuration Certification:** Align appsettings, POCOs, user-secrets, Key Vault names, app/ACA environment variables, and non-Azure host variables against the stamp model.
+- [x] **Tenant Isolation Tests:** Add tests proving tenant-scoped queries and writes cannot cross tenant boundaries.
 
 ### Phase 1 - IAM/Auth Enterprise Baseline
 *Goal: certify identity, authentication, authorization, MFA, sessions, and local UI/API smoke testing.*

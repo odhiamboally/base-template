@@ -10,6 +10,7 @@ using BT.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using BT.Domain.Features.ControlPlane.Tenants.Enums;
 
 namespace BT.Infrastructure.Features.ControlPlane.Tenants.CommandHandlers;
 
@@ -28,25 +29,28 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
 
     public async Task<AppResponse<TenantResponse>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
+        ArgumentNullException.ThrowIfNull(request.Request, nameof(request.Request));
+
         var req = request.Request;
-        var existingTenant = await _unitOfWork.Tenants.AnyAsync(t => t.Identifier == req.Identifier || t.HostName == req.HostName, cancellationToken);
+        var existingTenant = await _unitOfWork.Tenants.AnyAsync(t => t.Identifier == req.Identifier || t.HostName == req.HostName, cancellationToken).ConfigureAwait(false);
 
         if (existingTenant)
         {
             return AppResponses.Failure<TenantResponse>("A tenant with this identifier or hostname already exists.");
         }
 
-        var stampExists = await _unitOfWork.DeploymentStamps.AnyAsync(s => s.Id == req.DeploymentStampId, cancellationToken);
+        var stampExists = await _unitOfWork.DeploymentStamps.AnyAsync(s => s.Id == req.DeploymentStampId, cancellationToken).ConfigureAwait(false);
 
         if (!stampExists)
         {
             return AppResponses.Failure<TenantResponse>("The specified Deployment Stamp does not exist.");
         }
 
-        BT.Domain.Features.ControlPlane.Tenants.Enums.SubscriptionTier parsedTier;
+        SubscriptionTier parsedTier;
         try
         {
-            parsedTier = req.SubscriptionTier.ToEnum<BT.Domain.Features.ControlPlane.Tenants.Enums.SubscriptionTier>();
+            parsedTier = req.SubscriptionTier.ToEnum<SubscriptionTier>();
         }
         catch (ArgumentException)
         {
@@ -66,8 +70,8 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
             CreatedBy = "System"
         };
         
-        await _unitOfWork.Tenants.CreateAsync(tenant, cancellationToken);
-        await _unitOfWork.CompleteAsync(cancellationToken);
+        await _unitOfWork.Tenants.CreateAsync(tenant, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation("Created new tenant {TenantId} ({Identifier})", tenant.Id, tenant.Identifier);
 

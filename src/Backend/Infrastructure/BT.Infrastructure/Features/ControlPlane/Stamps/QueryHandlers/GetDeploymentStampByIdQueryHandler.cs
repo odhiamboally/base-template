@@ -23,9 +23,11 @@ public class GetDeploymentStampByIdQueryHandler : IRequestHandler<GetDeploymentS
 
     public async Task<AppResponse<DeploymentStampResponse>> Handle(GetDeploymentStampByIdQuery request, CancellationToken cancellationToken)
     {
-        var stamp = await _unitOfWork.DeploymentStamps.FindAll()
+        var stamp = await _unitOfWork.DeploymentStamps
+            .FindAll()
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken)
+            .ConfigureAwait(false);
 
         if (stamp == null)
         {
@@ -38,6 +40,7 @@ public class GetDeploymentStampByIdQueryHandler : IRequestHandler<GetDeploymentS
             Name = stamp.Name,
             TargetResourceGroup = stamp.TargetResourceGroup,
             IsolationTier = stamp.IsolationTier.ToDisplayString(),
+            KeyVaultUri = stamp.KeyVaultUri,
             CreatedAt = stamp.CreatedAt,
             UpdatedAt = stamp.UpdatedAt
         };

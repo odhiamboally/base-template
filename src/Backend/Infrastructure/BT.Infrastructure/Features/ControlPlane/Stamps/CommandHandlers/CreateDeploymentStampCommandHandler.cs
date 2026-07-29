@@ -28,8 +28,9 @@ public class CreateDeploymentStampCommandHandler : IRequestHandler<CreateDeploym
 
     public async Task<AppResponse<DeploymentStampResponse>> Handle(CreateDeploymentStampCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
         var req = request.Request;
-        var existingStamp = await _unitOfWork.DeploymentStamps.AnyAsync(s => s.Name == req.Name, cancellationToken);
+        var existingStamp = await _unitOfWork.DeploymentStamps.AnyAsync(s => s.Name == req.Name, cancellationToken).ConfigureAwait(false);
 
         if (existingStamp)
         {
@@ -51,14 +52,12 @@ public class CreateDeploymentStampCommandHandler : IRequestHandler<CreateDeploym
             Name = req.Name,
             TargetResourceGroup = req.TargetResourceGroup,
             IsolationTier = parsedTier,
-            DatabaseConnectionString = req.DatabaseConnectionString,
             KeyVaultUri = req.KeyVaultUri,
-            CacheConnectionString = req.CacheConnectionString,
             CreatedBy = "System"
         };
         
-        await _unitOfWork.DeploymentStamps.CreateAsync(stamp, cancellationToken);
-        await _unitOfWork.CompleteAsync(cancellationToken);
+        await _unitOfWork.DeploymentStamps.CreateAsync(stamp, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation("Created new deployment stamp {StampId} ({Name})", stamp.Id, stamp.Name);
 
@@ -68,6 +67,7 @@ public class CreateDeploymentStampCommandHandler : IRequestHandler<CreateDeploym
             Name = stamp.Name,
             TargetResourceGroup = stamp.TargetResourceGroup,
             IsolationTier = stamp.IsolationTier.ToDisplayString(),
+            KeyVaultUri = stamp.KeyVaultUri,
             CreatedAt = stamp.CreatedAt,
             UpdatedAt = stamp.UpdatedAt
         };

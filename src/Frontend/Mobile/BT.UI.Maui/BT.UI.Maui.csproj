@@ -47,15 +47,15 @@
 
 	<ItemGroup>
 		<!-- Only add packages YOU need. MAUI Controls + WebView come from the workload -->
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.10" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.51" />
+	  <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.90" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Update="Microsoft.Maui.Controls" Version="10.0.51" />
+	  <PackageReference Update="Microsoft.Maui.Controls" Version="10.0.90" />
 	</ItemGroup>
 
 </Project>

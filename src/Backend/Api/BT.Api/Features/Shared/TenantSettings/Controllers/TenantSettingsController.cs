@@ -21,7 +21,7 @@ public sealed class TenantSettingsController(ISender sender) : BaseController
     [RequirePermission("tenant-settings.view")]
     public async Task<IActionResult> GetTenantSettings(CancellationToken ct)
     {
-        var response = await sender.Send(new GetTenantSettingsQuery(), ct);
+        var response = await sender.Send(new GetTenantSettingsQuery(), ct).ConfigureAwait(false);
         return HandleResponse(response);
     }
 
@@ -29,7 +29,7 @@ public sealed class TenantSettingsController(ISender sender) : BaseController
     [RequirePermission("tenant-settings.view")]
     public async Task<IActionResult> GetTenantSettingByKey(string key, CancellationToken ct)
     {
-        var response = await sender.Send(new GetTenantSettingByKeyQuery(key), ct);
+        var response = await sender.Send(new GetTenantSettingByKeyQuery(key), ct).ConfigureAwait(false);
         return HandleResponse(response);
     }
 
@@ -37,7 +37,7 @@ public sealed class TenantSettingsController(ISender sender) : BaseController
     [RequirePermission("tenant-settings.create")]
     public async Task<IActionResult> CreateTenantSetting([FromBody] CreateTenantSettingRequest request, CancellationToken ct)
     {
-        var response = await sender.Send(new CreateTenantSettingCommand(request, GetUserId()), ct);
+        var response = await sender.Send(new CreateTenantSettingCommand(request, GetUserId()), ct).ConfigureAwait(false);
         return HandleResponse(response);
     }
 
@@ -45,7 +45,7 @@ public sealed class TenantSettingsController(ISender sender) : BaseController
     [RequirePermission("tenant-settings.update")]
     public async Task<IActionResult> UpdateTenantSetting([FromBody] UpdateTenantSettingRequest request, CancellationToken ct)
     {
-        var response = await sender.Send(new UpdateTenantSettingCommand(request, GetUserId()), ct);
+        var response = await sender.Send(new UpdateTenantSettingCommand(request, GetUserId()), ct).ConfigureAwait(false);
         return HandleResponse(response);
     }
 
@@ -53,7 +53,7 @@ public sealed class TenantSettingsController(ISender sender) : BaseController
     [RequirePermission("tenant-settings.delete")]
     public async Task<IActionResult> DeleteTenantSetting(Guid id, CancellationToken ct)
     {
-        var response = await sender.Send(new DeleteTenantSettingCommand(id, GetUserId()), ct);
+        var response = await sender.Send(new DeleteTenantSettingCommand(id, GetUserId()), ct).ConfigureAwait(false);
         return HandleResponse(response);
     }
 

@@ -25,7 +25,7 @@ public class GetTenantByIdQueryHandler : IRequestHandler<GetTenantByIdQuery, App
     {
         var tenant = await _unitOfWork.Tenants.FindAll()
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken).ConfigureAwait(false);
 
         if (tenant == null)
         {
