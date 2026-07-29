@@ -17,7 +17,7 @@ namespace BT.Persistence.Features.Shared.Migrations.SqlServer
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -1351,10 +1351,6 @@ namespace BT.Persistence.Features.Shared.Migrations.SqlServer
 
                     b.HasKey("SequenceNumber");
 
-                    b.HasIndex("EnqueueTime");
-
-                    b.HasIndex("ExpirationTime");
-
                     b.HasIndex("OutboxId", "SequenceNumber")
                         .IsUnique()
                         .HasFilter("[OutboxId] IS NOT NULL");
@@ -1371,6 +1367,10 @@ namespace BT.Persistence.Features.Shared.Migrations.SqlServer
                     b.Property<Guid>("OutboxId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BusName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
@@ -1391,7 +1391,7 @@ namespace BT.Persistence.Features.Shared.Migrations.SqlServer
 
                     b.HasKey("OutboxId");
 
-                    b.HasIndex("Created");
+                    b.HasIndex("BusName", "Created");
 
                     b.ToTable("OutboxState");
                 });
