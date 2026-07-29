@@ -217,6 +217,42 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         };
     }
 
+    // Factory for external SSO users provisioned just-in-time
+    public static AppUser CreateExternalUser(
+        Guid tenantId,
+        string userName,
+        string email,
+        string firstName,
+        string lastName,
+        string createdBy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(createdBy);
+
+        return new AppUser
+        {
+            Id = Guid.CreateVersion7().ToString(),
+            TenantId = tenantId,
+            EmployeeId = null,
+            CustomerId = null,
+            UserName = userName,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            SecurityStamp = Guid.NewGuid().ToString(),
+            CreatedBy = createdBy,
+            CreatedAt = DateTimeOffset.UtcNow,
+            IsActive = true,
+            ActivatedAt = DateTimeOffset.UtcNow,
+            ActivatedBy = createdBy,
+            RequirePasswordChange = false
+        };
+    }
+
     // Linking behaviours — called when role changes post-creation
     public void LinkToEmployee(Guid employeeId)
     {

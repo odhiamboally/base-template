@@ -14,6 +14,11 @@ public class TenantResponse
     public required string Status { get; set; }
 
     public Guid DeploymentStampId { get; set; }
+    
+    public string? DatabaseProvider { get; set; }
+    public string? DatabaseConnectionString { get; set; }
+
+    public IReadOnlyList<string> EnabledModules { get; set; } = [];
 
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }

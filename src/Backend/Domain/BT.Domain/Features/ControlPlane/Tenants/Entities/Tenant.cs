@@ -21,6 +21,11 @@ public class Tenant : IAuditable
     public Guid DeploymentStampId { get; set; }
     public DeploymentStamp? DeploymentStamp { get; set; }
 
+    public string? DatabaseProvider { get; set; }
+    public string? DatabaseConnectionString { get; set; }
+
+    public ICollection<TenantModule> Modules { get; set; } = [];
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public required string CreatedBy { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }

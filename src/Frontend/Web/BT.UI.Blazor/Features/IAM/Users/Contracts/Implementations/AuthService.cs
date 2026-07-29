@@ -34,6 +34,28 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
         return response;
     }
 
+    public async Task<AppResponse<LoginResponse>> ExchangeSsoCodeAsync(string code)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+
+        var request = new ExchangeSsoCodeRequest(code);
+
+        var response = await apiClient.SendAsync<LoginResponse>(
+            HttpMethod.Post,
+            Format("iam/auth/sso/exchange"),
+            request,
+            requiresAuthentication: false,
+            unavailableMessage: "The identity service is unavailable. Please try again.",
+            timeoutMessage: "The identity service timed out. Please try again.").ConfigureAwait(false);
+
+        if (response.IsSuccess && response.Data is { IsAuthenticated: true, Requires2FA: false } login)
+        {
+            await storage.SaveAsync(login.Token, login.RefreshToken, login.SessionId).ConfigureAwait(false);
+        }
+
+        return response;
+    }
+
     public async Task<AppResponse<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);

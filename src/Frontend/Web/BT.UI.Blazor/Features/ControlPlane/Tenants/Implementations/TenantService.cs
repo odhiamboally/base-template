@@ -75,4 +75,25 @@ internal class TenantService(IBackendApiClient client) : ITenantService
             unavailableMessage: "Unable to activate tenant.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task<AppResponse<TenantResponse>> AddModuleAsync(Guid id, AddTenantModuleRequest request, CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<TenantResponse>(
+            HttpMethod.Post,
+            $"{BasePath}/{id}/modules",
+            request: request,
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to add module.",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AppResponse<TenantResponse>> RemoveModuleAsync(Guid id, string moduleKey, CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<TenantResponse>(
+            HttpMethod.Delete,
+            $"{BasePath}/{id}/modules/{moduleKey}",
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to remove module.",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
 }

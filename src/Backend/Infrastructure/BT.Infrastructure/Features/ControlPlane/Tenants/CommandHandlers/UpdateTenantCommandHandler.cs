@@ -16,13 +16,16 @@ public class UpdateTenantCommandHandler : IRequestHandler<UpdateTenantCommand, A
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<UpdateTenantCommandHandler> _logger;
+    private readonly BT.Application.Contracts.Interfaces.Common.IEncryptionService _encryptionService;
 
     public UpdateTenantCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
-        ILogger<UpdateTenantCommandHandler> logger)
+        ILogger<UpdateTenantCommandHandler> logger,
+        BT.Application.Contracts.Interfaces.Common.IEncryptionService encryptionService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _encryptionService = encryptionService;
     }
 
     public async Task<AppResponse<TenantResponse>> Handle(UpdateTenantCommand request, CancellationToken cancellationToken)
@@ -57,6 +60,19 @@ public class UpdateTenantCommandHandler : IRequestHandler<UpdateTenantCommand, A
         tenant.ContactEmail = request.Request.ContactEmail;
         tenant.MaxUsers = request.Request.MaxUsers;
         tenant.SubscriptionTier = parsedTier;
+        
+        if (request.Request.DatabaseProvider != null)
+        {
+            tenant.DatabaseProvider = request.Request.DatabaseProvider;
+        }
+
+        if (request.Request.DatabaseConnectionString != null)
+        {
+            tenant.DatabaseConnectionString = request.Request.DatabaseConnectionString != "" 
+                ? _encryptionService.Encrypt(request.Request.DatabaseConnectionString) 
+                : null;
+        }
+
         tenant.UpdatedAt = DateTimeOffset.UtcNow;
         tenant.UpdatedBy = "System";
 
@@ -76,6 +92,8 @@ public class UpdateTenantCommandHandler : IRequestHandler<UpdateTenantCommand, A
             SubscriptionTier = tenant.SubscriptionTier.ToDisplayString(),
             Status = tenant.Status.ToDisplayString(),
             DeploymentStampId = tenant.DeploymentStampId,
+            DatabaseProvider = tenant.DatabaseProvider,
+            DatabaseConnectionString = tenant.DatabaseConnectionString != null ? "********" : null,
             CreatedAt = tenant.CreatedAt,
             UpdatedAt = tenant.UpdatedAt
         };

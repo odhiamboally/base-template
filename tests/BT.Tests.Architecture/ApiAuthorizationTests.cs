@@ -39,7 +39,10 @@ public sealed class ApiAuthorizationTests
         "VerifyEmailOtp",
         "VerifyPasswordResetOtp",
         "VerifyPassword",
-        "ChangePassword"
+        "ChangePassword",
+        "SsoLogin",
+        "SsoCallback",
+        "ExchangeSsoCode"
     ];
 
     [Fact]

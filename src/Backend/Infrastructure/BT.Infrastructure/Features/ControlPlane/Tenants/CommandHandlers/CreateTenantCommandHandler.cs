@@ -18,13 +18,16 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<CreateTenantCommandHandler> _logger;
+    private readonly BT.Application.Contracts.Interfaces.Common.IEncryptionService _encryptionService;
 
     public CreateTenantCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
-        ILogger<CreateTenantCommandHandler> logger)
+        ILogger<CreateTenantCommandHandler> logger,
+        BT.Application.Contracts.Interfaces.Common.IEncryptionService encryptionService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _encryptionService = encryptionService;
     }
 
     public async Task<AppResponse<TenantResponse>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
@@ -67,6 +70,10 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
             SubscriptionTier = parsedTier,
             Status = BT.Domain.Features.ControlPlane.Tenants.Enums.TenantStatus.Active,
             DeploymentStampId = req.DeploymentStampId,
+            DatabaseProvider = req.DatabaseProvider,
+            DatabaseConnectionString = !string.IsNullOrWhiteSpace(req.DatabaseConnectionString) 
+                ? _encryptionService.Encrypt(req.DatabaseConnectionString) 
+                : null,
             CreatedBy = "System"
         };
         
@@ -86,6 +93,8 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
             SubscriptionTier = tenant.SubscriptionTier.ToDisplayString(),
             Status = tenant.Status.ToDisplayString(),
             DeploymentStampId = tenant.DeploymentStampId,
+            DatabaseProvider = tenant.DatabaseProvider,
+            DatabaseConnectionString = tenant.DatabaseConnectionString != null ? "********" : null,
             CreatedAt = tenant.CreatedAt,
             UpdatedAt = tenant.UpdatedAt
         };

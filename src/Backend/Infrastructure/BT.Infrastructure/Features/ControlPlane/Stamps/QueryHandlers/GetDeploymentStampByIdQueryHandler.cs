@@ -41,6 +41,8 @@ public class GetDeploymentStampByIdQueryHandler : IRequestHandler<GetDeploymentS
             TargetResourceGroup = stamp.TargetResourceGroup,
             IsolationTier = stamp.IsolationTier.ToDisplayString(),
             KeyVaultUri = stamp.KeyVaultUri,
+            DatabaseProvider = stamp.DatabaseProvider,
+            DatabaseConnectionString = stamp.DatabaseConnectionString != null ? "********" : null,
             CreatedAt = stamp.CreatedAt,
             UpdatedAt = stamp.UpdatedAt
         };

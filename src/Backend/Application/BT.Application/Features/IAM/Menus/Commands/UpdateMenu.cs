@@ -64,6 +64,7 @@ internal sealed class UpdateMenuCommandHandler(IIamUnitOfWork unitOfWork, ILogge
                 request.Icon,
                 request.Placement,
                 request.RequiredPermissionKey,
+                request.RequiredModule,
                 request.DisplayOrder,
                 request.IsActive,
                 command.UserId);

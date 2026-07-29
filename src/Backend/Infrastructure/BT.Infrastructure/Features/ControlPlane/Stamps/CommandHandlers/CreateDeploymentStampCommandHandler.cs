@@ -17,13 +17,16 @@ public class CreateDeploymentStampCommandHandler : IRequestHandler<CreateDeploym
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<CreateDeploymentStampCommandHandler> _logger;
+    private readonly BT.Application.Contracts.Interfaces.Common.IEncryptionService _encryptionService;
 
     public CreateDeploymentStampCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
-        ILogger<CreateDeploymentStampCommandHandler> logger)
+        ILogger<CreateDeploymentStampCommandHandler> logger,
+        BT.Application.Contracts.Interfaces.Common.IEncryptionService encryptionService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _encryptionService = encryptionService;
     }
 
     public async Task<AppResponse<DeploymentStampResponse>> Handle(CreateDeploymentStampCommand request, CancellationToken cancellationToken)
@@ -53,6 +56,10 @@ public class CreateDeploymentStampCommandHandler : IRequestHandler<CreateDeploym
             TargetResourceGroup = req.TargetResourceGroup,
             IsolationTier = parsedTier,
             KeyVaultUri = req.KeyVaultUri,
+            DatabaseProvider = req.DatabaseProvider,
+            DatabaseConnectionString = !string.IsNullOrWhiteSpace(req.DatabaseConnectionString) 
+                ? _encryptionService.Encrypt(req.DatabaseConnectionString) 
+                : null,
             CreatedBy = "System"
         };
         
@@ -68,6 +75,8 @@ public class CreateDeploymentStampCommandHandler : IRequestHandler<CreateDeploym
             TargetResourceGroup = stamp.TargetResourceGroup,
             IsolationTier = stamp.IsolationTier.ToDisplayString(),
             KeyVaultUri = stamp.KeyVaultUri,
+            DatabaseProvider = stamp.DatabaseProvider,
+            DatabaseConnectionString = stamp.DatabaseConnectionString != null ? "********" : null,
             CreatedAt = stamp.CreatedAt,
             UpdatedAt = stamp.UpdatedAt
         };

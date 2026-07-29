@@ -45,4 +45,14 @@ public sealed class TenantsController(ISender sender) : BaseController
     [RequirePermission("control_plane.manage")]
     public async Task<IActionResult> SuspendTenant(Guid id)
         => HandleResponse(await sender.Send(new SuspendTenantCommand(id)).ConfigureAwait(false));
+
+    [HttpPost("{id:guid}/modules")]
+    [RequirePermission("control_plane.manage")]
+    public async Task<IActionResult> AddModule(Guid id, AddTenantModuleRequest request)
+        => HandleResponse(await sender.Send(new AddTenantModuleCommand(id, request)).ConfigureAwait(false));
+
+    [HttpDelete("{id:guid}/modules/{moduleKey}")]
+    [RequirePermission("control_plane.manage")]
+    public async Task<IActionResult> RemoveModule(Guid id, string moduleKey)
+        => HandleResponse(await sender.Send(new RemoveTenantModuleCommand(id, new RemoveTenantModuleRequest { ModuleKey = moduleKey })).ConfigureAwait(false));
 }

@@ -15,6 +15,8 @@ public class DeploymentStamp : IAuditable
     public IsolationTier IsolationTier { get; set; }
 
     public string? KeyVaultUri { get; set; }
+    public string? DatabaseProvider { get; set; }
+    public string? DatabaseConnectionString { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public required string CreatedBy { get; set; }

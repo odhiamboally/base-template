@@ -35,6 +35,8 @@ public class GetAllDeploymentStampsQueryHandler : IRequestHandler<GetAllDeployme
                 TargetResourceGroup = s.TargetResourceGroup,
                 IsolationTier = s.IsolationTier.ToDisplayString(),
                 KeyVaultUri = s.KeyVaultUri,
+                DatabaseProvider = s.DatabaseProvider,
+                DatabaseConnectionString = s.DatabaseConnectionString != null ? "********" : null,
                 CreatedAt = s.CreatedAt,
                 UpdatedAt = s.UpdatedAt
             })

@@ -71,6 +71,9 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.RequiredModule" Label="Required Module (e.g. HR, Banking)" Margin="Margin.Dense" Variant="Variant.Outlined" Clearable="true" />
+                </MudItem>
+                <MudItem xs="12">
                     <MudTextField @bind-Value="_model.Description" Label="Description" Lines="3" Margin="Margin.Dense" Variant="Variant.Outlined" />
                 </MudItem>
                 @if (ExistingMenu is not null)
@@ -240,6 +243,7 @@
         public string Icon { get; set; } = "Menu";
         public string Placement { get; set; } = "AdminCenter";
         public string? RequiredPermissionKey { get; set; }
+        public string? RequiredModule { get; set; }
         public bool IsActive { get; set; } = true;
 
         public static MenuFormModel From(MenuResponse menu)
@@ -254,6 +258,7 @@
                 Icon = menu.Icon,
                 Placement = menu.Placement,
                 RequiredPermissionKey = menu.RequiredPermissionKey,
+                RequiredModule = menu.RequiredModule,
                 IsActive = menu.IsActive
             };
 
@@ -267,7 +272,8 @@
                 Url = Url,
                 Icon = Icon,
                 Placement = Placement,
-                RequiredPermissionKey = RequiredPermissionKey
+                RequiredPermissionKey = RequiredPermissionKey,
+                RequiredModule = RequiredModule
             };
 
         public UpdateMenuRequest ToUpdateRequest()
@@ -282,6 +288,7 @@
                 Icon = Icon,
                 Placement = Placement,
                 RequiredPermissionKey = RequiredPermissionKey,
+                RequiredModule = RequiredModule,
                 IsActive = IsActive
             };
     }

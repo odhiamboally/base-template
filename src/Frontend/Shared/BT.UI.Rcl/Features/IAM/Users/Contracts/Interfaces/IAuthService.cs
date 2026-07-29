@@ -9,6 +9,7 @@ namespace BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces;
 public interface IAuthService
 {
     Task<AppResponse<LoginResponse>> LoginAsync(LoginRequest loginRequest);
+    Task<AppResponse<LoginResponse>> ExchangeSsoCodeAsync(string code);
     Task<AppResponse<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
     Task<AppResponse<ForgotPasswordResponse>> ForgotPasswordAsync(ForgotPasswordRequest request);
     Task<AppResponse<PasswordResetOtpVerificationResponse>> VerifyPasswordResetOtpAsync(VerifyPasswordResetOtpRequest request);

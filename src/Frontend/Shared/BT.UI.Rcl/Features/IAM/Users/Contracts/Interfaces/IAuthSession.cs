@@ -17,6 +17,7 @@ public interface IAuthSession
     Task InitializeAsync();
     Task RefreshAsync();
     Task<AppResponse<LoginResponse>> SignInAsync(LoginRequest request);
+    Task<AppResponse<LoginResponse>> ExchangeSsoCodeAsync(string code);
     Task<AppResponse<VerifyOtpResponse>> CompleteTwoFactorAsync(VerifyOtpRequest request);
     Task<AppResponse<bool>> SignOutAsync();
     bool HasPermission(string permission);

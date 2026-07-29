@@ -24,6 +24,7 @@ public class GetAllTenantsQueryHandler : IRequestHandler<GetAllTenantsQuery, App
     public async Task<AppResponse<List<TenantResponse>>> Handle(GetAllTenantsQuery request, CancellationToken cancellationToken)
     {
         var rawTenants = await _unitOfWork.Tenants.FindAll()
+            .Include(t => t.Modules)
             .AsNoTracking()
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
@@ -39,6 +40,9 @@ public class GetAllTenantsQueryHandler : IRequestHandler<GetAllTenantsQuery, App
                 SubscriptionTier = t.SubscriptionTier.ToDisplayString(),
                 Status = t.Status.ToDisplayString(),
                 DeploymentStampId = t.DeploymentStampId,
+                DatabaseProvider = t.DatabaseProvider,
+                DatabaseConnectionString = t.DatabaseConnectionString != null ? "********" : null,
+                EnabledModules = t.Modules?.Where(m => m.IsActive).Select(m => m.ModuleKey).ToList() ?? [],
                 CreatedAt = t.CreatedAt,
                 UpdatedAt = t.UpdatedAt
             })

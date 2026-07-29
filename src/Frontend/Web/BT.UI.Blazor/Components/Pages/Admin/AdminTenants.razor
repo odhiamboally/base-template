@@ -66,6 +66,7 @@
                                          CanEdit="@AuthSession.HasPermission("Permissions.ControlPlane.Manage")" />
                         @if (AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
                         {
+                            <MudIconButton Icon="@Icons.Material.Filled.ViewModule" Size="Size.Small" Color="Color.Primary" OnClick="@(() => OpenModulesDialogAsync(context))" title="Manage modules" />
                             @if (context.Status == "Active")
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Block" Size="Size.Small" Color="Color.Error" OnClick="@(() => ConfirmSuspendAsync(context))" title="Suspend tenant" />
@@ -140,6 +141,25 @@
             title,
             parameters,
             new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true, BackdropClick = false });
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            await LoadTenantsAsync();
+        }
+    }
+
+    private async Task OpenModulesDialogAsync(TenantResponse tenant)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(TenantModulesDialog.ExistingTenant), tenant }
+        };
+
+        var dialog = await DialogService.ShowAsync<TenantModulesDialog>(
+            $"Modules - {tenant.DisplayName}",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true, BackdropClick = false });
 
         var result = await dialog.Result;
         if (result is { Canceled: false })

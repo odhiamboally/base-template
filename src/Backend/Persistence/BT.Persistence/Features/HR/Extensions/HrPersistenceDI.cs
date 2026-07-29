@@ -14,7 +14,9 @@ using BT.Persistence.Features.HR.Employees.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
+using BT.Persistence.Common.Interceptors;
 
 namespace BT.Persistence.Features.HR.Extensions;
 
@@ -29,7 +31,9 @@ public static class HrPersistenceDI
         services.Configure<BT.Persistence.Common.Configuration.DatabaseSettings>(configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName));
         var dbSettings = configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName).Get<BT.Persistence.Common.Configuration.DatabaseSettings>() ?? new BT.Persistence.Common.Configuration.DatabaseSettings();
 
-        void ConfigureDbContextOptions(DbContextOptionsBuilder options)
+        services.TryAddSingleton<TenantConnectionInterceptor>();
+
+        void ConfigureDbContextOptions(IServiceProvider provider, DbContextOptionsBuilder options)
         {
             if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
             {
@@ -51,6 +55,8 @@ public static class HrPersistenceDI
                     sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_HR");
                 });
             }
+            
+            options.AddInterceptors(provider.GetRequiredService<TenantConnectionInterceptor>());
         }
 
         if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))

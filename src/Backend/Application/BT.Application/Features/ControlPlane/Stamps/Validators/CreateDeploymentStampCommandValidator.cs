@@ -17,5 +17,11 @@ public class CreateDeploymentStampCommandValidator : AbstractValidator<CreateDep
 
         RuleFor(v => v.Request.KeyVaultUri)
             .MaximumLength(1024).WithMessage("Key Vault URI must not exceed 1024 characters.");
+
+        RuleFor(v => v.Request.DatabaseProvider)
+            .MaximumLength(64).WithMessage("Database Provider must not exceed 64 characters.");
+
+        RuleFor(v => v.Request.DatabaseConnectionString)
+            .MaximumLength(2048).WithMessage("Database Connection String must not exceed 2048 characters.");
     }
 }

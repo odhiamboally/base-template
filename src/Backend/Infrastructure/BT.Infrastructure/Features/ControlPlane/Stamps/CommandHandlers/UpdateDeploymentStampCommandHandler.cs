@@ -16,13 +16,16 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<UpdateDeploymentStampCommandHandler> _logger;
+    private readonly BT.Application.Contracts.Interfaces.Common.IEncryptionService _encryptionService;
 
     public UpdateDeploymentStampCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
-        ILogger<UpdateDeploymentStampCommandHandler> logger)
+        ILogger<UpdateDeploymentStampCommandHandler> logger,
+        BT.Application.Contracts.Interfaces.Common.IEncryptionService encryptionService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _encryptionService = encryptionService;
     }
 
     public async Task<AppResponse<DeploymentStampResponse>> Handle(UpdateDeploymentStampCommand request, CancellationToken cancellationToken)
@@ -56,6 +59,19 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
         stamp.TargetResourceGroup = request.Request.TargetResourceGroup;
         stamp.IsolationTier = parsedTier;
         stamp.KeyVaultUri = request.Request.KeyVaultUri;
+        
+        if (request.Request.DatabaseProvider != null)
+        {
+            stamp.DatabaseProvider = request.Request.DatabaseProvider;
+        }
+
+        if (request.Request.DatabaseConnectionString != null)
+        {
+            stamp.DatabaseConnectionString = request.Request.DatabaseConnectionString != "" 
+                ? _encryptionService.Encrypt(request.Request.DatabaseConnectionString) 
+                : null;
+        }
+
         stamp.UpdatedAt = DateTimeOffset.UtcNow;
         stamp.UpdatedBy = "System";
 
@@ -71,6 +87,8 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
             TargetResourceGroup = stamp.TargetResourceGroup,
             IsolationTier = stamp.IsolationTier.ToDisplayString(),
             KeyVaultUri = stamp.KeyVaultUri,
+            DatabaseProvider = stamp.DatabaseProvider,
+            DatabaseConnectionString = stamp.DatabaseConnectionString != null ? "********" : null,
             CreatedAt = stamp.CreatedAt,
             UpdatedAt = stamp.UpdatedAt
         };

@@ -7,4 +7,7 @@ public class UpdateTenantRequest
     public string? ContactEmail { get; set; }
     public int MaxUsers { get; set; }
     public required string SubscriptionTier { get; set; }
+    
+    public string? DatabaseProvider { get; set; }
+    public string? DatabaseConnectionString { get; set; }
 }

@@ -142,6 +142,57 @@ internal sealed class AuthSession(IAuthService authService, ITokenStorage storag
         return response;
     }
 
+    public async Task<AppResponse<LoginResponse>> ExchangeSsoCodeAsync(string code)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+
+        var response = await authService.ExchangeSsoCodeAsync(code).ConfigureAwait(false);
+        if (!response.IsSuccess || response.Data is null)
+        {
+            LastError = response.Message;
+            return response;
+        }
+
+        if (response.Data.Requires2FA)
+        {
+            PendingTwoFactorUserId = response.Data.UserId;
+            CurrentUser = null;
+            return response;
+        }
+
+        PendingTwoFactorUserId = null;
+        await RefreshCurrentUserAsync().ConfigureAwait(false);
+
+        if (CurrentUser is null && response.Data.UserInfo is not null)
+        {
+            var roles = response.Data.UserInfo.Roles ?? [];
+
+            CurrentUser = new CurrentUserResponse(
+                response.Data.UserInfo.Id,
+                response.Data.UserInfo.EmployeeId ?? Guid.Empty,
+                response.Data.UserInfo.CustomerId ?? Guid.Empty,
+                response.Data.UserInfo.IdNumber ?? string.Empty,
+                response.Data.UserInfo.Username,
+                response.Data.UserInfo.Email,
+                response.Data.UserInfo.FirstName,
+                response.Data.UserInfo.LastName,
+                response.Data.UserInfo.PhoneNumber ?? string.Empty,
+                true,
+                response.Data.UserInfo.TwoFactorEnabled,
+                response.Data.UserInfo.Gender,
+                true,
+                response.Data.UserInfo.LastLoginAt,
+                [.. roles],
+                SessionId: response.Data.SessionId,
+                MfaEnrollmentRequired: response.Data.MfaEnrollmentRequired,
+                ProfilePictureUrl: response.Data.UserInfo.ProfilePictureUrl);
+
+            LastError = null;
+        }
+
+        return response;
+    }
+
     public async Task<AppResponse<VerifyOtpResponse>> CompleteTwoFactorAsync(VerifyOtpRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);

@@ -25,5 +25,11 @@ public class UpdateTenantCommandValidator : AbstractValidator<UpdateTenantComman
 
         RuleFor(v => v.Request.MaxUsers)
             .GreaterThanOrEqualTo(0).WithMessage("Max Users must be a non-negative number.");
+
+        RuleFor(v => v.Request.DatabaseProvider)
+            .MaximumLength(64).WithMessage("Database Provider must not exceed 64 characters.");
+
+        RuleFor(v => v.Request.DatabaseConnectionString)
+            .MaximumLength(2048).WithMessage("Database Connection String must not exceed 2048 characters.");
     }
 }
