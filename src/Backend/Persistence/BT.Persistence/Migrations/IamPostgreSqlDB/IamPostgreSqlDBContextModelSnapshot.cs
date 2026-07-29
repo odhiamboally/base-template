@@ -175,6 +175,62 @@ namespace BT.Persistence.Migrations.IamPostgreSqlDB
                         },
                         new
                         {
+                            Id = new Guid("018fd81d-2c94-7ad0-a4a3-f1edb9c10501"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CreatedBy = "System",
+                            Description = "Platform management.",
+                            DisplayOrder = 4,
+                            Icon = "Dns",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Key = "control-panel",
+                            Placement = "Sidebar",
+                            RequiredPermissionKey = "permissions.controlplane.manage",
+                            RowVersion = new byte[0],
+                            TenantId = new Guid("0194f700-0000-7000-8000-000000000001"),
+                            Title = "Control Panel",
+                            Url = "/system/control-panel/tenants"
+                        },
+                        new
+                        {
+                            Id = new Guid("018fd81d-2c94-7ad0-a4a3-f1edb9c30101"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CreatedBy = "System",
+                            Description = "Manage SaaS tenants.",
+                            DisplayOrder = 10,
+                            Icon = "Business",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Key = "control-panel-tenants",
+                            ParentId = new Guid("018fd81d-2c94-7ad0-a4a3-f1edb9c10501"),
+                            Placement = "Sidebar",
+                            RequiredPermissionKey = "permissions.controlplane.manage",
+                            RowVersion = new byte[0],
+                            TenantId = new Guid("0194f700-0000-7000-8000-000000000001"),
+                            Title = "Tenants",
+                            Url = "/system/control-panel/tenants"
+                        },
+                        new
+                        {
+                            Id = new Guid("018fd81d-2c94-7ad0-a4a3-f1edb9c30102"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CreatedBy = "System",
+                            Description = "Deployment stamps.",
+                            DisplayOrder = 20,
+                            Icon = "Dns",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Key = "control-panel-stamps",
+                            ParentId = new Guid("018fd81d-2c94-7ad0-a4a3-f1edb9c10501"),
+                            Placement = "Sidebar",
+                            RequiredPermissionKey = "permissions.controlplane.manage",
+                            RowVersion = new byte[0],
+                            TenantId = new Guid("0194f700-0000-7000-8000-000000000001"),
+                            Title = "Stamps",
+                            Url = "/system/control-panel/stamps"
+                        },
+                        new
+                        {
                             Id = new Guid("018fd81d-2c94-7ad0-a4a3-f1edb9c10401"),
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CreatedBy = "System",
@@ -867,6 +923,21 @@ namespace BT.Persistence.Migrations.IamPostgreSqlDB
                             IsDeleted = false,
                             Key = "payments.admin",
                             Resource = "payments",
+                            RowVersion = new byte[0],
+                            TenantId = new Guid("0194f700-0000-7000-8000-000000000001")
+                        },
+                        new
+                        {
+                            Id = new Guid("018fd81d-2c94-7ad0-a4a3-f1edb9b10801"),
+                            Action = "manage",
+                            Context = "ControlPlane",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CreatedBy = "System",
+                            Description = "Manage Control Plane Tenants and Stamps.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Key = "manage.manage",
+                            Resource = "manage",
                             RowVersion = new byte[0],
                             TenantId = new Guid("0194f700-0000-7000-8000-000000000001")
                         });

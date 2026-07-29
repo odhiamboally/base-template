@@ -1,11 +1,13 @@
 @description('Name of the Container Apps Environment')
 param environmentName string
 
-@description('Name of the Log Analytics Workspace')
-param logAnalyticsWorkspaceName string
+@description('The Customer ID of the Log Analytics Workspace')
+param logAnalyticsCustomerId string
 
-@description('Name of the Azure Container Registry (must be globally unique and alphanumeric only)')
-param containerRegistryName string
+@description('The Shared Key of the Log Analytics Workspace')
+@secure()
+param logAnalyticsSharedKey string
+
 
 @description('Name of the API Container App')
 param apiAppName string
@@ -31,29 +33,7 @@ param dataProtectionKeyIdentifier string = ''
 @description('Creates or repairs the public bootstrap Container Apps. Set to false after the first successful deployment so infrastructure-only runs do not replace deployed application revisions.')
 param manageContainerApps bool = true
 
-// Container Registry
-resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
-  name: containerRegistryName
-  location: location
-  sku: {
-    name: 'Basic'
-  }
-  properties: {
-    adminUserEnabled: false
-  }
-}
 
-// Log Analytics Workspace
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
-  name: logAnalyticsWorkspaceName
-  location: location
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    retentionInDays: 30
-  }
-}
 
 // Container Apps Environment
 resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
@@ -63,8 +43,8 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
-        customerId: logAnalyticsWorkspace.properties.customerId
-        sharedKey: logAnalyticsWorkspace.listKeys().primarySharedKey
+        customerId: logAnalyticsCustomerId
+        sharedKey: logAnalyticsSharedKey
       }
     }
   }
@@ -214,29 +194,8 @@ var apiFqdn = manageContainerApps ? apiApp.properties.configuration.ingress.fqdn
 #disable-next-line BCP318
 var uiFqdn = manageContainerApps ? uiApp.properties.configuration.ingress.fqdn : existingUiApp.properties.configuration.ingress.fqdn
 
-var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
-resource apiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acr.id, apiApp.name, acrPullRoleId)
-  scope: acr
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
-    principalId: apiPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
 
-resource uiAcrPullAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acr.id, uiApp.name, acrPullRoleId)
-  scope: acr
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
-    principalId: uiPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-output acrLoginServer string = acr.properties.loginServer
 output apiFqdn string = apiFqdn
 output uiFqdn string = uiFqdn
 output apiPrincipalId string = apiPrincipalId

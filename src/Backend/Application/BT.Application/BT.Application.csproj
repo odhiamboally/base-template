@@ -14,9 +14,7 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions">
       <VersionOverride>12.1.1</VersionOverride>
     </PackageReference>
-    <PackageReference Include="MediatR">
-      <VersionOverride>14.1.0</VersionOverride>
-    </PackageReference>
+    <PackageReference Include="MediatR" Version="14.2.0" />
   </ItemGroup>
 
   <ItemGroup>

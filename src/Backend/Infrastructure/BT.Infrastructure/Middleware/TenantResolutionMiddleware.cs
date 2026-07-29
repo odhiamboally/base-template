@@ -32,6 +32,8 @@ public class TenantResolutionMiddleware
 
     public async Task InvokeAsync(HttpContext context, IServiceProvider serviceProvider)
     {
+        ArgumentNullException.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(serviceProvider, nameof(serviceProvider));
         var host = context.Request.Host.Host;
         var tenantSettings = serviceProvider.GetRequiredService<IOptions<TenantSettings>>().Value;
 
@@ -46,7 +48,7 @@ public class TenantResolutionMiddleware
                 var uow = scope.ServiceProvider.GetRequiredService<IControlPlaneUnitOfWork>();
 
                 var tenant = await uow.Tenants
-                    .FirstOrDefaultAsync(t => t.HostName == host && t.Status == TenantStatus.Active);
+                    .FirstOrDefaultAsync(t => t.HostName == host && t.Status == TenantStatus.Active).ConfigureAwait(false);
 
                 tenantId = tenant?.Id ?? Guid.Empty;
                 _cache.Set(cacheKey, tenantId, TimeSpan.FromMinutes(5));
@@ -59,6 +61,6 @@ public class TenantResolutionMiddleware
             }
         }
 
-        await _next(context);
+        await _next(context).ConfigureAwait(false);
     }
 }

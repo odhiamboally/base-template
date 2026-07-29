@@ -1,0 +1,10 @@
+namespace BT.SharedKernel.Features.ControlPlane.Stamps.Dtos;
+
+public class UpdateDeploymentStampRequest
+{
+    public required string Name { get; set; }
+    public required string TargetResourceGroup { get; set; }
+    public required string IsolationTier { get; set; }
+
+    public string? KeyVaultUri { get; set; }
+}

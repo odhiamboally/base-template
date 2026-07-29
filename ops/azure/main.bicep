@@ -34,12 +34,13 @@ param azureCacheConnectionString string = ''
 
 // Resource Names
 var sqlServerName = '${resourcePrefix}-sql-${uniqueString(resourceGroup().id)}'
-var acrName = '${resourcePrefix}acr${uniqueString(resourceGroup().id)}'
 var logAnalyticsName = '${resourcePrefix}-law-${uniqueString(resourceGroup().id)}'
 var acaEnvName = '${resourcePrefix}-env-${uniqueString(resourceGroup().id)}'
 var apiAppName = '${resourcePrefix}-api'
 var uiAppName = '${resourcePrefix}-ui'
 var appServicePlanName = '${resourcePrefix}-asp'
+var redisName = '${resourcePrefix}-redis-${uniqueString(resourceGroup().id)}'
+var appInsightsName = '${resourcePrefix}-ai-${uniqueString(resourceGroup().id)}'
 var keyVaultName = take('${resourcePrefix}kv${uniqueString(resourceGroup().id)}', 24)
 var keyVaultUri = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
 var storageAccountName = take('${resourcePrefix}st${uniqueString(resourceGroup().id)}', 24)
@@ -70,12 +71,20 @@ module postgres 'modules/postgres.bicep' = if (databaseProvider == 'PostgreSql')
   }
 }
 
+module logAnalytics 'modules/loganalytics.bicep' = {
+  name: 'logAnalyticsDeploy'
+  params: {
+    logAnalyticsWorkspaceName: logAnalyticsName
+    location: location
+  }
+}
+
 module containerApps 'modules/containerapps.bicep' = if (deploymentTarget == 'container-apps') {
   name: 'acaDeploy'
   params: {
     environmentName: acaEnvName
-    logAnalyticsWorkspaceName: logAnalyticsName
-    containerRegistryName: acrName
+    logAnalyticsCustomerId: logAnalytics.outputs.customerId
+    logAnalyticsSharedKey: logAnalytics.outputs.primarySharedKey
     apiAppName: apiAppName
     uiAppName: uiAppName
     location: location
@@ -98,6 +107,23 @@ module appService 'modules/appservice.bicep' = if (deploymentTarget == 'app-serv
     keyVaultUri: keyVaultUri
     storageAccountName: storageAccountName
     dataProtectionKeyIdentifier: '${keyVaultUri}keys/dataprotection'
+  }
+}
+
+module redis 'modules/redis.bicep' = if (empty(azureCacheConnectionString)) {
+  name: 'redisDeploy'
+  params: {
+    redisCacheName: redisName
+    location: location
+  }
+}
+
+module appInsights 'modules/appinsights.bicep' = {
+  name: 'appInsightsDeploy'
+  params: {
+    appInsightsName: appInsightsName
+    location: location
+    logAnalyticsWorkspaceId: logAnalytics.outputs.logAnalyticsWorkspaceId
   }
 }
 
@@ -135,9 +161,10 @@ module keyVault 'modules/keyvault.bicep' = {
 #disable-next-line BCP318
       : 'Host=${postgres.outputs.?serverFullyQualifiedDomainName ?? ''};Port=5432;Database=${postgres.outputs.?databaseName ?? ''};Username=${sqlAdministratorLogin};Password=${sqlAdministratorLoginPassword};Ssl Mode=Require;Trust Server Certificate=false;'
     serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespaceName
-    azureCacheConnectionString: azureCacheConnectionString
+    azureCacheConnectionString: !empty(azureCacheConnectionString) ? azureCacheConnectionString : redis.outputs.redisConnectionString
     communicationConnectionString: communication.outputs.communicationConnectionString
     communicationFromAddress: communication.outputs.communicationFromAddress
+    appInsightsConnectionString: appInsights.outputs.appInsightsConnectionString
   }
 }
 
@@ -155,8 +182,6 @@ output sqlServerFqdn string = databaseProvider == 'SqlServer' ? (sql.outputs.?se
 #disable-next-line BCP318
 output sqlDatabaseName string = databaseProvider == 'SqlServer' ? (sql.outputs.?databaseName ?? '') : (postgres.outputs.?databaseName ?? '')
 
-#disable-next-line BCP318
-output acrLoginServer string = deploymentTarget == 'container-apps' ? (containerApps.outputs.?acrLoginServer ?? '') : ''
 #disable-next-line BCP318
 output apiHost string = deploymentTarget == 'container-apps' ? (containerApps.outputs.?apiFqdn ?? '') : (appService.outputs.?apiDefaultHostName ?? '')
 #disable-next-line BCP318

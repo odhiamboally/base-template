@@ -48,7 +48,7 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
 
         try
         {
-            var cachedValue = await _cache.GetStringAsync(cacheKey, ct);
+            var cachedValue = await _cache.GetStringAsync(cacheKey, ct).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(cachedValue))
             {
                 return cachedValue;
@@ -65,7 +65,7 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
         {
             using var scope = _scopeFactory.CreateScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<ISharedUnitOfWork>();
-            var setting = await unitOfWork.TenantSettingRepository.FirstOrDefaultAsync(x => x.Key == key, ct);
+            var setting = await unitOfWork.TenantSettingRepository.FirstOrDefaultAsync(x => x.Key == key, ct).ConfigureAwait(false);
 
             if (setting != null)
             {
@@ -99,7 +99,7 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
                 };
-                await _cache.SetStringAsync(cacheKey, plainTextValue, options, ct);
+                await _cache.SetStringAsync(cacheKey, plainTextValue, options, ct).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -112,7 +112,7 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
 
     public async Task<T?> GetSettingAsync<T>(string key, CancellationToken ct = default)
     {
-        var stringValue = await GetSettingAsync(key, ct);
+        var stringValue = await GetSettingAsync(key, ct).ConfigureAwait(false);
         if (string.IsNullOrEmpty(stringValue))
         {
             return default;

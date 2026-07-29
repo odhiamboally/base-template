@@ -8,6 +8,8 @@ public static class TenantSettingMapping
 {
     public static TenantSettingResponse ToResponse(this TenantSetting entity)
     {
+        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
+
         return new TenantSettingResponse(
             entity.Id,
             entity.Key,

@@ -14,9 +14,7 @@ public class DeploymentStamp : IAuditable
     public required string TargetResourceGroup { get; set; }
     public IsolationTier IsolationTier { get; set; }
 
-    public string? DatabaseConnectionString { get; set; }
     public string? KeyVaultUri { get; set; }
-    public string? CacheConnectionString { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public required string CreatedBy { get; set; }

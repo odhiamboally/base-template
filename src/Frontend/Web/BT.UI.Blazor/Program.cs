@@ -10,6 +10,10 @@ using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Implementations;
 using BT.UI.Blazor.Features.Shared.BackendApi.Contracts.Interfaces;
 using BT.UI.Blazor.Features.Shared.Lookups.Contracts.Implementations;
 using BT.UI.Blazor.Features.Shared.Messaging;
+using BT.UI.Blazor.Features.ControlPlane.Tenants.Contracts;
+using BT.UI.Blazor.Features.ControlPlane.Tenants.Implementations;
+using BT.UI.Blazor.Features.ControlPlane.Stamps.Contracts;
+using BT.UI.Blazor.Features.ControlPlane.Stamps.Implementations;
 using BT.UI.Blazor.Features.Shared.Payments.Contracts.Implementations;
 using BT.UI.Rcl.Features.Banking.Customers.Contracts.Interfaces;
 using BT.UI.Rcl.Features.HR.Departments.Contracts.Interfaces;
@@ -74,6 +78,8 @@ builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IPaymentCheckoutService, PaymentCheckoutService>();
 builder.Services.AddScoped<BT.UI.Blazor.Features.Shared.TenantSettings.Contracts.ITenantSettingsService, BT.UI.Blazor.Features.Shared.TenantSettings.Implementations.TenantSettingsService>();
 builder.Services.AddSingleton<IAuthenticatorQrCodeService, AuthenticatorQrCodeService>();
+builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddScoped<IDeploymentStampService, DeploymentStampService>();
 var httpClientBuilder = builder.Services.AddHttpClient<IBackendApiClient, BackendApiClient>((serviceProvider, client) =>
 {
     var settings = serviceProvider.GetRequiredService<IOptions<BackendApiSettings>>().Value;

@@ -1,0 +1,204 @@
+@page "/system/control-panel/tenants"
+@rendermode InteractiveServer
+@using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos
+@using BT.UI.Blazor.Features.ControlPlane.Tenants.Contracts
+@using BT.UI.Blazor.Features.ControlPlane.Tenants.Components
+@inject IAuthSession AuthSession
+@inject ITenantService TenantService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Tenants | Base Template</PageTitle>
+
+<section class="dashboard-page">
+    <div class="dashboard-hero compact-hero">
+        <div>
+            <span class="eyebrow">Control Panel</span>
+            <h1>Tenants.</h1>
+            <p>Manage SaaS tenants, their isolation tiers, and deployment stamp allocations.</p>
+        </div>
+        @if (AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
+        {
+            <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.Business" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenFormDialogAsync(null))">Create tenant</MudButton>
+        }
+    </div>
+
+    <MudPaper Class="poc-panel" Elevation="0">
+        <div class="panel-heading">
+            <div>
+                <span class="eyebrow">Tenant list</span>
+                <h2>Registered tenants</h2>
+            </div>
+            <MudChip T="string" Size="Size.Small" Color="Color.Success">@_statusLabel</MudChip>
+        </div>
+
+        @if (_isLoading)
+        {
+            <MudProgressLinear Color="Color.Success" Indeterminate="true" Class="my-2" />
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true" Class="my-2">@_message</MudAlert>
+        }
+
+        <div class="bt-table-scroll">
+            <MudTable Items="_tenants" Dense="true" Hover="true" Elevation="0" FixedHeader="true" Height="calc(100vh - 25rem)" Style="min-width: 900px;" Breakpoint="Breakpoint.None">
+                <HeaderContent>
+                    <MudTh Style="width: 15rem;">Name</MudTh>
+                    <MudTh>Hostname</MudTh>
+                    <MudTh>Stamp</MudTh>
+                    <MudTh Style="width: 10rem;">Status</MudTh>
+                    <MudTh Style="width: 10rem;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">@context.DisplayName</MudTd>
+                    <MudTd DataLabel="Hostname">@context.HostName</MudTd>
+                    <MudTd DataLabel="Stamp">@context.DeploymentStampId</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Size="Size.Small" Color="@(context.Status == "Active" ? Color.Success : Color.Error)">
+                            @context.Status
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <TableRowActions OnEdit="@(() => OpenFormDialogAsync(context))"
+                                         CanEdit="@AuthSession.HasPermission("Permissions.ControlPlane.Manage")" />
+                        @if (AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
+                        {
+                            @if (context.Status == "Active")
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Block" Size="Size.Small" Color="Color.Error" OnClick="@(() => ConfirmSuspendAsync(context))" title="Suspend tenant" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" OnClick="@(() => ConfirmActivateAsync(context))" title="Activate tenant" />
+                            }
+                        }
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No tenants found.</MudAlert>
+                </NoRecordsContent>
+            </MudTable>
+        </div>
+    </MudPaper>
+</section>
+
+@code {
+    private readonly List<TenantResponse> _tenants = [];
+    private bool _isLoading = true;
+    private string? _message;
+
+    private string _statusLabel => _isLoading ? "Loading" : $"{_tenants.Count} shown";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await AuthSession.InitializeAsync();
+        if (!AuthSession.IsAuthenticated || !AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
+        {
+            Navigation.NavigateTo("/iam/sign-in");
+            return;
+        }
+
+        await LoadTenantsAsync();
+    }
+
+    private async Task LoadTenantsAsync()
+    {
+        _isLoading = true;
+        _message = null;
+        StateHasChanged();
+
+        var response = await TenantService.GetAllAsync();
+        if (!response.IsSuccess || response.Data is null)
+        {
+            _message = response.Message ?? "We could not load tenants.";
+            Snackbar.Add(_message, Severity.Error);
+            _isLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        _tenants.Clear();
+        _tenants.AddRange(response.Data);
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenFormDialogAsync(TenantResponse? tenant)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(TenantDialog.ExistingTenant), tenant }
+        };
+
+        var title = tenant is null ? "Create Tenant" : $"Edit - {tenant.DisplayName}";
+        var dialog = await DialogService.ShowAsync<TenantDialog>(
+            title,
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true, BackdropClick = false });
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            await LoadTenantsAsync();
+        }
+    }
+
+    private async Task ConfirmSuspendAsync(TenantResponse tenant)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDialog.Message), $"Suspend tenant {tenant.DisplayName}? They will no longer be able to access the system." },
+            { nameof(ConfirmDialog.ConfirmText), "Suspend" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(
+            "Confirm Suspend",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true });
+
+        var result = await dialog.Result;
+        if (result is not { Canceled: false }) return;
+
+        var response = await TenantService.SuspendAsync(tenant.Id);
+        if (!response.IsSuccess)
+        {
+            Snackbar.Add(response.Message ?? "Tenant suspend failed.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add($"{tenant.DisplayName} suspended.", Severity.Success);
+        await LoadTenantsAsync();
+    }
+
+    private async Task ConfirmActivateAsync(TenantResponse tenant)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDialog.Message), $"Activate tenant {tenant.DisplayName}?" },
+            { nameof(ConfirmDialog.ConfirmText), "Activate" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(
+            "Confirm Activate",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true });
+
+        var result = await dialog.Result;
+        if (result is not { Canceled: false }) return;
+
+        var response = await TenantService.ActivateAsync(tenant.Id);
+        if (!response.IsSuccess)
+        {
+            Snackbar.Add(response.Message ?? "Tenant activation failed.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add($"{tenant.DisplayName} activated.", Severity.Success);
+        await LoadTenantsAsync();
+    }
+}

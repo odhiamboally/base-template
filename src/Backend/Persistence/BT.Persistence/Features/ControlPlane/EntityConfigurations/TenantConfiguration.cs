@@ -16,11 +16,21 @@ internal class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .IsRequired()
             .HasMaxLength(256);
 
+        builder.Property(x => x.Identifier)
+            .IsRequired()
+            .HasMaxLength(128);
+
         builder.Property(x => x.HostName)
             .IsRequired()
             .HasMaxLength(256);
 
+        builder.Property(x => x.ContactEmail)
+            .HasMaxLength(256);
+
         builder.Property(x => x.Status)
+            .IsRequired();
+
+        builder.Property(x => x.SubscriptionTier)
             .IsRequired();
 
         builder.HasOne(x => x.DeploymentStamp)
@@ -39,5 +49,22 @@ internal class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .IsRowVersion();
 
         builder.HasIndex(x => x.HostName).IsUnique();
+        builder.HasIndex(x => x.Identifier).IsUnique();
+
+        // Seed default tenant using the DefaultTenantId
+        builder.HasData(new Tenant
+        {
+            Id = Guid.Parse("0194f700-0000-7000-8000-000000000001"),
+            Identifier = "default",
+            DisplayName = "Default Tenant",
+            HostName = "localhost",
+            ContactEmail = "admin@basetemplate.local",
+            MaxUsers = 100,
+            SubscriptionTier = BT.Domain.Features.ControlPlane.Tenants.Enums.SubscriptionTier.Free,
+            Status = BT.Domain.Features.ControlPlane.Tenants.Enums.TenantStatus.Active,
+            DeploymentStampId = Guid.Parse("0194f700-0000-7000-8000-000000000001"),
+            CreatedBy = "System",
+            CreatedAt = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        });
     }
 }

@@ -1,0 +1,137 @@
+@page "/system/control-panel/stamps"
+@rendermode InteractiveServer
+@using BT.SharedKernel.Features.ControlPlane.Stamps.Dtos
+@using BT.UI.Blazor.Features.ControlPlane.Stamps.Contracts
+@using BT.UI.Blazor.Features.ControlPlane.Stamps.Components
+@inject IAuthSession AuthSession
+@inject IDeploymentStampService StampService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Deployment Stamps | Base Template</PageTitle>
+
+<section class="dashboard-page">
+    <div class="dashboard-hero compact-hero">
+        <div>
+            <span class="eyebrow">Control Panel</span>
+            <h1>Deployment Stamps.</h1>
+            <p>Manage physical infrastructure deployments where tenants are allocated.</p>
+        </div>
+        @if (AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
+        {
+            <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.Dns" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenFormDialogAsync(null))">Create stamp</MudButton>
+        }
+    </div>
+
+    <MudPaper Class="poc-panel" Elevation="0">
+        <div class="panel-heading">
+            <div>
+                <span class="eyebrow">Stamp list</span>
+                <h2>Registered stamps</h2>
+            </div>
+            <MudChip T="string" Size="Size.Small" Color="Color.Success">@_statusLabel</MudChip>
+        </div>
+
+        @if (_isLoading)
+        {
+            <MudProgressLinear Color="Color.Success" Indeterminate="true" Class="my-2" />
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true" Class="my-2">@_message</MudAlert>
+        }
+
+        <div class="bt-table-scroll">
+            <MudTable Items="_stamps" Dense="true" Hover="true" Elevation="0" FixedHeader="true" Height="calc(100vh - 25rem)" Style="min-width: 760px;" Breakpoint="Breakpoint.None">
+                <HeaderContent>
+                    <MudTh Style="width: 15rem;">Name</MudTh>
+                    <MudTh>Resource Group</MudTh>
+                    <MudTh Style="width: 10rem;">Tier</MudTh>
+                    <MudTh Style="width: 8rem;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">@context.Name</MudTd>
+                    <MudTd DataLabel="Resource Group">@context.TargetResourceGroup</MudTd>
+                    <MudTd DataLabel="Tier">
+                        <MudChip T="string" Size="Size.Small" Color="Color.Primary">
+                            @context.IsolationTier
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <TableRowActions OnEdit="@(() => OpenFormDialogAsync(context))"
+                                         CanEdit="@AuthSession.HasPermission("Permissions.ControlPlane.Manage")" />
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No stamps found.</MudAlert>
+                </NoRecordsContent>
+            </MudTable>
+        </div>
+    </MudPaper>
+</section>
+
+@code {
+    private readonly List<DeploymentStampResponse> _stamps = [];
+    private bool _isLoading = true;
+    private string? _message;
+
+    private string _statusLabel => _isLoading ? "Loading" : $"{_stamps.Count} shown";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await AuthSession.InitializeAsync();
+        if (!AuthSession.IsAuthenticated || !AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
+        {
+            Navigation.NavigateTo("/iam/sign-in");
+            return;
+        }
+
+        await LoadStampsAsync();
+    }
+
+    private async Task LoadStampsAsync()
+    {
+        _isLoading = true;
+        _message = null;
+        StateHasChanged();
+
+        var response = await StampService.GetAllAsync();
+        if (!response.IsSuccess || response.Data is null)
+        {
+            _message = response.Message ?? "We could not load stamps.";
+            Snackbar.Add(_message, Severity.Error);
+            _isLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        _stamps.Clear();
+        _stamps.AddRange(response.Data);
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenFormDialogAsync(DeploymentStampResponse? stamp)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(StampDialog.ExistingStamp), stamp }
+        };
+
+        var title = stamp is null ? "Create Deployment Stamp" : $"Edit - {stamp.Name}";
+        var dialog = await DialogService.ShowAsync<StampDialog>(
+            title,
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true, BackdropClick = false });
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            await LoadStampsAsync();
+        }
+    }
+}
