@@ -15,10 +15,10 @@
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
     <PackageReference Include="MailKit" Version="4.17.0" />
-    <PackageReference Include="MassTransit" Version="9.2.0" />
-    <PackageReference Include="MassTransit.Azure.ServiceBus.Core" Version="9.2.0" />
-    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="9.2.0" />
-    <PackageReference Include="MassTransit.RabbitMQ" Version="9.2.0" />
+    <PackageReference Include="MassTransit" Version="8.3.3" />
+    <PackageReference Include="MassTransit.Azure.ServiceBus.Core" Version="8.3.3" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.3.3" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.10" />
     <PackageReference Include="Microsoft.Azure.StackExchangeRedis" Version="3.3.1" />
