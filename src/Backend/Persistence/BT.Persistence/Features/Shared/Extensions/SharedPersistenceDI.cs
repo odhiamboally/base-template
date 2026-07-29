@@ -20,7 +20,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
+using BT.Persistence.Common.Interceptors;
 
 namespace BT.Persistence.Features.Shared.Extensions;
 
@@ -35,7 +37,9 @@ public static class SharedPersistenceDI
         services.Configure<BT.Persistence.Common.Configuration.DatabaseSettings>(configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName));
         var dbSettings = configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName).Get<BT.Persistence.Common.Configuration.DatabaseSettings>() ?? new BT.Persistence.Common.Configuration.DatabaseSettings();
 
-        void ConfigureDbContextOptions(DbContextOptionsBuilder options)
+        services.TryAddSingleton<TenantConnectionInterceptor>();
+
+        void ConfigureDbContextOptions(IServiceProvider provider, DbContextOptionsBuilder options)
         {
             if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))
             {
@@ -63,6 +67,8 @@ public static class SharedPersistenceDI
             {
                 options.EnableSensitiveDataLogging();
             }
+            
+            options.AddInterceptors(provider.GetRequiredService<TenantConnectionInterceptor>());
         }
 
         if (dbSettings.Provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase))

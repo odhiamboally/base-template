@@ -14,6 +14,7 @@ public sealed class MenuItem : BaseEntity, ISoftDeletable
     public string Icon { get; private set; } = string.Empty;
     public string Placement { get; private set; } = string.Empty;
     public string? RequiredPermissionKey { get; private set; }
+    public string? RequiredModule { get; private set; }
     public int DisplayOrder { get; private set; }
     public bool IsActive { get; private set; } = true;
     public bool IsDeleted { get; set; }
@@ -34,6 +35,7 @@ public sealed class MenuItem : BaseEntity, ISoftDeletable
         string icon,
         string placement,
         string? requiredPermissionKey,
+        string? requiredModule,
         int displayOrder,
         string createdBy)
     {
@@ -57,6 +59,7 @@ public sealed class MenuItem : BaseEntity, ISoftDeletable
             Icon = icon.Trim(),
             Placement = placement.Trim(),
             RequiredPermissionKey = NormalizeOptional(requiredPermissionKey),
+            RequiredModule = NormalizeOptional(requiredModule),
             DisplayOrder = displayOrder,
             CreatedBy = createdBy.Trim()
         };
@@ -72,6 +75,7 @@ public sealed class MenuItem : BaseEntity, ISoftDeletable
         string icon,
         string placement,
         string? requiredPermissionKey,
+        string? requiredModule,
         int displayOrder,
         bool isActive,
         string updatedBy)
@@ -93,6 +97,7 @@ public sealed class MenuItem : BaseEntity, ISoftDeletable
         Icon = icon.Trim();
         Placement = placement.Trim();
         RequiredPermissionKey = NormalizeOptional(requiredPermissionKey);
+        RequiredModule = NormalizeOptional(requiredModule);
         DisplayOrder = displayOrder;
         IsActive = isActive;
         SetUpdatedInfo(updatedBy);

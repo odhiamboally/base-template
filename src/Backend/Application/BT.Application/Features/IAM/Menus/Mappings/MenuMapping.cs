@@ -20,6 +20,7 @@ public static class MenuMapping
             menu.Icon,
             menu.Placement,
             menu.RequiredPermissionKey,
+            menu.RequiredModule,
             menu.DisplayOrder,
             menu.IsActive,
             children ?? []);

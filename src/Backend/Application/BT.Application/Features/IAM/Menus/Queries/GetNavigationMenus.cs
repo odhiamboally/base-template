@@ -4,6 +4,7 @@ using BT.Application.Utilities;
 using BT.Domain.Features.IAM.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Menus.Dtos;
+using BT.Domain.Shared.Contracts.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +12,10 @@ namespace BT.Application.Features.IAM.Menus.Queries;
 
 
 
-internal sealed class GetNavigationMenusQueryHandler(IIamUnitOfWork unitOfWork, ILogger<GetNavigationMenusQueryHandler> logger)
+internal sealed class GetNavigationMenusQueryHandler(
+    IIamUnitOfWork unitOfWork, 
+    ITenantModuleResolver moduleResolver,
+    ILogger<GetNavigationMenusQueryHandler> logger)
     : IRequestHandler<GetNavigationMenusQuery, AppResponse<IReadOnlyList<MenuResponse>>>
 {
     public async Task<AppResponse<IReadOnlyList<MenuResponse>>> Handle(GetNavigationMenusQuery query, CancellationToken cancellationToken)
@@ -19,12 +23,15 @@ internal sealed class GetNavigationMenusQueryHandler(IIamUnitOfWork unitOfWork, 
         try
         {
             var permissionSet = query.PermissionKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var enabledModules = await moduleResolver.GetEnabledModulesAsync(cancellationToken).ConfigureAwait(false);
+            var moduleSet = enabledModules.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             var menus = await unitOfWork.MenuRepository
                 .ListAsync(
                     menus => menus
                         .Where(menu => menu.IsActive && menu.Placement == query.Placement)
                         .Where(menu => query.HasFullAccess || menu.RequiredPermissionKey == null || permissionSet.Contains(menu.RequiredPermissionKey))
+                        .Where(menu => menu.RequiredModule == null || moduleSet.Contains(menu.RequiredModule))
                         .OrderBy(static menu => menu.DisplayOrder).ThenBy(static menu => menu.Title),
                     cancellationToken)
                 .ConfigureAwait(false);

@@ -37,6 +37,7 @@ public class ControlPlaneDBContext : DbContext
     }
 
     public DbSet<Tenant> Tenants { get; set; }
+    public DbSet<TenantModule> TenantModules { get; set; }
     public DbSet<DeploymentStamp> DeploymentStamps { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

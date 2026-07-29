@@ -38,7 +38,7 @@ internal static class MenuItemSeed
 
     private static MenuItem Create(Guid id, Guid? parentId, Guid? departmentId, string key, string title, string description, string url, string icon, string placement, string? requiredPermissionKey, int displayOrder)
     {
-        var menu = MenuItem.Create(parentId, departmentId, key, title, description, url, icon, placement, requiredPermissionKey, displayOrder, "System");
+        var menu = MenuItem.Create(parentId, departmentId, key, title, description, url, icon, placement, requiredPermissionKey, null, displayOrder, "System");
         menu.Id = id;
         menu.TenantId = SeedTenantId;
         menu.CreatedAt = SeedCreatedAt;

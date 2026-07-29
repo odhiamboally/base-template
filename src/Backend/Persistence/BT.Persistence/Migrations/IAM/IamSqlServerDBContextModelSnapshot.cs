@@ -80,6 +80,10 @@ namespace BT.Persistence.Migrations.IAM
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
 
+                    b.Property<string>("RequiredModule")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
                     b.Property<string>("RequiredPermissionKey")
                         .HasMaxLength(160)
                         .HasColumnType("nvarchar(160)");

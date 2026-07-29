@@ -38,6 +38,11 @@ internal class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .HasForeignKey(x => x.DeploymentStampId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasMany(x => x.Modules)
+            .WithOne(m => m.Tenant)
+            .HasForeignKey(m => m.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Property(x => x.CreatedBy)
             .IsRequired()
             .HasMaxLength(128);

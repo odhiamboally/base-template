@@ -10,4 +10,7 @@ public class CreateTenantRequest
     public required string SubscriptionTier { get; set; }
 
     public System.Guid DeploymentStampId { get; set; }
+    
+    public string? DatabaseProvider { get; set; }
+    public string? DatabaseConnectionString { get; set; }
 }

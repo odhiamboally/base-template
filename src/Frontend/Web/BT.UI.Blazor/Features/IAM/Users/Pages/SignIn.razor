@@ -3,10 +3,13 @@
 @layout AuthLayout
 @rendermode InteractiveServer
 @using BT.UI.Blazor.Features.Shared.Messaging
+@using BT.UI.Blazor.Configuration
+@using Microsoft.Extensions.Options
 @inject IAuthSession AuthSession
 @inject NavigationManager Navigation
 @inject ILogger<SignIn> Logger
 @inject ISnackbar Snackbar
+@inject IOptions<BackendApiSettings> BackendApiSettings
 
 <PageTitle>Sign in | Base Template</PageTitle>
 
@@ -51,6 +54,20 @@
                 <button class="btn btn-bt-primary btn-lg" type="submit" disabled="@_isBusy">
                     @(_isBusy ? "Signing in..." : "Sign in")
                 </button>
+
+                <div class="auth-separator" style="text-align: center; margin: 1rem 0;">
+                    <span style="background-color: var(--mud-palette-surface); padding: 0 10px; color: var(--mud-palette-text-secondary); font-size: 0.875rem; text-transform: uppercase;">or</span>
+                </div>
+
+                @{
+                    var apiBaseUrl = BackendApiSettings.Value.BaseUrl.TrimEnd('/');
+                    var returnUrl = Uri.EscapeDataString($"{Navigation.BaseUri}iam/sso-callback");
+                    var ssoLoginUrl = $"{apiBaseUrl}/api/v1/iam/auth/sso/login?returnUrl={returnUrl}";
+                }
+                
+                <a class="btn btn-outline-secondary btn-lg w-100" href="@ssoLoginUrl">
+                    Sign in with Microsoft
+                </a>
             </div>
         </EditForm>
 

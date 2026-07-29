@@ -42,7 +42,7 @@ public class TenantIsolationTests : IDisposable
         {
             await context.Database.EnsureCreatedAsync();
 
-            var menu1 = MenuItem.Create(null, null, "menu-1", "Menu 1", "Desc 1", "/m1", "icon1", "top", null, 1, "test");
+            var menu1 = MenuItem.Create(null, null, "menu-1", "Menu 1", "Desc 1", "/m1", "icon1", "top", null, null, 1, "test");
             context.MenuItems.Add(menu1);
             await context.SaveChangesAsync();
         }
@@ -51,7 +51,7 @@ public class TenantIsolationTests : IDisposable
         tenantProvider.TenantId = tenant2;
         using (var context = new IamDBContext(_options, tenantProvider, actorProvider))
         {
-            var menu2 = MenuItem.Create(null, null, "menu-2", "Menu 2", "Desc 2", "/m2", "icon2", "top", null, 2, "test");
+            var menu2 = MenuItem.Create(null, null, "menu-2", "Menu 2", "Desc 2", "/m2", "icon2", "top", null, null, 2, "test");
             context.MenuItems.Add(menu2);
             await context.SaveChangesAsync();
         }
@@ -94,7 +94,7 @@ public class TenantIsolationTests : IDisposable
         {
             await context.Database.EnsureCreatedAsync();
 
-            var menu1 = MenuItem.Create(null, null, "menu-1", "Menu 1", "Desc 1", "/m1", "icon1", "top", null, 1, "test");
+            var menu1 = MenuItem.Create(null, null, "menu-1", "Menu 1", "Desc 1", "/m1", "icon1", "top", null, null, 1, "test");
             context.MenuItems.Add(menu1);
             await context.SaveChangesAsync();
         }
@@ -103,7 +103,7 @@ public class TenantIsolationTests : IDisposable
         tenantProvider.TenantId = tenant2;
         using (var context = new IamDBContext(_options, tenantProvider, actorProvider))
         {
-            var menu2 = MenuItem.Create(null, null, "menu-2", "Menu 2", "Desc 2", "/m2", "icon2", "top", null, 2, "test");
+            var menu2 = MenuItem.Create(null, null, "menu-2", "Menu 2", "Desc 2", "/m2", "icon2", "top", null, null, 2, "test");
             context.MenuItems.Add(menu2);
             await context.SaveChangesAsync();
         }

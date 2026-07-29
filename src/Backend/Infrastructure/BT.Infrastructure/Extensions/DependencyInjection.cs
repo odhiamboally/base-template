@@ -164,6 +164,8 @@ public static class DependencyInjection
 
         services.AddHttpClient<IApiService, ApiService>();
         services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
+        services.AddSingleton<ITenantConnectionResolver, TenantConnectionResolver>();
+        services.AddScoped<ITenantModuleResolver, TenantModuleResolver>();
         services.AddScoped<ICurrentActorProvider, CurrentActorProvider>();
         services.AddScoped<IFeatureFlagService, ConfigurationFeatureFlagService>();
         services.AddScoped<IPdfReportService, QuestPdfReportService>();
@@ -271,7 +273,8 @@ public static class DependencyInjection
             .AddJwtBearer(options =>
             {
                 ConfigureJwtBearer(options, jwtSettings);
-            });
+            })
+            .AddCookie(IdentityConstants.ExternalScheme);
 
             if (entraIdSettings.Enabled)
             {
@@ -470,6 +473,7 @@ public static class DependencyInjection
         options.ClientId = settings.ClientId;
         options.ClientSecret = settings.ClientSecret;
         options.CallbackPath = settings.CallbackPath;
+        options.SignInScheme = IdentityConstants.ExternalScheme;
         options.ResponseType = "code";
         options.SaveTokens = false;
         options.GetClaimsFromUserInfoEndpoint = true;

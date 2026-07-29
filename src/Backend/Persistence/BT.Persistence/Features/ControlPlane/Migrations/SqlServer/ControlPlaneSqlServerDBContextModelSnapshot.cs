@@ -36,6 +36,12 @@ namespace BT.Persistence.Features.ControlPlane.Migrations.SqlServer
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
+                    b.Property<string>("DatabaseConnectionString")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DatabaseProvider")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("IsolationTier")
                         .HasColumnType("int");
 
@@ -103,6 +109,12 @@ namespace BT.Persistence.Features.ControlPlane.Migrations.SqlServer
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("DatabaseConnectionString")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DatabaseProvider")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("DeploymentStampId")
                         .HasColumnType("uniqueidentifier");
@@ -174,6 +186,55 @@ namespace BT.Persistence.Features.ControlPlane.Migrations.SqlServer
                         });
                 });
 
+            modelBuilder.Entity("BT.Domain.Features.ControlPlane.Tenants.Entities.TenantModule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ModuleKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ModuleKey")
+                        .IsUnique();
+
+                    b.ToTable("TenantModules", (string)null);
+                });
+
             modelBuilder.Entity("BT.Domain.Features.ControlPlane.Tenants.Entities.Tenant", b =>
                 {
                     b.HasOne("BT.Domain.Features.ControlPlane.Tenants.Entities.DeploymentStamp", "DeploymentStamp")
@@ -183,6 +244,22 @@ namespace BT.Persistence.Features.ControlPlane.Migrations.SqlServer
                         .IsRequired();
 
                     b.Navigation("DeploymentStamp");
+                });
+
+            modelBuilder.Entity("BT.Domain.Features.ControlPlane.Tenants.Entities.TenantModule", b =>
+                {
+                    b.HasOne("BT.Domain.Features.ControlPlane.Tenants.Entities.Tenant", "Tenant")
+                        .WithMany("Modules")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("BT.Domain.Features.ControlPlane.Tenants.Entities.Tenant", b =>
+                {
+                    b.Navigation("Modules");
                 });
 #pragma warning restore 612, 618
         }
