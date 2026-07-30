@@ -25,9 +25,9 @@ public sealed class CacheInvalidationBehaviorTests
         var result = await behavior.Handle(request, _ => Task.FromResult("ok"), CancellationToken.None);
 
         Assert.Equal("ok", result);
-        Assert.Contains("lookups:version:global", cache.SetKeys);
-        Assert.Contains($"lookups:version:tenant:{TenantId:D}", cache.SetKeys);
-        Assert.DoesNotContain($"lookups:versiontenant:{TenantId:D}", cache.SetKeys);
+        Assert.Contains("lookups:version:global", cache.RemovedKeys);
+        Assert.Contains($"lookups:version:tenant:{TenantId:D}", cache.RemovedKeys);
+        Assert.DoesNotContain($"lookups:versiontenant:{TenantId:D}", cache.RemovedKeys);
     }
 
     private sealed record TestInvalidationRequest(IReadOnlyList<string> GroupVersionKeysToInvalidate)
@@ -41,6 +41,7 @@ public sealed class CacheInvalidationBehaviorTests
     private sealed class RecordingCacheService : ICacheService
     {
         public List<string> SetKeys { get; } = [];
+        public List<string> RemovedKeys { get; } = [];
 
         public Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
             => Task.FromResult(default(T));
@@ -55,7 +56,10 @@ public sealed class CacheInvalidationBehaviorTests
         }
 
         public Task RemoveAsync(string key, CancellationToken ct = default)
-            => Task.CompletedTask;
+        {
+            RemovedKeys.Add(key);
+            return Task.CompletedTask;
+        }
 
         public Task RemoveByPrefixAsync(string prefix, CancellationToken ct = default)
             => Task.CompletedTask;
