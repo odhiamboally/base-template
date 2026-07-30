@@ -366,7 +366,16 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ vars.AZURE_API_APP_NAME }}
+          slot-name: staging
           package: ./api-app
+
+      - name: Swap staging to production (API)
+        run: |
+          az webapp deployment slot swap \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --name ${{ vars.AZURE_API_APP_NAME }} \
+            --slot staging \
+            --target-slot production
 
   deploy-app-service-ui:
     name: Deploy UI to Azure App Service
@@ -395,7 +404,16 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ vars.AZURE_UI_APP_NAME }}
+          slot-name: staging
           package: ./ui-app
+
+      - name: Swap staging to production (UI)
+        run: |
+          az webapp deployment slot swap \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --name ${{ vars.AZURE_UI_APP_NAME }} \
+            --slot staging \
+            --target-slot production
   build-push-containers:
     name: Build & Push Containers
     needs: setup

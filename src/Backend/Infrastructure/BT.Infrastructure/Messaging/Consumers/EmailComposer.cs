@@ -54,18 +54,14 @@ public abstract class EmailComposer<TEvent>(
         {
             var key = CacheKeys.EmailTemplate(emailTemplateType.ToDisplayString());
 
-            var cached = await _cache.GetAsync<EmailTemplate>(key, cancellationToken).ConfigureAwait(false);
-            if (cached is not null) return cached;
-
-            var template = await _sharedUnitOfWork.EmailTemplateRepository
-                .FindByCondition(t => t.Name == emailTemplateType.ToDisplayString())
-                .FirstOrDefaultAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            if (template is not null)
-                await _cache.SetAsync(key, template, Ttl, cancellationToken).ConfigureAwait(false);
-
-            return template;
+            return await _cache.GetOrCreateAsync(
+                key,
+                async ct => await _sharedUnitOfWork.EmailTemplateRepository
+                    .FindByCondition(t => t.Name == emailTemplateType.ToDisplayString())
+                    .FirstOrDefaultAsync(ct)
+                    .ConfigureAwait(false),
+                Ttl,
+                cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

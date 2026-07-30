@@ -19,10 +19,10 @@
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageReference Include="MassTransit" Version="9.2.0" />
-    <PackageReference Include="MassTransit.Azure.ServiceBus.Core" Version="9.2.0" />
-    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="9.2.0" />
-    <PackageReference Include="MassTransit.RabbitMQ" Version="9.2.0" />
+    <PackageReference Include="MassTransit" Version="8.3.3" />
+    <PackageReference Include="MassTransit.Azure.ServiceBus.Core" Version="8.3.3" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.3.3" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
@@ -49,5 +49,11 @@
     <Folder Include="Logs\" />
   </ItemGroup>
 
+  <Target Name="RunMigrationGuardrailTests" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' AND '$(IsRunningGuardrails)' != 'true'"
+          Inputs="$(TargetPath)" 
+          Outputs="$(IntermediateOutputPath)Guardrail.stamp">
+    <Exec Command="dotnet test &quot;$(MSBuildProjectDirectory)\..\..\..\..\tests\BT.Tests.Architecture\BT.Tests.Architecture.csproj&quot; --filter FullyQualifiedName~MigrationGuardrailTests /p:IsRunningGuardrails=true" />
+    <Touch Files="$(IntermediateOutputPath)Guardrail.stamp" AlwaysCreate="true" />
+  </Target>
 
 </Project>

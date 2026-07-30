@@ -1,6 +1,5 @@
-using BT.Application.Contracts.Interfaces.Common;
-using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.IAM.Users.Commands;
+using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.IAM.Users.Mappings;
 using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Features.IAM.Users.Entities;
@@ -14,8 +13,10 @@ using BT.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
@@ -24,7 +25,8 @@ internal sealed class ProcessSsoLogin(
     IHttpContextAccessor httpContextAccessor,
     IJwtService jwtService,
     IClaimsService claimsService,
-    IServiceManager serviceManager,
+    ISessionService sessionService,
+    IDistributedCache cache,
     IIamUnitOfWork iamUnitOfWork,
     ICurrentTenantProvider currentTenantProvider,
     IOptions<JwtSettings> jwtSettings,
@@ -88,7 +90,7 @@ internal sealed class ProcessSsoLogin(
         }
 
         var sessionId = Guid.CreateVersion7();
-        var sessionCreationResult = await serviceManager.SessionService.CreateSessionAsync(
+        var sessionCreationResult = await sessionService.CreateSessionAsync(
             user.Id,
             sessionId,
             httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
@@ -165,10 +167,10 @@ internal sealed class ProcessSsoLogin(
 
         var exchangeCode = Guid.NewGuid().ToString("N");
         
-        await serviceManager.CacheService.SetAsync(
+        await cache.SetStringAsync(
             $"SSO_Exchange_{exchangeCode}", 
-            loginResponse, 
-            TimeSpan.FromMinutes(2), 
+            JsonSerializer.Serialize(loginResponse), 
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2) }, 
             cancellationToken).ConfigureAwait(false);
 
         return AppResponses.Success("SSO Login successful", exchangeCode);

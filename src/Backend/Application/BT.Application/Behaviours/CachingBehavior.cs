@@ -86,15 +86,16 @@ public sealed class CachingBehavior<TRequest, TResponse>(
 
     private async Task<string> ResolveOrCreateVersionAsync(string sentinelKey, CancellationToken ct)
     {
-        var version = await cache.GetAsync<string>(sentinelKey, ct).ConfigureAwait(false);
-
-        if (version is not null)
-            return version;
-
-        version = GenerateVersion();
-        await cache.SetAsync(sentinelKey, version, VersionTtl, ct).ConfigureAwait(false);
-        CacheLogDefinitions.LogCacheSet(logger, sentinelKey, VersionTtl);
-        return version;
+        return await cache.GetOrCreateAsync(
+            sentinelKey,
+            async token =>
+            {
+                var version = GenerateVersion();
+                CacheLogDefinitions.LogCacheSet(logger, sentinelKey, VersionTtl);
+                return version;
+            },
+            VersionTtl,
+            ct).ConfigureAwait(false);
     }
 
     private static string GenerateVersion()

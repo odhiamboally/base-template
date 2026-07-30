@@ -21,6 +21,7 @@ using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OtpNet;
@@ -33,7 +34,7 @@ internal sealed class VerifyTotpCode(
     SignInManager<AppUser> signInManager,
     IClaimsService claimsService,
     IJwtService jwtService,
-    ICacheService cache,
+    IDistributedCache cache,
     IEncryptionService encryptionService,
     IIamUnitOfWork iamUnitOfWork,
     ISessionService sessionService,
@@ -216,7 +217,8 @@ internal sealed class VerifyTotpCode(
     {
         var userId = user.Id;
         var attemptKey = CacheKeys.TotpAttempts(userId);
-        var attempts = await cache.GetAsync<int?>(attemptKey, ct).ConfigureAwait(false) ?? 0;
+        var attemptsStr = await cache.GetStringAsync(attemptKey, ct).ConfigureAwait(false);
+        var attempts = int.TryParse(attemptsStr, out var a) ? a : 0;
 
         if (attempts >= 3)
             return TotpVerificationResult.Invalid();
@@ -236,7 +238,7 @@ internal sealed class VerifyTotpCode(
         if (!isValid)
         {
             attempts++;
-            await cache.SetAsync(attemptKey, attempts, TimeSpan.FromMinutes(10), ct).ConfigureAwait(false);
+            await cache.SetStringAsync(attemptKey, attempts.ToString(), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) }, ct).ConfigureAwait(false);
             return TotpVerificationResult.Invalid();
         }
 

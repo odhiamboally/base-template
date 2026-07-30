@@ -148,9 +148,6 @@ internal sealed class Login(
                 var roles = await userManager.GetRolesAsync(user).ConfigureAwait(false);
                 var userInfoWith2FA = appUserResponse with { Roles = [.. roles] };
 
-                await serviceManager.CacheService
-                    .SetAsync(CacheKeys.UserInfo(user.Id), userInfoWith2FA, TimeSpan.FromMinutes(10), cancellationToken)
-                    .ConfigureAwait(false);
 
                 return AppResponses.Success("Two-factor authentication required", new LoginResponse(
                     user.Id,
@@ -251,9 +248,6 @@ internal sealed class Login(
                 return AppResponses.Failure<LoginResponse>("Could not complete login.");
             }
 
-            await serviceManager.CacheService
-                .SetAsync(CacheKeys.UserInfo(user.Id), finalAppUserResponse, TimeSpan.FromMinutes(10), cancellationToken)
-                .ConfigureAwait(false);
 
             await iamUnitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {

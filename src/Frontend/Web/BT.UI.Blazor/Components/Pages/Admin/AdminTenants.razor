@@ -63,19 +63,11 @@
                     </MudTd>
                     <MudTd DataLabel="Actions">
                         <TableRowActions OnEdit="@(() => OpenFormDialogAsync(context))"
-                                         CanEdit="@AuthSession.HasPermission("Permissions.ControlPlane.Manage")" />
-                        @if (AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
-                        {
-                            <MudIconButton Icon="@Icons.Material.Filled.ViewModule" Size="Size.Small" Color="Color.Primary" OnClick="@(() => OpenModulesDialogAsync(context))" title="Manage modules" />
-                            @if (context.Status == "Active")
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Block" Size="Size.Small" Color="Color.Error" OnClick="@(() => ConfirmSuspendAsync(context))" title="Suspend tenant" />
-                            }
-                            else
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" OnClick="@(() => ConfirmActivateAsync(context))" title="Activate tenant" />
-                            }
-                        }
+                                         CanEdit="@AuthSession.HasPermission("Permissions.ControlPlane.Manage")" 
+                                         CanView="false"
+                                         CanDelete="false"
+                                         ExtraActions="@GetExtraActions(context)"
+                                         OnExtraAction="@((action) => HandleExtraActionAsync(action, context))" />
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
@@ -147,6 +139,33 @@
         {
             await LoadTenantsAsync();
         }
+    }
+
+    private async Task HandleExtraActionAsync(string action, TenantResponse tenant)
+    {
+        if (action == "Manage modules")
+        {
+            await OpenModulesDialogAsync(tenant);
+        }
+        else if (action == "Suspend tenant")
+        {
+            await ConfirmSuspendAsync(tenant);
+        }
+        else if (action == "Activate tenant")
+        {
+            await ConfirmActivateAsync(tenant);
+        }
+    }
+
+    private IReadOnlyList<string> GetExtraActions(TenantResponse tenant)
+    {
+        var actions = new List<string>();
+        if (AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
+        {
+            actions.Add("Manage modules");
+            actions.Add(tenant.Status == "Active" ? "Suspend tenant" : "Activate tenant");
+        }
+        return actions;
     }
 
     private async Task OpenModulesDialogAsync(TenantResponse tenant)

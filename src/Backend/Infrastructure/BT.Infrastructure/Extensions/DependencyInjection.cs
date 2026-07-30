@@ -164,7 +164,7 @@ public static class DependencyInjection
 
         services.AddHttpClient<IApiService, ApiService>();
         services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
-        services.AddSingleton<ITenantConnectionResolver, TenantConnectionResolver>();
+        services.AddScoped<ITenantConnectionResolver, TenantConnectionResolver>();
         services.AddScoped<ITenantModuleResolver, TenantModuleResolver>();
         services.AddScoped<ICurrentActorProvider, CurrentActorProvider>();
         services.AddScoped<IFeatureFlagService, ConfigurationFeatureFlagService>();
@@ -273,8 +273,7 @@ public static class DependencyInjection
             .AddJwtBearer(options =>
             {
                 ConfigureJwtBearer(options, jwtSettings);
-            })
-            .AddCookie(IdentityConstants.ExternalScheme);
+            });
 
             if (entraIdSettings.Enabled)
             {

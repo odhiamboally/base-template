@@ -17,18 +17,7 @@ namespace BT.Application.Contracts.Interfaces.Common;
 /// </summary>
 public interface ICacheService
 {
-    // ── Read ──────────────────────────────────────────────────────────────────
-
-    /// <summary>Returns the cached value, or null/default if the key does not exist.</summary>
-    Task<T?> GetAsync<T>(string key, CancellationToken ct = default);
-
-    /// <summary>Returns true if the key exists in the cache.</summary>
-    Task<bool> ExistsAsync(string key, CancellationToken ct = default);
-
     // ── Write ─────────────────────────────────────────────────────────────────
-
-    /// <summary>Stores a value with an absolute expiration.</summary>
-    Task SetAsync<T>(string key, T value, TimeSpan expiration, CancellationToken ct = default);
 
     // ── Invalidate ────────────────────────────────────────────────────────────
 
