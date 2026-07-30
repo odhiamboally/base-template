@@ -80,7 +80,6 @@ internal sealed class ResetPassword(
 
             await cacheService.RemoveAsync(CacheKeys.PasswordResetOtp(user.Id), ct).ConfigureAwait(false);
             await cacheService.RemoveAsync(CacheKeys.PasswordResetRateLimit(user.Id), ct).ConfigureAwait(false);
-            await cacheService.RemoveAsync(CacheKeys.UserInfo(user.Id), ct).ConfigureAwait(false);
 
             await publisher.Publish(new PasswordResetSuccessEvent(
                 user.Id,

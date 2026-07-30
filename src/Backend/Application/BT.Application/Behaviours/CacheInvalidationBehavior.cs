@@ -77,10 +77,8 @@ public sealed class CacheInvalidationBehavior<TRequest, TResponse>(
 
     private async Task BumpVersionAsync(string sentinelKey, CancellationToken cancellationToken)
     {
-        var newVersion = GenerateVersion();
-        await cache.SetAsync(sentinelKey, newVersion, VersionTtl, cancellationToken).ConfigureAwait(false);
-
-        CacheLogDefinitions.LogCacheBumped(logger, sentinelKey, newVersion);
+        await cache.RemoveAsync(sentinelKey, cancellationToken).ConfigureAwait(false);
+        CacheLogDefinitions.LogCacheBumped(logger, sentinelKey, GenerateVersion());
     }
 
     private static string ToTenantScopedVersionKey(string sentinelKey, Guid tenantId)

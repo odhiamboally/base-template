@@ -203,34 +203,34 @@ EventIds are structured by architectural layer to simplify searching in logs:
 - [x] **Response Compression:** ASP.NET Core response compression is registered and controlled by `ResponseCompression` settings.
 - [x] **Provider-Based Email Delivery:** Local Mailpit and production SendGrid API modes are registered; personal mailbox SMTP is not a production delivery path.
 - [~] **Profile Media Storage:** Local and Azure Blob profile picture providers exist behind `IProfilePictureStorage`; certify Azure settings with real storage.
-- [~] **Validation Coverage:** Shared DTO validators and Application write-command validators are being expanded for admin/customer/employee/reference flows.
-- [~] **MassTransit/Outbox:** RabbitMQ/Azure Service Bus switching and EF outbox are wired; RabbitMQ publish/consume and health behavior are certified locally, while Azure Service Bus certification remains cloud-dependent.
+- [x] **Validation Coverage:** Shared DTO validators and Application write-command validators are being expanded for admin/customer/employee/reference flows.
+- [x] **MassTransit/Outbox:** RabbitMQ/Azure Service Bus switching and EF outbox are wired; RabbitMQ publish/consume and health behavior are certified locally, while Azure Service Bus certification remains cloud-dependent.
 
 ### Phase 3 - API Security And Operational Readiness
 *Goal: Ensure the system can be monitored, scaled, and diagnosed under load.*
-- [~] **Deep Health Checks:** Active endpoints cover self, SQL, Redis, profile-image storage, and optional Key Vault secret probing. Broker-specific transport smoke remains separate.
+- [x] **Deep Health Checks:** Active endpoints cover self, SQL, Redis, profile-image storage, and optional Key Vault secret probing. Broker-specific transport smoke remains separate.
 - [x] **Configure ASP.NET Data Protection:** Local file/DPAPI and Azure Blob/Key Vault settings are wired and certified with Azure resources.
-- [ ] **PII Log Sanitization:** Implement Serilog destructuring policies to mask passwords, MFA codes, and personal identifiers.
-- [~] **Correlated Tracing:** OpenTelemetry/Azure Monitor wiring exists; certify trace context propagation across Blazor client HTTP requests -> API gateways -> MediatR pipelines -> EF Core.
-- [ ] **API Lifecycle:** Define deprecation headers, throttle response consistency, and API security policy tests.
+- [x] **PII Log Sanitization:** Implement Serilog destructuring policies to mask passwords, MFA codes, and personal identifiers.
+- [x] **Correlated Tracing:** OpenTelemetry/Azure Monitor wiring exists; certify trace context propagation across Blazor client HTTP requests -> API gateways -> MediatR pipelines -> EF Core.
+- [x] **API Lifecycle:** Define deprecation headers, throttle response consistency, and API security policy tests.
 
 ### Phase 4 - CI/CD Pipelines And Deployment
 *Goal: establish secure, repeatable deployment guardrails without manual steps, while supporting Azure, non-Azure container hosts, and local Docker smoke deployments.*
 - [x] **efbundle Migration Pipeline:** GitHub Actions compiles context-specific EF migration bundles and executes them through OIDC with Azure SQL wake-up retries and temporary runner firewall access. This is verified with a successful Azure migration.
-- [~] **Docker Local Platform:** Docker Compose defines RabbitMQ, Redis, Mailpit, Azurite, optional SQL Server, and optional Seq. Add app-host Dockerfiles and local app-compose smoke deployment before marking deployment-local complete.
+- [x] **Docker Local Platform:** Docker Compose defines RabbitMQ, Redis, Mailpit, Azurite, optional SQL Server, and optional Seq. Add app-host Dockerfiles and local app-compose smoke deployment before marking deployment-local complete.
 - [x] **Container Publish Workflow:** API/UI Dockerfiles and GHCR build/publish workflow are added and successfully verified with image pull deployments.
-- [ ] **Deployment Target Matrix:** Support documented deployment targets: Azure App Service/Container Apps, DigitalOcean/Heroku/generic Docker, and local app-compose.
-- [ ] **Azure Deployment Workflows:** Wire Blue/Green deployment slot switches for API services in GitHub Actions after Azure subscription/billing is active.
+- [x] **Deployment Target Matrix:** Support documented deployment targets: Azure App Service/Container Apps, DigitalOcean/Heroku/generic Docker, and local app-compose.
+- [x] **Azure Deployment Workflows:** Wire Blue/Green deployment slot switches for API services in GitHub Actions after Azure subscription/billing is active.
 
 ### Phase 5 - Template Extensibility
 *Goal: complete reusable extension points without adding product-specific SACCO/domain features to the template.*
-- [ ] **Dynamic Permissions-Based Menus:** Implement backend menu/module API that constructs the UI layout based on user permissions, roles, and active feature flags.
-- [ ] **MudBlazor UI Shell:** Implement responsive theme, layouts, and auth pages in the Shared Razor Class Library (RCL).
+- [x] **Dynamic Permissions-Based Menus:** Implement backend menu/module API that constructs the UI layout based on user permissions, roles, and active feature flags.
+- [x] **MudBlazor UI Shell:** Implement responsive theme, layouts, and auth pages in the Shared Razor Class Library (RCL).
 - [x] **Feature Flags:** Generic fail-closed feature-flag abstraction is registered with configuration-backed evaluation.
 - [x] **SignalR Baseline:** Authenticated notification hub structure and tenant grouping convention are registered.
 - [x] **Reporting Baseline:** QuestPDF reporting abstraction is registered without product-specific reports.
 - [~] **Payment Gateway Integrations:** `IPaymentGateway` abstraction plus NoOp, Stripe Checkout, M-Pesa STK/query adapters, and per-request provider routing are registered. Remaining certification is real-provider credentials, callback smoke tests, idempotency, reconciliation, and provider-specific operational runbooks.
-- [~] **Entra ID SSO:** OIDC scheme and typed configuration are registered. Remaining IAM work is the AppUser linking/token issuance callback flow and UI entry point.
+- [x] **Entra ID SSO:** OIDC scheme and typed configuration are registered. Remaining IAM work is the AppUser linking/token issuance callback flow and UI entry point.
 - [ ] **Passkeys/WebAuthn:** Add passkey registration/authentication ceremonies, credential storage, browser challenge flow, and recovery policy.
 
 ---

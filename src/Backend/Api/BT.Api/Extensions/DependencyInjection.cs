@@ -322,23 +322,37 @@ internal static partial class DependencyInjection
                 options.OnRejected = async (context, token) =>
                 {
                     context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                    context.HttpContext.Response.ContentType = "application/json";
-
+                    
                     var retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterValue)
                         ? retryAfterValue.TotalSeconds.ToString(CultureInfo.InvariantCulture)
                         : "60";
 
                     context.HttpContext.Response.Headers.RetryAfter = retryAfter;
 
-                    var errorResponse = new
+                    var problemDetails = new Microsoft.AspNetCore.Mvc.ProblemDetails
                     {
-                        error = "rate_limit_exceeded",
-                        message = $"Rate limit exceeded. Try again in {retryAfter} seconds.",
-                        retryAfter
+                        Status = StatusCodes.Status429TooManyRequests,
+                        Title = "Too Many Requests",
+                        Detail = $"Rate limit exceeded. Try again in {retryAfter} seconds.",
+                        Instance = context.HttpContext.Request.Path
                     };
+                    problemDetails.Extensions["retryAfter"] = retryAfter;
+                    problemDetails.Extensions["error"] = "rate_limit_exceeded";
 
-                    await context.HttpContext.Response.WriteAsync(
-                        JsonSerializer.Serialize(errorResponse), token).ConfigureAwait(false);
+                    if (context.HttpContext.RequestServices.GetService<IProblemDetailsService>() is { } problemDetailsService)
+                    {
+                        await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+                        {
+                            HttpContext = context.HttpContext,
+                            ProblemDetails = problemDetails
+                        });
+                    }
+                    else
+                    {
+                        context.HttpContext.Response.ContentType = "application/problem+json";
+                        await context.HttpContext.Response.WriteAsync(
+                            JsonSerializer.Serialize(problemDetails), token).ConfigureAwait(false);
+                    }
                 };
 
         });
@@ -387,6 +401,12 @@ internal static partial class DependencyInjection
         }
 
         var assembly = typeof(IntegrationEventEmailConsumer<>).Assembly;
+
+        services.Configure<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckPublisherOptions>(options =>
+        {
+            options.Delay = TimeSpan.FromSeconds(2);
+            options.Predicate = check => check.Tags.Contains("ready");
+        });
 
         services.AddMassTransit(x =>
         {

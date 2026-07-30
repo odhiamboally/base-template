@@ -65,8 +65,7 @@ public static class CacheKeys
     public static string PasswordReset(string userId)
         => $"auth:password-reset:{NormalizeRequired(userId, nameof(userId))}";
 
-    public static string UserInfo(string userId)
-        => $"auth:user-info:{NormalizeRequired(userId, nameof(userId))}";
+
 
     public static string EmailOtp(string userId) 
         => $"otp:email:{NormalizeRequired(userId, nameof(userId))}";

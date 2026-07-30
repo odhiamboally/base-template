@@ -1,4 +1,3 @@
-using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.Application.Features.Shared.Notifications.Contracts.Interfaces;
 using BT.Application.Features.IAM.Users.Commands;
@@ -11,6 +10,7 @@ using BT.SharedKernel.Features.IAM.Users.Dtos;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Security.Cryptography;
@@ -20,7 +20,7 @@ namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
 internal sealed class SendEmailOtp(
     UserManager<AppUser> userManager,
-    ICacheService cache,
+    IDistributedCache cache,
     IPublisher publisher,
     ILogger<SendEmailOtp> logger) : IRequestHandler<SendEmailOtpCommand, AppResponse<SendEmailOtpResponse>>
 {
@@ -43,15 +43,15 @@ internal sealed class SendEmailOtp(
             return AppResponses.Failure<SendEmailOtpResponse>("Email not confirmed");
 
         var cooldownKey = CacheKeys.EmailOtpCooldown(user.Id);
-        if (await cache.GetAsync<string>(cooldownKey, ct).ConfigureAwait(false) != null)
+        if (await cache.GetStringAsync(cooldownKey, ct).ConfigureAwait(false) != null)
             return AppResponses.Failure<SendEmailOtpResponse>("Please wait before requesting another code");
 
         var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
         var otpKey = CacheKeys.EmailOtp(user.Id);
         var hashed = HashCode(user.Id, code, request.Purpose.ToString());
 
-        await cache.SetAsync(otpKey, hashed, OtpLifetime, ct).ConfigureAwait(false);
-        await cache.SetAsync(cooldownKey, "1", Cooldown, ct).ConfigureAwait(false);
+        await cache.SetStringAsync(otpKey, hashed, new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpLifetime }, ct).ConfigureAwait(false);
+        await cache.SetStringAsync(cooldownKey, "1", new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = Cooldown }, ct).ConfigureAwait(false);
 
         var expiresAt = DateTimeOffset.UtcNow.Add(OtpLifetime);
 

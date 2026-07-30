@@ -1,4 +1,5 @@
 using BT.Application.Features.IAM.Users.Commands;
+using BT.SharedKernel.Validation.Features.IAM.Users.Validators;
 using FluentValidation;
 
 namespace BT.Application.Features.IAM.Users.Validators;
@@ -7,8 +8,8 @@ public sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshToke
 {
     public RefreshTokenCommandValidator()
     {
-        RuleFor(command => command.Request).NotNull();
-        RuleFor(command => command.Request.AccessToken).NotEmpty();
-        RuleFor(command => command.Request.RefreshToken).NotEmpty();
+        RuleFor(command => command.Request)
+            .NotNull()
+            .SetValidator(new RefreshTokenRequestValidator());
     }
 }

@@ -1,4 +1,3 @@
-using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
 using BT.SharedKernel.Extensions;
 using BT.Application.Features.IAM.Users.Commands;
@@ -13,6 +12,7 @@ using BT.SharedKernel.Dtos.Common;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
@@ -25,7 +25,7 @@ internal sealed class VerifyEmailOtp(
     SignInManager<AppUser> signInManager,
     IClaimsService claimsService,
     IJwtService jwtService,
-    ICacheService cache,
+    IDistributedCache cache,
     IIamUnitOfWork iamUnitOfWork,
     ISessionService sessionService,
     IHttpContextAccessor httpContextAccessor,
@@ -41,12 +41,13 @@ internal sealed class VerifyEmailOtp(
         if (user == null) return AppResponses.Failure<VerifyEmailOtpResponse>("User not found");
 
         var attemptKey = CacheKeys.EmailOtpAttempts(user.Id);
-        var attempts = await cache.GetAsync<int?>(attemptKey, ct).ConfigureAwait(false) ?? 0;
+        var attemptsStr = await cache.GetStringAsync(attemptKey, ct).ConfigureAwait(false);
+        var attempts = int.TryParse(attemptsStr, out var a) ? a : 0;
         if (attempts >= 3)
             return AppResponses.Failure<VerifyEmailOtpResponse>("Too many attempts. Request a new code.");
 
         var otpKey = CacheKeys.EmailOtp(user.Id);
-        var storedHash = await cache.GetAsync<string>(otpKey, ct).ConfigureAwait(false);
+        var storedHash = await cache.GetStringAsync(otpKey, ct).ConfigureAwait(false);
         if (storedHash == null)
             return AppResponses.Failure<VerifyEmailOtpResponse>("Code expired. Request a new code.");
 
@@ -57,7 +58,7 @@ internal sealed class VerifyEmailOtp(
 
         if (!isValid)
         {
-            await cache.SetAsync(attemptKey, attempts + 1, TimeSpan.FromMinutes(10), ct).ConfigureAwait(false);
+            await cache.SetStringAsync(attemptKey, (attempts + 1).ToString(), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) }, ct).ConfigureAwait(false);
             ServiceLogDefinitions.LogInvalidEmailOtp(logger, user.Id);
             return AppResponses.Failure<VerifyEmailOtpResponse>("Invalid code");
         }

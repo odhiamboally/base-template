@@ -1,4 +1,5 @@
 using BT.Application.Features.IAM.Users.Commands;
+using BT.SharedKernel.Validation.Features.IAM.Users.Validators;
 using FluentValidation;
 
 namespace BT.Application.Features.IAM.Users.Validators;
@@ -7,7 +8,8 @@ public sealed class ForgotPasswordCommandValidator : AbstractValidator<ForgotPas
 {
     public ForgotPasswordCommandValidator()
     {
-        RuleFor(command => command.Request).NotNull();
-        RuleFor(command => command.Request.Email).NotEmpty().EmailAddress().MaximumLength(256);
+        RuleFor(command => command.Request)
+            .NotNull()
+            .SetValidator(new ForgotPasswordRequestValidator());
     }
 }
