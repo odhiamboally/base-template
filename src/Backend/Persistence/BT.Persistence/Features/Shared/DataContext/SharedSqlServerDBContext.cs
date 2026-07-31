@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using BT.Domain.Shared.Contracts.Common;
 
 namespace BT.Persistence.Features.Shared.DataContext;
 
@@ -9,8 +10,8 @@ public class SharedSqlServerDBContext : SharedDBContext
 {
     public SharedSqlServerDBContext(
         DbContextOptions<SharedSqlServerDBContext> options,
-        BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider tenantProvider,
-        BT.Domain.Shared.Contracts.Common.ICurrentActorProvider actorProvider,
+        ICurrentTenantProvider tenantProvider,
+        ICurrentActorProvider actorProvider,
         Microsoft.Extensions.Logging.ILogger<SharedDBContext>? logger = null)
         : base(options, tenantProvider, actorProvider, logger)
     {
@@ -24,3 +25,4 @@ public class SharedSqlServerDBContext : SharedDBContext
             type => type.Namespace?.StartsWith("BT.Persistence.Features.Shared.EntityConfigurations.SqlServer", StringComparison.Ordinal) == true);
     }
 }
+

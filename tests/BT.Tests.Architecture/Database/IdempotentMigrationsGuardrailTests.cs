@@ -1,3 +1,4 @@
+using BT.Domain.Shared.Contracts.Common;
 using System;
 using System.Collections.Generic;
 using BT.Persistence.Features.Banking.DataContext;
@@ -43,8 +44,8 @@ public class IdempotentMigrationsGuardrailTests
         services.AddControlPlanePersistence(config, env);
         services.AddBankingPersistence(config);
         
-        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider, DummyTenantProvider>();
-        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentActorProvider, DummyActorProvider>();
+        services.AddScoped<ICurrentTenantProvider, DummyTenantProvider>();
+        services.AddScoped<ICurrentActorProvider, DummyActorProvider>();
         services.AddLogging();
         
         using var provider = services.BuildServiceProvider();
@@ -73,8 +74,8 @@ public class IdempotentMigrationsGuardrailTests
         services.AddControlPlanePersistence(config, env);
         services.AddBankingPersistence(config);
         
-        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider, DummyTenantProvider>();
-        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentActorProvider, DummyActorProvider>();
+        services.AddScoped<ICurrentTenantProvider, DummyTenantProvider>();
+        services.AddScoped<ICurrentActorProvider, DummyActorProvider>();
         services.AddLogging();
         
         using var provider = services.BuildServiceProvider();
@@ -103,13 +104,15 @@ public class IdempotentMigrationsGuardrailTests
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
     }
     
-    private class DummyTenantProvider : BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider
+    private class DummyTenantProvider : ICurrentTenantProvider
     {
         public Guid TenantId => Guid.Empty;
     }
     
-    private class DummyActorProvider : BT.Domain.Shared.Contracts.Common.ICurrentActorProvider
+    private class DummyActorProvider : ICurrentActorProvider
     {
         public string ActorId => "System";
     }
 }
+
+

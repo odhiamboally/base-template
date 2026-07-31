@@ -40,7 +40,7 @@ internal sealed class CorrelationIdEnricher : ILogEventEnricher
         var correlationId =
             context?.Request.Headers[CorrelationIdHeader].FirstOrDefault()
             ?? context?.TraceIdentifier
-            ?? Guid.NewGuid().ToString();
+            ?? Guid.CreateVersion7().ToString();
 
         // Write back so TraceIdentifier and the header stay in sync
         if (context is not null)
@@ -56,3 +56,4 @@ internal sealed class CorrelationIdEnricher : ILogEventEnricher
             propertyFactory.CreateProperty(CorrelationIdProperty, correlationId));
     }
 }
+

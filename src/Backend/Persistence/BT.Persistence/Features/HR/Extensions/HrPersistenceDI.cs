@@ -1,3 +1,5 @@
+using BT.Persistence.Common.Configuration;
+using BT.Persistence.Features.Shared.Migrations.Generators;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;
@@ -28,8 +30,8 @@ public static class HrPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("HrConnection (or DefaultConnection) not found.");
 
-        services.Configure<BT.Persistence.Common.Configuration.DatabaseSettings>(configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName));
-        var dbSettings = configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName).Get<BT.Persistence.Common.Configuration.DatabaseSettings>() ?? new BT.Persistence.Common.Configuration.DatabaseSettings();
+        services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName));
+        var dbSettings = configuration.GetSection(DatabaseSettings.SectionName).Get<DatabaseSettings>() ?? new DatabaseSettings();
 
         services.TryAddSingleton<TenantConnectionInterceptor>();
 
@@ -43,7 +45,7 @@ public static class HrPersistenceDI
                     pgOptions.CommandTimeout(30);
                     pgOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
                     pgOptions.MigrationsHistoryTable("__EFMigrationsHistory_HR");
-                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentNpgsqlMigrationsSqlGenerator>();
+                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentNpgsqlMigrationsSqlGenerator>();
             }
             else
             {
@@ -53,7 +55,7 @@ public static class HrPersistenceDI
                     sqlOptions.CommandTimeout(30);
                     sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
                     sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_HR");
-                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentSqlServerMigrationsSqlGenerator>();
+                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>();
             }
             
             options.AddInterceptors(provider.GetRequiredService<TenantConnectionInterceptor>());
@@ -76,3 +78,5 @@ public static class HrPersistenceDI
         return services;
     }
 }
+
+

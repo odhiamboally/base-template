@@ -51,7 +51,7 @@ internal sealed class ProcessSsoLogin(
                 var linkResult = await userManager.AddLoginAsync(user, new UserLoginInfo(command.Provider, command.ProviderKey, command.Provider)).ConfigureAwait(false);
                 if (!linkResult.Succeeded)
                 {
-                    logger.LogError("Failed to link external login for user {Email}", command.Email);
+                    ServiceLogDefinitions.LogSsoExternalLoginLinkFailed(logger, command.Email);
                     return AppResponses.Failure<string>("Failed to link external account.");
                 }
             }
@@ -70,7 +70,7 @@ internal sealed class ProcessSsoLogin(
                 if (!createResult.Succeeded)
                 {
                     var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                    logger.LogError("Failed to create SSO user for {Email}: {Errors}", command.Email, errors);
+                    ServiceLogDefinitions.LogSsoUserCreationError(logger, command.Email, errors);
                     return AppResponses.Failure<string>("Failed to provision user.");
                 }
 
@@ -165,7 +165,7 @@ internal sealed class ProcessSsoLogin(
                 userClaims.ToClaimResponses(),
                 false);
 
-        var exchangeCode = Guid.NewGuid().ToString("N");
+        var exchangeCode = Guid.CreateVersion7().ToString("N");
         
         await cache.SetStringAsync(
             $"SSO_Exchange_{exchangeCode}", 
@@ -176,3 +176,4 @@ internal sealed class ProcessSsoLogin(
         return AppResponses.Success("SSO Login successful", exchangeCode);
     }
 }
+

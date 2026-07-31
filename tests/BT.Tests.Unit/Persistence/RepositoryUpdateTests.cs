@@ -34,13 +34,13 @@ namespace BT.Tests.Unit.Persistence
         public async Task UpdateAsync_MergesIntoTrackedInstance_WhenDuplicateKeyExists()
         {
             var options = new DbContextOptionsBuilder<TestDBContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(databaseName: Guid.CreateVersion7().ToString())
                 .Options;
 
             // Seed a tracked instance
             using (var seedContext = new TestDBContext(options))
             {
-                var existing = new TestEntity { Id = Guid.NewGuid(), Name = "Original" };
+                var existing = new TestEntity { Id = Guid.CreateVersion7(), Name = "Original" };
                 seedContext.Add(existing);
                 await seedContext.SaveChangesAsync();
             }
@@ -76,9 +76,9 @@ namespace BT.Tests.Unit.Persistence
         [Fact]
         public async Task UpdateRangeAsync_StagesChanges_WithoutSavingImmediately()
         {
-            var entityId = Guid.NewGuid();
+            var entityId = Guid.CreateVersion7();
             var options = new DbContextOptionsBuilder<TestDBContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(databaseName: Guid.CreateVersion7().ToString())
                 .Options;
 
             await using (var seedContext = new TestDBContext(options))
@@ -106,3 +106,4 @@ namespace BT.Tests.Unit.Persistence
         }
     }
 }
+

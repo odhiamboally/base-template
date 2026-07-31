@@ -13,7 +13,7 @@ public class TenantIsolationTests : IDisposable
     public TenantIsolationTests()
     {
         _options = new DbContextOptionsBuilder<IamDBContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(databaseName: Guid.CreateVersion7().ToString())
             .Options;
     }
 
@@ -31,8 +31,8 @@ public class TenantIsolationTests : IDisposable
     public async Task Query_ShouldOnlyReturnDataForCurrentTenant()
     {
         // Arrange
-        var tenant1 = Guid.NewGuid();
-        var tenant2 = Guid.NewGuid();
+        var tenant1 = Guid.CreateVersion7();
+        var tenant2 = Guid.CreateVersion7();
 
         var tenantProvider = new TestTenantProvider { TenantId = tenant1 };
         var actorProvider = new TestActorProvider();
@@ -83,8 +83,8 @@ public class TenantIsolationTests : IDisposable
     public async Task IgnoreQueryFilters_ShouldReturnDataForAllTenants()
     {
         // Arrange
-        var tenant1 = Guid.NewGuid();
-        var tenant2 = Guid.NewGuid();
+        var tenant1 = Guid.CreateVersion7();
+        var tenant2 = Guid.CreateVersion7();
 
         var tenantProvider = new TestTenantProvider { TenantId = tenant1 };
         var actorProvider = new TestActorProvider();
@@ -123,3 +123,4 @@ public class TenantIsolationTests : IDisposable
     {
     }
 }
+

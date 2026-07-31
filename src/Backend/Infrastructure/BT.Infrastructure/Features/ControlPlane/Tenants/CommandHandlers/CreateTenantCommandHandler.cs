@@ -1,3 +1,4 @@
+using BT.Application.Contracts.Interfaces.Common;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,12 +19,12 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<CreateTenantCommandHandler> _logger;
-    private readonly BT.Application.Contracts.Interfaces.Common.IEncryptionService _encryptionService;
+    private readonly IEncryptionService _encryptionService;
 
     public CreateTenantCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
         ILogger<CreateTenantCommandHandler> logger,
-        BT.Application.Contracts.Interfaces.Common.IEncryptionService encryptionService)
+        IEncryptionService encryptionService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -68,7 +69,7 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
             ContactEmail = req.ContactEmail,
             MaxUsers = req.MaxUsers,
             SubscriptionTier = parsedTier,
-            Status = BT.Domain.Features.ControlPlane.Tenants.Enums.TenantStatus.Active,
+            Status = TenantStatus.Active,
             DeploymentStampId = req.DeploymentStampId,
             DatabaseProvider = req.DatabaseProvider,
             DatabaseConnectionString = !string.IsNullOrWhiteSpace(req.DatabaseConnectionString) 
@@ -101,3 +102,5 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
         return AppResponses.Success(dto);
     }
 }
+
+

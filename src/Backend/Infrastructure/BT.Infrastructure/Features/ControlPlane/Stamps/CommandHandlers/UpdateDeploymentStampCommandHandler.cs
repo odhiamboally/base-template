@@ -1,3 +1,5 @@
+using BT.Domain.Features.ControlPlane.Tenants.Enums;
+using BT.Application.Contracts.Interfaces.Common;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,12 +18,12 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<UpdateDeploymentStampCommandHandler> _logger;
-    private readonly BT.Application.Contracts.Interfaces.Common.IEncryptionService _encryptionService;
+    private readonly IEncryptionService _encryptionService;
 
     public UpdateDeploymentStampCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
         ILogger<UpdateDeploymentStampCommandHandler> logger,
-        BT.Application.Contracts.Interfaces.Common.IEncryptionService encryptionService)
+        IEncryptionService encryptionService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -45,10 +47,10 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
             return AppResponses.Failure<DeploymentStampResponse>("Another deployment stamp with this name already exists.");
         }
 
-        BT.Domain.Features.ControlPlane.Tenants.Enums.IsolationTier parsedTier;
+        IsolationTier parsedTier;
         try
         {
-            parsedTier = request.Request.IsolationTier.ToEnum<BT.Domain.Features.ControlPlane.Tenants.Enums.IsolationTier>();
+            parsedTier = request.Request.IsolationTier.ToEnum<IsolationTier>();
         }
         catch (ArgumentException)
         {
@@ -95,3 +97,6 @@ public class UpdateDeploymentStampCommandHandler : IRequestHandler<UpdateDeploym
         return AppResponses.Success(dto);
     }
 }
+
+
+

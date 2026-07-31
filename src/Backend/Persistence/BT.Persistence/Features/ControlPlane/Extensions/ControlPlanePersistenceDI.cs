@@ -1,3 +1,5 @@
+using BT.Persistence.Common.Configuration;
+using BT.Persistence.Features.Shared.Migrations.Generators;
 using BT.Domain.Features.ControlPlane.Contracts;
 using BT.Domain.Features.ControlPlane.Tenants.Contracts.Repositories;
 using BT.Persistence.Features.ControlPlane.DataContext;
@@ -19,8 +21,8 @@ public static class ControlPlanePersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("ControlPlaneConnection (or DefaultConnection) not found.");
 
-        services.Configure<BT.Persistence.Common.Configuration.DatabaseSettings>(configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName));
-        var dbSettings = configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName).Get<BT.Persistence.Common.Configuration.DatabaseSettings>() ?? new BT.Persistence.Common.Configuration.DatabaseSettings();
+        services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName));
+        var dbSettings = configuration.GetSection(DatabaseSettings.SectionName).Get<DatabaseSettings>() ?? new DatabaseSettings();
 
         void ConfigureDbContextOptions(DbContextOptionsBuilder options)
         {
@@ -32,7 +34,7 @@ public static class ControlPlanePersistenceDI
                     pgOptions.CommandTimeout(30);
                     pgOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
                     pgOptions.MigrationsHistoryTable("__EFMigrationsHistory_ControlPlane");
-                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentNpgsqlMigrationsSqlGenerator>();
+                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentNpgsqlMigrationsSqlGenerator>();
             }
             else
             {
@@ -42,7 +44,7 @@ public static class ControlPlanePersistenceDI
                     sqlOptions.CommandTimeout(30);
                     sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
                     sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_ControlPlane");
-                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentSqlServerMigrationsSqlGenerator>();
+                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>();
             }
 
             if (environment?.IsDevelopment() == true || environment?.IsStaging() == true)
@@ -67,3 +69,5 @@ public static class ControlPlanePersistenceDI
         return services;
     }
 }
+
+

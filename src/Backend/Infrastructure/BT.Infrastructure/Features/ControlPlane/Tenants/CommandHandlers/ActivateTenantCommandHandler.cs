@@ -1,3 +1,4 @@
+using BT.Domain.Features.ControlPlane.Tenants.Enums;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ public class ActivateTenantCommandHandler : IRequestHandler<ActivateTenantComman
             return AppResponses.Failure<TenantResponse>("Tenant not found.");
         }
 
-        tenant.Status = BT.Domain.Features.ControlPlane.Tenants.Enums.TenantStatus.Active;
+        tenant.Status = TenantStatus.Active;
         tenant.UpdatedAt = DateTimeOffset.UtcNow;
         tenant.UpdatedBy = "System";
 
@@ -62,3 +63,5 @@ public class ActivateTenantCommandHandler : IRequestHandler<ActivateTenantComman
         return AppResponses.Success(dto);
     }
 }
+
+

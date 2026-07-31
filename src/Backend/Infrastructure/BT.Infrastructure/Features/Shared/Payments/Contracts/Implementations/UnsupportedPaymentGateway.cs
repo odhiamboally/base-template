@@ -1,3 +1,4 @@
+using BT.Domain.Features.Shared.Payments.Entities;
 using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.Payments.Dtos;
@@ -14,7 +15,7 @@ internal sealed class UnsupportedPaymentGateway : IPaymentGateway
     }
 
     public Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
-        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
+        PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -34,3 +35,5 @@ internal sealed class UnsupportedPaymentGateway : IPaymentGateway
             ? "Payment provider is not configured for this environment."
             : "Selected payment provider is not supported.";
 }
+
+

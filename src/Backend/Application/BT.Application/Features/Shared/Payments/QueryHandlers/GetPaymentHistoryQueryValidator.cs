@@ -6,9 +6,6 @@ public sealed class GetPaymentHistoryQueryValidator : AbstractValidator<GetPayme
 {
     public GetPaymentHistoryQueryValidator()
     {
-        RuleFor(query => query.Page)
-            .GreaterThan(0);
-
         RuleFor(query => query.PageSize)
             .InclusiveBetween(1, 100);
     }

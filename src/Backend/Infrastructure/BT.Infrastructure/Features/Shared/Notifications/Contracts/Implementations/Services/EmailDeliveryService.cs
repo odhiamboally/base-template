@@ -67,7 +67,7 @@ internal sealed class EmailDeliveryService(
                 "Email delivery is not configured for this environment.");
         }
 
-        var messageId = $"noop-{Guid.NewGuid():N}";
+        var messageId = $"noop-{Guid.CreateVersion7():N}";
         ServiceLogDefinitions.LogEmailSent(logger, request.To ?? string.Empty);
 
         return AppResponses.Success("Email queued successfully.",
@@ -115,7 +115,7 @@ internal sealed class EmailDeliveryService(
 
         return AppResponses.Success("Email queued successfully.",
             CreateResponse(
-                string.IsNullOrWhiteSpace(messageId) ? Guid.NewGuid().ToString() : messageId,
+                string.IsNullOrWhiteSpace(messageId) ? Guid.CreateVersion7().ToString() : messageId,
                 request));
     }
 
@@ -165,7 +165,7 @@ internal sealed class EmailDeliveryService(
         if (!response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            logger.LogWarning("SendGrid rejected the email payload. Status: {StatusCode}. Response: {Response}", response.StatusCode, content);
+            ServiceLogDefinitions.LogSendGridRejection(logger, response.StatusCode, content);
             return AppResponses.Failure<SendEmailResponse>(
                 "Email could not be accepted by the delivery provider.");
         }
@@ -178,7 +178,7 @@ internal sealed class EmailDeliveryService(
 
         return AppResponses.Success("Email queued successfully.",
             CreateResponse(
-                string.IsNullOrWhiteSpace(messageId) ? Guid.NewGuid().ToString() : messageId,
+                string.IsNullOrWhiteSpace(messageId) ? Guid.CreateVersion7().ToString() : messageId,
                 request));
     }
 
@@ -217,11 +217,11 @@ internal sealed class EmailDeliveryService(
         {
             var emailSendOperation = await emailClient.SendAsync(WaitUntil.Completed, emailMessage, cancellationToken).ConfigureAwait(false);
             ServiceLogDefinitions.LogEmailSent(logger, request.To ?? string.Empty);
-            return AppResponses.Success("Email queued successfully.", CreateResponse(emailSendOperation.Id ?? Guid.NewGuid().ToString(), request));
+            return AppResponses.Success("Email queued successfully.", CreateResponse(emailSendOperation.Id ?? Guid.CreateVersion7().ToString(), request));
         }
         catch (RequestFailedException ex)
         {
-            logger.LogWarning("ACS rejected the email payload. Status: {Status}. Error: {Message}", ex.Status, ex.Message);
+            ServiceLogDefinitions.LogAcsRejection(logger, ex.Status, ex.Message);
             return AppResponses.Failure<SendEmailResponse>("Email could not be accepted by the delivery provider.");
         }
     }
@@ -263,7 +263,7 @@ internal sealed class EmailDeliveryService(
         if (!response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            logger.LogWarning("Resend rejected the email payload. Status: {StatusCode}. Response: {Response}", response.StatusCode, content);
+            ServiceLogDefinitions.LogResendRejection(logger, response.StatusCode, content);
             return AppResponses.Failure<SendEmailResponse>(
                 "Email could not be accepted by the delivery provider.");
         }
@@ -275,7 +275,7 @@ internal sealed class EmailDeliveryService(
 
         return AppResponses.Success("Email queued successfully.",
             CreateResponse(
-                string.IsNullOrWhiteSpace(messageId) ? Guid.NewGuid().ToString() : messageId,
+                string.IsNullOrWhiteSpace(messageId) ? Guid.CreateVersion7().ToString() : messageId,
                 request));
     }
 
@@ -316,3 +316,4 @@ internal sealed class EmailDeliveryService(
         Invalid
     }
 }
+

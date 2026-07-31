@@ -65,10 +65,10 @@ public sealed class PaymentsController(ISender sender, ILogger<PaymentsControlle
     [HttpGet("history")]
     [RequirePermission("payments.view")]
     [EnableRateLimiting("ApiPolicy")]
-    public async Task<IActionResult> History([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    public async Task<IActionResult> History([FromQuery] Guid? cursor = null, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
         var response = await sender
-            .Send(new GetPaymentHistoryQuery(page, pageSize), ct)
+            .Send(new GetPaymentHistoryQuery(cursor, pageSize), ct)
             .ConfigureAwait(false);
 
         return HandleResponse(response);

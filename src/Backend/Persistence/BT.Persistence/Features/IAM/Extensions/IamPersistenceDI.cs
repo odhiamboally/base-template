@@ -1,3 +1,5 @@
+using BT.Persistence.Common.Configuration;
+using BT.Persistence.Features.Shared.Migrations.Generators;
 using BT.Domain.Features.Banking.Contracts;
 using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.IAM.Contracts;
@@ -31,8 +33,8 @@ public static class IamPersistenceDI
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("IamConnection (or DefaultConnection) not found.");
 
-        services.Configure<BT.Persistence.Common.Configuration.DatabaseSettings>(configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName));
-        var dbSettings = configuration.GetSection(BT.Persistence.Common.Configuration.DatabaseSettings.SectionName).Get<BT.Persistence.Common.Configuration.DatabaseSettings>() ?? new BT.Persistence.Common.Configuration.DatabaseSettings();
+        services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName));
+        var dbSettings = configuration.GetSection(DatabaseSettings.SectionName).Get<DatabaseSettings>() ?? new DatabaseSettings();
 
         services.TryAddSingleton<TenantConnectionInterceptor>();
 
@@ -46,7 +48,7 @@ public static class IamPersistenceDI
                     pgOptions.CommandTimeout(30);
                     pgOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
                     pgOptions.MigrationsHistoryTable("__EFMigrationsHistory_IAM");
-                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentNpgsqlMigrationsSqlGenerator>();
+                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentNpgsqlMigrationsSqlGenerator>();
             }
             else
             {
@@ -56,7 +58,7 @@ public static class IamPersistenceDI
                     sqlOptions.CommandTimeout(30);
                     sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
                     sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_IAM");
-                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentSqlServerMigrationsSqlGenerator>();
+                }).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>();
             }
 
             // Enable sensitive data logging only in non-production environments for diagnostics
@@ -90,3 +92,5 @@ public static class IamPersistenceDI
         return services;
     }
 }
+
+
