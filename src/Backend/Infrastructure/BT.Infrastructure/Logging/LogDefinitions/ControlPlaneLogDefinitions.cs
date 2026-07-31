@@ -1,0 +1,30 @@
+using Microsoft.Extensions.Logging;
+
+namespace BT.Infrastructure.Logging;
+
+internal static partial class ControlPlaneLogDefinitions
+{
+    [LoggerMessage(EventId = 2601, Level = LogLevel.Information, Message = "Created new deployment stamp {StampId} ({Name})")]
+    public static partial void LogDeploymentStampCreated(ILogger logger, Guid stampId, string name);
+
+    [LoggerMessage(EventId = 2602, Level = LogLevel.Information, Message = "Updated deployment stamp {StampId} ({Name})")]
+    public static partial void LogDeploymentStampUpdated(ILogger logger, Guid stampId, string name);
+
+    [LoggerMessage(EventId = 2603, Level = LogLevel.Information, Message = "Activated tenant {TenantId} ({Identifier})")]
+    public static partial void LogTenantActivated(ILogger logger, Guid tenantId, string identifier);
+
+    [LoggerMessage(EventId = 2604, Level = LogLevel.Information, Message = "Added/Activated module {ModuleKey} for tenant {TenantId}")]
+    public static partial void LogTenantModuleAdded(ILogger logger, string moduleKey, Guid tenantId);
+
+    [LoggerMessage(EventId = 2605, Level = LogLevel.Information, Message = "Created new tenant {TenantId} ({Identifier})")]
+    public static partial void LogTenantCreated(ILogger logger, Guid tenantId, string identifier);
+
+    [LoggerMessage(EventId = 2606, Level = LogLevel.Information, Message = "Deactivated module {ModuleKey} for tenant {TenantId}")]
+    public static partial void LogTenantModuleRemoved(ILogger logger, string moduleKey, Guid tenantId);
+
+    [LoggerMessage(EventId = 2607, Level = LogLevel.Information, Message = "Suspended tenant {TenantId} ({Identifier})")]
+    public static partial void LogTenantSuspended(ILogger logger, Guid tenantId, string identifier);
+
+    [LoggerMessage(EventId = 2608, Level = LogLevel.Information, Message = "Updated tenant {TenantId} ({Identifier})")]
+    public static partial void LogTenantUpdated(ILogger logger, Guid tenantId, string identifier);
+}

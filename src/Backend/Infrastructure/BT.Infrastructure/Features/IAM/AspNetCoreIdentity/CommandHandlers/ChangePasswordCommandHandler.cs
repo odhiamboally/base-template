@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using BT.Domain.Shared.Contracts.Common;
 using System.Security.Claims;
+using BT.Infrastructure.Logging;
 
 namespace BT.Infrastructure.Features.IAM.AspNetCoreIdentity.CommandHandlers;
 
@@ -39,7 +40,7 @@ internal sealed class ChangePasswordCommandHandler(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred while changing password.");
+            SecurityLogDefinitions.LogPasswordChangeError(logger, ex);
             throw;
         }
     }

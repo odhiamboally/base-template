@@ -90,6 +90,7 @@ internal sealed class VerifyTotpCode(
                     await iamUnitOfWork.TempTotpSecretRepository.DeleteAsync(tempSecret.Id, cancellationToken).ConfigureAwait(false);
                     await iamUnitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
+                    var isValid = await userManager.VerifyTwoFactorTokenAsync(user, userManager.Options.Tokens.AuthenticatorTokenProvider, request.Code.ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
                     var enableResult = await userManager.SetTwoFactorEnabledAsync(user, true).ConfigureAwait(false);
                     if (!enableResult.Succeeded)
                     {

@@ -58,7 +58,7 @@ internal sealed class VerifyEmailOtp(
 
         if (!isValid)
         {
-            await cache.SetStringAsync(attemptKey, (attempts + 1).ToString(), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) }, ct).ConfigureAwait(false);
+            await cache.SetStringAsync(attemptKey, (attempts + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) }, ct).ConfigureAwait(false);
             ServiceLogDefinitions.LogInvalidEmailOtp(logger, user.Id);
             return AppResponses.Failure<VerifyEmailOtpResponse>("Invalid code");
         }

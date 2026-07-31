@@ -1,5 +1,4 @@
 using BT.Domain.Features.Shared.Payments.Enums;
-using BT.Domain.Features.Shared.Payments.Enums;
 using BT.Domain.Features.Shared.Payments.Events;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;

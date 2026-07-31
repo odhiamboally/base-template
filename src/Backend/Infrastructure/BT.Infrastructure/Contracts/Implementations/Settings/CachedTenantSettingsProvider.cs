@@ -1,4 +1,5 @@
 using System.Text.Json;
+using BT.Infrastructure.Logging;
 using BT.Domain.Features.Shared.Contracts;
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Domain.Shared.Contracts.Common;
@@ -56,7 +57,7 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to read setting from cache.");
+            ServiceLogDefinitions.LogReadTenantSettingCacheWarning(_logger, ex);
         }
 
         // Cache miss, read from DB
@@ -81,7 +82,7 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to read tenant setting from database.");
+            ServiceLogDefinitions.LogReadTenantSettingDatabaseError(_logger, ex);
         }
 
         // Hierarchy Fallback: if not in DB, fallback to appsettings
@@ -103,7 +104,7 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to write setting to cache.");
+                ServiceLogDefinitions.LogWriteTenantSettingCacheWarning(_logger, ex);
             }
         }
 
@@ -141,7 +142,7 @@ public class CachedTenantSettingsProvider : ITenantSettingsProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deserialize setting {Key} to type {Type}", key, typeof(T).Name);
+            ServiceLogDefinitions.LogDeserializeTenantSettingError(_logger, key, typeof(T).Name, ex);
             return default;
         }
     }
