@@ -28,6 +28,7 @@ internal sealed class IamAppUserTotpSecretRepository(IamDBContext context, ILogg
                 x.IsActive &&
                 (x.ExpiresAt == null || x.ExpiresAt > DateTimeOffset.UtcNow))
             .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync().ConfigureAwait(false);
     }
 

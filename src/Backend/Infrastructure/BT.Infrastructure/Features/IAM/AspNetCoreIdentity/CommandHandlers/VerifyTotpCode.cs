@@ -79,6 +79,8 @@ internal sealed class VerifyTotpCode(
 
                 if (verification.IsValid)
                 {
+                    await iamUnitOfWork.AppUserTotpSecretRepository.DeactivateUserSecretsAsync(user.Id).ConfigureAwait(false);
+
                     var newSecret = AppUserTotpSecret.Create(
                         user.Id,
                         tempSecret.EncryptedSecret,
