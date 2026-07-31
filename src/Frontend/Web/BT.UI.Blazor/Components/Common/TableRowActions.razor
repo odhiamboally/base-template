@@ -84,13 +84,13 @@
     public bool CanDelete { get; set; } = true;
 
     [Parameter]
-    public EventCallback OnView { get; set; }
+    public EventCallback<MouseEventArgs> OnView { get; set; }
 
     [Parameter]
-    public EventCallback OnEdit { get; set; }
+    public EventCallback<MouseEventArgs> OnEdit { get; set; }
 
     [Parameter]
-    public EventCallback OnDelete { get; set; }
+    public EventCallback<MouseEventArgs> OnDelete { get; set; }
 
     [Parameter]
     public EventCallback<string> OnViewAction { get; set; }

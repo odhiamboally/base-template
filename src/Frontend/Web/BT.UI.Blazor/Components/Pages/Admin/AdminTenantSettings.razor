@@ -1,10 +1,6 @@
 @page "/admin/tenant-settings"
 @attribute [Authorize]
 @rendermode InteractiveServer
-@using BT.SharedKernel.Features.Shared.TenantSettings.Dtos
-@using BT.UI.Blazor.Features.Shared.TenantSettings.Contracts
-@using BT.UI.Blazor.Features.Shared.TenantSettings.Components
-@using Microsoft.AspNetCore.Authorization
 @inject ITenantSettingsService TenantSettingsService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
