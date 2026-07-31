@@ -22,17 +22,9 @@ public class TenantConnectionInterceptor : DbConnectionInterceptor
 
     public override InterceptionResult ConnectionOpening(DbConnection connection, ConnectionEventData eventData, InterceptionResult result)
     {
-        using var scope = _serviceProvider.CreateScope();
-        var resolver = scope.ServiceProvider.GetRequiredService<ITenantConnectionResolver>();
-        
-        var newConnectionString = resolver.GetConnectionStringAsync().GetAwaiter().GetResult();
-
-        if (!string.IsNullOrWhiteSpace(newConnectionString) && connection.ConnectionString != newConnectionString)
-        {
-            connection.ConnectionString = newConnectionString;
-        }
-
-        return base.ConnectionOpening(connection, eventData, result);
+        throw new NotSupportedException(
+            "Synchronous connection opening is not supported with tenant-scoped connection resolution. " +
+            "Use OpenAsync()/ExecuteAsync-based EF Core APIs so the correct tenant connection string can be resolved.");
     }
 
     public override async ValueTask<InterceptionResult> ConnectionOpeningAsync(DbConnection connection, ConnectionEventData eventData, InterceptionResult result, CancellationToken cancellationToken = default)

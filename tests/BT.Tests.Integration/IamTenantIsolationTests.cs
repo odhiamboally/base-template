@@ -6,11 +6,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BT.Tests.Integration;
 
-public class TenantIsolationTests : IDisposable
+public class IamTenantIsolationTests : IDisposable
 {
     private readonly DbContextOptions<IamDBContext> _options;
 
-    public TenantIsolationTests()
+    public IamTenantIsolationTests()
     {
         _options = new DbContextOptionsBuilder<IamDBContext>()
             .UseInMemoryDatabase(databaseName: Guid.CreateVersion7().ToString())

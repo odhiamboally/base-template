@@ -265,4 +265,16 @@ internal static partial class ServiceLogDefinitions
 
     [LoggerMessage(EventId = 3484, Level = LogLevel.Information, Message = "Payment webhook verified for provider {Provider}. Event {EventId} type {EventType}")]
     public static partial void LogPaymentWebhookVerified(ILogger logger, string provider, string eventId, string eventType);
+
+    [LoggerMessage(EventId = 3486, Level = LogLevel.Warning, Message = "Failed to read setting from cache.")]
+    public static partial void LogReadTenantSettingCacheWarning(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3487, Level = LogLevel.Error, Message = "Failed to read tenant setting from database.")]
+    public static partial void LogReadTenantSettingDatabaseError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3488, Level = LogLevel.Warning, Message = "Failed to write setting to cache.")]
+    public static partial void LogWriteTenantSettingCacheWarning(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 3489, Level = LogLevel.Error, Message = "Failed to deserialize setting {Key} to type {Type}")]
+    public static partial void LogDeserializeTenantSettingError(ILogger logger, string key, string type, Exception ex);
 }

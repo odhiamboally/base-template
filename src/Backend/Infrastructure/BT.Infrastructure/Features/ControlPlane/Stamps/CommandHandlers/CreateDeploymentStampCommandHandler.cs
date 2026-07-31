@@ -9,6 +9,7 @@ using BT.SharedKernel.Dtos.Common;
 using BT.Domain.Features.ControlPlane.Contracts;
 using BT.SharedKernel.Features.ControlPlane.Stamps.Dtos;
 using BT.SharedKernel.Extensions;
+using BT.Infrastructure.Logging;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -68,7 +69,7 @@ public class CreateDeploymentStampCommandHandler : IRequestHandler<CreateDeploym
         await _unitOfWork.DeploymentStamps.CreateAsync(stamp, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
-        _logger.LogInformation("Created new deployment stamp {StampId} ({Name})", stamp.Id, stamp.Name);
+        ControlPlaneLogDefinitions.LogDeploymentStampCreated(_logger, stamp.Id, stamp.Name);
 
         var dto = new DeploymentStampResponse
         {

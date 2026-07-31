@@ -8,6 +8,7 @@ using BT.SharedKernel.Dtos.Common;
 using BT.Domain.Features.ControlPlane.Contracts;
 using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos;
 using BT.SharedKernel.Extensions;
+using BT.Infrastructure.Logging;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -49,7 +50,7 @@ public class RemoveTenantModuleCommandHandler : IRequestHandler<RemoveTenantModu
             existingModule.UpdatedBy = "System"; // TODO: use CurrentUserProvider if available
 
             await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
-            _logger.LogInformation("Deactivated module {ModuleKey} for tenant {TenantId}", moduleKey, tenant.Id);
+            ControlPlaneLogDefinitions.LogTenantModuleRemoved(_logger, moduleKey, tenant.Id);
         }
 
         var dto = new TenantResponse

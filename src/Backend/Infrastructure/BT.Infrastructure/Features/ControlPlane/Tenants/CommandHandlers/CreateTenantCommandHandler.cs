@@ -8,6 +8,7 @@ using BT.SharedKernel.Dtos.Common;
 using BT.Domain.Features.ControlPlane.Contracts;
 using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos;
 using BT.SharedKernel.Extensions;
+using BT.Infrastructure.Logging;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -81,7 +82,7 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
         await _unitOfWork.Tenants.CreateAsync(tenant, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
-        _logger.LogInformation("Created new tenant {TenantId} ({Identifier})", tenant.Id, tenant.Identifier);
+        ControlPlaneLogDefinitions.LogTenantCreated(_logger, tenant.Id, tenant.Identifier);
 
         var dto = new TenantResponse
         {
