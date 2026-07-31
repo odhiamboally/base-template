@@ -1,0 +1,115 @@
+using System;
+using System.Collections.Generic;
+using BT.Persistence.Features.Banking.DataContext;
+using BT.Persistence.Features.Banking.Extensions;
+using BT.Persistence.Features.ControlPlane.DataContext;
+using BT.Persistence.Features.ControlPlane.Extensions;
+using BT.Persistence.Features.HR.DataContext;
+using BT.Persistence.Features.HR.Extensions;
+using BT.Persistence.Features.IAM.DataContext;
+using BT.Persistence.Features.IAM.Extensions;
+using BT.Persistence.Features.Shared.DataContext;
+using BT.Persistence.Features.Shared.Extensions;
+using BT.Persistence.Features.Shared.Migrations.Generators;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Xunit;
+
+namespace BT.Tests.Architecture.Database;
+
+[Trait("Category", "Guardrail")]
+public class IdempotentMigrationsGuardrailTests
+{
+    [Theory]
+    [InlineData(typeof(SharedSqlServerDBContext), typeof(IdempotentSqlServerMigrationsSqlGenerator))]
+    [InlineData(typeof(HrSqlServerDBContext), typeof(IdempotentSqlServerMigrationsSqlGenerator))]
+    [InlineData(typeof(IamSqlServerDBContext), typeof(IdempotentSqlServerMigrationsSqlGenerator))]
+    [InlineData(typeof(ControlPlaneSqlServerDBContext), typeof(IdempotentSqlServerMigrationsSqlGenerator))]
+    [InlineData(typeof(BankingSqlServerDBContext), typeof(IdempotentSqlServerMigrationsSqlGenerator))]
+    public void SqlServerContexts_ShouldUseIdempotentMigrationsGenerator(Type contextType, Type expectedGeneratorType)
+    {
+        var services = new ServiceCollection();
+        var config = BuildConfiguration("SqlServer");
+
+        var env = new DummyHostEnvironment();
+
+        services.AddSharedPersistence(config, env);
+        services.AddHrPersistence(config);
+        services.AddIamPersistence(config, env);
+        services.AddControlPlanePersistence(config, env);
+        services.AddBankingPersistence(config);
+        
+        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider, DummyTenantProvider>();
+        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentActorProvider, DummyActorProvider>();
+        services.AddLogging();
+        
+        using var provider = services.BuildServiceProvider();
+        using var context = (DbContext)provider.GetRequiredService(contextType);
+        
+        var generator = context.Database.GetService<IMigrationsSqlGenerator>();
+        Assert.IsType(expectedGeneratorType, generator);
+    }
+
+    [Theory]
+    [InlineData(typeof(SharedPostgreSqlDBContext), typeof(IdempotentNpgsqlMigrationsSqlGenerator))]
+    [InlineData(typeof(HrPostgreSqlDBContext), typeof(IdempotentNpgsqlMigrationsSqlGenerator))]
+    [InlineData(typeof(IamPostgreSqlDBContext), typeof(IdempotentNpgsqlMigrationsSqlGenerator))]
+    [InlineData(typeof(ControlPlanePostgreSqlDBContext), typeof(IdempotentNpgsqlMigrationsSqlGenerator))]
+    [InlineData(typeof(BankingPostgreSqlDBContext), typeof(IdempotentNpgsqlMigrationsSqlGenerator))]
+    public void PostgreSqlContexts_ShouldUseIdempotentMigrationsGenerator(Type contextType, Type expectedGeneratorType)
+    {
+        var services = new ServiceCollection();
+        var config = BuildConfiguration("PostgreSql");
+
+        var env = new DummyHostEnvironment();
+
+        services.AddSharedPersistence(config, env);
+        services.AddHrPersistence(config);
+        services.AddIamPersistence(config, env);
+        services.AddControlPlanePersistence(config, env);
+        services.AddBankingPersistence(config);
+        
+        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider, DummyTenantProvider>();
+        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentActorProvider, DummyActorProvider>();
+        services.AddLogging();
+        
+        using var provider = services.BuildServiceProvider();
+        using var context = (DbContext)provider.GetRequiredService(contextType);
+        
+        var generator = context.Database.GetService<IMigrationsSqlGenerator>();
+        Assert.IsType(expectedGeneratorType, generator);
+    }
+
+    private static IConfiguration BuildConfiguration(string provider)
+    {
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "ConnectionStrings:DefaultConnection", "Server=.;Database=dummy;Integrated Security=true" },
+                { "DatabaseSettings:Provider", provider }
+            })
+            .Build();
+    }
+    
+    private class DummyHostEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Development";
+        public string ApplicationName { get; set; } = "BT";
+        public string ContentRootPath { get; set; } = "";
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+    }
+    
+    private class DummyTenantProvider : BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider
+    {
+        public Guid TenantId => Guid.Empty;
+    }
+    
+    private class DummyActorProvider : BT.Domain.Shared.Contracts.Common.ICurrentActorProvider
+    {
+        public string ActorId => "System";
+    }
+}
