@@ -110,8 +110,8 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
             LastName = lastName,
             Email = email,
             PhoneNumber = phoneNumber,
-            ConcurrencyStamp = Guid.NewGuid().ToString(), // Initialize ConcurrencyStamp for optimistic concurrency control
-            SecurityStamp = Guid.NewGuid().ToString(), // Initialize other properties with default values if necessary
+            ConcurrencyStamp = Guid.CreateVersion7().ToString(), // Initialize ConcurrencyStamp for optimistic concurrency control
+            SecurityStamp = Guid.CreateVersion7().ToString(), // Initialize other properties with default values if necessary
             CreatedBy = createdBy,
             CreatedAt = DateTimeOffset.UtcNow,
         };
@@ -147,8 +147,8 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
             Email = email,
             PhoneNumber = phoneNumber,
             NationalId = nationalId,
-            ConcurrencyStamp = Guid.NewGuid().ToString(),
-            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.CreateVersion7().ToString(),
+            SecurityStamp = Guid.CreateVersion7().ToString(),
             CreatedBy = createdBy,
             CreatedAt = DateTimeOffset.UtcNow,
         };
@@ -184,8 +184,8 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
             Email = email,
             PhoneNumber = phoneNumber,
             NationalId = nationalId,
-            ConcurrencyStamp = Guid.NewGuid().ToString(),
-            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.CreateVersion7().ToString(),
+            SecurityStamp = Guid.CreateVersion7().ToString(),
             CreatedBy = createdBy,
             CreatedAt = DateTimeOffset.UtcNow,
         };
@@ -210,8 +210,8 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
             CustomerId = null,
             UserName = userName,
             Email = email,
-            ConcurrencyStamp = Guid.NewGuid().ToString(),
-            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.CreateVersion7().ToString(),
+            SecurityStamp = Guid.CreateVersion7().ToString(),
             CreatedBy = createdBy,
             CreatedAt = DateTimeOffset.UtcNow,
         };
@@ -242,8 +242,8 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
             Email = email,
             FirstName = firstName,
             LastName = lastName,
-            ConcurrencyStamp = Guid.NewGuid().ToString(),
-            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.CreateVersion7().ToString(),
+            SecurityStamp = Guid.CreateVersion7().ToString(),
             CreatedBy = createdBy,
             CreatedAt = DateTimeOffset.UtcNow,
             IsActive = true,
@@ -416,6 +416,7 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
         RaiseDomainEvent(new AppUserAccessRevokedEvent(Id, EmployeeId, CustomerId, revokedBy, reason));
     }
 }
+
 
 
 

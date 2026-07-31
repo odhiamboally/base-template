@@ -50,7 +50,7 @@ internal sealed class EmailOtpRequestedEventHandler(
         }
         else
         {
-            logger.LogWarning("Failed to deliver OTP email for {Purpose} to {UserId}: {Message}", e.Purpose, e.UserId, result.Message);
+            LogDefinitions.LogEmailOtpFailedToDeliver(logger, e.Purpose, e.UserId, result.Message ?? "Unknown error");
         }
     }
 }

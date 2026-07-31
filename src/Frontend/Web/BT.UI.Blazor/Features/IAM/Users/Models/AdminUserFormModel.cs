@@ -1,4 +1,5 @@
 using BT.SharedKernel.Features.IAM.Users.Dtos;
+using BT.SharedKernel.Features.Shared.Phone;
 
 namespace BT.UI.Blazor.Features.IAM.Users.Models;
 
@@ -16,7 +17,7 @@ internal sealed class AdminUserFormModel
 
     public string? PhoneNumber { get; set; }
 
-    public string CountryCode { get; set; } = BT.SharedKernel.Features.Shared.Phone.PhoneNumberFormatter.DefaultCountryCode;
+    public string CountryCode { get; set; } = PhoneNumberFormatter.DefaultCountryCode;
 
     public string PhoneNationalNumber { get; set; } = string.Empty;
 
@@ -43,7 +44,7 @@ internal sealed class AdminUserFormModel
         
         if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
         {
-            var country = BT.SharedKernel.Features.Shared.Phone.CountryCallingCodeCatalog.FindByE164(user.PhoneNumber);
+            var country = CountryCallingCodeCatalog.FindByE164(user.PhoneNumber);
             if (country is not null)
             {
                 model.CountryCode = country.DialCode;
@@ -77,3 +78,4 @@ internal sealed class AdminUserFormModel
         Gender,
         string.IsNullOrWhiteSpace(Role) ? [] : [Role]);
 }
+

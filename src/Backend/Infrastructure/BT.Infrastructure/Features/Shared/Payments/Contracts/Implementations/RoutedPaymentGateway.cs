@@ -1,3 +1,4 @@
+using BT.Domain.Features.Shared.Payments.Entities;
 using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
 using BT.Infrastructure.Configuration;
 using BT.SharedKernel.Dtos.Common;
@@ -15,7 +16,7 @@ internal sealed class RoutedPaymentGateway(
     private readonly PaymentSettings _settings = options.Value;
 
     public Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
-        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
+        PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -49,3 +50,5 @@ internal sealed class RoutedPaymentGateway(
         };
     }
 }
+
+

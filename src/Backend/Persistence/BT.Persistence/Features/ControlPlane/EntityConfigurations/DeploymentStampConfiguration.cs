@@ -1,3 +1,4 @@
+using BT.Domain.Features.ControlPlane.Tenants.Enums;
 using BT.Domain.Features.ControlPlane.Tenants.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -44,9 +45,11 @@ internal class DeploymentStampConfiguration : IEntityTypeConfiguration<Deploymen
             Id = Guid.Parse("0194f700-0000-7000-8000-000000000001"),
             Name = "default-pooled-stamp",
             TargetResourceGroup = "rg-basetemplate-dev",
-            IsolationTier = BT.Domain.Features.ControlPlane.Tenants.Enums.IsolationTier.Pooled,
+            IsolationTier = IsolationTier.Pooled,
             CreatedBy = "System",
             CreatedAt = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero)
         });
     }
 }
+
+

@@ -1,3 +1,5 @@
+using BT.Domain.Features.ControlPlane.Tenants.Enums;
+using BT.Application.Contracts.Interfaces.Common;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,12 +18,12 @@ public class UpdateTenantCommandHandler : IRequestHandler<UpdateTenantCommand, A
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<UpdateTenantCommandHandler> _logger;
-    private readonly BT.Application.Contracts.Interfaces.Common.IEncryptionService _encryptionService;
+    private readonly IEncryptionService _encryptionService;
 
     public UpdateTenantCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
         ILogger<UpdateTenantCommandHandler> logger,
-        BT.Application.Contracts.Interfaces.Common.IEncryptionService encryptionService)
+        IEncryptionService encryptionService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -45,10 +47,10 @@ public class UpdateTenantCommandHandler : IRequestHandler<UpdateTenantCommand, A
             return AppResponses.Failure<TenantResponse>("Another tenant with this hostname already exists.");
         }
 
-        BT.Domain.Features.ControlPlane.Tenants.Enums.SubscriptionTier parsedTier;
+        SubscriptionTier parsedTier;
         try
         {
-            parsedTier = request.Request.SubscriptionTier.ToEnum<BT.Domain.Features.ControlPlane.Tenants.Enums.SubscriptionTier>();
+            parsedTier = request.Request.SubscriptionTier.ToEnum<SubscriptionTier>();
         }
         catch (ArgumentException)
         {
@@ -100,3 +102,6 @@ public class UpdateTenantCommandHandler : IRequestHandler<UpdateTenantCommand, A
         return AppResponses.Success(dto);
     }
 }
+
+
+

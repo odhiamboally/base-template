@@ -18,8 +18,8 @@ public sealed class RabbitMqOutboxTransportTests
         var virtualHost = GetRequiredEnvironmentVariable("BT_RABBITMQ_VIRTUAL_HOST");
         var username = GetRequiredEnvironmentVariable("BT_RABBITMQ_USERNAME");
         var password = GetRequiredEnvironmentVariable("BT_RABBITMQ_PASSWORD");
-        var queueName = $"bt-outbox-certification-{Guid.NewGuid():N}";
-        var databasePath = Path.Combine(Path.GetTempPath(), $"bt-outbox-{Guid.NewGuid():N}.db");
+        var queueName = $"bt-outbox-certification-{Guid.CreateVersion7():N}";
+        var databasePath = Path.Combine(Path.GetTempPath(), $"bt-outbox-{Guid.CreateVersion7():N}.db");
         var connectionString = $"Data Source={databasePath};Pooling=False";
         var messageId = Guid.CreateVersion7();
 
@@ -160,3 +160,4 @@ internal sealed class RabbitMqFactAttribute : FactAttribute
         }
     }
 }
+

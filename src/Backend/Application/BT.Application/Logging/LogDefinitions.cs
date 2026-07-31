@@ -58,6 +58,8 @@ internal static partial class LogDefinitions
     [LoggerMessage(EventId = 2316, Level = LogLevel.Error, Message = "Error fetching customer list")]
     public static partial void LogCustomerListFetchFailed(ILogger logger, Exception ex);
 
+    [LoggerMessage(EventId = 2317, Level = LogLevel.Warning, Message = "Failed to deliver OTP email for {Purpose} to {UserId}: {Message}")]
+    public static partial void LogEmailOtpFailedToDeliver(ILogger logger, string purpose, string userId, string message);
     [LoggerMessage(EventId = 2317, Level = LogLevel.Error, Message = "Error fetching dashboard summary")]
     public static partial void LogDashboardSummaryFetchFailed(ILogger logger, Exception ex);
 

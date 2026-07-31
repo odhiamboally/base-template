@@ -1,3 +1,4 @@
+using BT.Domain.Features.ControlPlane.Tenants.Enums;
 using BT.Domain.Features.ControlPlane.Tenants.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -65,11 +66,13 @@ internal class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             HostName = "localhost",
             ContactEmail = "admin@basetemplate.local",
             MaxUsers = 100,
-            SubscriptionTier = BT.Domain.Features.ControlPlane.Tenants.Enums.SubscriptionTier.Free,
-            Status = BT.Domain.Features.ControlPlane.Tenants.Enums.TenantStatus.Active,
+            SubscriptionTier = SubscriptionTier.Free,
+            Status = TenantStatus.Active,
             DeploymentStampId = Guid.Parse("0194f700-0000-7000-8000-000000000001"),
             CreatedBy = "System",
             CreatedAt = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero)
         });
     }
 }
+
+

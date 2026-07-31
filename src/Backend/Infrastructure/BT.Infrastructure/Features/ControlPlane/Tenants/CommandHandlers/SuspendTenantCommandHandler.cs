@@ -1,3 +1,4 @@
+using BT.Domain.Features.ControlPlane.Tenants.Enums;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ public class SuspendTenantCommandHandler : IRequestHandler<SuspendTenantCommand,
             return AppResponses.Failure<TenantResponse>("Tenant not found.");
         }
 
-        tenant.Status = BT.Domain.Features.ControlPlane.Tenants.Enums.TenantStatus.Suspended;
+        tenant.Status = TenantStatus.Suspended;
         tenant.UpdatedAt = DateTimeOffset.UtcNow;
         tenant.UpdatedBy = "System";
 
@@ -61,3 +62,5 @@ public class SuspendTenantCommandHandler : IRequestHandler<SuspendTenantCommand,
         return AppResponses.Success(dto);
     }
 }
+
+

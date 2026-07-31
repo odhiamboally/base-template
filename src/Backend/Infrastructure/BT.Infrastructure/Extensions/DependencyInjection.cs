@@ -1,3 +1,4 @@
+using BT.Persistence.Common.Configuration;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
@@ -485,7 +486,11 @@ public static class DependencyInjection
     private static void RegisterRedisCache(IServiceCollection services, string connectionString)
     {
         services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
-            StackExchange.Redis.ConnectionMultiplexer.Connect(connectionString));
+        {
+            var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(connectionString);
+            configOptions.AbortOnConnectFail = false;
+            return StackExchange.Redis.ConnectionMultiplexer.Connect(configOptions);
+        });
 
         RegisterStackExchangeRedisCache(services);
     }
@@ -498,6 +503,8 @@ public static class DependencyInjection
         {
             var configOptions = StackExchange.Redis.ConfigurationOptions.Parse(settings.ConnectionString!);
             configOptions.Protocol = StackExchange.Redis.RedisProtocol.Resp3;
+            configOptions.Ssl = true;
+            configOptions.AbortOnConnectFail = false;
             configOptions.Password = null;
 
             var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
@@ -940,7 +947,7 @@ public static class DependencyInjection
 
     private static void ConfigureQuartz(IServiceCollection services, IConfiguration configuration)
     {
-        var dbProvider = configuration.GetValue<string>($"{BT.Persistence.Common.Configuration.DatabaseSettings.SectionName}:Provider") ?? "SqlServer";
+        var dbProvider = configuration.GetValue<string>($"{DatabaseSettings.SectionName}:Provider") ?? "SqlServer";
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection string not found in configuration");
 
@@ -1113,3 +1120,5 @@ public static class DependencyInjection
     }
 
 }
+
+

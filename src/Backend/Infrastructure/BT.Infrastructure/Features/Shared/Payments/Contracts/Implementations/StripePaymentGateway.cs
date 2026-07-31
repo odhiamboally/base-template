@@ -1,3 +1,4 @@
+using BT.Domain.Features.Shared.Payments.Entities;
 using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
 using BT.Infrastructure.Configuration;
 using BT.Infrastructure.Features.Shared.Payments.Contracts.Implementations.Stripe;
@@ -19,7 +20,7 @@ internal sealed class StripePaymentGateway(
     private readonly StripePaymentSettings _settings = options.Value.Stripe;
 
     public async Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
-        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
+        PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -173,3 +174,5 @@ internal sealed class StripePaymentGateway(
         !string.IsNullOrWhiteSpace(_settings.SecretKey) &&
         Uri.TryCreate(_settings.CheckoutSessionsEndpoint, UriKind.Absolute, out _);
 }
+
+

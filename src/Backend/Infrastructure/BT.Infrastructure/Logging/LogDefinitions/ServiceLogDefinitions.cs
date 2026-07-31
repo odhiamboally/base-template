@@ -6,6 +6,20 @@ namespace BT.Infrastructure.Logging;
 
 internal static partial class ServiceLogDefinitions
 {
+    [LoggerMessage(EventId = 2501, Level = LogLevel.Error, Message = "Failed to link external login for user {Email}")]
+    public static partial void LogSsoExternalLoginLinkFailed(ILogger logger, string email);
+
+    [LoggerMessage(EventId = 2502, Level = LogLevel.Error, Message = "Failed to create SSO user for {Email}: {Errors}")]
+    public static partial void LogSsoUserCreationError(ILogger logger, string email, string errors);
+
+    [LoggerMessage(EventId = 2503, Level = LogLevel.Warning, Message = "SendGrid rejected the email payload. Status: {StatusCode}. Response: {Response}")]
+    public static partial void LogSendGridRejection(ILogger logger, System.Net.HttpStatusCode statusCode, string response);
+
+    [LoggerMessage(EventId = 2504, Level = LogLevel.Warning, Message = "ACS rejected the email payload. Status: {Status}. Error: {Message}")]
+    public static partial void LogAcsRejection(ILogger logger, int status, string message);
+
+    [LoggerMessage(EventId = 2505, Level = LogLevel.Warning, Message = "Resend rejected the email payload. Status: {StatusCode}. Response: {Response}")]
+    public static partial void LogResendRejection(ILogger logger, System.Net.HttpStatusCode statusCode, string response);
     [LoggerMessage(EventId = 3400, Level = LogLevel.Error, Message = "Error composing email for template {EmailTemplate}")]
     public static partial void LogEmailComposeError(ILogger logger, string emailTemplate, Exception ex);
 

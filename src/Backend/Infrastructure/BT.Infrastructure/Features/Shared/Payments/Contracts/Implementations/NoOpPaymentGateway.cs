@@ -1,3 +1,4 @@
+using BT.Domain.Features.Shared.Payments.Entities;
 using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
 using BT.Infrastructure.Configuration;
 using BT.SharedKernel.Dtos.Common;
@@ -14,7 +15,7 @@ internal sealed class NoOpPaymentGateway(
     private readonly PaymentSettings _settings = options.Value;
 
     public Task<AppResponse<PaymentInitiationResponse>> InitiateAsync(
-        BT.Domain.Features.Shared.Payments.Entities.PaymentRecord record,
+        PaymentRecord record,
         PaymentInitiationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -26,7 +27,7 @@ internal sealed class NoOpPaymentGateway(
                 "Payment provider is not configured for this environment."));
         }
 
-        var reference = $"noop-{Guid.NewGuid():N}";
+        var reference = $"noop-{Guid.CreateVersion7():N}";
         return Task.FromResult(AppResponses.Success("Payment provider is running in no-op mode.",
             new PaymentInitiationResponse("NoOp", reference, string.Empty, "Pending")));
     }
@@ -48,3 +49,6 @@ internal sealed class NoOpPaymentGateway(
             new PaymentStatusResponse("NoOp", paymentReference, "Pending", 0m, string.Empty)));
     }
 }
+
+
+

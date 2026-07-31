@@ -1,3 +1,4 @@
+using BT.Domain.Shared.Contracts.Common;
 using BT.Persistence.Features.Banking.DataContext;
 using BT.Persistence.Features.ControlPlane.DataContext;
 using BT.Persistence.Features.HR.DataContext;
@@ -66,8 +67,8 @@ public class MigrationGuardrailTests
         services.AddDbContext<TContext>(configureOptions);
         
         // Register mock providers to satisfy constructor dependencies for various DbContexts
-        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider, DummyTenantProvider>();
-        services.AddScoped<BT.Domain.Shared.Contracts.Common.ICurrentActorProvider, DummyActorProvider>();
+        services.AddScoped<ICurrentTenantProvider, DummyTenantProvider>();
+        services.AddScoped<ICurrentActorProvider, DummyActorProvider>();
         // Add a generic logger just in case
         services.AddLogging();
         
@@ -79,13 +80,15 @@ public class MigrationGuardrailTests
         Assert.False(hasPendingChanges, $"The model for {typeof(TContext).Name} has changed since the last migration. Please run 'dotnet ef migrations add' to generate a new migration.");
     }
     
-    private class DummyTenantProvider : BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider
+    private class DummyTenantProvider : ICurrentTenantProvider
     {
         public Guid TenantId => Guid.Empty;
     }
     
-    private class DummyActorProvider : BT.Domain.Shared.Contracts.Common.ICurrentActorProvider
+    private class DummyActorProvider : ICurrentActorProvider
     {
         public string ActorId => "System";
     }
 }
+
+

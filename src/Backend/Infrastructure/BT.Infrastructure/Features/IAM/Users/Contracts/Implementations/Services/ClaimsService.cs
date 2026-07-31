@@ -53,7 +53,7 @@ internal sealed class ClaimsService(
                 // Standard Identity
                 new(JwtRegisteredClaimNames.Sub, user.Id),
                 new(ClaimTypes.NameIdentifier, user.Id),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
 
                 new("tenant_id", user.TenantId.ToString()),
@@ -109,7 +109,7 @@ internal sealed class ClaimsService(
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
 
             new("tenant_id", user.TenantId.ToString()),
@@ -200,4 +200,5 @@ internal sealed class ClaimsService(
 
 
 }
+
 

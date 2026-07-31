@@ -53,7 +53,7 @@ public class Director : BaseEntity, ISoftDeletable
 
         return new Director
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             CustomerId = customerId,
             FullName = fullName.Trim(),
             RelationType = relationType,
@@ -96,3 +96,4 @@ public class Director : BaseEntity, ISoftDeletable
 
     }
 }
+
