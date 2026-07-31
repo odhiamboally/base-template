@@ -3,6 +3,7 @@ using BT.Domain.Features.IAM.Users.Entities;
 using BT.Persistence.Features.IAM.DataContext;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
+using BT.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

@@ -14,6 +14,7 @@ using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Features.Banking.Customers.Enums;
 using BT.SharedKernel.Features.Banking.Customers.Dtos;
 using BT.SharedKernel.Dtos.Common;
+using BT.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System;
