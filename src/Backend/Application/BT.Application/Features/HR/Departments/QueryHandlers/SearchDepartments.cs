@@ -6,6 +6,7 @@ using BT.Domain.Features.HR.Contracts;
 using BT.Domain.Features.HR.Departments.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.HR.Departments.Dtos;
+using BT.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 

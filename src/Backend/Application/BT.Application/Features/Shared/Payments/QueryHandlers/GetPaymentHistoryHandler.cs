@@ -2,6 +2,7 @@ using BT.Domain.Features.Shared.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.Payments.Dtos;
 
+using BT.SharedKernel.Extensions;
 using MediatR;
 
 namespace BT.Application.Features.Shared.Payments.QueryHandlers;

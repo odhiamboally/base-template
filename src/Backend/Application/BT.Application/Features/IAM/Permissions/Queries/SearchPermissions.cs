@@ -6,6 +6,7 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Features.IAM.Permissions.Entities;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Permissions.Dtos;
+using BT.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
