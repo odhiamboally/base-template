@@ -9,5 +9,5 @@ public sealed record CountryCallingCode(
 {
     public string Flag => CountryCallingCodeCatalog.GetFlagEmoji(Iso2);
 
-    public string DisplayName => $"{Flag} {Name} ({DialCode})";
+    public string DisplayName => $"{Name} ({DialCode})";
 }
