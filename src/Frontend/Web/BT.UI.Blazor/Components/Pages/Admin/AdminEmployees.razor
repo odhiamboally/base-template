@@ -11,25 +11,19 @@
 <PageTitle>Employees | Base Template</PageTitle>
 
 <section class="dashboard-page">
-    <div class="dashboard-hero compact-hero">
-        <div>
-            <span class="eyebrow">Administration</span>
-            <h1>Employees.</h1>
-            <p>Staff records, IAM linkage, employment status, and system access readiness are loaded from the HR API.</p>
-        </div>
-        @if (AuthSession.HasPermission("employees.create"))
-        {
-            <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.Badge" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenFormDialogAsync(null))">Create employee</MudButton>
-        }
+    <div class="mb-4">
+        <MudButton Href="/admin" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Color="Color.Primary" Class="px-0">Back to Admin Center</MudButton>
     </div>
 
     <MudPaper Class="poc-panel" Elevation="0">
         <div class="panel-heading">
-            <div>
-                <span class="eyebrow">Employee list</span>
-                <h2>Staff directory</h2>
+            <h2 style="color: var(--bt-moss); font-weight: 700;">Employees</h2>
+            <div class="d-flex align-center gap-3">
+                @if (AuthSession.HasPermission("employees.create"))
+                {
+                    <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Badge" OnClick="@(() => OpenFormDialogAsync(null))">Create employee</MudButton>
+                }
             </div>
-            <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
         </div>
 
         <div class="list-toolbar">
@@ -55,7 +49,7 @@
             <MudDivider Class="my-2" />
             <MudGrid Spacing="2" Class="mb-2">
                 <MudItem xs="12" sm="6">
-                    <MudSelect @bind-Value="_departmentFilter" Label="Department" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="Guid?" Value="_departmentFilter" ValueChanged="@(async (Guid? val) => { _departmentFilter = val; await ApplyFiltersAsync(); })" Label="Department" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         @foreach (var item in _departments)
                         {
                             <MudSelectItem T="Guid?" Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
@@ -63,7 +57,7 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect @bind-Value="_managerFilter" Label="Manager" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="Guid?" Value="_managerFilter" ValueChanged="@(async (Guid? val) => { _managerFilter = val; await ApplyFiltersAsync(); })" Label="Manager" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         @foreach (var item in ManagerOptions)
                         {
                             <MudSelectItem T="Guid?" Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
@@ -71,9 +65,6 @@
                     </MudSelect>
                 </MudItem>
             </MudGrid>
-            <div class="filter-actions">
-                <MudButton Variant="Variant.Filled" Size="Size.Small" Class="bt-mud-primary bt-small-button" OnClick="ApplyFiltersAsync">Apply</MudButton>
-            </div>
         }
 
         @if (_isLoading)
@@ -117,15 +108,13 @@
                     <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
                 </NoRecordsContent>
                 <PagerContent>
-                    <div class="table-footer">
-                        <span>@FooterText</span>
-                        <div class="pagination-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" Disabled="@(_isFirstPage || _isLoading)" OnClick="GoToFirstPageAsync" />
-                            <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" Disabled="@(_isFirstPage || _isLoading)" OnClick="GoToPreviousPageAsync" />
-                            <MudChip T="string" Size="Size.Small" Color="Color.Primary">Page @_currentPage</MudChip>
-                            <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Disabled="@(_isLastPage || _isLoading)" OnClick="GoToNextPageAsync" />
-                        </div>
-                    </div>
+                    <GlobalTablePager CurrentPage="_currentPage"
+                                      TotalRecords="_totalRecords"
+                                      PageSize="PageSize"
+                                      IsLoading="_isLoading"
+                                      OnFirstPage="GoToFirstPageAsync"
+                                      OnPreviousPage="GoToPreviousPageAsync"
+                                      OnNextPage="GoToNextPageAsync" />
                 </PagerContent>
             </MudTable>
         </div>
@@ -179,15 +168,7 @@
         }
     }
 
-    private string StatusLabel => _isLoading ? "Loading" : $"{_employees.Count} shown";
 
-    private string FooterText => _totalRecords == 0
-        ? "Showing 0 records"
-        : $"Showing {CurrentPageStart}-{CurrentPageEnd} of {_totalRecords} records";
-
-    private int CurrentPageStart => ((_currentPage - 1) * PageSize) + 1;
-
-    private int CurrentPageEnd => Math.Min(CurrentPageStart + _employees.Count - 1, _totalRecords);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

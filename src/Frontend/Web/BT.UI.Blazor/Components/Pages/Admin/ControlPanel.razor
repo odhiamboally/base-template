@@ -1,4 +1,4 @@
-@page "/admin"
+@page "/control-panel"
 
 @rendermode InteractiveServer
 @inject IAuthSession AuthSession
@@ -6,21 +6,21 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>Admin | Base Template</PageTitle>
+<PageTitle>Control Panel | Base Template</PageTitle>
 
 <RequireAuthenticated>
     <section class="dashboard-page">
         @if (!_isReady)
         {
-            <MudPaper Class="status-card" Elevation="0">Loading admin workspace...</MudPaper>
+            <MudPaper Class="status-card" Elevation="0">Loading control panel...</MudPaper>
         }
         else
         {
             <div class="dashboard-hero compact-hero">
                 <div>
-                    <span class="eyebrow">Administration</span>
-                    <h1>Admin center.</h1>
-                    <p>Manage the platform building blocks: users, staff, customers, roles, permissions, and operational settings.</p>
+                    <span class="eyebrow">Platform</span>
+                    <h1>Control Panel.</h1>
+                    <p>Manage platform-wide settings, SaaS tenants, and deployment stamps.</p>
                 </div>
             </div>
 
@@ -64,10 +64,10 @@
 
     private async Task LoadModulesAsync()
     {
-        var response = await IamAdminService.GetNavigationMenusAsync("AdminCenter");
+        var response = await IamAdminService.GetNavigationMenusAsync("ControlPanel");
         if (!response.IsSuccess || response.Data is null)
         {
-            Snackbar.Add(response.Message ?? "We could not load admin menus.", Severity.Error);
+            Snackbar.Add(response.Message ?? "We could not load control panel menus.", Severity.Error);
             _isReady = true;
             return;
         }

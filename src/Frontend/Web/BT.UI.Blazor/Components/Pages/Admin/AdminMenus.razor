@@ -10,25 +10,19 @@
 <PageTitle>Menus | Base Template</PageTitle>
 
 <section class="dashboard-page">
-    <div class="dashboard-hero compact-hero">
-        <div>
-            <span class="eyebrow">Administration</span>
-            <h1>Menus.</h1>
-            <p>Menu records are loaded from IAM and can be parented, scoped by department, activated, and tied to permission keys.</p>
-        </div>
-        @if (AuthSession.HasPermission("menus.create"))
-        {
-            <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.MenuOpen" Class="bt-mud-primary bt-small-button" OnClick="@(() => OpenFormDialogAsync(null))">Create menu</MudButton>
-        }
+    <div class="mb-4">
+        <MudButton Href="/admin" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Color="Color.Primary" Class="px-0">Back to Admin Center</MudButton>
     </div>
 
     <MudPaper Class="poc-panel" Elevation="0">
         <div class="panel-heading">
-            <div>
-                <span class="eyebrow">Menu catalog</span>
-                <h2>Navigation registry</h2>
+            <h2 style="color: var(--bt-moss); font-weight: 700;">Menu Catalog</h2>
+            <div class="d-flex align-center gap-3">
+                @if (AuthSession.HasPermission("menus.create"))
+                {
+                    <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" StartIcon="@Icons.Material.Filled.MenuOpen" OnClick="@(() => OpenFormDialogAsync(null))">Create menu</MudButton>
+                }
             </div>
-            <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
         </div>
 
         <div class="list-toolbar menu-catalog-toolbar">
@@ -42,6 +36,7 @@
             <MudSelect @bind-Value="_placementFilter" Label="Placement" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                 <MudSelectItem Value="@("Sidebar")">Sidebar</MudSelectItem>
                 <MudSelectItem Value="@("AdminCenter")">Admin Center</MudSelectItem>
+                <MudSelectItem Value="@("ControlPanel")">Control Panel</MudSelectItem>
             </MudSelect>
             <MudSelect T="Guid?" @bind-Value="_departmentFilter" Label="Department" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                 <MudSelectItem T="Guid?" Value="null">Global</MudSelectItem>
@@ -63,7 +58,7 @@
         }
 
         <div class="bt-table-scroll">
-            <MudTable Items="FilteredMenus" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="100" Height="calc(100vh - 25rem)" Style="min-width: 1100px;" Breakpoint="Breakpoint.None">
+            <MudTable @ref="_table" Items="FilteredMenus" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="100" Height="calc(100vh - 25rem)" Style="min-width: 1100px;" Breakpoint="Breakpoint.None">
                 <HeaderContent>
                     <MudTh>Title</MudTh>
                     <MudTh>Placement</MudTh>
@@ -97,8 +92,16 @@
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
-                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No menu records found.</MudAlert>
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
                 </NoRecordsContent>
+                <PagerContent>
+                    <GlobalTablePager CurrentPage="(_table?.CurrentPage ?? 0) + 1"
+                                      TotalRecords="_table?.GetFilteredItemsCount() ?? 0"
+                                      PageSize="_table?.RowsPerPage ?? 100"
+                                      OnFirstPage="@(() => _table?.NavigateTo(0))"
+                                      OnPreviousPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 1) - 1))"
+                                      OnNextPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 0) + 1))" />
+                </PagerContent>
             </MudTable>
         </div>
     </MudPaper>
@@ -112,8 +115,7 @@
     private string? _searchText;
     private string? _placementFilter;
     private Guid? _departmentFilter;
-
-    private string StatusLabel => _isLoading ? "Loading" : $"{FilteredMenus.Count} shown";
+    private MudTable<MenuResponse>? _table;
 
     private IReadOnlyList<MenuResponse> FilteredMenus =>
         [.. _menus.Where(menu =>

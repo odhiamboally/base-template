@@ -5,14 +5,6 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<div class="panel-heading">
-    <div>
-        <span class="eyebrow">User list</span>
-        <h2>Application users</h2>
-    </div>
-    <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
-</div>
-
 <div class="list-toolbar">
     <MudTextField @bind-Value="_searchText"
                   Placeholder="Search name, username, email, phone..."
@@ -36,7 +28,7 @@
             <MudDivider Class="my-2" />
             <MudGrid Spacing="2" Class="mb-2">
                 <MudItem xs="12" sm="6" lg="3">
-                    <MudSelect @bind-Value="_statusFilter" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="string" Value="_statusFilter" ValueChanged="@(async (string? val) => { _statusFilter = val; await ApplyFiltersAsync(); })" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         @foreach (var item in StatusOptions)
                         {
                             <MudSelectItem Value="@item">@item</MudSelectItem>
@@ -44,7 +36,7 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="6" lg="3">
-                    <MudSelect @bind-Value="_roleFilter" Label="Role" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="string" Value="_roleFilter" ValueChanged="@(async (string? val) => { _roleFilter = val; await ApplyFiltersAsync(); })" Label="Role" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         @foreach (var item in AvailableRoles)
                         {
                             <MudSelectItem Value="@item">@item</MudSelectItem>
@@ -52,7 +44,7 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="6" lg="3">
-                    <MudSelect @bind-Value="_twoFactorFilter" Label="Two-factor" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="string" Value="_twoFactorFilter" ValueChanged="@(async (string? val) => { _twoFactorFilter = val; await ApplyFiltersAsync(); })" Label="Two-factor" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         @foreach (var item in TwoFactorOptions)
                         {
                             <MudSelectItem Value="@item">@item</MudSelectItem>
@@ -60,7 +52,7 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="6" lg="3">
-                    <MudSelect @bind-Value="_linkedRecordFilter" Label="Linked Record" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="string" Value="_linkedRecordFilter" ValueChanged="@(async (string? val) => { _linkedRecordFilter = val; await ApplyFiltersAsync(); })" Label="Linked Record" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         @foreach (var item in LinkedRecordOptions)
                         {
                             <MudSelectItem Value="@item">@item</MudSelectItem>
@@ -68,9 +60,6 @@
                     </MudSelect>
                 </MudItem>
             </MudGrid>
-            <div class="filter-actions">
-                <MudButton Variant="Variant.Filled" Size="Size.Small" Class="bt-mud-primary bt-small-button" OnClick="ApplyFiltersAsync">Apply</MudButton>
-            </div>
         }
 
         @if (_isLoading)
@@ -120,15 +109,13 @@
                     <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
                 </NoRecordsContent>
                 <PagerContent>
-                    <div class="table-footer">
-                        <span>@FooterText</span>
-                        <div class="pagination-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" Disabled="@(_isFirstPage || _isLoading)" OnClick="GoToFirstPageAsync" />
-                            <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" Disabled="@(_isFirstPage || _isLoading)" OnClick="GoToPreviousPageAsync" />
-                            <MudChip T="string" Size="Size.Small" Color="Color.Primary">Page @_currentPage</MudChip>
-                            <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Disabled="@(_isLastPage || _isLoading)" OnClick="GoToNextPageAsync" />
-                        </div>
-                    </div>
+                    <GlobalTablePager CurrentPage="_currentPage"
+                                      TotalRecords="_totalRecords"
+                                      PageSize="PageSize"
+                                      IsLoading="_isLoading"
+                                      OnFirstPage="GoToFirstPageAsync"
+                                      OnPreviousPage="GoToPreviousPageAsync"
+                                      OnNextPage="GoToNextPageAsync" />
                 </PagerContent>
             </MudTable>
         </div>
@@ -169,15 +156,8 @@
         || !string.IsNullOrWhiteSpace(_twoFactorFilter)
         || !string.IsNullOrWhiteSpace(_linkedRecordFilter);
 
-    private string StatusLabel => _isLoading ? "Loading" : $"{_users.Count} shown";
 
-    private string FooterText => _totalRecords == 0
-        ? "Showing 0 records"
-        : $"Showing {CurrentPageStart}-{CurrentPageEnd} of {_totalRecords} records";
 
-    private int CurrentPageStart => ((_currentPage - 1) * PageSize) + 1;
-
-    private int CurrentPageEnd => Math.Min(CurrentPageStart + _users.Count - 1, _totalRecords);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

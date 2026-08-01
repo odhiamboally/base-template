@@ -63,20 +63,28 @@ internal sealed class PaymentCheckoutService(
     }
 
     public Task<AppResponse<PaymentHistoryResponse>> GetHistoryAsync(
-        int page = 1,
-        int pageSize = 20,
+        PaymentHistoryFilterRequest request,
         CancellationToken cancellationToken = default)
     {
+        var queryParams = new Dictionary<string, string>();
+        
+        if (request.Cursor.HasValue) queryParams["cursor"] = request.Cursor.Value.ToString();
+        queryParams["pageSize"] = request.PageSize.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm)) queryParams["searchTerm"] = request.SearchTerm;
+        if (!string.IsNullOrWhiteSpace(request.Provider)) queryParams["provider"] = request.Provider;
+        if (request.ExactAmount.HasValue) queryParams["exactAmount"] = request.ExactAmount.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (request.MinAmount.HasValue) queryParams["minAmount"] = request.MinAmount.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (request.MaxAmount.HasValue) queryParams["maxAmount"] = request.MaxAmount.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (request.StartDate.HasValue) queryParams["startDate"] = request.StartDate.Value.ToString("O");
+        if (request.EndDate.HasValue) queryParams["endDate"] = request.EndDate.Value.ToString("O");
+        if (!string.IsNullOrWhiteSpace(request.Status)) queryParams["status"] = request.Status;
+
         return apiClient.SendAsync<PaymentHistoryResponse>(
             HttpMethod.Get,
             EndpointFormatter.Format(
                 _apiSettings.Endpoints.Shared.Payments.History,
                 _apiSettings.Version,
-                new Dictionary<string, string>
-                {
-                    ["page"] = page.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    ["pageSize"] = pageSize.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                }),
+                queryParams),
             unavailableMessage: "The payment service is unavailable. Please try again.",
             timeoutMessage: "The payment service timed out. Please try again.",
             cancellationToken: cancellationToken);

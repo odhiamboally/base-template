@@ -10,9 +10,13 @@
     {
         PaletteLight = new PaletteLight()
         {
-            Primary = "#2563EB",          // Professional Blue
-            Secondary = "#64748B",        // Slate Secondary
-            Tertiary = "#10B981",         // Success Green (for balances/growth)
+            Primary = Colors.Blue.Darken4,
+            Secondary = Colors.BlueGray.Darken4,
+            Tertiary = Colors.Green.Darken4,
+            Warning = Colors.Orange.Darken4,
+            Error = Colors.Red.Darken4,
+            Info = Colors.LightBlue.Darken4,
+            Success = Colors.Green.Darken4,
             AppbarBackground = "#FFFFFF",
             AppbarText = "#1E293B",
             Background = "#F1F5F9",       // Light Slate Background
@@ -41,7 +45,7 @@
             Subtitle2 = new Subtitle2Typography() { FontSize = ".8125rem" },
             Body1 = new Body1Typography() { FontSize = ".875rem" },
             Body2 = new Body2Typography() { FontSize = ".8125rem" },
-            Button = new ButtonTypography() { TextTransform = "none", FontWeight = "500", FontSize = ".8125rem" } 
+            Button = new ButtonTypography() { TextTransform = "capitalize", FontWeight = "500", FontSize = ".8125rem" } 
         }
     };
 }

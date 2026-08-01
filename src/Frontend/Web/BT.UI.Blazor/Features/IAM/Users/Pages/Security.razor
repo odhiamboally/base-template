@@ -10,10 +10,13 @@
 
 <RequireAuthenticated>
     <section class="security-page">
+        <div class="mb-2">
+            <MudButton Href="/profile" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Class="ps-0 text-muted">Back to Profile</MudButton>
+        </div>
         <div class="security-hero">
             <div>
                 <span class="eyebrow">Account security</span>
-                <h1>@DisplayName</h1>
+                <h3>@DisplayName</h3>
                 <p>@AuthSession.CurrentUser?.Email</p>
             </div>
             <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Logout" OnClick="SignOutAsync">Sign out</MudButton>
@@ -45,7 +48,7 @@
                             <ValidationMessage For="@(() => _passwordModel.ConfirmNewPassword)" />
                         </div>
 
-                        <MudButton Variant="Variant.Filled" Class="bt-mud-primary" ButtonType="ButtonType.Submit" Disabled="@_isChangingPassword">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit" Disabled="@_isChangingPassword">
                             @(_isChangingPassword ? "Changing..." : "Change password")
                         </MudButton>
                     </div>
@@ -96,7 +99,7 @@
                 }
 
                 <MudStack Row="true" Spacing="2" Class="security-actions">
-                    <MudButton Variant="Variant.Filled" Class="bt-mud-primary" OnClick="StartTotpSetupAsync" Disabled="@(_isBusy || IsTotpEnabled)">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartTotpSetupAsync" Disabled="@(_isBusy || IsTotpEnabled)">
                         @SetupButtonText
                     </MudButton>
 
@@ -142,7 +145,7 @@
                                 <ValidationMessage For="@(() => _verification.Code)" />
                             </div>
 
-                            <MudButton Variant="Variant.Filled" Class="bt-mud-primary" ButtonType="ButtonType.Submit" Disabled="@_isBusy">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit" Disabled="@_isBusy">
                                 @(_isBusy ? "Verifying..." : "Verify and enable 2FA")
                             </MudButton>
                         </div>

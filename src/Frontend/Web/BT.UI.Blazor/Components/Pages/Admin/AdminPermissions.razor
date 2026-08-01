@@ -6,14 +6,6 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<div class="panel-heading">
-    <div>
-        <span class="eyebrow">Permission list</span>
-        <h2>Permission catalog</h2>
-    </div>
-    <MudChip T="string" Size="Size.Small" Color="Color.Success">@_statusLabel</MudChip>
-</div>
-
 <div class="list-toolbar">
     <MudTextField @bind-Value="_searchText"
                   Placeholder="Search key, context, resource, action, description..."
@@ -37,7 +29,7 @@
             <MudDivider Class="my-2" />
             <MudGrid Spacing="2" Class="mb-2">
                 <MudItem xs="12" sm="4">
-                    <MudSelect @bind-Value="_contextFilter" Label="Context" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="string" Value="_contextFilter" ValueChanged="@(async (string? val) => { _contextFilter = val; await ApplyFiltersAsync(); })" Label="Context" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         @foreach (var context in ContextOptions)
                         {
                             <MudSelectItem Value="@context">@context</MudSelectItem>
@@ -45,7 +37,7 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudSelect @bind-Value="_resourceFilter" Label="Resource" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="string" Value="_resourceFilter" ValueChanged="@(async (string? val) => { _resourceFilter = val; await ApplyFiltersAsync(); })" Label="Resource" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         @foreach (var resource in ResourceOptions)
                         {
                             <MudSelectItem Value="@resource">@resource</MudSelectItem>
@@ -53,15 +45,12 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudSelect @bind-Value="_isActiveFilter" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    <MudSelect T="bool?" Value="_isActiveFilter" ValueChanged="@(async (bool? val) => { _isActiveFilter = val; await ApplyFiltersAsync(); })" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                         <MudSelectItem T="bool?" Value="@((bool?)true)">Active</MudSelectItem>
                         <MudSelectItem T="bool?" Value="@((bool?)false)">Inactive</MudSelectItem>
                     </MudSelect>
                 </MudItem>
             </MudGrid>
-            <div class="filter-actions">
-                <MudButton Variant="Variant.Filled" Size="Size.Small" Class="bt-mud-primary bt-small-button" OnClick="ApplyFiltersAsync">Apply</MudButton>
-            </div>
         }
 
         @if (_isLoading)
@@ -110,18 +99,16 @@
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
-                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No permissions found.</MudAlert>
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
                 </NoRecordsContent>
                 <PagerContent>
-                    <div class="table-footer">
-                        <span>@FooterText</span>
-                        <div class="pagination-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" Disabled="@(_isFirstPage || _isLoading)" OnClick="GoToFirstPageAsync" />
-                            <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" Disabled="@(_isFirstPage || _isLoading)" OnClick="GoToPreviousPageAsync" />
-                            <MudChip T="string" Size="Size.Small" Color="Color.Primary">Page @_currentPage</MudChip>
-                            <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Disabled="@(_isLastPage || _isLoading)" OnClick="GoToNextPageAsync" />
-                        </div>
-                    </div>
+                    <GlobalTablePager CurrentPage="_currentPage"
+                                      TotalRecords="_totalRecords"
+                                      PageSize="PageSize"
+                                      IsLoading="_isLoading"
+                                      OnFirstPage="GoToFirstPageAsync"
+                                      OnPreviousPage="GoToPreviousPageAsync"
+                                      OnNextPage="GoToNextPageAsync" />
                 </PagerContent>
             </MudTable>
         </div>
@@ -159,15 +146,8 @@
         || !string.IsNullOrWhiteSpace(_resourceFilter)
         || _isActiveFilter.HasValue;
 
-    private string _statusLabel => _isLoading ? "Loading" : $"{_permissions.Count} shown";
 
-    private string FooterText => _totalRecords == 0
-        ? "Showing 0 records"
-        : $"Showing {CurrentPageStart}-{CurrentPageEnd} of {_totalRecords} records";
 
-    private int CurrentPageStart => ((_currentPage - 1) * PageSize) + 1;
-
-    private int CurrentPageEnd => Math.Min(CurrentPageStart + _permissions.Count - 1, _totalRecords);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

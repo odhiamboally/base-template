@@ -1,66 +1,57 @@
 <div class="table-actions">
     @if (CanView && ViewActions.Count > 0)
     {
-        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-            <ActivatorContent>
-                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Class="table-action-button view-action" />
-            </ActivatorContent>
-            <ChildContent>
+        <MudTooltip Text="View">
+            <MudMenu Icon="@Icons.Material.Filled.Visibility" Color="Color.Default" IconColor="Color.Inherit" Size="Size.Small" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="table-action-button view-action">
                 @foreach (var action in ViewActions)
                 {
                     <MudMenuItem OnClick="@(() => OnViewAction.InvokeAsync(action))">@action</MudMenuItem>
                 }
-            </ChildContent>
-        </MudMenu>
+            </MudMenu>
+        </MudTooltip>
     }
     else if (CanView)
     {
         <MudTooltip Text="View">
-            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Class="table-action-button view-action" OnClick="OnView" />
+            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Default" Size="Size.Small" Class="table-action-button view-action" OnClick="OnView" />
         </MudTooltip>
     }
 
     @if (CanEdit && EditActions.Count > 0)
     {
-        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-            <ActivatorContent>
-                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="table-action-button edit-action" />
-            </ActivatorContent>
-            <ChildContent>
+        <MudTooltip Text="Edit">
+            <MudMenu Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" IconColor="Color.Primary" Size="Size.Small" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="table-action-button edit-action">
                 @foreach (var action in EditActions)
                 {
                     <MudMenuItem OnClick="@(() => OnEditAction.InvokeAsync(action))">@action</MudMenuItem>
                 }
-            </ChildContent>
-        </MudMenu>
+            </MudMenu>
+        </MudTooltip>
     }
     else if (CanEdit)
     {
         <MudTooltip Text="Edit">
-            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="table-action-button edit-action" OnClick="OnEdit" />
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" Class="table-action-button edit-action" OnClick="OnEdit" />
         </MudTooltip>
     }
 
     @if (CanDelete)
     {
         <MudTooltip Text="Delete">
-            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Class="table-action-button delete-action" OnClick="OnDelete" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" Class="table-action-button delete-action" OnClick="OnDelete" />
         </MudTooltip>
     }
 
     @if (ExtraActions.Count > 0)
     {
-        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-            <ActivatorContent>
-                <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Class="table-action-button" />
-            </ActivatorContent>
-            <ChildContent>
+        <MudTooltip Text="More actions">
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Default" IconColor="Color.Inherit" Size="Size.Small" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="table-action-button">
                 @foreach (var action in ExtraActions)
                 {
                     <MudMenuItem OnClick="@(() => OnExtraAction.InvokeAsync(action))">@action</MudMenuItem>
                 }
-            </ChildContent>
-        </MudMenu>
+            </MudMenu>
+        </MudTooltip>
     }
 </div>
 

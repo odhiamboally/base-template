@@ -13,16 +13,27 @@
 
     <div class="nav-scrollable">
         <nav class="nav flex-column">
-            @foreach (var menu in SidebarMenus)
+            @if (_isLoading)
             {
-                if (menu.Key.Equals("solution-overview", StringComparison.OrdinalIgnoreCase))
+                <div class="nav-loading">
+                    <MudProgressLinear Color="Color.Success" Indeterminate="true" Class="my-2" Style="opacity: 0.4;" />
+                </div>
+            }
+            else if (_loadError is not null)
+            {
+                <div class="nav-error" style="padding: 0.75rem 1rem; color: var(--bt-muted); font-size: 0.8rem;">
+                    <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Small" Class="me-1" />
+                    @_loadError
+                </div>
+            }
+            else
+            {
+                @foreach (var menu in _menus)
                 {
-                    <div class="nav-separator"></div>
+                    <section class="nav-group">
+                        @RenderMenu(menu)
+                    </section>
                 }
-
-                <section class="nav-group">
-                    @RenderMenu(menu)
-                </section>
             }
         </nav>
     </div>
@@ -32,19 +43,8 @@
 
 @code {
     private readonly List<MenuResponse> _menus = [];
-
-    private IReadOnlyList<MenuResponse> SidebarMenus => _menus.Count == 0 ? FallbackMenus : _menus;
-
-    private static IReadOnlyList<MenuResponse> FallbackMenus =>
-    [
-        new(Guid.Empty, null, null, "solution-overview", "Solution Overview", "Architecture and solution overview.", "/overview", "AutoStories", "Sidebar", null, null, 1, true, []),
-        new(Guid.Empty, null, null, "dashboard", "Dashboard", "Operations dashboard.", "/dashboard", "Dashboard", "Sidebar", null, null, 2, true, []),
-        new(Guid.Empty, null, null, "admin-center", "Admin Center", "Administrative workspace.", "/admin", "AdminPanelSettings", "Sidebar", null, null, 3, true, []),
-        new(Guid.Empty, null, null, "control-panel", "Control Panel", "Platform management.", "/system/control-panel/tenants", "Dns", "Sidebar", "Permissions.ControlPlane.Manage", null, 4, true, [
-            new(Guid.Empty, null, null, "control-panel-tenants", "Tenants", "Manage SaaS tenants.", "/system/control-panel/tenants", "Business", "Sidebar", "Permissions.ControlPlane.Manage", null, 1, true, []),
-            new(Guid.Empty, null, null, "control-panel-stamps", "Stamps", "Deployment stamps.", "/system/control-panel/stamps", "Dns", "Sidebar", "Permissions.ControlPlane.Manage", null, 2, true, [])
-        ])
-    ];
+    private bool _isLoading = true;
+    private string? _loadError;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -56,6 +56,8 @@
         await AuthSession.InitializeAsync();
         if (!AuthSession.IsAuthenticated)
         {
+            _isLoading = false;
+            StateHasChanged();
             return;
         }
 
@@ -64,8 +66,14 @@
         {
             _menus.Clear();
             _menus.AddRange(response.Data);
-            StateHasChanged();
         }
+        else if (!response.IsSuccess)
+        {
+            _loadError = "Menus unavailable.";
+        }
+
+        _isLoading = false;
+        StateHasChanged();
     }
 
     private RenderFragment RenderMenu(MenuResponse menu) => builder =>
@@ -106,3 +114,4 @@
         builder.CloseElement();
     };
 }
+

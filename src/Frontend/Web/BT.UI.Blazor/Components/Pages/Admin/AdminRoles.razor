@@ -5,14 +5,6 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<div class="panel-heading">
-    <div>
-        <span class="eyebrow">Role list</span>
-        <h2>Platform roles</h2>
-    </div>
-    <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
-</div>
-
 <div class="list-toolbar">
     <MudTextField @bind-Value="_searchText"
                   Placeholder="Search role name..."
@@ -34,7 +26,7 @@
         }
 
         <div class="bt-table-scroll">
-            <MudTable Items="FilteredRoles" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="50" Height="calc(100vh - 24rem)" Style="min-width: 760px;" Breakpoint="Breakpoint.None">
+            <MudTable @ref="_table" Items="FilteredRoles" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="50" Height="calc(100vh - 24rem)" Style="min-width: 760px;" Breakpoint="Breakpoint.None">
                 <HeaderContent>
                     <MudTh>Role</MudTh>
                     <MudTh>Scope</MudTh>
@@ -65,6 +57,14 @@
                 <NoRecordsContent>
                     <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
                 </NoRecordsContent>
+                <PagerContent>
+                    <GlobalTablePager CurrentPage="(_table?.CurrentPage ?? 0) + 1"
+                                      TotalRecords="_table?.GetFilteredItemsCount() ?? 0"
+                                      PageSize="_table?.RowsPerPage ?? 50"
+                                      OnFirstPage="@(() => _table?.NavigateTo(0))"
+                                      OnPreviousPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 1) - 1))"
+                                      OnNextPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 0) + 1))" />
+                </PagerContent>
             </MudTable>
         </div>
 
@@ -73,10 +73,10 @@
     private bool _isLoading = true;
     private string? _message;
     private string? _searchText;
+    private MudTable<AdminRoleListResponse>? _table;
 
     public Task OpenCreateDialogAsync() => OpenRoleDialogAsync(null);
 
-    private string StatusLabel => _isLoading ? "Loading" : $"{FilteredRoles.Count} shown";
 
     private IReadOnlyList<AdminRoleListResponse> FilteredRoles =>
         string.IsNullOrWhiteSpace(_searchText)

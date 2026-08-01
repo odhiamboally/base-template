@@ -2,6 +2,7 @@ using BT.Domain.Features.Shared.Contracts;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.Payments.Dtos;
 
+using System.Linq.Expressions;
 using BT.SharedKernel.Extensions;
 using MediatR;
 
@@ -17,7 +18,17 @@ internal sealed class GetPaymentHistoryHandler(ISharedUnitOfWork sharedUnitOfWor
         var pageSize = Math.Clamp(request.PageSize, 1, 50);
         var repository = sharedUnitOfWork.PaymentRecordRepository;
 
-        var totalCount = await repository.CountAsync(cancellationToken).ConfigureAwait(false);
+        Expression<Func<BT.Domain.Features.Shared.Payments.Entities.PaymentRecord, bool>> filterExpression = record =>
+            (string.IsNullOrWhiteSpace(request.SearchTerm) || record.CustomerReference.Contains(request.SearchTerm) || (record.ProviderReference != null && record.ProviderReference.Contains(request.SearchTerm))) &&
+            (string.IsNullOrWhiteSpace(request.Provider) || record.Provider == request.Provider) &&
+            (!request.ExactAmount.HasValue || record.Amount.Amount == request.ExactAmount.Value) &&
+            (!request.MinAmount.HasValue || record.Amount.Amount >= request.MinAmount.Value) &&
+            (!request.MaxAmount.HasValue || record.Amount.Amount <= request.MaxAmount.Value) &&
+            (!request.StartDate.HasValue || record.CreatedAt >= request.StartDate.Value) &&
+            (!request.EndDate.HasValue || record.CreatedAt <= request.EndDate.Value) &&
+            (!request.Status.HasValue || record.Status == request.Status.Value);
+
+        var totalCount = await repository.CountAsync(filterExpression, cancellationToken).ConfigureAwait(false);
 
         var cursorRecord = request.Cursor.HasValue
             ? await repository.FindByIdAsync(request.Cursor.Value, cancellationToken).ConfigureAwait(false)
@@ -26,7 +37,9 @@ internal sealed class GetPaymentHistoryHandler(ISharedUnitOfWork sharedUnitOfWor
         var records = await repository.ListAsync(
             query =>
             {
-                var q = query.OrderByDescending(record => record.CreatedAt).ThenByDescending(record => record.Id);
+                var q = query.Where(filterExpression)
+                             .OrderByDescending(record => record.CreatedAt)
+                             .ThenByDescending(record => record.Id);
 
                 if (cursorRecord != null)
                 {
