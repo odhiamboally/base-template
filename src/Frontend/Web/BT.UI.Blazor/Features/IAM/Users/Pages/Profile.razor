@@ -20,7 +20,7 @@
                 <h1>@DisplayName</h1>
                 <p>@AuthSession.CurrentUser?.Email</p>
             </div>
-            <MudButton Href="/iam/security" Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.Security" Class="bt-mud-primary bt-small-button">
+            <MudButton Href="/iam/security" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Security">
                 Security settings
             </MudButton>
         </div>
@@ -44,7 +44,7 @@
                         <MudChip T="string" Size="Size.Small" Color="Color.Success">Active</MudChip>
                         <div class="profile-upload-control">
                             <InputFile OnChange="OnProfilePictureSelectedAsync" accept="image/jpeg,image/png,image/webp" disabled="@_isUploading" />
-                            <small>JPEG, PNG, or WebP up to 2 MB.</small>
+                            <small>JPEG, PNG, or WebP up to 10 MB.</small>
                         </div>
                     </div>
                 </MudItem>
@@ -84,7 +84,7 @@
 @code {
     private bool _isReady = true;
     private bool _isUploading;
-    private const long MaxProfilePictureBytes = 2_097_152;
+    private const long MaxProfilePictureBytes = 10_485_760;
 
     private string DisplayName
     {
@@ -150,7 +150,7 @@
 
         if (file.Size > MaxProfilePictureBytes)
         {
-            Snackbar.Add("Profile picture must be 2 MB or smaller.", Severity.Warning);
+            Snackbar.Add("Profile picture must be 10 MB or smaller.", Severity.Warning);
             return;
         }
 

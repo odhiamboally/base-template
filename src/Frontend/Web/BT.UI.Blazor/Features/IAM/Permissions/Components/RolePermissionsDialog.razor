@@ -10,7 +10,7 @@
         else
         {
             <MudStack Spacing="2">
-                <MudText Typo="Typo.body2">Select the global or <strong>@Role.DepartmentName</strong> permission keys assigned to <strong>@Role.Name</strong>.</MudText>
+                <MudText Typo="Typo.body2">Manage permission keys assigned to <strong>@Role.Name</strong>.</MudText>
                 <div class="bt-table-scroll">
                     <MudTable Items="_permissions" Dense="true" Hover="true" Elevation="0" FixedHeader="true" Height="28rem" Style="min-width: 760px;" Breakpoint="Breakpoint.None">
                         <HeaderContent>
@@ -39,7 +39,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="Cancel">Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Size="Size.Small" Class="bt-mud-primary" Disabled="@(_isLoading || _isSaving)" OnClick="SaveAsync">@(_isSaving ? "Saving..." : "Update")</MudButton>
+        <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Success" Disabled="@(_isLoading || _isSaving)" OnClick="SaveAsync">@(_isSaving ? "Saving..." : "Update")</MudButton>
     </DialogActions>
 </MudDialog>
 

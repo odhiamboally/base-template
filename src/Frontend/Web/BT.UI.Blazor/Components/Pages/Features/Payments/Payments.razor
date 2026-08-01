@@ -10,18 +10,6 @@
 
 <RequireAuthenticated>
     <section class="dashboard-page">
-        <div class="dashboard-hero compact-hero">
-            <div>
-                <span class="eyebrow">Features</span>
-                <h1>Payment capabilities.</h1>
-                <p>Test the platform's provider-neutral payment integrations, view attempt history, and access sandbox tools.</p>
-            </div>
-            @if (_capabilities.Any(c => c.Environment?.Equals("Sandbox", StringComparison.OrdinalIgnoreCase) == true))
-            {
-                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="ms-auto align-self-start">Sandbox Mode</MudChip>
-            }
-        </div>
-
         @if (!_isReady)
         {
             <MudPaper Class="status-card" Elevation="0">Loading capabilities...</MudPaper>
@@ -33,6 +21,15 @@
         else
         {
             <MudPaper Class="poc-panel" Elevation="0">
+                <div class="panel-heading">
+                    <h2 style="color: var(--bt-moss); font-weight: 700;">Payments</h2>
+                    <div class="d-flex align-center gap-3">
+                        @if (_capabilities.Any(c => c.Environment?.Equals("Sandbox", StringComparison.OrdinalIgnoreCase) == true))
+                        {
+                            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="mb-0">Sandbox Mode</MudChip>
+                        }
+                    </div>
+                </div>
                 <MudTabs ActivePanelIndex="_activeTab" ActivePanelIndexChanged="OnTabChanged" Rounded="true" Elevation="0" Class="bt-catalog-tabs">
                     <MudTabPanel Text="Checkout" />
                     <MudTabPanel Text="History" />
@@ -108,6 +105,7 @@
                                                            Margin="Margin.Dense"
                                                            Value="@_currency"
                                                            ValueChanged="OnCurrencyChanged"
+                                                           Disabled="@(_selectedProvider == "Mpesa")"
                                                            Required="true">
                                                     <MudSelectItem Value="@("USD")">🇺🇸 USD</MudSelectItem>
                                                     <MudSelectItem Value="@("KES")">🇰🇪 KES</MudSelectItem>
@@ -128,7 +126,7 @@
                                     <div class="modal-actions mt-4">
                                         <MudButton Variant="Variant.Filled"
                                                    Disabled="@(_isSubmitting || _selectedCapability == null || !_selectedCapability.IsEnabled)"
-                                                   Class="bt-mud-primary bt-small-button"
+                                                   Color="Color.Primary"
                                                    OnClick="StartCheckoutAsync">
                                             @(_isSubmitting ? "Processing..." : "Initiate Checkout")
                                         </MudButton>
@@ -163,32 +161,86 @@
                     }
                     else if (_activeTab == 1)
                     {
-                        <div class="list-toolbar">
-                            <div class="search-filter-controls">
+                        <div class="d-flex gap-2 align-center mb-2 flex-wrap">
+                            <div style="width: 220px;">
+                                <MudTextField T="string" @bind-Value="_historySearchTerm" Placeholder="Cust or Prov Ref..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense" Variant="Variant.Outlined" Immediate="false" DebounceInterval="400" OnDebounceIntervalElapsed="LoadHistoryAsync" />
+                            </div>
+                            
+                            <div style="width: 200px;">
+                                <MudSelect T="string" Value="_historyProvider" ValueChanged="@(async v => { _historyProvider = v; await LoadHistoryAsync(); })" Placeholder="Provider" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                    @foreach (var cap in _capabilities)
+                                    {
+                                        <MudSelectItem Value="@cap.Provider">@(cap.DisplayName.Contains("M-Pesa") ? "M-Pesa" : cap.DisplayName.Contains("Stripe") ? "Stripe" : cap.DisplayName)</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </div>
+                            
+                            <div style="width: 160px;">
+                                <MudSelect T="string" Value="_historyStatus" ValueChanged="@(async v => { _historyStatus = v; await LoadHistoryAsync(); })" Placeholder="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                    @foreach (var status in new[] { "Initiated", "Processing", "Success", "Failed", "Cancelled" })
+                                    {
+                                        <MudSelectItem Value="@status">@status</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </div>
+                            
+                            <div style="width: 100px;">
+                                <MudNumericField T="decimal?" @bind-Value="_historyExactAmount" Placeholder="Exact Amt" Margin="Margin.Dense" Variant="Variant.Outlined" HideSpinButtons="true" Immediate="false" DebounceInterval="400" OnDebounceIntervalElapsed="LoadHistoryAsync" />
+                            </div>
+                            <div style="width: 100px;">
+                                <MudNumericField T="decimal?" @bind-Value="_historyMinAmount" Placeholder="Min Amt" Margin="Margin.Dense" Variant="Variant.Outlined" HideSpinButtons="true" Immediate="false" DebounceInterval="400" OnDebounceIntervalElapsed="LoadHistoryAsync" />
+                            </div>
+                            <div style="width: 100px;">
+                                <MudNumericField T="decimal?" @bind-Value="_historyMaxAmount" Placeholder="Max Amt" Margin="Margin.Dense" Variant="Variant.Outlined" HideSpinButtons="true" Immediate="false" DebounceInterval="400" OnDebounceIntervalElapsed="LoadHistoryAsync" />
+                            </div>
+
+                            <div style="width: 190px;">
+                                <MudDatePicker Date="_historyStartDate" DateChanged="@(async d => { _historyStartDate = d; await LoadHistoryAsync(); })" Placeholder="Start Date" Margin="Margin.Dense" Variant="Variant.Outlined" Clearable="true" />
+                            </div>
+                            <div style="width: 190px;">
+                                <MudDatePicker Date="_historyEndDate" DateChanged="@(async d => { _historyEndDate = d; await LoadHistoryAsync(); })" Placeholder="End Date" Margin="Margin.Dense" Variant="Variant.Outlined" Clearable="true" />
+                            </div>
+
+                            <div class="ms-auto d-flex gap-2 align-center">
+                                @if (HasActiveFilters)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Color="Color.Error" OnClick="ClearFiltersAsync" title="Clear filters" />
+                                }
                                 <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadHistoryAsync">Refresh</MudButton>
                             </div>
                         </div>
-                        <MudTable Items="_historyItems" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Loading="_isLoadingHistory" Class="mt-3">
-                            <HeaderContent>
-                                <MudTh>Date</MudTh>
-                                <MudTh>Reference</MudTh>
-                                <MudTh>Provider</MudTh>
-                                <MudTh>Amount</MudTh>
-                                <MudTh>Status</MudTh>
-                            </HeaderContent>
-                            <RowTemplate>
-                                <MudTd DataLabel="Date">@context.CreatedAt.ToString("g")</MudTd>
-                                <MudTd DataLabel="Reference">@context.PaymentReference</MudTd>
-                                <MudTd DataLabel="Provider">@context.Provider</MudTd>
-                                <MudTd DataLabel="Amount">@context.Amount.ToString("N2") @context.Currency</MudTd>
-                                <MudTd DataLabel="Status">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">@context.Status</MudChip>
-                                </MudTd>
-                            </RowTemplate>
-                            <PagerContent>
-                                <MudTablePager />
-                            </PagerContent>
-                        </MudTable>
+
+                        <div class="bt-table-scroll">
+                            <MudTable @ref="_table" Items="_historyItems" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Loading="_isLoadingHistory" RowsPerPage="50" FixedHeader="true" Height="calc(100vh - 25rem)" Class="mt-3">
+                                <HeaderContent>
+                                    <MudTh>Date</MudTh>
+                                    <MudTh>Reference</MudTh>
+                                    <MudTh>Provider</MudTh>
+                                    <MudTh>Amount</MudTh>
+                                    <MudTh>Status</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Date">@context.CreatedAt.ToString("g")</MudTd>
+                                    <MudTd DataLabel="Reference">@context.PaymentReference</MudTd>
+                                    <MudTd DataLabel="Provider">@context.Provider</MudTd>
+                                    <MudTd DataLabel="Amount">@context.Amount.ToString("N2") @context.Currency</MudTd>
+                                    <MudTd DataLabel="Status">
+                                        <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">@context.Status</MudChip>
+                                    </MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
+                                </NoRecordsContent>
+                                <PagerContent>
+                                    <GlobalTablePager CurrentPage="(_table?.CurrentPage ?? 0) + 1"
+                                                      TotalRecords="_table?.GetFilteredItemsCount() ?? 0"
+                                                      PageSize="_table?.RowsPerPage ?? 50"
+                                                      OnFirstPage="@(() => _table?.NavigateTo(0))"
+                                                      OnPreviousPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 1) - 1))"
+                                                      OnNextPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 0) + 1))" />
+                                </PagerContent>
+                            </MudTable>
+                        </div>
                     }
                     else if (_activeTab == 2)
                     {
@@ -206,11 +258,11 @@
                                             </MudSelect>
                                         </MudItem>
                                         <MudItem xs="12">
-                                            <MudTextField Label="Payment Reference" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_statusReference" Required="true" />
+                                            <MudTextField Label="Provider Reference" HelperText="Use the Provider's Session ID or Request ID, not the internal Customer Reference." Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_statusReference" Required="true" />
                                         </MudItem>
                                     </MudGrid>
                                     <div class="mt-3">
-                                        <MudButton Variant="Variant.Filled" Class="bt-mud-primary bt-small-button" OnClick="LookupStatusAsync" Disabled="_isSubmittingStatus">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LookupStatusAsync" Disabled="_isSubmittingStatus">
                                             @(_isSubmittingStatus ? "Checking..." : "Check Status")
                                         </MudButton>
                                     </div>
@@ -305,8 +357,42 @@
     private string? _phoneNumber;
 
     // History State
+    private MudTable<PaymentHistoryItemResponse>? _table;
     private bool _isLoadingHistory;
     private List<PaymentHistoryItemResponse> _historyItems = [];
+
+    // History Filters State
+    private string? _historySearchTerm;
+    private string? _historyProvider;
+    private decimal? _historyExactAmount;
+    private decimal? _historyMinAmount;
+    private decimal? _historyMaxAmount;
+    private DateTime? _historyStartDate;
+    private DateTime? _historyEndDate;
+    private string? _historyStatus;
+
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(_historySearchTerm) ||
+        !string.IsNullOrWhiteSpace(_historyProvider) ||
+        _historyExactAmount.HasValue ||
+        _historyMinAmount.HasValue ||
+        _historyMaxAmount.HasValue ||
+        _historyStartDate.HasValue ||
+        _historyEndDate.HasValue ||
+        !string.IsNullOrWhiteSpace(_historyStatus);
+
+    private async Task ClearFiltersAsync()
+    {
+        _historySearchTerm = null;
+        _historyProvider = null;
+        _historyExactAmount = null;
+        _historyMinAmount = null;
+        _historyMaxAmount = null;
+        _historyStartDate = null;
+        _historyEndDate = null;
+        _historyStatus = null;
+        await LoadHistoryAsync();
+    }
 
     // Status State
     private MudForm? _statusForm;
@@ -391,7 +477,19 @@
     private async Task LoadHistoryAsync()
     {
         _isLoadingHistory = true;
-        var response = await PaymentCheckoutService.GetHistoryAsync(1, 100);
+        var request = new PaymentHistoryFilterRequest
+        {
+            PageSize = 100,
+            SearchTerm = _historySearchTerm,
+            Provider = _historyProvider,
+            ExactAmount = _historyExactAmount,
+            MinAmount = _historyMinAmount,
+            MaxAmount = _historyMaxAmount,
+            StartDate = _historyStartDate.HasValue ? new DateTimeOffset(_historyStartDate.Value, TimeSpan.Zero) : null,
+            EndDate = _historyEndDate.HasValue ? new DateTimeOffset(_historyEndDate.Value, TimeSpan.Zero) : null,
+            Status = _historyStatus
+        };
+        var response = await PaymentCheckoutService.GetHistoryAsync(request);
         if (response.IsSuccess && response.Data != null)
         {
             _historyItems = response.Data.Items.ToList();

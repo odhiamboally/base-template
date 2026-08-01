@@ -557,11 +557,11 @@ a, .btn-link {
 }
 
 .table-action-button.view-action {
-    color: #6f7370 !important;
+    color: #64748B !important;
 }
 
 .table-action-button.edit-action {
-    color: #4f46e5 !important;
+    color: var(--mud-palette-primary) !important;
 }
 
 .table-action-button.delete-action {

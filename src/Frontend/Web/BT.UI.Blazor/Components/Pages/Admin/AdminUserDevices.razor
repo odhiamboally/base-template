@@ -5,14 +5,6 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<div class="panel-heading">
-    <div>
-        <span class="eyebrow">Device list</span>
-        <h2>Trusted devices</h2>
-    </div>
-    <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
-</div>
-
 <div class="list-toolbar">
     <MudTextField @bind-Value="_searchText"
                   Placeholder="Search user, email, device, IP..."
@@ -34,7 +26,7 @@
         }
 
         <div class="bt-table-scroll">
-            <MudTable Items="FilteredDevices" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="50" Height="calc(100vh - 24rem)" Style="min-width: 920px;" Breakpoint="Breakpoint.None">
+            <MudTable @ref="_table" Items="FilteredDevices" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="50" Height="calc(100vh - 24rem)" Style="min-width: 920px;" Breakpoint="Breakpoint.None">
                 <HeaderContent>
                     <MudTh>User</MudTh>
                     <MudTh>Email</MudTh>
@@ -63,6 +55,14 @@
                 <NoRecordsContent>
                     <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
                 </NoRecordsContent>
+                <PagerContent>
+                    <GlobalTablePager CurrentPage="(_table?.CurrentPage ?? 0) + 1"
+                                      TotalRecords="_table?.GetFilteredItemsCount() ?? 0"
+                                      PageSize="_table?.RowsPerPage ?? 50"
+                                      OnFirstPage="@(() => _table?.NavigateTo(0))"
+                                      OnPreviousPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 1) - 1))"
+                                      OnNextPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 0) + 1))" />
+                </PagerContent>
             </MudTable>
         </div>
 
@@ -71,8 +71,8 @@
     private bool _isLoading = true;
     private string? _message;
     private string? _searchText;
+    private MudTable<AdminUserDeviceResponse>? _table;
 
-    private string StatusLabel => _isLoading ? "Loading" : $"{FilteredDevices.Count} shown";
 
     private IReadOnlyList<AdminUserDeviceResponse> FilteredDevices =>
         string.IsNullOrWhiteSpace(_searchText)

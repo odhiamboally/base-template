@@ -13,7 +13,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="Cancel">Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Size="Size.Small" Class="bt-mud-primary" Disabled="_isSaving" OnClick="SaveAsync">@(_isSaving ? "Saving..." : ExistingLookup is null ? "Create" : "Save")</MudButton>
+        <MudButton Variant="Variant.Filled" Size="Size.Small" Color="@(ExistingLookup is null ? Color.Primary : Color.Success)" Disabled="_isSaving" OnClick="SaveAsync">@(_isSaving ? "Saving..." : ExistingLookup is null ? "Create" : "Save")</MudButton>
     </DialogActions>
 </MudDialog>
 

@@ -32,6 +32,11 @@ internal sealed class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
         builder.HasIndex(menu => new { menu.Placement, menu.ParentId, menu.DepartmentId, menu.Title })
             .HasDatabaseName("IX_MenuItems_Placement_Parent_Department_Title");
 
+        builder.HasOne<MenuItem>()
+            .WithMany()
+            .HasForeignKey(menu => menu.ParentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasData(MenuItemSeed.Items);
     }
 }

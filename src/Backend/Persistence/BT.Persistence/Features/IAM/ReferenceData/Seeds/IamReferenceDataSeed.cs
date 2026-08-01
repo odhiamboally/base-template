@@ -43,7 +43,8 @@ internal static class IamReferenceDataSeed
     internal static IReadOnlyList<MenuPlacement> MenuPlacements =>
     [
         CreatePlacement("018fd81d-2c94-7ad0-a4a3-f1edb9d10401", "Sidebar", "Sidebar", "Main application navigation."),
-        CreatePlacement("018fd81d-2c94-7ad0-a4a3-f1edb9d10402", "AdminCenter", "Admin Center", "Administration landing tiles.")
+        CreatePlacement("018fd81d-2c94-7ad0-a4a3-f1edb9d10402", "AdminCenter", "Admin Center", "Administration landing tiles."),
+        CreatePlacement("018fd81d-2c94-7ad0-a4a3-f1edb9d10403", "ControlPanel", "Control Panel", "Platform control plane tiles.")
     ];
 
     internal static IReadOnlyList<MenuIcon> MenuIcons =>
@@ -60,7 +61,8 @@ internal static class IamReferenceDataSeed
         CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10510", "Menu", "Generic menu"),
         CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10511", "MenuOpen", "Menu"),
         CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10512", "Settings", "Settings"),
-        CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10513", "CreditCard", "Credit card")
+        CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10513", "CreditCard", "Credit card"),
+        CreateIcon("018fd81d-2c94-7ad0-a4a3-f1edb9d10514", "Dns", "DNS/platform")
     ];
 
     internal static IReadOnlyList<MenuRoute> MenuRoutes =>
@@ -79,7 +81,12 @@ internal static class IamReferenceDataSeed
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10612", "admin-users", "Users", "/admin/users", "AdminCenter"),
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10613", "admin-access-catalog", "Access Catalog", "/admin/access-catalog", "AdminCenter"),
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10614", "features", "Features", "/features", "Sidebar"),
-        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10615", "features-payments", "Payments", "/features/payments", "Sidebar")
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10615", "features-payments", "Payments", "/features/payments", "Sidebar"),
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10616", "control-panel", "Control Panel", "/control-panel", "Sidebar"),
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10617", "control-panel-tenants", "Tenants", "/control-panel/tenants", "ControlPanel"),
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10618", "control-panel-stamps", "Stamps", "/control-panel/stamps", "ControlPanel"),
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10619", "admin-tenant-settings", "Tenant Settings", "/admin/tenant-settings", "AdminCenter"),
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10620", "admin-iam", "Identity & Access", "/admin/iam", "AdminCenter")
     ];
 
     private static PermissionContext CreateContext(string id, string key, string label, string description)

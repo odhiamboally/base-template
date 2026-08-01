@@ -9,18 +9,19 @@
 <PageTitle>Access Catalog | Base Template</PageTitle>
 
 <section class="dashboard-page">
-    <div class="dashboard-hero compact-hero">
-        <div>
-            <span class="eyebrow">Administration</span>
-            <h1>Access catalog.</h1>
-            <p>Manage the source-of-truth lists behind permissions and menu configuration. Used records are protected by backend guardrails.</p>
-        </div>
-        <MudButton Variant="Variant.Filled" Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Class="bt-mud-primary bt-small-button" OnClick="CreateAsync">
-            Create item
-        </MudButton>
+    <div class="mb-4">
+        <MudButton Href="/admin" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Color="Color.Primary" Class="px-0">Back to Admin Center</MudButton>
     </div>
 
     <MudPaper Class="poc-panel" Elevation="0">
+        <div class="panel-heading">
+            <h2 style="color: var(--bt-moss); font-weight: 700;">Access Catalog</h2>
+            <div class="d-flex align-center gap-3">
+                <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">
+                    Create item
+                </MudButton>
+            </div>
+        </div>
         <MudTabs ActivePanelIndex="_activeTab" ActivePanelIndexChanged="OnTabChanged" Rounded="true" Elevation="0" Class="bt-catalog-tabs">
             @foreach (var definition in _catalogs)
             {
@@ -36,7 +37,6 @@
                           Margin="Margin.Dense"
                           Variant="Variant.Outlined"
                           Immediate="true" />
-            <MudChip T="string" Size="Size.Small" Color="Color.Success">@StatusLabel</MudChip>
         </div>
 
         @if (_isLoading)
@@ -45,7 +45,7 @@
         }
 
         <div class="bt-table-scroll">
-            <MudTable Items="FilteredItems" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="100" Height="calc(100vh - 25rem)" Style="min-width: 980px;" Breakpoint="Breakpoint.None">
+            <MudTable @ref="_table" Items="FilteredItems" Dense="true" Hover="true" Elevation="0" FixedHeader="true" RowsPerPage="100" Height="calc(100vh - 25rem)" Style="min-width: 980px;" Breakpoint="Breakpoint.None">
                 <HeaderContent>
                     <MudTh>Key</MudTh>
                     <MudTh>Label</MudTh>
@@ -71,8 +71,16 @@
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
-                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No catalog records found.</MudAlert>
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">No records found.</MudAlert>
                 </NoRecordsContent>
+                <PagerContent>
+                    <GlobalTablePager CurrentPage="(_table?.CurrentPage ?? 0) + 1"
+                                      TotalRecords="_table?.GetFilteredItemsCount() ?? 0"
+                                      PageSize="_table?.RowsPerPage ?? 100"
+                                      OnFirstPage="@(() => _table?.NavigateTo(0))"
+                                      OnPreviousPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 1) - 1))"
+                                      OnNextPage="@(() => _table?.NavigateTo((_table?.CurrentPage ?? 0) + 1))" />
+                </PagerContent>
             </MudTable>
         </div>
     </MudPaper>
@@ -94,9 +102,9 @@
     private int _activeTab;
     private bool _isLoading = true;
     private string? _searchText;
+    private MudTable<ReferenceCatalogItemResponse>? _table;
 
     private CatalogDefinition CurrentCatalog => _catalogs[_activeTab];
-    private string StatusLabel => _isLoading ? "Loading" : $"{FilteredItems.Count} shown";
     private string RelationshipColumnLabel => CurrentCatalog.Type switch
     {
         "permission-resources" => "Context",

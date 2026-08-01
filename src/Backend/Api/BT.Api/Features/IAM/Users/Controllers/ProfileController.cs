@@ -18,7 +18,7 @@ namespace BT.Api.Features.IAM.Users.Controllers;
 public sealed class ProfileController(ISender sender) : BaseController
 {
     [HttpPost("profile-picture")]
-    [RequestSizeLimit(2_097_152)]
+    [RequestSizeLimit(10_485_760)]
     public async Task<IActionResult> UpdateProfilePicture(IFormFile file)
     {
         if (file is null)

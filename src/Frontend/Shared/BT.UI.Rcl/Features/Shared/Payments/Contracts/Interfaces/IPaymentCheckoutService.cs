@@ -18,8 +18,7 @@ public interface IPaymentCheckoutService
         CancellationToken cancellationToken = default);
 
     Task<AppResponse<PaymentHistoryResponse>> GetHistoryAsync(
-        int page = 1,
-        int pageSize = 20,
+        PaymentHistoryFilterRequest request,
         CancellationToken cancellationToken = default);
 
     Task<AppResponse<string>> RegisterMpesaC2BUrlsAsync(
