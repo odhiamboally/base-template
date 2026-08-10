@@ -100,7 +100,7 @@
         }));
         builder.CloseComponent();
 
-        if (menu.Children.Count == 0)
+        if (menu.Children is null || menu.Children.Count == 0)
         {
             return;
         }

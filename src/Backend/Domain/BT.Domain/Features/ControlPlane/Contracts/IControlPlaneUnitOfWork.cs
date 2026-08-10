@@ -1,7 +1,8 @@
+using BT.Domain.Features.ControlPlane.Auditing.Contracts.Repositories;
+using BT.Domain.Features.ControlPlane.Tenants.Contracts.Repositories;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using BT.Domain.Features.ControlPlane.Tenants.Contracts.Repositories;
 
 namespace BT.Domain.Features.ControlPlane.Contracts;
 
@@ -9,6 +10,7 @@ public interface IControlPlaneUnitOfWork : IDisposable, IAsyncDisposable
 {
     ITenantRepository Tenants { get; }
     IDeploymentStampRepository DeploymentStamps { get; }
+    IImpersonationRecordRepository ImpersonationRecords { get; }
     
     Task<int> CompleteAsync(CancellationToken cancellationToken = default);
 }

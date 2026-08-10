@@ -1,3 +1,4 @@
+using BT.Domain.Features.ControlPlane.Auditing.Entities;
 using BT.Domain.Features.ControlPlane.Tenants.Entities;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Persistence.Common;
@@ -39,6 +40,7 @@ public class ControlPlaneDBContext : DbContext
     public DbSet<Tenant> Tenants { get; set; }
     public DbSet<TenantModule> TenantModules { get; set; }
     public DbSet<DeploymentStamp> DeploymentStamps { get; set; }
+    public DbSet<ImpersonationRecord> ImpersonationRecords { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

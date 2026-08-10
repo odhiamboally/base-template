@@ -9,10 +9,12 @@ using BT.Domain.Features.ControlPlane.Contracts;
 using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos;
 using BT.SharedKernel.Extensions;
 using BT.Infrastructure.Logging;
+using BT.Domain.Shared.Contracts.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using BT.Domain.Features.ControlPlane.Tenants.Enums;
+using BT.Application.Features.ControlPlane.Tenants.Contracts;
 
 namespace BT.Infrastructure.Features.ControlPlane.Tenants.CommandHandlers;
 
@@ -21,15 +23,21 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<CreateTenantCommandHandler> _logger;
     private readonly IEncryptionService _encryptionService;
+    private readonly IStampProvisioner _stampProvisioner;
+    private readonly ICurrentActorProvider _actorProvider;
 
     public CreateTenantCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
         ILogger<CreateTenantCommandHandler> logger,
-        IEncryptionService encryptionService)
+        IEncryptionService encryptionService,
+        IStampProvisioner stampProvisioner,
+        ICurrentActorProvider actorProvider)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _encryptionService = encryptionService;
+        _stampProvisioner = stampProvisioner;
+        _actorProvider = actorProvider;
     }
 
     public async Task<AppResponse<TenantResponse>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
@@ -45,9 +53,9 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
             return AppResponses.Failure<TenantResponse>("A tenant with this identifier or hostname already exists.");
         }
 
-        var stampExists = await _unitOfWork.DeploymentStamps.AnyAsync(s => s.Id == req.DeploymentStampId, cancellationToken).ConfigureAwait(false);
+        var stamp = await _unitOfWork.DeploymentStamps.FirstOrDefaultAsync(s => s.Id == req.DeploymentStampId, cancellationToken).ConfigureAwait(false);
 
-        if (!stampExists)
+        if (stamp == null)
         {
             return AppResponses.Failure<TenantResponse>("The specified Deployment Stamp does not exist.");
         }
@@ -70,19 +78,46 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
             ContactEmail = req.ContactEmail,
             MaxUsers = req.MaxUsers,
             SubscriptionTier = parsedTier,
-            Status = TenantStatus.Active,
+            Status = stamp.IsolationTier == IsolationTier.Isolated ? TenantStatus.Provisioning : TenantStatus.Active,
             DeploymentStampId = req.DeploymentStampId,
             DatabaseProvider = req.DatabaseProvider,
             DatabaseConnectionString = !string.IsNullOrWhiteSpace(req.DatabaseConnectionString) 
                 ? _encryptionService.Encrypt(req.DatabaseConnectionString) 
                 : null,
-            CreatedBy = "System"
+            CreatedBy = _actorProvider.ActorId,
         };
         
         await _unitOfWork.Tenants.CreateAsync(tenant, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
         ControlPlaneLogDefinitions.LogTenantCreated(_logger, tenant.Id, tenant.Identifier);
+
+        if (stamp.IsolationTier == IsolationTier.Isolated)
+        {
+            try
+            {
+                await _stampProvisioner.ProvisionIsolatedStampAsync(
+                    tenant.Id.ToString(),
+                    stamp.Name,
+                    stamp.TargetResourceGroup,
+                    req.DatabaseProvider ?? stamp.DatabaseProvider ?? "PostgreSql",
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                ControlPlaneLogDefinitions.LogStampProvisioningFailed(_logger, tenant.Id, ex);
+
+                tenant.Status = TenantStatus.ProvisioningFailed;
+                await _unitOfWork.Tenants.UpdateAsync(tenant, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+
+                return AppResponses.Failure<TenantResponse>(
+                    "Tenant record was created but infrastructure provisioning could not be started. " +
+                    "Check platform configuration and retry via POST /{id}/activate once resolved.");
+            }
+
+            ControlPlaneLogDefinitions.LogStampProvisioningDispatched(_logger, tenant.Id, stamp.Name);
+        }
 
         var dto = new TenantResponse
         {

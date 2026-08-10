@@ -184,7 +184,7 @@ internal sealed class SharedEndpointSettings
     public PaymentEndpointSettings Payments { get; init; } = new();
 
     [Required]
-    public TenantSettingsEndpointSettings TenantSettings { get; init; } = new();
+    public OrgSettingsEndpointSettings OrgSettings { get; init; } = new();
 
     public string LookupCatalogTypes { get; init; } = "api/v{version}/shared/lookups/catalog-types";
 
@@ -197,7 +197,7 @@ internal sealed class SharedEndpointSettings
     public string LookupDelete { get; init; } = "api/v{version}/shared/lookups/{lookupType}/{id}";
 }
 
-internal sealed class TenantSettingsEndpointSettings
+internal sealed class OrgSettingsEndpointSettings
 {
     public string Root { get; init; } = "api/v{version}/shared/tenant-settings";
     public string Detail { get; init; } = "api/v{version}/shared/tenant-settings/{key}";

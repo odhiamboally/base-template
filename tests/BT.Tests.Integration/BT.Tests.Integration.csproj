@@ -24,10 +24,13 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageReference Include="NSubstitute" Version="6.1.0" />
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="9.1.0" />
+    <PackageReference Include="Testcontainers.MsSql" Version="4.13.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.13.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
@@ -37,6 +40,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Backend\Persistence\BT.Persistence\BT.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\Backend\Application\BT.Application\BT.Application.csproj" />
+    <ProjectReference Include="..\..\src\Backend\Infrastructure\BT.Infrastructure\BT.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,9 +1,10 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+using BT.Domain.Features.ControlPlane.Auditing.Contracts.Repositories;
 using BT.Domain.Features.ControlPlane.Contracts;
 using BT.Domain.Features.ControlPlane.Tenants.Contracts.Repositories;
 using BT.Persistence.Features.ControlPlane.DataContext;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BT.Persistence.Features.ControlPlane;
 
@@ -13,15 +14,18 @@ public class ControlPlaneUnitOfWork : IControlPlaneUnitOfWork
     
     public ITenantRepository Tenants { get; }
     public IDeploymentStampRepository DeploymentStamps { get; }
+    public IImpersonationRecordRepository ImpersonationRecords { get; }
 
     public ControlPlaneUnitOfWork(
         ControlPlaneDBContext context,
         ITenantRepository tenants,
-        IDeploymentStampRepository deploymentStamps)
+        IDeploymentStampRepository deploymentStamps,
+        IImpersonationRecordRepository impersonationRecords)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         Tenants = tenants ?? throw new ArgumentNullException(nameof(tenants));
         DeploymentStamps = deploymentStamps ?? throw new ArgumentNullException(nameof(deploymentStamps));
+        ImpersonationRecords = impersonationRecords ?? throw new ArgumentNullException(nameof(impersonationRecords));
     }
 
     public async Task<int> CompleteAsync(CancellationToken cancellationToken = default)

@@ -9,7 +9,9 @@ public class JwtSettings
     public string? Secret { get; set; }
     public string? SecretKey { get; set; } // Keep this for backward compatibility
     public string? Issuer { get; set; }
+    public string[]? ValidIssuers { get; set; }
     public string? Audience { get; set; }
+    public string[]? ValidAudiences { get; set; }
     public int AccessTokenExpiryMinutes { get; set; } = 60;
     public int RefreshTokenExpiryHours { get; set; } = 8;
     public int ClockSkew { get; set; } = 1;

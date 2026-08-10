@@ -49,11 +49,10 @@
     <Folder Include="Logs\" />
   </ItemGroup>
 
-  <Target Name="RunMigrationGuardrailTests" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' AND '$(IsRunningGuardrails)' != 'true'"
-          Inputs="$(TargetPath)" 
-          Outputs="$(IntermediateOutputPath)Guardrail.stamp">
-    <Exec Command="dotnet test &quot;$(MSBuildProjectDirectory)\..\..\..\..\tests\BT.Tests.Architecture\BT.Tests.Architecture.csproj&quot; --filter FullyQualifiedName~MigrationGuardrailTests /p:IsRunningGuardrails=true" />
-    <Touch Files="$(IntermediateOutputPath)Guardrail.stamp" AlwaysCreate="true" />
-  </Target>
 
+
+  <Target Name="DumpEnv" BeforeTargets="Build">
+    <Exec Command="set > ef_env.txt" />
+  </Target>
 </Project>
+

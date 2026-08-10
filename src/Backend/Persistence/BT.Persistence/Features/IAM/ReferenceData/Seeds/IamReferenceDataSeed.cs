@@ -85,7 +85,7 @@ internal static class IamReferenceDataSeed
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10616", "control-panel", "Control Panel", "/control-panel", "Sidebar"),
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10617", "control-panel-tenants", "Tenants", "/control-panel/tenants", "ControlPanel"),
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10618", "control-panel-stamps", "Stamps", "/control-panel/stamps", "ControlPanel"),
-        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10619", "admin-tenant-settings", "Tenant Settings", "/admin/tenant-settings", "AdminCenter"),
+        CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10619", "admin-org-settings", "Org Settings", "/admin/org-settings", "AdminCenter"),
         CreateRoute("018fd81d-2c94-7ad0-a4a3-f1edb9d10620", "admin-iam", "Identity & Access", "/admin/iam", "AdminCenter")
     ];
 

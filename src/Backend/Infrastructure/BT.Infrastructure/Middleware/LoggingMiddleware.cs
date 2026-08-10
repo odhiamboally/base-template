@@ -59,7 +59,15 @@ internal sealed class LoggingMiddleware(RequestDelegate next,ILogger<LoggingMidd
                 context.Request.Body,
                 leaveOpen: true);              // must leave open — downstream still needs it
 
-            var body = await reader.ReadToEndAsync().ConfigureAwait(false);
+            string body = string.Empty;
+            try
+            {
+                body = await reader.ReadToEndAsync(context.RequestAborted).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is OperationCanceledException || ex is IOException)
+            {
+                body = "[request-body-read-failed-client-disconnected]";
+            }
 
             // Reset position so the controller reads from the beginning
             context.Request.Body.Position = 0;

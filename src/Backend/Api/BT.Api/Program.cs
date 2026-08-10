@@ -1,25 +1,31 @@
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
+
 using BT.Api.Configuration;
 using BT.Api.Extensions;
 using BT.Api.Features.Shared.Realtime;
 using BT.Api.Health;
 using BT.Api.Utilities;
 using BT.Application.Extensions;
-using BT.Infrastructure.Features.Banking.Extensions;
 using BT.Infrastructure.Extensions;
+using BT.Infrastructure.Features.Banking.Extensions;
 using BT.Infrastructure.Features.HR.Extensions;
 using BT.Infrastructure.Features.IAM.Extensions;
 using BT.Infrastructure.Features.IAM.Users.Seeding;
 using BT.Infrastructure.Middleware;
 using BT.Persistence.Features.ControlPlane.Extensions;
 using BT.Persistence.Features.Shared.Extensions;
+
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.OpenApi;
+
 using Scalar.AspNetCore;
+
 using Serilog;
 using Serilog.Events;
+
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -179,9 +185,33 @@ try
                 Contact = new()
                 {
                     Name = "BaseTemplate Support",
-                    Email = "support@unsacco.org",
+                    Email = "aamodhiambo@gmail.com",
                 }
             };
+
+            // ==========================================
+            // GLOBAL AUTHENTICATION REQUIREMENT
+            // ==========================================
+            var schemeName = "Bearer";
+
+            // Declare the scheme in components.securitySchemes
+            document.Components ??= new OpenApiComponents();
+            document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+            document.Components.SecuritySchemes.Add(schemeName, new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Description = "Enter your valid JWT token to authenticate globally."
+            });
+
+            // Reference it from the document-level `security` field => applies to ALL operations
+            document.Security ??= [];
+            document.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference(schemeName, document)] = []
+            });
+
             return Task.CompletedTask;
         });
 
@@ -283,16 +313,22 @@ try
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi()
-            .CacheOutput()
-            .AllowAnonymous();
+           .CacheOutput()
+           .AllowAnonymous();
 
+        // Preferred way (Scalar.AspNetCore ≥ 1.x / 2.x)
+        //app.MapScalarApiReference("/docs", options =>
         app.MapScalarApiReference(options =>
         {
-            options.WithTitle("Base Template API")
-                   .WithTheme(ScalarTheme.Kepler);
+            options
+                .WithTitle("Base Template API")
+                .WithTheme(ScalarTheme.Kepler)
+                .AddPreferredSecuritySchemes("Bearer");   // or WithPreferredScheme for older
         });
 
+        // Optional: redirect root to Scalar
         app.MapGet("/", () => Results.Redirect("/scalar/v1"))
+        //app.MapGet("/", () => Results.Redirect("/docs"))
            .ExcludeFromDescription()
            .AllowAnonymous();
     }

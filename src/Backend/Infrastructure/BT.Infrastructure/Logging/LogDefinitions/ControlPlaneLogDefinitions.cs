@@ -27,4 +27,10 @@ internal static partial class ControlPlaneLogDefinitions
 
     [LoggerMessage(EventId = 2608, Level = LogLevel.Information, Message = "Updated tenant {TenantId} ({Identifier})")]
     public static partial void LogTenantUpdated(ILogger logger, Guid tenantId, string identifier);
+
+    [LoggerMessage(EventId = 2609, Level = LogLevel.Error, Message = "Stamp provisioning dispatch failed for tenant {TenantId}. Status set to ProvisioningFailed.")]
+    public static partial void LogStampProvisioningFailed(ILogger logger, Guid tenantId, Exception exception);
+
+    [LoggerMessage(EventId = 2610, Level = LogLevel.Information, Message = "Successfully dispatched isolated stamp provisioning workflow for tenant {TenantId} on stamp {StampId}")]
+    public static partial void LogStampProvisioningDispatched(ILogger logger, Guid tenantId, string stampId);
 }

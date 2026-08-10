@@ -56,5 +56,8 @@
   </ItemGroup>
 
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="BT.Tests.Integration" />
+  </ItemGroup>
 
 </Project>

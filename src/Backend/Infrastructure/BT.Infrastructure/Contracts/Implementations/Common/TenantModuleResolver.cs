@@ -8,6 +8,7 @@ using BT.Domain.Shared.Contracts.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using BT.Infrastructure.Configuration;
 
 namespace BT.Infrastructure.Contracts.Implementations.Common;
 
@@ -16,20 +17,29 @@ internal sealed class TenantModuleResolver : ITenantModuleResolver
     private readonly ICurrentTenantProvider _tenantProvider;
     private readonly IMemoryCache _cache;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ShowcaseSettings _showcaseSettings;
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
     public TenantModuleResolver(
         ICurrentTenantProvider tenantProvider,
         IMemoryCache cache,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        Microsoft.Extensions.Options.IOptions<BT.Infrastructure.Configuration.ShowcaseSettings> showcaseSettings)
     {
         _tenantProvider = tenantProvider;
         _cache = cache;
         _serviceProvider = serviceProvider;
+        _showcaseSettings = showcaseSettings.Value;
     }
 
     public async Task<IReadOnlyList<string>> GetEnabledModulesAsync(CancellationToken cancellationToken = default)
     {
+        var globalModules = new List<string>();
+        if (_showcaseSettings.EnableGlobalShowcase)
+        {
+            globalModules.Add("Showcase");
+        }
+
         Guid tenantId;
         try
         {
@@ -37,18 +47,18 @@ internal sealed class TenantModuleResolver : ITenantModuleResolver
         }
         catch (InvalidOperationException)
         {
-            return [];
+            return globalModules;
         }
 
         if (tenantId == Guid.Empty)
         {
-            return [];
+            return globalModules;
         }
 
         var cacheKey = $"tenant_modules_{tenantId}";
         if (_cache.TryGetValue<IReadOnlyList<string>>(cacheKey, out var cachedModules) && cachedModules != null)
         {
-            return cachedModules;
+            return cachedModules.Concat(globalModules).Distinct().ToList();
         }
 
         using var scope = _serviceProvider.CreateScope();
@@ -63,6 +73,6 @@ internal sealed class TenantModuleResolver : ITenantModuleResolver
             .ConfigureAwait(false);
 
         _cache.Set(cacheKey, modules, CacheDuration);
-        return modules;
+        return modules.Concat(globalModules).Distinct().ToList();
     }
 }

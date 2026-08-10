@@ -7,7 +7,7 @@ using BT.Domain.Shared.Entities;
 using BT.Domain.Features.Banking.Customers.Lookups;
 using BT.Domain.Features.Shared.Lookups.Entities;
 using BT.Domain.Features.Shared.Payments.Entities;
-using BT.Domain.Features.Shared.TenantSettings.Entities;
+using BT.Domain.Features.Shared.OrgSettings.Entities;
 using BT.Persistence.Common;
 using BT.Persistence.Logging;
 using MassTransit;
@@ -48,7 +48,7 @@ public class SharedDBContext : DbContext, ITenantFilteredDBContext
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<FailedMessage> FailedMessages { get; set; }
     public DbSet<PaymentRecord> PaymentRecords { get; set; }
-    public DbSet<TenantSetting> TenantSettings { get; set; }
+    public DbSet<OrgSetting> OrgSettings { get; set; }
     public DbSet<LookupCatalogType> LookupCatalogTypes { get; set; }
 
     public DbSet<CustomerStatusLookup> CustomerStatuses { get; set; }

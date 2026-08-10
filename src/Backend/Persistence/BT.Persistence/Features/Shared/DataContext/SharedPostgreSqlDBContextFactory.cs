@@ -14,7 +14,7 @@ public class SharedPostgreSqlDBContextFactory : IDesignTimeDbContextFactory<Shar
 
         optionsBuilder.UseNpgsql(
             connectionString,
-            pgOptions => DesignTimeConfigurationFactory.ConfigurePostgreSql(pgOptions, "__EFMigrationsHistory_Shared"));
+            pgOptions => DesignTimeConfigurationFactory.ConfigurePostgreSql(pgOptions, "__EFMigrationsHistory_Shared")).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentNpgsqlMigrationsSqlGenerator>();
         return new SharedPostgreSqlDBContext(optionsBuilder.Options, null!, null!);
     }
 }

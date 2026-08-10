@@ -16,7 +16,7 @@ public class TenantConnectionInterceptorTests
     private class FakeDbConnection : DbConnection
     {
         private string _connectionString = "Server=OldServer;Database=SharedDB;";
-        public override string? ConnectionString { get => _connectionString; set => _connectionString = value ?? string.Empty; }
+        public override string ConnectionString { get => _connectionString; set => _connectionString = value ?? string.Empty; }
         public override string Database => "Database";
         public override string DataSource => "DataSource";
         public override string ServerVersion => "1.0";

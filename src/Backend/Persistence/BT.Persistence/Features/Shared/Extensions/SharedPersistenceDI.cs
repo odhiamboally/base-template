@@ -16,8 +16,8 @@ using BT.Persistence.Features.Shared.EmailTemplates.Repositories;
 using BT.Persistence.Features.Shared.FailedMessages.Repositories;
 using BT.Persistence.Features.Shared.Lookups.Repositories;
 using BT.Persistence.Features.Shared.Payments.Repositories;
-using BT.Domain.Features.Shared.TenantSettings.Contracts.Repositories;
-using BT.Persistence.Features.Shared.TenantSettings.Repositories;
+using BT.Domain.Features.Shared.OrgSettings.Contracts.Repositories;
+using BT.Persistence.Features.Shared.OrgSettings.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -86,7 +86,7 @@ public static class SharedPersistenceDI
         services.AddScoped<IEmailTemplateRepository, SharedEmailTemplateRepository>();
         services.AddScoped<IFailedMessageRepository, SharedFailedMessageRepository>();
         services.AddScoped<IPaymentRecordRepository, SharedPaymentRecordRepository>();
-        services.AddScoped<ITenantSettingRepository, TenantSettingRepository>();
+        services.AddScoped<IOrgSettingRepository, OrgSettingRepository>();
         services.AddScoped<ISharedUnitOfWork, SharedUnitOfWork>();
 
         return services;

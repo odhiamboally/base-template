@@ -1,0 +1,71 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using BT.Domain.Features.ControlPlane.Contracts;
+using BT.Domain.Features.ControlPlane.Tenants.Events;
+using BT.Domain.Shared.Contracts.Common;
+using BT.SharedKernel.Dtos.Common;
+using BT.Application.Contracts.Interfaces.Common;
+using FluentValidation;
+using MediatR;
+using Microsoft.Extensions.Logging;
+
+namespace BT.Application.Features.ControlPlane.Tenants.Commands;
+
+public record MigrateTenantStampCommand(
+    Guid TenantId,
+    Guid NewDeploymentStampId,
+    string NewDatabaseConnectionString) : IRequest<AppResponse<bool>>;
+
+public class MigrateTenantStampCommandValidator : AbstractValidator<MigrateTenantStampCommand>
+{
+    public MigrateTenantStampCommandValidator()
+    {
+        RuleFor(x => x.TenantId).NotEmpty();
+        RuleFor(x => x.NewDeploymentStampId).NotEmpty();
+        RuleFor(x => x.NewDatabaseConnectionString).NotEmpty();
+    }
+}
+
+internal sealed partial class MigrateTenantStampCommandHandler : IRequestHandler<MigrateTenantStampCommand, AppResponse<bool>>
+{
+    private readonly IControlPlaneUnitOfWork _unitOfWork;
+    private readonly IEncryptionService _encryptionService;
+    private readonly ILogger<MigrateTenantStampCommandHandler> _logger;
+
+    public MigrateTenantStampCommandHandler(
+        IControlPlaneUnitOfWork unitOfWork,
+        IEncryptionService encryptionService,
+        ILogger<MigrateTenantStampCommandHandler> logger)
+    {
+        _unitOfWork = unitOfWork;
+        _encryptionService = encryptionService;
+        _logger = logger;
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Migrating Tenant {TenantId} to Stamp {StampId}.")]
+    private partial void LogMigratingTenantStamp(Guid tenantId, Guid stampId);
+
+    public async Task<AppResponse<bool>> Handle(MigrateTenantStampCommand request, CancellationToken cancellationToken)
+    {
+        LogMigratingTenantStamp(request.TenantId, request.NewDeploymentStampId);
+
+        var tenant = await _unitOfWork.Tenants.FindByIdAsync(request.TenantId, cancellationToken).ConfigureAwait(false);
+        if (tenant == null)
+        {
+            return AppResponses.Failure<bool>("Tenant not found.");
+        }
+
+        var oldStampId = tenant.DeploymentStampId;
+
+        tenant.DeploymentStampId = request.NewDeploymentStampId;
+        tenant.DatabaseConnectionString = _encryptionService.Encrypt(request.NewDatabaseConnectionString);
+
+        // Raise domain event so that sessions/caches for this tenant can be invalidated
+        tenant.RaiseDomainEvent(new TenantStampChangedDomainEvent(tenant.Id, oldStampId, request.NewDeploymentStampId));
+
+        await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
+
+        return AppResponses.Success<bool>("Tenant stamp migration completed successfully.", true);
+    }
+}

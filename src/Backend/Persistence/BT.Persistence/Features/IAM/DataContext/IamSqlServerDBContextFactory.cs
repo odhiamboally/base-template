@@ -14,7 +14,8 @@ public class IamSqlServerDBContextFactory : IDesignTimeDbContextFactory<IamSqlSe
 
         optionsBuilder.UseSqlServer(
             connectionString,
-            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_IAM"));
+            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_IAM"))
+            .ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentSqlServerMigrationsSqlGenerator>();
         return new IamSqlServerDBContext(optionsBuilder.Options);
     }
 }

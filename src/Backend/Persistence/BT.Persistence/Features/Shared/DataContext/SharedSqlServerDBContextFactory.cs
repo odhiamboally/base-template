@@ -14,7 +14,7 @@ public class SharedSqlServerDBContextFactory : IDesignTimeDbContextFactory<Share
 
         optionsBuilder.UseSqlServer(
             connectionString,
-            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_Shared"));
+            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_Shared")).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentSqlServerMigrationsSqlGenerator>();
         return new SharedSqlServerDBContext(optionsBuilder.Options, null!, null!);
     }
 }

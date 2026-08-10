@@ -3,22 +3,36 @@ using BT.Domain.Features.Banking.Customers.Enums;
 using BT.Domain.Features.Banking.Customers.ValueObjects;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Persistence.Features.Banking.DataContext;
+using BT.Tests.Integration.TestFixtures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace BT.Tests.Integration;
 
-public class BankingTenantIsolationTests : IDisposable
+public abstract class BankingTenantIsolationTestsBase<TFixture> : IClassFixture<TFixture> where TFixture : DbFixture
 {
     private readonly DbContextOptions<BankingDBContext> _options;
+    private readonly TFixture _fixture;
 
-    public BankingTenantIsolationTests()
+    protected BankingTenantIsolationTestsBase(TFixture fixture)
     {
-        _options = new DbContextOptionsBuilder<BankingDBContext>()
-            .UseInMemoryDatabase(databaseName: Guid.CreateVersion7().ToString())
-            .Options;
+        _fixture = fixture;
+
+        var builder = new DbContextOptionsBuilder<BankingDBContext>();
+
+        if (fixture is PostgreSqlDbFixture)
+        {
+            builder.UseNpgsql(fixture.GetConnectionString());
+        }
+        else if (fixture is MsSqlDbFixture)
+        {
+            builder.UseSqlServer(fixture.GetConnectionString());
+        }
+
+        _options = builder.Options;
     }
 
     private class TestTenantProvider : ICurrentTenantProvider
@@ -48,10 +62,52 @@ public class BankingTenantIsolationTests : IDisposable
         // Seed data acting as tenant 1
         using (var context = new BankingDBContext(_options, tenantProvider, actorProvider))
         {
-            await context.Database.EnsureCreatedAsync();
+            var creator = context.Database.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
+            if (!await creator.HasTablesAsync())
+            {
+                if (context.Database.IsSqlServer())
+                {
+                    await context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='Employees') CREATE TABLE [Employees] ([Id] uniqueidentifier NOT NULL PRIMARY KEY)");
+                    await context.Database.ExecuteSqlRawAsync(@"
+                        IF NOT EXISTS (SELECT 1 FROM [Employees] WHERE [Id] = '0194f800-0000-7000-8000-000000000001')
+                            INSERT INTO [Employees] ([Id]) VALUES ('0194f800-0000-7000-8000-000000000001'), ('0194f800-0000-7000-8000-000000000002'), ('0194f800-0000-7000-8000-000000000003')");
+                }
+                else
+                {
+                    await context.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS \"Employees\" (\"Id\" uuid NOT NULL PRIMARY KEY)");
+                    await context.Database.ExecuteSqlRawAsync("INSERT INTO \"Employees\" (\"Id\") VALUES ('0194f800-0000-7000-8000-000000000001'), ('0194f800-0000-7000-8000-000000000002'), ('0194f800-0000-7000-8000-000000000003') ON CONFLICT DO NOTHING");
+                }
+                
+                var script = context.Database.GenerateCreateScript();
+                if (context.Database.IsSqlServer())
+                {
+                    var batches = script.Split(new[] { "GO\r\n", "GO\n", "GO\r", "\r\nGO", "\nGO" }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var batch in batches)
+                    {
+                        if (!string.IsNullOrWhiteSpace(batch) && batch.Trim() != "GO")
+                        {
+                            await context.Database.ExecuteSqlRawAsync(batch);
+                        }
+                    }
+                }
+                else
+                {
+                    await context.Database.ExecuteSqlRawAsync(script);
+                }
+            }
 
-            var customer1 = Customer.Create("CUST-1", "Customer 1", CustomerType.Corporate, SegmentType.Corporate, SubSegmentType.Local, Guid.CreateVersion7(), DateTimeOffset.UtcNow, corpDetail, address, commPref, "test");
-            context.Customers.Add(customer1);
+            var rmId1 = Guid.CreateVersion7();
+            if (context.Database.IsSqlServer())
+            {
+                await context.Database.ExecuteSqlRawAsync($"INSERT INTO [Employees] ([Id]) VALUES ('{rmId1}')");
+            }
+            else
+            {
+                await context.Database.ExecuteSqlRawAsync($"INSERT INTO \"Employees\" (\"Id\") VALUES ('{rmId1}')");
+            }
+
+            var cust1 = Customer.Create("CUST1", "Customer 1", CustomerType.Corporate, SegmentType.Corporate, SubSegmentType.Local, rmId1, DateTimeOffset.UtcNow, corpDetail, address, commPref, "test");
+            context.Customers.Add(cust1);
             await context.SaveChangesAsync();
         }
 
@@ -59,8 +115,18 @@ public class BankingTenantIsolationTests : IDisposable
         tenantProvider.TenantId = tenant2;
         using (var context = new BankingDBContext(_options, tenantProvider, actorProvider))
         {
-            var customer2 = Customer.Create("CUST-2", "Customer 2", CustomerType.Corporate, SegmentType.Corporate, SubSegmentType.Local, Guid.CreateVersion7(), DateTimeOffset.UtcNow, corpDetail, address, commPref, "test");
-            context.Customers.Add(customer2);
+            var rmId2 = Guid.CreateVersion7();
+            if (context.Database.IsSqlServer())
+            {
+                await context.Database.ExecuteSqlRawAsync($"INSERT INTO [Employees] ([Id]) VALUES ('{rmId2}')");
+            }
+            else
+            {
+                await context.Database.ExecuteSqlRawAsync($"INSERT INTO \"Employees\" (\"Id\") VALUES ('{rmId2}')");
+            }
+
+            var cust2 = Customer.Create("CUST2", "Customer 2", CustomerType.Corporate, SegmentType.Corporate, SubSegmentType.Local, rmId2, DateTimeOffset.UtcNow, corpDetail, address, commPref, "test");
+            context.Customers.Add(cust2);
             await context.SaveChangesAsync();
         }
 
@@ -71,8 +137,8 @@ public class BankingTenantIsolationTests : IDisposable
             var items = await context.Customers.ToListAsync();
 
             // Assert
-            Assert.Single(items);
-            Assert.Equal("CUST-1", items[0].Number);
+            Assert.Contains(items, i => i.Number == "CUST1");
+            Assert.DoesNotContain(items, i => i.Number == "CUST2");
         }
         
         // Act - Query as tenant 2
@@ -82,12 +148,18 @@ public class BankingTenantIsolationTests : IDisposable
             var items = await context.Customers.ToListAsync();
 
             // Assert
-            Assert.Single(items);
-            Assert.Equal("CUST-2", items[0].Number);
+            Assert.Contains(items, i => i.Number == "CUST2");
+            Assert.DoesNotContain(items, i => i.Number == "CUST1");
         }
     }
+}
 
-    public void Dispose()
-    {
-    }
+public class BankingTenantIsolationTests_Postgres : BankingTenantIsolationTestsBase<PostgreSqlDbFixture>
+{
+    public BankingTenantIsolationTests_Postgres(PostgreSqlDbFixture fixture) : base(fixture) { }
+}
+
+public class BankingTenantIsolationTests_SqlServer : BankingTenantIsolationTestsBase<MsSqlDbFixture>
+{
+    public BankingTenantIsolationTests_SqlServer(MsSqlDbFixture fixture) : base(fixture) { }
 }

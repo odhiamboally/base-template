@@ -1,4 +1,6 @@
 using BT.UI.Blazor.Components;
+using BT.UI.Blazor.Components.Security;
+using Microsoft.AspNetCore.Components.Authorization;
 using BT.UI.Blazor.Configuration;
 using BT.UI.Blazor.Features.Banking.Customers.Contracts.Implementations;
 using BT.UI.Blazor.Features.HR.Departments.Contracts.Implementations;
@@ -12,6 +14,8 @@ using BT.UI.Blazor.Features.Shared.Lookups.Contracts.Implementations;
 using BT.UI.Blazor.Features.Shared.Messaging;
 using BT.UI.Blazor.Features.ControlPlane.Tenants.Contracts;
 using BT.UI.Blazor.Features.ControlPlane.Tenants.Implementations;
+using BT.UI.Blazor.Features.ControlPlane.Auditing.Contracts;
+using BT.UI.Blazor.Features.ControlPlane.Auditing.Implementations;
 using BT.UI.Blazor.Features.ControlPlane.Stamps.Contracts;
 using BT.UI.Blazor.Features.ControlPlane.Stamps.Implementations;
 using BT.UI.Blazor.Features.Shared.Payments.Contracts.Implementations;
@@ -43,6 +47,14 @@ builder.Services.AddRazorComponents()
 ConfigureDataProtection(builder.Services, builder.Configuration);
 
 builder.Services.AddMudServices();
+
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy("ControlPlane.Manage", policy =>
+        policy.RequireClaim("permission", "controlplane.manage"));
+});
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services
     .AddOptions<BackendApiSettings>()
     .Bind(builder.Configuration.GetSection(BackendApiSettings.SectionName))
@@ -76,9 +88,10 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IIamAdminService, IamAdminService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IPaymentCheckoutService, PaymentCheckoutService>();
-builder.Services.AddScoped<BT.UI.Blazor.Features.Shared.TenantSettings.Contracts.ITenantSettingsService, BT.UI.Blazor.Features.Shared.TenantSettings.Implementations.TenantSettingsService>();
+builder.Services.AddScoped<BT.UI.Blazor.Features.Shared.OrgSettings.Contracts.IOrgSettingsService, BT.UI.Blazor.Features.Shared.OrgSettings.Implementations.OrgSettingsService>();
 builder.Services.AddSingleton<IAuthenticatorQrCodeService, AuthenticatorQrCodeService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IDeploymentStampService, DeploymentStampService>();
 var httpClientBuilder = builder.Services.AddHttpClient<IBackendApiClient, BackendApiClient>((serviceProvider, client) =>
 {

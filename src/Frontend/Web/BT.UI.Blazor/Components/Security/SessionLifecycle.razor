@@ -58,6 +58,7 @@
     private Task? _timerTask;
     private bool _warningVisible;
     private bool _expired;
+    private bool _isDisposed;
     private string _remainingWarningText = "a few moments";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -68,8 +69,27 @@
         }
 
         _selfReference = DotNetObjectReference.Create(this);
-        _module = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/sessionLifecycle.js");
-        await _module.InvokeVoidAsync("start", _selfReference);
+        
+        try
+        {
+            _module = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/sessionLifecycle.js");
+            
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            await _module.InvokeVoidAsync("start", _selfReference);
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException || ex is TaskCanceledException || ex is ObjectDisposedException)
+        {
+            return;
+        }
+
+        if (_isDisposed)
+        {
+            return;
+        }
 
         _timerCancellation = new CancellationTokenSource();
         _timerTask = RunLifecycleTimerAsync(_timerCancellation.Token);
@@ -253,6 +273,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
         _timerCancellation?.Cancel();
 
         if (_timerTask is not null)

@@ -14,7 +14,7 @@ public class ControlPlaneSqlServerDBContextFactory : IDesignTimeDbContextFactory
 
         optionsBuilder.UseSqlServer(
             connectionString,
-            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_ControlPlane"));
+            sqlOptions => DesignTimeConfigurationFactory.ConfigureSqlServer(sqlOptions, "__EFMigrationsHistory_ControlPlane")).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentSqlServerMigrationsSqlGenerator>();
         return new ControlPlaneSqlServerDBContext(optionsBuilder.Options);
     }
 }

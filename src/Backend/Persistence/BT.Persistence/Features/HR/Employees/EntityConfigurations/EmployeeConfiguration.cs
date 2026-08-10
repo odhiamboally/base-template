@@ -56,15 +56,13 @@ internal sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
 
         // Audit columns
         builder.Property(x => x.CreatedAt)
-            .IsRequired()
-            .HasColumnType("datetimeoffset");
+            .IsRequired();
 
         builder.Property(x => x.CreatedBy)
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.Property(x => x.UpdatedAt)
-            .HasColumnType("datetimeoffset");
+        builder.Property(x => x.UpdatedAt);
 
         builder.Property(x => x.UpdatedBy)
             .HasMaxLength(100);

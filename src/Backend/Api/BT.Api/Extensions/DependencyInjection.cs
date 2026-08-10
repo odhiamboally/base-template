@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Data.SqlClient;
@@ -41,7 +42,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
-using System.Threading.RateLimiting;
+
 
 namespace BT.Api.Extensions;
 
@@ -58,7 +59,17 @@ internal static partial class DependencyInjection
         services.AddHttpClient();
         services.AddHttpContextAccessor();
         services.AddSignalR();
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("ProvisioningCallback", policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                // When GitHub Actions authenticates via Entra ID Workload Identity, 
+                // we can assert that the token contains the specific 'Provisioner' app role,
+                // or validate specific OIDC claims.
+                policy.RequireClaim("roles", "Provisioner");
+            });
+        });
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddApiVersioning(config =>
@@ -364,12 +375,27 @@ internal static partial class DependencyInjection
         RateLimitPolicySettings policy,
         bool enabled)
     {
-        options.AddFixedWindowLimiter(policyName, configureOptions =>
+        options.AddPolicy(policyName, context =>
         {
-            configureOptions.PermitLimit = enabled ? policy.PermitLimit : int.MaxValue;
-            configureOptions.Window = TimeSpan.FromSeconds(policy.WindowSeconds);
-            configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-            configureOptions.QueueLimit = enabled ? policy.QueueLimit : int.MaxValue;
+            if (!enabled)
+            {
+                return RateLimitPartition.GetNoLimiter("disabled");
+            }
+
+            // Partition by TenantId if available, otherwise by IP address, otherwise global.
+            var tenantClaim = context.User?.FindFirst("tenant_id")?.Value;
+            var partitionKey = !string.IsNullOrEmpty(tenantClaim) 
+                ? $"Tenant_{tenantClaim}" 
+                : context.Connection.RemoteIpAddress?.ToString() ?? "Global";
+
+            return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ =>
+                new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = policy.PermitLimit,
+                    Window = TimeSpan.FromSeconds(policy.WindowSeconds),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = policy.QueueLimit
+                });
         });
     }
 

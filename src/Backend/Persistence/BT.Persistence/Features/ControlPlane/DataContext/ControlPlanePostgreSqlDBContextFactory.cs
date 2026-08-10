@@ -14,7 +14,7 @@ public class ControlPlanePostgreSqlDBContextFactory : IDesignTimeDbContextFactor
 
         optionsBuilder.UseNpgsql(
             connectionString,
-            pgOptions => DesignTimeConfigurationFactory.ConfigurePostgreSql(pgOptions, "__EFMigrationsHistory_ControlPlane"));
+            pgOptions => DesignTimeConfigurationFactory.ConfigurePostgreSql(pgOptions, "__EFMigrationsHistory_ControlPlane")).ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, BT.Persistence.Features.Shared.Migrations.Generators.IdempotentNpgsqlMigrationsSqlGenerator>();
         return new ControlPlanePostgreSqlDBContext(optionsBuilder.Options);
     }
 }
