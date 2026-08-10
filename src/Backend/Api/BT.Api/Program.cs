@@ -81,6 +81,36 @@ try
             .Enrich.WithEnvironmentUserName()
             .Enrich.WithProperty("Application", builder.Environment.ApplicationName)
             .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName);
+
+        var otlpEndpoint = context.Configuration["Observability:Otlp:Endpoint"];
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            var headerString = context.Configuration["Observability:Otlp:Headers"];
+            var headers = new Dictionary<string, string>();
+            
+            if (!string.IsNullOrWhiteSpace(headerString))
+            {
+                var pairs = headerString.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var pair in pairs)
+                {
+                    var parts = pair.Split('=', 2, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 2)
+                    {
+                        headers[parts[0].Trim()] = parts[1].Trim();
+                    }
+                }
+            }
+
+            configuration.WriteTo.OpenTelemetry(options =>
+            {
+                options.Endpoint = otlpEndpoint;
+                options.Headers = headers;
+                options.ResourceAttributes = new Dictionary<string, object>
+                {
+                    ["service.name"] = context.Configuration["Observability:ServiceName"] ?? "BaseTemplate.API"
+                };
+            });
+        }
     });
 
     // ── Services ─────────────────────────────────────────────────────────────

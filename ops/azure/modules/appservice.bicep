@@ -22,6 +22,13 @@ param storageAccountName string = ''
 @description('The versionless Key Vault key identifier used to encrypt Data Protection keys.')
 param dataProtectionKeyIdentifier string = ''
 
+@description('The Grafana Cloud OTLP endpoint.')
+param otlpEndpoint string = ''
+
+@description('The Grafana Cloud OTLP headers.')
+@secure()
+param otlpHeaders string = ''
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: appServicePlanName
   location: location
@@ -87,6 +94,14 @@ resource apiApp 'Microsoft.Web/sites@2022-09-01' = {
         {
           name: 'Messaging__Transport'
           value: 'AzureServiceBus'
+        }
+        {
+          name: 'Observability__Otlp__Endpoint'
+          value: otlpEndpoint
+        }
+        {
+          name: 'Observability__Otlp__Headers'
+          value: otlpHeaders
         }
       ]
     }

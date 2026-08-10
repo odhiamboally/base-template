@@ -32,6 +32,13 @@ param databaseProvider string = 'SqlServer'
 @secure()
 param azureCacheConnectionString string = ''
 
+@description('The Grafana Cloud OTLP endpoint.')
+param otlpEndpoint string = ''
+
+@description('The Grafana Cloud OTLP headers (e.g. Authorization=Basic ...)')
+@secure()
+param otlpHeaders string = ''
+
 // Resource Names
 var sqlServerName = '${resourcePrefix}-sql-${uniqueString(resourceGroup().id)}'
 var logAnalyticsName = '${resourcePrefix}-law-${uniqueString(resourceGroup().id)}'
@@ -93,6 +100,8 @@ module containerApps 'modules/containerapps.bicep' = if (deploymentTarget == 'co
     storageAccountName: storageAccountName
     dataProtectionKeyIdentifier: '${keyVaultUri}keys/dataprotection'
     manageContainerApps: manageContainerApps
+    otlpEndpoint: otlpEndpoint
+    otlpHeaders: otlpHeaders
   }
 }
 
@@ -107,6 +116,8 @@ module appService 'modules/appservice.bicep' = if (deploymentTarget == 'app-serv
     keyVaultUri: keyVaultUri
     storageAccountName: storageAccountName
     dataProtectionKeyIdentifier: '${keyVaultUri}keys/dataprotection'
+    otlpEndpoint: otlpEndpoint
+    otlpHeaders: otlpHeaders
   }
 }
 
