@@ -109,3 +109,5 @@ jobs:
             azureCacheConnectionString="${{ secrets.AZURE_REDIS_CONNECTION_STRING }}"
             manageContainerApps=${{ inputs.manage_container_apps || 'false' }}
             resourcePrefix="btprod"
+            otlpEndpoint="${{ secrets.GRAFANA_OTLP_ENDPOINT }}"
+            otlpHeaders="${{ secrets.GRAFANA_OTLP_HEADERS }}"
