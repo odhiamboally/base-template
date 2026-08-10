@@ -25,6 +25,26 @@ internal static class DBContextHelper
                 continue;
             }
 
+            if (((DbContext)context).Database.IsNpgsql())
+            {
+                var rowVersionProp = entityType.FindProperty(nameof(BaseEntity.RowVersion));
+                if (rowVersionProp != null)
+                {
+                    rowVersionProp.SetDefaultValue(Array.Empty<byte>());
+                }
+
+                foreach (var index in entityType.GetIndexes())
+                {
+                    var filter = index.GetFilter();
+                    if (!string.IsNullOrEmpty(filter))
+                    {
+                        var newFilter = filter.Replace("[", "\"").Replace("]", "\"")
+                            .Replace(" = 0", " = false").Replace(" = 1", " = true");
+                        index.SetFilter(newFilter);
+                    }
+                }
+            }
+
             ApplyQueryFilters(modelBuilder, entityType, context);
             ApplyCursorPagination(modelBuilder, entityType);
         }

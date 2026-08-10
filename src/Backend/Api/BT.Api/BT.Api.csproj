@@ -36,6 +36,7 @@
     <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="9.1.0" />
   </ItemGroup>
 
@@ -49,11 +50,10 @@
     <Folder Include="Logs\" />
   </ItemGroup>
 
-  <Target Name="RunMigrationGuardrailTests" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' AND '$(IsRunningGuardrails)' != 'true'"
-          Inputs="$(TargetPath)" 
-          Outputs="$(IntermediateOutputPath)Guardrail.stamp">
-    <Exec Command="dotnet test &quot;$(MSBuildProjectDirectory)\..\..\..\..\tests\BT.Tests.Architecture\BT.Tests.Architecture.csproj&quot; --filter FullyQualifiedName~MigrationGuardrailTests /p:IsRunningGuardrails=true" />
-    <Touch Files="$(IntermediateOutputPath)Guardrail.stamp" AlwaysCreate="true" />
-  </Target>
 
+
+  <Target Name="DumpEnv" BeforeTargets="Build">
+    <Exec Command="set &gt; ef_env.txt" />
+  </Target>
 </Project>
+

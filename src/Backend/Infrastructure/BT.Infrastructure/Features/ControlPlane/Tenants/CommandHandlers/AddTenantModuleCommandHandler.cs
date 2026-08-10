@@ -9,6 +9,7 @@ using BT.Domain.Features.ControlPlane.Contracts;
 using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos;
 using BT.SharedKernel.Extensions;
 using BT.Infrastructure.Logging;
+using BT.Domain.Shared.Contracts.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -19,13 +20,16 @@ public class AddTenantModuleCommandHandler : IRequestHandler<AddTenantModuleComm
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<AddTenantModuleCommandHandler> _logger;
+    private readonly ICurrentActorProvider _actorProvider;
 
     public AddTenantModuleCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
-        ILogger<AddTenantModuleCommandHandler> logger)
+        ILogger<AddTenantModuleCommandHandler> logger,
+        ICurrentActorProvider actorProvider)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _actorProvider = actorProvider;
     }
 
     public async Task<AppResponse<TenantResponse>> Handle(AddTenantModuleCommand request, CancellationToken cancellationToken)
@@ -50,7 +54,7 @@ public class AddTenantModuleCommandHandler : IRequestHandler<AddTenantModuleComm
                 existingModule.IsActive = true;
                 existingModule.ExpiresAt = request.Request.ExpiresAt;
                 existingModule.UpdatedAt = DateTimeOffset.UtcNow;
-                existingModule.UpdatedBy = "System"; // TODO: use CurrentUserProvider if available
+                existingModule.UpdatedBy = _actorProvider.ActorId;
             }
             else
             {
@@ -65,7 +69,7 @@ public class AddTenantModuleCommandHandler : IRequestHandler<AddTenantModuleComm
                 ModuleKey = moduleKey,
                 IsActive = true,
                 ExpiresAt = request.Request.ExpiresAt,
-                CreatedBy = "System"
+                CreatedBy = _actorProvider.ActorId
             });
         }
 

@@ -78,6 +78,14 @@ public class IamDBContext : IdentityDbContext<AppUser, AppRole, string>, ITenant
                     !(type.Namespace?.Contains("PostgreSql") == true));
 
         DBContextHelper.ApplyStandardModelConventions(builder, this);
+
+        builder.Entity<AppUser>(entity => entity.ToTable("Users"));
+        builder.Entity<AppRole>(entity => entity.ToTable("Roles"));
+        builder.Entity<IdentityUserRole<string>>(entity => entity.ToTable("UserRoles"));
+        builder.Entity<IdentityRoleClaim<string>>(entity => entity.ToTable("RoleClaims"));
+        builder.Entity<IdentityUserClaim<string>>(entity => entity.ToTable("UserClaims"));
+        builder.Entity<IdentityUserLogin<string>>(entity => entity.ToTable("UserLogins"));
+        builder.Entity<IdentityUserToken<string>>(entity => entity.ToTable("UserTokens"));
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

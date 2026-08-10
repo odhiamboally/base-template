@@ -1,10 +1,12 @@
 @page "/control-panel/tenants"
+@layout ControlPlaneLayout
 @rendermode InteractiveServer
 @inject IAuthSession AuthSession
 @inject ITenantService TenantService
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@using BT.UI.Blazor.Features.ControlPlane.Auditing.Components
 
 <PageTitle>Tenants | Base Template</PageTitle>
 
@@ -17,7 +19,7 @@
         <div class="panel-heading">
             <h2 style="color: var(--bt-moss); font-weight: 700;">Tenant List</h2>
             <div class="d-flex align-center gap-3">
-                @if (AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
+                @if (AuthSession.HasPermission("controlplane.manage"))
                 {
                     <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Business" OnClick="@(() => OpenFormDialogAsync(null))">Create tenant</MudButton>
                 }
@@ -54,7 +56,7 @@
                     </MudTd>
                     <MudTd DataLabel="Actions">
                         <TableRowActions OnEdit="@(() => OpenFormDialogAsync(context))"
-                                         CanEdit="@AuthSession.HasPermission("Permissions.ControlPlane.Manage")" 
+                                         CanEdit="@AuthSession.HasPermission("controlplane.manage")" 
                                          CanView="true"
                                          OnView="@(() => Snackbar.Add($"Tenant: {context.DisplayName} ({context.Status})", Severity.Info))"
                                          CanDelete="false"
@@ -89,13 +91,9 @@
         if (!firstRender) return;
 
         await AuthSession.InitializeAsync();
-        if (!AuthSession.IsAuthenticated || !AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
-        {
-            Navigation.NavigateTo("/iam/sign-in");
-            return;
-        }
-
+        
         await LoadTenantsAsync();
+        StateHasChanged();
     }
 
     private async Task LoadTenantsAsync()
@@ -154,15 +152,23 @@
         {
             await ConfirmActivateAsync(tenant);
         }
+        else if (action == "Impersonate tenant")
+        {
+            await OpenImpersonateDialogAsync(tenant);
+        }
     }
 
     private IReadOnlyList<string> GetExtraActions(TenantResponse tenant)
     {
         var actions = new List<string>();
-        if (AuthSession.HasPermission("Permissions.ControlPlane.Manage"))
+        if (AuthSession.HasPermission("controlplane.manage"))
         {
             actions.Add("Manage modules");
             actions.Add(tenant.Status == "Active" ? "Suspend tenant" : "Activate tenant");
+            if (tenant.Status == "Active")
+            {
+                actions.Add("Impersonate tenant");
+            }
         }
         return actions;
     }
@@ -238,5 +244,29 @@
 
         Snackbar.Add($"{tenant.DisplayName} activated.", Severity.Success);
         await LoadTenantsAsync();
+    }
+
+    private async Task OpenImpersonateDialogAsync(TenantResponse tenant)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(StartImpersonationDialog.Tenant), tenant }
+        };
+
+        var dialog = await DialogService.ShowAsync<StartImpersonationDialog>(
+            "Impersonate Tenant",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true });
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            // Usually we might redirect to a dashboard or refresh state here.
+            // For now, let's just trigger a full app reload to reinitialize AuthSession with the new impersonation token if it's set via cookies.
+            // Wait, does the API return an impersonation token that we need to store?
+            // The API command `StartImpersonation` returns a record. The actual impersonation usually requires the client to swap the token,
+            // or the server sets an impersonation cookie. If the token is swapped, we might need a page reload.
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
     }
 }

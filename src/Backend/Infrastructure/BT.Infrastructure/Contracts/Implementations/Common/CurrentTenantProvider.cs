@@ -1,4 +1,5 @@
 using BT.Domain.Shared.Contracts.Common;
+using BT.Domain.Shared.Exceptions;
 using BT.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -8,7 +9,7 @@ namespace BT.Infrastructure.Contracts.Implementations.Common;
 
 internal sealed class CurrentTenantProvider(
     IHttpContextAccessor httpContextAccessor,
-    IOptions<TenantSettings> options) : ICurrentTenantProvider
+    IOptions<OrgSettings> options) : ICurrentTenantProvider
 {
     public Guid TenantId
     {
@@ -33,7 +34,7 @@ internal sealed class CurrentTenantProvider(
                 return settings.DefaultTenantId;
             }
 
-            throw new InvalidOperationException("No tenant could be resolved from claims, request headers, or Tenant:DefaultTenantId.");
+            throw new TenantNotResolvedException();
         }
     }
 

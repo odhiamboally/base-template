@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BT.Api.Common.Authorization;
 using BT.Api.Common.Controllers;
+using BT.Api.Features.ControlPlane.Tenants.Dtos;
 using BT.Application.Features.ControlPlane.Tenants.Commands;
 using BT.Application.Features.ControlPlane.Tenants.Queries;
 using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos;
@@ -29,7 +30,18 @@ public sealed class TenantsController(ISender sender) : BaseController
     [HttpPost]
     [RequirePermission("control_plane.manage")]
     public async Task<IActionResult> CreateTenant(CreateTenantRequest request)
-        => HandleResponse(await sender.Send(new CreateTenantCommand(request)).ConfigureAwait(false));
+    {
+        var response = await sender.Send(new CreateTenantCommand(request)).ConfigureAwait(false);
+        return HandleResponse(response, onSuccess: r => 
+        {
+            if (string.Equals(r.Data?.Status, "Provisioning", StringComparison.OrdinalIgnoreCase))
+            {
+                return Accepted(r);
+            }
+            
+            return Ok(r);
+        });
+    }
 
     [HttpPut("{id:guid}")]
     [RequirePermission("control_plane.manage")]
@@ -55,4 +67,9 @@ public sealed class TenantsController(ISender sender) : BaseController
     [RequirePermission("control_plane.manage")]
     public async Task<IActionResult> RemoveModule(Guid id, string moduleKey)
         => HandleResponse(await sender.Send(new RemoveTenantModuleCommand(id, new RemoveTenantModuleRequest { ModuleKey = moduleKey })).ConfigureAwait(false));
+
+    [HttpPost("{id:guid}/stamp-migration")]
+    [RequirePermission("control_plane.manage")]
+    public async Task<IActionResult> MigrateStamp(Guid id, MigrateTenantStampRequest request)
+        => HandleResponse(await sender.Send(new MigrateTenantStampCommand(id, request.NewDeploymentStampId, request.NewDatabaseConnectionString)).ConfigureAwait(false));
 }

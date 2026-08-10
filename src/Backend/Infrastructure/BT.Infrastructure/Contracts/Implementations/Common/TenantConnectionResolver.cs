@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Domain.Features.ControlPlane.Contracts;
 using BT.Domain.Shared.Contracts.Common;
+using BT.Domain.Shared.Exceptions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -47,9 +48,10 @@ internal sealed class TenantConnectionResolver : ITenantConnectionResolver
         {
             tenantId = _tenantProvider.TenantId;
         }
-        catch (InvalidOperationException)
+        catch (TenantNotResolvedException)
         {
-            // No tenant resolved, return default.
+            // No tenant resolved for this request — pooled/anonymous path; return null so
+            // TenantConnectionInterceptor leaves the default connection string untouched.
             return null;
         }
 

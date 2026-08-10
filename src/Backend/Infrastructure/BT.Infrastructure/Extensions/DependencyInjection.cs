@@ -119,8 +119,8 @@ public static class DependencyInjection
                     IsValidProfileImageStorageProvider,
                     "ProfileImageStorage:Provider must be Local, Azurite, AzureBlob, or S3. Blob providers require ContainerUri or ConnectionString plus ContainerName. S3 requires ServiceUrl, BucketName, AccessKey, and SecretKey.")
                 .ValidateOnStart();
-            services.AddOptions<TenantSettings>()
-                .Bind(configuration.GetSection(TenantSettings.SectionName))
+            services.AddOptions<OrgSettings>()
+                .Bind(configuration.GetSection(OrgSettings.SectionName))
                 .ValidateDataAnnotations()
                 .Validate(settings => settings.DefaultTenantId != Guid.Empty, "Tenant:DefaultTenantId must be configured.")
                 .ValidateOnStart();
@@ -164,6 +164,7 @@ public static class DependencyInjection
         }
 
         services.AddHttpClient<IApiService, ApiService>();
+        services.AddHttpClient<BT.Application.Features.ControlPlane.Tenants.Contracts.IStampProvisioner, BT.Infrastructure.Features.ControlPlane.Provisioning.GitHubActionsStampProvisioner>();
         services.AddScoped<ICurrentTenantProvider, CurrentTenantProvider>();
         services.AddScoped<ITenantConnectionResolver, TenantConnectionResolver>();
         services.AddScoped<ITenantModuleResolver, TenantModuleResolver>();
@@ -218,7 +219,7 @@ public static class DependencyInjection
                     _.GetRequiredService<ILogger<BackgroundJobService>>())
                 : new NoOpBackgroundJobService());
         services.AddScoped<IEncryptionService, EncryptionService>();
-        services.AddScoped<ITenantSettingsProvider, CachedTenantSettingsProvider>();
+        services.AddScoped<IOrgSettingsProvider, CachedOrgSettingsProvider>();
 
         return services;
     }
@@ -333,7 +334,9 @@ public static class DependencyInjection
         {
             ClockSkew = TimeSpan.FromMinutes(1),
             ValidIssuer = jwtSettings?.Issuer,
+            ValidIssuers = jwtSettings?.ValidIssuers,
             ValidAudience = jwtSettings?.Audience,
+            ValidAudiences = jwtSettings?.ValidAudiences,
             IssuerSigningKey = jwtSettings?.GetSymmetricSecurityKey(),
             ValidateIssuer = true,
             ValidateAudience = true,
@@ -750,7 +753,8 @@ public static class DependencyInjection
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
-                .AddMeter("BT.Cache");
+                .AddMeter("BT.Cache")
+                .AddMeter("BT.TenantMetrics");
 
             if (hasOtlp)
             {

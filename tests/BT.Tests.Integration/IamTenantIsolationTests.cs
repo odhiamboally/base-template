@@ -1,20 +1,35 @@
+using System;
+using System.Threading.Tasks;
 using BT.Domain.Features.IAM.Menus.Entities;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Persistence.Features.IAM.DataContext;
+using BT.Tests.Integration.TestFixtures;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using Xunit;
 
 namespace BT.Tests.Integration;
 
-public class IamTenantIsolationTests : IDisposable
+public abstract class IamTenantIsolationTests<TFixture> : IClassFixture<TFixture> where TFixture : DbFixture
 {
     private readonly DbContextOptions<IamDBContext> _options;
+    private readonly TFixture _fixture;
 
-    public IamTenantIsolationTests()
+    protected IamTenantIsolationTests(TFixture fixture)
     {
-        _options = new DbContextOptionsBuilder<IamDBContext>()
-            .UseInMemoryDatabase(databaseName: Guid.CreateVersion7().ToString())
-            .Options;
+        _fixture = fixture;
+
+        var builder = new DbContextOptionsBuilder<IamDBContext>();
+
+        if (fixture is PostgreSqlDbFixture)
+        {
+            builder.UseNpgsql(fixture.GetConnectionString());
+        }
+        else if (fixture is MsSqlDbFixture)
+        {
+            builder.UseSqlServer(fixture.GetConnectionString());
+        }
+
+        _options = builder.Options;
     }
 
     private class TestTenantProvider : ICurrentTenantProvider
@@ -42,7 +57,7 @@ public class IamTenantIsolationTests : IDisposable
         {
             await context.Database.EnsureCreatedAsync();
 
-            var menu1 = MenuItem.Create(null, null, "menu-1", "Menu 1", "Desc 1", "/m1", "icon1", "top", null, null, 1, "test");
+            var menu1 = MenuItem.Create(null, null, $"menu-1-{tenant1}", "Menu 1", "Desc 1", "/m1", "icon1", "top", null, null, 1, "test");
             context.MenuItems.Add(menu1);
             await context.SaveChangesAsync();
         }
@@ -51,7 +66,7 @@ public class IamTenantIsolationTests : IDisposable
         tenantProvider.TenantId = tenant2;
         using (var context = new IamDBContext(_options, tenantProvider, actorProvider))
         {
-            var menu2 = MenuItem.Create(null, null, "menu-2", "Menu 2", "Desc 2", "/m2", "icon2", "top", null, null, 2, "test");
+            var menu2 = MenuItem.Create(null, null, $"menu-2-{tenant2}", "Menu 2", "Desc 2", "/m2", "icon2", "top", null, null, 2, "test");
             context.MenuItems.Add(menu2);
             await context.SaveChangesAsync();
         }
@@ -63,8 +78,8 @@ public class IamTenantIsolationTests : IDisposable
             var items = await context.MenuItems.ToListAsync();
 
             // Assert
-            Assert.Single(items);
-            Assert.Equal("menu-1", items[0].Key);
+            Assert.Contains(items, i => i.Key == $"menu-1-{tenant1}");
+            Assert.DoesNotContain(items, i => i.Key == $"menu-2-{tenant2}");
         }
         
         // Act - Query as tenant 2
@@ -74,8 +89,8 @@ public class IamTenantIsolationTests : IDisposable
             var items = await context.MenuItems.ToListAsync();
 
             // Assert
-            Assert.Single(items);
-            Assert.Equal("menu-2", items[0].Key);
+            Assert.Contains(items, i => i.Key == $"menu-2-{tenant2}");
+            Assert.DoesNotContain(items, i => i.Key == $"menu-1-{tenant1}");
         }
     }
     
@@ -94,7 +109,7 @@ public class IamTenantIsolationTests : IDisposable
         {
             await context.Database.EnsureCreatedAsync();
 
-            var menu1 = MenuItem.Create(null, null, "menu-1", "Menu 1", "Desc 1", "/m1", "icon1", "top", null, null, 1, "test");
+            var menu1 = MenuItem.Create(null, null, $"menu-3-{tenant1}", "Menu 3", "Desc 1", "/m3", "icon1", "top", null, null, 1, "test");
             context.MenuItems.Add(menu1);
             await context.SaveChangesAsync();
         }
@@ -103,7 +118,7 @@ public class IamTenantIsolationTests : IDisposable
         tenantProvider.TenantId = tenant2;
         using (var context = new IamDBContext(_options, tenantProvider, actorProvider))
         {
-            var menu2 = MenuItem.Create(null, null, "menu-2", "Menu 2", "Desc 2", "/m2", "icon2", "top", null, null, 2, "test");
+            var menu2 = MenuItem.Create(null, null, $"menu-4-{tenant2}", "Menu 4", "Desc 2", "/m4", "icon2", "top", null, null, 2, "test");
             context.MenuItems.Add(menu2);
             await context.SaveChangesAsync();
         }
@@ -115,12 +130,13 @@ public class IamTenantIsolationTests : IDisposable
             var items = await context.MenuItems.IgnoreQueryFilters().ToListAsync();
 
             // Assert
-            Assert.True(items.Count >= 2);
+            Assert.Contains(items, i => i.Key == $"menu-3-{tenant1}");
+            Assert.Contains(items, i => i.Key == $"menu-4-{tenant2}");
         }
     }
-
-    public void Dispose()
-    {
-    }
 }
+
+
+
+
 

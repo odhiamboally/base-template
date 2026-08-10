@@ -1,7 +1,9 @@
 using BT.Persistence.Common.Configuration;
 using BT.Persistence.Features.Shared.Migrations.Generators;
+using BT.Domain.Features.ControlPlane.Auditing.Contracts.Repositories;
 using BT.Domain.Features.ControlPlane.Contracts;
 using BT.Domain.Features.ControlPlane.Tenants.Contracts.Repositories;
+using BT.Persistence.Features.ControlPlane.Auditing.Repositories;
 using BT.Persistence.Features.ControlPlane.DataContext;
 using BT.Persistence.Features.ControlPlane.Tenants.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +66,7 @@ public static class ControlPlanePersistenceDI
 
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IDeploymentStampRepository, DeploymentStampRepository>();
+        services.AddScoped<IImpersonationRecordRepository, ImpersonationRecordRepository>();
         services.AddScoped<IControlPlaneUnitOfWork, ControlPlaneUnitOfWork>();
 
         return services;

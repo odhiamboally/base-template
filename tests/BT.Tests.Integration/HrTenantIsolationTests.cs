@@ -1,6 +1,7 @@
 using BT.Domain.Features.HR.Departments.Entities;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Persistence.Features.HR.DataContext;
+using BT.Tests.Integration.TestFixtures;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
@@ -8,15 +9,27 @@ using Xunit;
 
 namespace BT.Tests.Integration;
 
-public class HrTenantIsolationTests : IDisposable
+public abstract class HrTenantIsolationTests<TFixture> : IClassFixture<TFixture> where TFixture : DbFixture
 {
     private readonly DbContextOptions<HrDBContext> _options;
+    private readonly TFixture _fixture;
 
-    public HrTenantIsolationTests()
+    protected HrTenantIsolationTests(TFixture fixture)
     {
-        _options = new DbContextOptionsBuilder<HrDBContext>()
-            .UseInMemoryDatabase(databaseName: Guid.CreateVersion7().ToString())
-            .Options;
+        _fixture = fixture;
+
+        var builder = new DbContextOptionsBuilder<HrDBContext>();
+
+        if (fixture is PostgreSqlDbFixture)
+        {
+            builder.UseNpgsql(fixture.GetConnectionString());
+        }
+        else if (fixture is MsSqlDbFixture)
+        {
+            builder.UseSqlServer(fixture.GetConnectionString());
+        }
+
+        _options = builder.Options;
     }
 
     private class TestTenantProvider : ICurrentTenantProvider
@@ -65,8 +78,8 @@ public class HrTenantIsolationTests : IDisposable
             var items = await context.Departments.ToListAsync();
 
             // Assert
-            Assert.Single(items);
-            Assert.Equal("DEPT1", items[0].Code);
+            Assert.Contains(items, i => i.Code == "DEPT1");
+            Assert.DoesNotContain(items, i => i.Code == "DEPT2");
         }
         
         // Act - Query as tenant 2
@@ -76,12 +89,13 @@ public class HrTenantIsolationTests : IDisposable
             var items = await context.Departments.ToListAsync();
 
             // Assert
-            Assert.Single(items);
-            Assert.Equal("DEPT2", items[0].Code);
+            Assert.Contains(items, i => i.Code == "DEPT2");
+            Assert.DoesNotContain(items, i => i.Code == "DEPT1");
         }
     }
-
-    public void Dispose()
-    {
-    }
 }
+
+
+
+
+

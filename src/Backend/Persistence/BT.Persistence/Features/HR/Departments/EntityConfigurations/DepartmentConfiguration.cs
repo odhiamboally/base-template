@@ -32,15 +32,14 @@ internal sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departm
             .IsRequired();
 
         builder.Property(static department => department.CreatedAt)
-            .IsRequired()
-            .HasColumnType("datetimeoffset");
+            .IsRequired();
 
         builder.Property(static department => department.CreatedBy)
             .IsRequired()
             .HasMaxLength(100);
 
         builder.Property(static department => department.UpdatedAt)
-            .HasColumnType("datetimeoffset");
+            .IsRequired(false);
 
         builder.Property(static department => department.UpdatedBy)
             .HasMaxLength(100);

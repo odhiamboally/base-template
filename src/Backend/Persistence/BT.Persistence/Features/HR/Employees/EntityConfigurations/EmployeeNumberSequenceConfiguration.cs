@@ -31,8 +31,7 @@ internal sealed class EmployeeNumberSequenceConfiguration : IEntityTypeConfigura
             .IsRequired()
             .HasDefaultValue(false);
 
-        builder.Property(sequence => sequence.DeletedAt)
-            .HasColumnType("datetimeoffset");
+        builder.Property(sequence => sequence.DeletedAt);
 
         builder.Property(sequence => sequence.DeletedBy)
             .HasMaxLength(100);

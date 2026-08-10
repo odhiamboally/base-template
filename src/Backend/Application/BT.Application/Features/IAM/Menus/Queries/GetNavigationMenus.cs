@@ -30,7 +30,10 @@ internal sealed class GetNavigationMenusQueryHandler(
                 .ListAsync(
                     menus => menus
                         .Where(menu => menu.IsActive && menu.Placement == query.Placement)
-                        .Where(menu => query.HasFullAccess || menu.RequiredPermissionKey == null || permissionSet.Contains(menu.RequiredPermissionKey))
+                        .Where(menu => 
+                            menu.RequiredPermissionKey == "controlplane.manage" 
+                                ? permissionSet.Contains(menu.RequiredPermissionKey)
+                                : (query.HasFullAccess || menu.RequiredPermissionKey == null || permissionSet.Contains(menu.RequiredPermissionKey)))
                         .Where(menu => menu.RequiredModule == null || moduleSet.Contains(menu.RequiredModule))
                         .OrderBy(static menu => menu.DisplayOrder).ThenBy(static menu => menu.Title),
                     cancellationToken)

@@ -1,54 +1,47 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-using Serilog;
 
 namespace BT.Api.Utilities;
 
-internal sealed class SafeSchemaTransformer : IOpenApiSchemaTransformer
+internal sealed class SafeSchemaTransformer(ILogger<SafeSchemaTransformer> logger) : IOpenApiSchemaTransformer
 {
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
-        try
+        if (schema is null) return Task.CompletedTask;
+
+        // Clean up malformed properties
+        // Using property pattern matching to ensure it exists and has items to process
+        if (schema.Properties is { Count: > 0 })
         {
-            if (schema == null) return Task.CompletedTask;
+            // We must materialize the keys to remove because we cannot mutate a dictionary while iterating over it.
+            var invalidKeys = schema.Properties
+                .Where(kvp => string.IsNullOrEmpty(kvp.Key) || kvp.Value is null)
+                .Select(static kvp => kvp.Key)
+                .ToList();
 
-            // In OpenApi 3.0+, Properties is never null - it's pre-initialized
-            //schema.Properties ??= new Dictionary<string, OpenApiSchema>();
-
-            // Check if Properties exists before processing
-            if (schema.Properties != null)
+            foreach (var key in invalidKeys)
             {
-                var problematicKeys = schema.Properties
-                    .Where(kvp => string.IsNullOrWhiteSpace(kvp.Key) || kvp.Value == null)
-                    .Select(kvp => kvp.Key)
-                    .ToList();
+                schema.Properties.Remove(key);
 
-                foreach (var key in problematicKeys)
-                {
-                    schema.Properties.Remove(key);
-                }
-            }
-
-            if (schema.AdditionalPropertiesAllowed && schema.AdditionalProperties != null)
-            {
-                // In OpenApi 3.0+, Type is now JsonSchemaType enum, not string
-                if (schema.AdditionalProperties.Type == JsonSchemaType.Null || schema.AdditionalProperties.Type == default)
-                {
-                    schema.AdditionalProperties = null;
-                }
-
-                //if (string.IsNullOrWhiteSpace(schema.AdditionalProperties.Type))
-                //{
-                //    schema.AdditionalProperties = null;
-                //}
+                logger.LogWarning(
+                    "Removed invalid property '{Key}' from schema for type {TypeName}. Consider adding [JsonIgnore] to the source property.",
+                    key,
+                    context.JsonTypeInfo?.Type.Name ?? "Unknown");
             }
         }
-        catch (Exception ex)
+
+        // Clean up broken AdditionalProperties
+        // Pattern matching 'is { } addProps' ensures it's not null and assigns it to a local variable
+        if (schema.AdditionalPropertiesAllowed && schema.AdditionalProperties is { } addProps)
         {
-            Log.Warning(ex, "Error in schema transformation for type {TypeName}", context?.JsonTypeInfo?.Type?.Name);
+            // Type is a nullable [Flags] enum (JsonSchemaType?).
+            // There is no "None" flag. An unset type is null; a glitch type is often Null
+            if (addProps.Type is null or JsonSchemaType.Null)
+            {
+                schema.AdditionalProperties = null;
+            }
         }
 
         return Task.CompletedTask;
     }
 }
-

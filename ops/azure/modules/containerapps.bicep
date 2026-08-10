@@ -33,6 +33,13 @@ param dataProtectionKeyIdentifier string = ''
 @description('Creates or repairs the public bootstrap Container Apps. Set to false after the first successful deployment so infrastructure-only runs do not replace deployed application revisions.')
 param manageContainerApps bool = true
 
+@description('The Grafana Cloud OTLP endpoint.')
+param otlpEndpoint string = ''
+
+@description('The Grafana Cloud OTLP headers.')
+@secure()
+param otlpHeaders string = ''
+
 
 
 // Container Apps Environment
@@ -114,6 +121,14 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = if (manageContainerAp
             {
               name: 'Messaging__Transport'
               value: 'AzureServiceBus'
+            }
+            {
+              name: 'Observability__Otlp__Endpoint'
+              value: otlpEndpoint
+            }
+            {
+              name: 'Observability__Otlp__Headers'
+              value: otlpHeaders
             }
           ]
           resources: {

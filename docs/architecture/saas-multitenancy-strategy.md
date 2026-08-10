@@ -77,6 +77,12 @@ Core modules should cover:
 
 Optional add-on modules should be conditional, for example AI Search, extra storage, per-tenant broker, or a different database provider for a specific client.
 
+## Stamp Authentication Policy
+
+- **Pooled stamps** stay single-app, meaning the Control Plane and Data Plane share the same overarching identity provider configuration (e.g., a shared Entra ID app registration).
+- **Isolated and regulated stamps** MUST get a separate ControlPlane auth realm. This requires a distinct Entra ID app registration (or equivalent IdP configuration) per isolated stamp, with a distinct JWT audience.
+- Platform staff must structurally never receive a `tenant_id` claim within the isolated realm, ensuring complete structural isolation of identity and preventing token reuse across boundaries.
+
 ## Database Strategy
 
 BaseTemplate currently supports the pooled-database model through tenant-scoped entities and global query filters.
@@ -125,3 +131,46 @@ SaaS multitenancy is ready when:
 - IaC can provision at least one pooled stamp and one isolated stamp shape.
 - CI/CD can deploy the same image with different stamp configuration.
 - Key Vault, storage, cache, messaging, and database settings are aligned with the selected stamp.
+
+---
+
+## Middleware Ordering And Tenant Resolution Contract
+
+This section documents a deliberate architectural decision. **Do not change the middleware order without updating this section.**
+
+`TenantResolutionMiddleware` is placed in the pipeline **after `UseRouting()`** and **before `UseAuthentication()`**:
+
+```
+UseRouting()
+UseMiddleware<TenantResolutionMiddleware>()   ← hostname-based resolution runs here
+UseAuthentication()                            ← JWT tenant_id claim is available from here
+UseAuthorization()
+```
+
+**Why before `UseAuthentication()`?**
+Hostname resolution does not require an authenticated user. The middleware resolves the tenant purely from the `Host` HTTP header (or `X-Forwarded-Host` for proxied requests), looks up the matching `Tenant.HostName` in the ControlPlane database (cached for 5 minutes), and injects the resolved tenant ID into a request header.
+
+**Resolution fallback priority in `CurrentTenantProvider`:**
+1. `tenant_id` JWT claim (populated post-auth for already-authenticated requests).
+2. Request header injected by `TenantResolutionMiddleware` (hostname-derived).
+3. `OrgSettings:DefaultTenantId` configuration value (single-stamp deployments).
+4. Throws `TenantNotResolvedException` if none of the above resolves.
+
+**Claim vs. header precedence:** JWT claim wins. For isolated stamps, the JWT `tenant_id` claim is the authoritative source. The header is a fallback for anonymous or pre-auth paths.
+
+**Security implication:** If a proxied request arrives with a forged `X-Forwarded-Host`, it could influence hostname-based resolution. Mitigate this by configuring `ForwardedHeadersOptions.KnownProxies` or `KnownNetworks` to only accept forwarded headers from trusted upstream addresses.
+
+---
+
+## Tenant Lifecycle States
+
+| Status | Meaning | Expected Operator Action |
+|---|---|---|
+| `Active` | Fully operational. Tenant traffic is served. | None. |
+| `Provisioning` | Tenant record created; isolated-stamp infrastructure is being deployed via GitHub Actions. | Wait for the provisioning workflow to complete, then call `POST /api/v1/control-plane/tenants/{id}/activate`. |
+| `ProvisioningFailed` | The GitHub Actions workflow dispatch failed. Infrastructure may not exist. | Diagnose the failure via GitHub Actions logs. Fix the configuration, then re-trigger via `POST /api/v1/control-plane/tenants/{id}/activate` (which will retry provisioning). |
+| `Suspended` | Tenant is temporarily blocked. Requests for this tenant will not be served. | Call `POST /api/v1/control-plane/tenants/{id}/activate` to restore access. |
+
+> [!IMPORTANT]
+> A tenant in `Provisioning` or `ProvisioningFailed` status will **not** be resolved by `TenantResolutionMiddleware`. The middleware filters on `TenantStatus.Active` only. This prevents premature data access before the isolated database is ready.
+

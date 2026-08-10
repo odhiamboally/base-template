@@ -35,10 +35,10 @@ public class TenantResolutionMiddleware
         ArgumentNullException.ThrowIfNull(context, nameof(context));
         ArgumentNullException.ThrowIfNull(serviceProvider, nameof(serviceProvider));
         var host = context.Request.Host.Host;
-        var tenantSettings = serviceProvider.GetRequiredService<IOptions<TenantSettings>>().Value;
+        var OrgSettings = serviceProvider.GetRequiredService<IOptions<OrgSettings>>().Value;
 
         // If the header already exists (e.g. injected by a proxy or explicitly provided), respect it
-        if (!context.Request.Headers.ContainsKey(tenantSettings.HeaderName))
+        if (!context.Request.Headers.ContainsKey(OrgSettings.HeaderName))
         {
             var cacheKey = $"Tenant_Host_{host}";
 
@@ -57,7 +57,7 @@ public class TenantResolutionMiddleware
             if (tenantId != Guid.Empty)
             {
                 // Inject the tenant ID into the headers so CurrentTenantProvider can read it
-                context.Request.Headers[tenantSettings.HeaderName] = tenantId.ToString();
+                context.Request.Headers[OrgSettings.HeaderName] = tenantId.ToString();
             }
         }
 

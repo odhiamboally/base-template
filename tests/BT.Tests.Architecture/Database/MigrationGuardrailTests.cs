@@ -80,12 +80,12 @@ public class MigrationGuardrailTests
         Assert.False(hasPendingChanges, $"The model for {typeof(TContext).Name} has changed since the last migration. Please run 'dotnet ef migrations add' to generate a new migration.");
     }
     
-    private class DummyTenantProvider : ICurrentTenantProvider
+    private sealed class DummyTenantProvider : ICurrentTenantProvider
     {
         public Guid TenantId => Guid.Empty;
     }
     
-    private class DummyActorProvider : ICurrentActorProvider
+    private sealed class DummyActorProvider : ICurrentActorProvider
     {
         public string ActorId => "System";
     }

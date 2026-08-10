@@ -78,8 +78,13 @@
         _isReady = true;
     }
 
-    private static IEnumerable<MenuResponse> Flatten(IEnumerable<MenuResponse> menus)
+    private static IEnumerable<MenuResponse> Flatten(IEnumerable<MenuResponse>? menus)
     {
+        if (menus is null)
+        {
+            yield break;
+        }
+
         foreach (var menu in menus)
         {
             yield return menu;

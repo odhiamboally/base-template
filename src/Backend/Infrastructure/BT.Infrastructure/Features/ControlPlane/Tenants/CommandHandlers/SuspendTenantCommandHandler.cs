@@ -8,6 +8,7 @@ using BT.Domain.Features.ControlPlane.Contracts;
 using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos;
 using BT.SharedKernel.Extensions;
 using BT.Infrastructure.Logging;
+using BT.Domain.Shared.Contracts.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -18,13 +19,16 @@ public class SuspendTenantCommandHandler : IRequestHandler<SuspendTenantCommand,
 {
     private readonly IControlPlaneUnitOfWork _unitOfWork;
     private readonly ILogger<SuspendTenantCommandHandler> _logger;
+    private readonly ICurrentActorProvider _actorProvider;
 
     public SuspendTenantCommandHandler(
         IControlPlaneUnitOfWork unitOfWork,
-        ILogger<SuspendTenantCommandHandler> logger)
+        ILogger<SuspendTenantCommandHandler> logger,
+        ICurrentActorProvider actorProvider)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _actorProvider = actorProvider;
     }
 
     public async Task<AppResponse<TenantResponse>> Handle(SuspendTenantCommand request, CancellationToken cancellationToken)
@@ -39,7 +43,7 @@ public class SuspendTenantCommandHandler : IRequestHandler<SuspendTenantCommand,
 
         tenant.Status = TenantStatus.Suspended;
         tenant.UpdatedAt = DateTimeOffset.UtcNow;
-        tenant.UpdatedBy = "System";
+        tenant.UpdatedBy = _actorProvider.ActorId;
 
         await _unitOfWork.Tenants.UpdateAsync(tenant, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);

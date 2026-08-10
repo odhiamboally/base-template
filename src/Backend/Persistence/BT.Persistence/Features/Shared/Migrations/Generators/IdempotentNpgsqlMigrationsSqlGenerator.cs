@@ -39,5 +39,26 @@ public class IdempotentNpgsqlMigrationsSqlGenerator : NpgsqlMigrationsSqlGenerat
             builder.EndCommand();
         }
     }
+    protected override void Generate(CreateTableOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
+    {
+        var dummyBuilder = new MigrationCommandListBuilder(Dependencies);
+        base.Generate(operation, model, dummyBuilder, terminate: false);
+        dummyBuilder.EndCommand();
+
+        var command = dummyBuilder.GetCommandList().FirstOrDefault();
+        if (command != null)
+        {
+            var sql = command.CommandText;
+            sql = Regex.Replace(sql, @"^CREATE\s+TABLE", "CREATE TABLE IF NOT EXISTS", RegexOptions.IgnoreCase);
+            
+            builder.Append(sql);
+        }
+
+        if (terminate)
+        {
+            builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+            builder.EndCommand();
+        }
+    }
 }
 #pragma warning restore EF1001 // Internal EF Core API usage.

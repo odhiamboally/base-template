@@ -1,6 +1,7 @@
-using BT.Domain.Features.Shared.TenantSettings.Entities;
+using BT.Domain.Features.Shared.OrgSettings.Entities;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Persistence.Features.Shared.DataContext;
+using BT.Tests.Integration.TestFixtures;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
@@ -8,15 +9,27 @@ using Xunit;
 
 namespace BT.Tests.Integration;
 
-public class SharedTenantIsolationTests : IDisposable
+public abstract class SharedTenantIsolationTests<TFixture> : IClassFixture<TFixture> where TFixture : DbFixture
 {
     private readonly DbContextOptions<SharedDBContext> _options;
+    private readonly TFixture _fixture;
 
-    public SharedTenantIsolationTests()
+    protected SharedTenantIsolationTests(TFixture fixture)
     {
-        _options = new DbContextOptionsBuilder<SharedDBContext>()
-            .UseInMemoryDatabase(databaseName: Guid.CreateVersion7().ToString())
-            .Options;
+        _fixture = fixture;
+
+        var builder = new DbContextOptionsBuilder<SharedDBContext>();
+
+        if (fixture is PostgreSqlDbFixture)
+        {
+            builder.UseNpgsql(fixture.GetConnectionString());
+        }
+        else if (fixture is MsSqlDbFixture)
+        {
+            builder.UseSqlServer(fixture.GetConnectionString());
+        }
+
+        _options = builder.Options;
     }
 
     private class TestTenantProvider : ICurrentTenantProvider
@@ -44,8 +57,8 @@ public class SharedTenantIsolationTests : IDisposable
         {
             await context.Database.EnsureCreatedAsync();
 
-            var setting1 = new TenantSetting("SETTING_1", "Value 1", "test");
-            context.TenantSettings.Add(setting1);
+            var setting1 = new OrgSetting($"SETTING_1_{tenant1}", "Value 1", "test");
+            context.OrgSettings.Add(setting1);
             await context.SaveChangesAsync();
         }
 
@@ -53,8 +66,8 @@ public class SharedTenantIsolationTests : IDisposable
         tenantProvider.TenantId = tenant2;
         using (var context = new SharedDBContext(_options, tenantProvider, actorProvider))
         {
-            var setting2 = new TenantSetting("SETTING_2", "Value 2", "test");
-            context.TenantSettings.Add(setting2);
+            var setting2 = new OrgSetting($"SETTING_2_{tenant2}", "Value 2", "test");
+            context.OrgSettings.Add(setting2);
             await context.SaveChangesAsync();
         }
 
@@ -62,26 +75,27 @@ public class SharedTenantIsolationTests : IDisposable
         tenantProvider.TenantId = tenant1;
         using (var context = new SharedDBContext(_options, tenantProvider, actorProvider))
         {
-            var items = await context.TenantSettings.ToListAsync();
+            var items = await context.OrgSettings.ToListAsync();
 
             // Assert
-            Assert.Single(items);
-            Assert.Equal("SETTING_1", items[0].Key);
+            Assert.Contains(items, i => i.Key == $"SETTING_1_{tenant1}");
+            Assert.DoesNotContain(items, i => i.Key == $"SETTING_2_{tenant2}");
         }
         
         // Act - Query as tenant 2
         tenantProvider.TenantId = tenant2;
         using (var context = new SharedDBContext(_options, tenantProvider, actorProvider))
         {
-            var items = await context.TenantSettings.ToListAsync();
+            var items = await context.OrgSettings.ToListAsync();
 
             // Assert
-            Assert.Single(items);
-            Assert.Equal("SETTING_2", items[0].Key);
+            Assert.Contains(items, i => i.Key == $"SETTING_2_{tenant2}");
+            Assert.DoesNotContain(items, i => i.Key == $"SETTING_1_{tenant1}");
         }
     }
-
-    public void Dispose()
-    {
-    }
 }
+
+
+
+
+

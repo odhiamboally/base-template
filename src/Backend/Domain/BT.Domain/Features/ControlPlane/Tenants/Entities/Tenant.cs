@@ -7,7 +7,7 @@ using BT.Domain.Features.ControlPlane.Tenants.Enums;
 
 namespace BT.Domain.Features.ControlPlane.Tenants.Entities;
 
-public class Tenant : IAuditable
+public class Tenant : IAuditable, IHasDomainEvents
 {
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public required string Identifier { get; set; } // URL-safe slug
@@ -17,6 +17,19 @@ public class Tenant : IAuditable
     public int MaxUsers { get; set; }
     public SubscriptionTier SubscriptionTier { get; set; }
     public TenantStatus Status { get; set; }
+
+    private readonly System.Collections.Generic.List<IDomainEvent> _domainEvents = [];
+    public System.Collections.Generic.IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+    public void RaiseDomainEvent(IDomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
+
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
+    }
 
     public Guid DeploymentStampId { get; set; }
     public DeploymentStamp? DeploymentStamp { get; set; }
