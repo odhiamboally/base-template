@@ -3,6 +3,7 @@ using BT.Domain.Features.ControlPlane.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.SharedKernel.Dtos.Common;
 using MediatR;
+using BT.Application.Contracts.Interfaces.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,13 @@ using BT.SharedKernel.Features.ControlPlane.Auditing.Dtos;
 
 namespace BT.Application.Features.ControlPlane.Auditing.Queries;
 
-public record GetImpersonationRecordsQuery(bool ActiveOnly = false) : IRequest<AppResponse<IReadOnlyList<ImpersonationRecordDto>>>;
+public record GetImpersonationRecordsQuery(bool ActiveOnly = false) : IRequest<AppResponse<IReadOnlyList<ImpersonationRecordDto>>>, ICachableRequest
+{
+    public string CacheGroup => "auditing";
+    public string Discriminator => $"impersonation_records_{ActiveOnly}";
+    public string? CacheUserId => null;
+    public bool IsVersioned => true;
+}
 
 internal sealed class GetImpersonationRecordsQueryHandler(
     IControlPlaneUnitOfWork unitOfWork,

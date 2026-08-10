@@ -10,12 +10,12 @@ using Xunit;
 
 namespace BT.Tests.Integration;
 
-public abstract class TenantConnectionInterceptorIntegrationTestsBase<TFixture> : IClassFixture<TFixture> where TFixture : DbFixture
+public abstract class TenantConnectionInterceptorIntegrationTests<TFixture> : IClassFixture<TFixture> where TFixture : DbFixture
 {
     private readonly DbContextOptions<SharedDBContext> _options;
     private readonly TFixture _fixture;
 
-    protected TenantConnectionInterceptorIntegrationTestsBase(TFixture fixture)
+    protected TenantConnectionInterceptorIntegrationTests(TFixture fixture)
     {
         _fixture = fixture;
 
@@ -108,12 +108,7 @@ public abstract class TenantConnectionInterceptorIntegrationTestsBase<TFixture> 
     }
 }
 
-public class TenantConnectionInterceptorIntegrationTests_PostgreSql : TenantConnectionInterceptorIntegrationTestsBase<PostgreSqlDbFixture>
-{
-    public TenantConnectionInterceptorIntegrationTests_PostgreSql(PostgreSqlDbFixture fixture) : base(fixture) { }
-}
 
-public class TenantConnectionInterceptorIntegrationTests_SqlServer : TenantConnectionInterceptorIntegrationTestsBase<MsSqlDbFixture>
-{
-    public TenantConnectionInterceptorIntegrationTests_SqlServer(MsSqlDbFixture fixture) : base(fixture) { }
-}
+
+
+

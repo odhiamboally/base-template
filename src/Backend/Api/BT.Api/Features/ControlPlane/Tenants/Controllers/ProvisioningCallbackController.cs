@@ -2,9 +2,10 @@ using System;
 using System.Threading.Tasks;
 using BT.Application.Features.ControlPlane.Tenants.Commands;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using BT.Api.Common.Authorization;
+using BT.Api.Features.ControlPlane.Tenants.Dtos;
 using Asp.Versioning;
 
 namespace BT.Api.Features.ControlPlane.Tenants.Controllers;
@@ -22,7 +23,7 @@ public class ProvisioningCallbackController : ControllerBase
     }
 
     [HttpPost("{tenantId:guid}")]
-    [Authorize(Policy = "ProvisioningCallback")]
+    [RequirePermission("control_plane.manage")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -47,7 +48,3 @@ public class ProvisioningCallbackController : ControllerBase
         return Ok(result);
     }
 }
-
-public record CompleteTenantProvisioningRequest(
-    string DatabaseConnectionString,
-    string ApplicationInsightsKey);

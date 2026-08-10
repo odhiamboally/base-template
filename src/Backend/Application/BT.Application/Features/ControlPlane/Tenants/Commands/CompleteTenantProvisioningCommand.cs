@@ -17,14 +17,6 @@ public record CompleteTenantProvisioningCommand(
     string DatabaseConnectionString,
     string ApplicationInsightsKey) : IRequest<AppResponse<bool>>;
 
-public class CompleteTenantProvisioningCommandValidator : AbstractValidator<CompleteTenantProvisioningCommand>
-{
-    public CompleteTenantProvisioningCommandValidator()
-    {
-        RuleFor(x => x.TenantId).NotEmpty();
-        RuleFor(x => x.DatabaseConnectionString).NotEmpty();
-    }
-}
 
 internal sealed partial class CompleteTenantProvisioningCommandHandler : IRequestHandler<CompleteTenantProvisioningCommand, AppResponse<bool>>
 {

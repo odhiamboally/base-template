@@ -96,7 +96,7 @@ public class IdempotentMigrationsGuardrailTests
             .Build();
     }
     
-    private class DummyHostEnvironment : IHostEnvironment
+    private sealed class DummyHostEnvironment : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "BT";
@@ -104,12 +104,12 @@ public class IdempotentMigrationsGuardrailTests
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
     }
     
-    private class DummyTenantProvider : ICurrentTenantProvider
+    private sealed class DummyTenantProvider : ICurrentTenantProvider
     {
         public Guid TenantId => Guid.Empty;
     }
     
-    private class DummyActorProvider : ICurrentActorProvider
+    private sealed class DummyActorProvider : ICurrentActorProvider
     {
         public string ActorId => "System";
     }

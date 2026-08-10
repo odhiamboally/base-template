@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BT.Api.Common.Authorization;
 using BT.Api.Common.Controllers;
+using BT.Api.Features.ControlPlane.Tenants.Dtos;
 using BT.Application.Features.ControlPlane.Tenants.Commands;
 using BT.Application.Features.ControlPlane.Tenants.Queries;
 using BT.SharedKernel.Features.ControlPlane.Tenants.Dtos;
@@ -72,7 +73,3 @@ public sealed class TenantsController(ISender sender) : BaseController
     public async Task<IActionResult> MigrateStamp(Guid id, MigrateTenantStampRequest request)
         => HandleResponse(await sender.Send(new MigrateTenantStampCommand(id, request.NewDeploymentStampId, request.NewDatabaseConnectionString)).ConfigureAwait(false));
 }
-
-public record MigrateTenantStampRequest(
-    Guid NewDeploymentStampId,
-    string NewDatabaseConnectionString);

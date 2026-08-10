@@ -17,15 +17,6 @@ public record MigrateTenantStampCommand(
     Guid NewDeploymentStampId,
     string NewDatabaseConnectionString) : IRequest<AppResponse<bool>>;
 
-public class MigrateTenantStampCommandValidator : AbstractValidator<MigrateTenantStampCommand>
-{
-    public MigrateTenantStampCommandValidator()
-    {
-        RuleFor(x => x.TenantId).NotEmpty();
-        RuleFor(x => x.NewDeploymentStampId).NotEmpty();
-        RuleFor(x => x.NewDatabaseConnectionString).NotEmpty();
-    }
-}
 
 internal sealed partial class MigrateTenantStampCommandHandler : IRequestHandler<MigrateTenantStampCommand, AppResponse<bool>>
 {

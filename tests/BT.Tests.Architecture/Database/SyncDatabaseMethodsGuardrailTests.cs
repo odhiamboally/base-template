@@ -61,7 +61,7 @@ public class SyncDatabaseMethodsGuardrailTests
                     if (forbiddenMethods.Contains(methodName))
                     {
                         // To be very specific, we look for calls like `Database.Migrate()` or `Database.OpenConnection()`
-                        if (memberAccess.Expression.ToString().EndsWith("Database"))
+                        if (memberAccess.Expression.ToString().EndsWith("Database", StringComparison.Ordinal))
                         {
                             offendingFiles.Add($"{file}: {methodName}() is called synchronously.");
                         }

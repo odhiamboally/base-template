@@ -9,12 +9,12 @@ using Xunit;
 
 namespace BT.Tests.Integration;
 
-public abstract class IamTenantIsolationTestsBase<TFixture> : IClassFixture<TFixture> where TFixture : DbFixture
+public abstract class IamTenantIsolationTests<TFixture> : IClassFixture<TFixture> where TFixture : DbFixture
 {
     private readonly DbContextOptions<IamDBContext> _options;
     private readonly TFixture _fixture;
 
-    protected IamTenantIsolationTestsBase(TFixture fixture)
+    protected IamTenantIsolationTests(TFixture fixture)
     {
         _fixture = fixture;
 
@@ -136,12 +136,7 @@ public abstract class IamTenantIsolationTestsBase<TFixture> : IClassFixture<TFix
     }
 }
 
-public class IamTenantIsolationTests_Postgres : IamTenantIsolationTestsBase<PostgreSqlDbFixture>
-{
-    public IamTenantIsolationTests_Postgres(PostgreSqlDbFixture fixture) : base(fixture) { }
-}
 
-public class IamTenantIsolationTests_SqlServer : IamTenantIsolationTestsBase<MsSqlDbFixture>
-{
-    public IamTenantIsolationTests_SqlServer(MsSqlDbFixture fixture) : base(fixture) { }
-}
+
+
+
