@@ -22,5 +22,10 @@ public interface IAuthService
     Task<AppResponse<VerifyOtpResponse>> VerifyTotpAsync(VerifyOtpRequest request);
     Task<AppResponse<bool>> DisableTotpAsync();
     Task<AppResponse<OtpStatusResponse>> GetTotpStatusAsync(string userId);
+    Task<AppResponse<System.Text.Json.JsonElement>> RequestPasskeyRegistrationOptionsAsync();
+    Task<AppResponse<bool>> RegisterPasskeyAsync(RegisterPasskeyRequest request);
+    Task<AppResponse<PasskeyLoginOptionsResponse>> RequestPasskeyLoginOptionsAsync(RequestPasskeyLoginOptionsRequest request);
+    Task<AppResponse<LoginResponse>> LoginWithPasskeyAsync(LoginWithPasskeyRequest request);
+    Task<AppResponse<IReadOnlyList<PasskeyResponse>>> GetPasskeysAsync();
     Task<AppResponse<bool>> LogoutAsync();
 }

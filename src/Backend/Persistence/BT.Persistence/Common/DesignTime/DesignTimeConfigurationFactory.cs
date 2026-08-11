@@ -19,9 +19,10 @@ internal static class DesignTimeConfigurationFactory
             .Build();
     }
 
-    public static string GetConnectionString(IConfiguration configuration, string contextConnectionName)
+    public static string GetConnectionString(IConfiguration configuration, string contextConnectionName, string fallbackConnectionName = "DefaultConnection")
     {
         var connectionString = configuration.GetConnectionString(contextConnectionName)
+            ?? configuration.GetConnectionString(fallbackConnectionName)
             ?? configuration.GetConnectionString("DefaultConnection");
 
         if (string.IsNullOrWhiteSpace(connectionString) ||

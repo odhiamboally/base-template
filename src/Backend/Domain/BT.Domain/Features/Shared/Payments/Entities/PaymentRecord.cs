@@ -57,6 +57,12 @@ public class PaymentRecord : BaseEntity, IAuditable, ISoftDeletable, IHasDomainE
 
     public void UpdateStatus(PaymentStatus status, string? providerReference = null, string? statusMessage = null)
     {
+        if (Status == PaymentStatus.Success || Status == PaymentStatus.Failed || Status == PaymentStatus.Cancelled)
+        {
+            // Already in a terminal state, ignore updates to ensure strict idempotency
+            return;
+        }
+
         Status = status;
         if (providerReference != null)
         {

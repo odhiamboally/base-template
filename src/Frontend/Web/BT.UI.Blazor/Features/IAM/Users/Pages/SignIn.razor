@@ -7,6 +7,9 @@
 @inject ILogger<SignIn> Logger
 @inject ISnackbar Snackbar
 @inject IOptions<BackendApiSettings> BackendApiSettings
+@inject BT.UI.Rcl.Features.IAM.Users.Contracts.Interfaces.IAuthService AuthService
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <PageTitle>Sign in | Base Template</PageTitle>
 
@@ -30,7 +33,7 @@
             <div class="form-stack">
                 <div>
                     <label for="username">Username or email</label>
-                    <InputText id="username" class="form-control form-control-lg" @bind-Value="FormModel!.UserName" autocomplete="username" />
+                    <InputText id="username" class="form-control form-control-lg" @bind-Value="FormModel!.UserName" autocomplete="username webauthn" />
                     <ValidationMessage For="@(() => FormModel!.UserName)" />
                 </div>
 
@@ -55,6 +58,10 @@
                 <div class="auth-separator" style="text-align: center; margin: 1rem 0;">
                     <span style="background-color: var(--mud-palette-surface); padding: 0 10px; color: var(--mud-palette-text-secondary); font-size: 0.875rem; text-transform: uppercase;">or</span>
                 </div>
+
+                <button class="btn btn-outline-primary btn-lg w-100 mb-2" type="button" @onclick="SignInWithPasskeyAsync" disabled="@_isBusy">
+                    Sign in with passkey
+                </button>
 
                 @{
                     var apiBaseUrl = BackendApiSettings.Value.BaseUrl.TrimEnd('/');
@@ -85,6 +92,10 @@
     private bool _isError;
     private string? _message;
 
+    // Passkey Conditional UI state
+    private DotNetObjectReference<SignIn>? _dotNetRef;
+    private Guid _conditionalCorrelationId;
+
     protected override void OnInitialized()
     {
         FormModel ??= new();
@@ -101,6 +112,80 @@
         if (AuthSession.IsAuthenticated)
         {
             Navigation.NavigateTo(AuthSession.MfaEnrollmentRequired ? "/iam/security" : "/dashboard");
+            return;
+        }
+
+        // Start Conditional UI passkey flow
+        await StartConditionalPasskeyAsync();
+    }
+
+    private async Task StartConditionalPasskeyAsync()
+    {
+        try
+        {
+            // Fire both in parallel: feature-detect (JS/SignalR) and options fetch (HTTP) have zero dependency on each other
+            var isSupportedTask = JSRuntime.InvokeAsync<bool>("webauthn.isConditionalMediationAvailable").AsTask();
+            var optionsTask = AuthService.RequestPasskeyLoginOptionsAsync(new RequestPasskeyLoginOptionsRequest(null));
+
+            await Task.WhenAll(isSupportedTask, optionsTask);
+
+            if (!isSupportedTask.Result)
+            {
+                return;
+            }
+
+            var optionsResponse = optionsTask.Result;
+            if (!optionsResponse.IsSuccess || optionsResponse.Data is null)
+            {
+                return;
+            }
+
+            _conditionalCorrelationId = optionsResponse.Data.CorrelationId;
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            // Fire-and-forget: JS calls back into OnConditionalAssertionCompleted when the user taps a passkey
+            _ = JSRuntime.InvokeVoidAsync(
+                "webauthn.startConditionalAssertion",
+                optionsResponse.Data.Options.GetRawText(),
+                _dotNetRef).AsTask();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to start conditional passkey assertion.");
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnConditionalAssertionCompleted(System.Text.Json.JsonElement assertionResponse)
+    {
+        try
+        {
+            var request = new BT.SharedKernel.Features.IAM.Users.Dtos.LoginWithPasskeyRequest(
+                null,
+                _conditionalCorrelationId,
+                assertionResponse);
+
+            var response = await AuthSession.SignInWithPasskeyAsync(request);
+            if (!response.IsSuccess || response.Data is null)
+            {
+                await InvokeAsync(() =>
+                {
+                    _isError = true;
+                    _message = GetDisplayMessage(response.Message, "Passkey sign-in failed. Please try again.");
+                    Snackbar.Add(_message, Severity.Error);
+                    StateHasChanged();
+                });
+                return;
+            }
+
+            await InvokeAsync(() =>
+            {
+                Navigation.NavigateTo(AuthSession.MfaEnrollmentRequired ? "/iam/security" : "/dashboard");
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error completing conditional passkey sign-in.");
         }
     }
 
@@ -164,5 +249,99 @@
         }
 
         return UserMessageSanitizer.Normalize(message, fallback);
+    }
+
+    private async Task SignInWithPasskeyAsync()
+    {
+        _isBusy = true;
+        _message = null;
+        _isError = false;
+
+        // Cancel any ongoing conditional UI flow
+        try { await JSRuntime.InvokeVoidAsync("webauthn.cancelConditionalAssertion"); }
+        catch { /* ignore */ }
+
+        try
+        {
+            var form = FormModel ??= new();
+            var optionsResponse = await AuthService.RequestPasskeyLoginOptionsAsync(
+                new RequestPasskeyLoginOptionsRequest(string.IsNullOrWhiteSpace(form.UserName) ? null : form.UserName));
+
+            if (!optionsResponse.IsSuccess || optionsResponse.Data is null)
+            {
+                _isError = true;
+                _message = GetDisplayMessage(optionsResponse.Message, "Could not start passkey login.");
+                Snackbar.Add(_message, Severity.Error);
+                return;
+            }
+
+            var correlationId = optionsResponse.Data.CorrelationId;
+            var assertionJson = await JSRuntime.InvokeAsync<string>(
+                "webauthn.startExplicitAssertion",
+                optionsResponse.Data.Options.GetRawText());
+
+            var assertion = System.Text.Json.JsonDocument.Parse(assertionJson).RootElement;
+
+            var request = new BT.SharedKernel.Features.IAM.Users.Dtos.LoginWithPasskeyRequest(
+                string.IsNullOrWhiteSpace(form.UserName) ? null : form.UserName,
+                correlationId,
+                assertion);
+            var response = await AuthSession.SignInWithPasskeyAsync(request);
+
+            if (!response.IsSuccess || response.Data is null)
+            {
+                _isError = true;
+                _message = GetDisplayMessage(response.Message, "We could not sign you in with your passkey.");
+                Snackbar.Add(_message, Severity.Error);
+                return;
+            }
+
+            if (response.Data.Requires2FA)
+            {
+                Navigation.NavigateTo($"/iam/verify-2fa?userId={Uri.EscapeDataString(response.Data.UserId)}");
+                return;
+            }
+
+            if (!AuthSession.IsAuthenticated)
+            {
+                _isError = true;
+                _message = GetDisplayMessage(
+                    AuthSession.LastError,
+                    "Sign in succeeded, but we could not load your profile. Please confirm the API is running and try again.");
+                Snackbar.Add(_message, Severity.Warning);
+                return;
+            }
+
+            Navigation.NavigateTo(AuthSession.MfaEnrollmentRequired ? "/iam/security" : "/dashboard");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error while signing in with passkey.");
+            _isError = true;
+            _message = "Passkey sign-in was cancelled or failed.";
+            Snackbar.Add(_message, Severity.Error);
+
+            // Restart conditional UI for the next attempt
+            _ = StartConditionalPasskeyAsync();
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("webauthn.cancelConditionalAssertion");
+        }
+        catch (Microsoft.JSInterop.JSDisconnectedException) { /* circuit torn down */ }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error cancelling conditional passkey on dispose.");
+        }
+
+        _dotNetRef?.Dispose();
     }
 }

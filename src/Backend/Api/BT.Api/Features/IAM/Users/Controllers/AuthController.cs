@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BT.Api.Common.Controllers;
 using BT.Application.Features.IAM.Users.Commands;
+using BT.Application.Features.IAM.Users.Queries;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.IAM.Users.Dtos;
 using MediatR;
@@ -241,6 +242,69 @@ public sealed class AuthController(ISender sender) : BaseController
 
         var response = await sender
             .Send(new ExchangeSsoCodeCommand(request.Code))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("passkey/register/options")]
+    [Authorize]
+    public async Task<IActionResult> RequestPasskeyRegistrationOptions()
+    {
+        var response = await sender
+            .Send(new RequestPasskeyRegistrationOptionsCommand())
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("passkey/register")]
+    [Authorize]
+    public async Task<IActionResult> RegisterPasskey([FromBody] RegisterPasskeyRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var response = await sender
+            .Send(new RegisterPasskeyCommand(request.AttestationResponse))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("passkey/login/options")]
+    [AllowAnonymous]
+    [EnableRateLimiting("LoginPolicy")]
+    public async Task<IActionResult> RequestPasskeyLoginOptions([FromBody] RequestPasskeyLoginOptionsRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var response = await sender
+            .Send(new RequestPasskeyLoginOptionsCommand(request.Username))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpPost("passkey/login")]
+    [AllowAnonymous]
+    [EnableRateLimiting("LoginPolicy")]
+    public async Task<IActionResult> LoginWithPasskey([FromBody] LoginWithPasskeyRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var response = await sender
+            .Send(new LoginWithPasskeyCommand(request.Username, request.CorrelationId, request.AssertionResponse))
+            .ConfigureAwait(false);
+
+        return HandleResponse(response);
+    }
+
+    [HttpGet("passkeys")]
+    [Authorize]
+    public async Task<IActionResult> GetPasskeys()
+    {
+        var response = await sender
+            .Send(new GetPasskeysQuery())
             .ConfigureAwait(false);
 
         return HandleResponse(response);

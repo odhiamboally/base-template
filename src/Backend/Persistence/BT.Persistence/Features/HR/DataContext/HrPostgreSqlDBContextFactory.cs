@@ -10,7 +10,7 @@ public class HrPostgreSqlDBContextFactory : IDesignTimeDbContextFactory<HrPostgr
     {
         var configuration = DesignTimeConfigurationFactory.Create();
         var optionsBuilder = new DbContextOptionsBuilder<HrPostgreSqlDBContext>();
-        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "HrConnection");
+        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "HrConnection", "DefaultPostgreSqlConnection");
 
         optionsBuilder.UseNpgsql(
             connectionString,

@@ -124,6 +124,10 @@ public static class DependencyInjection
                 .ValidateDataAnnotations()
                 .Validate(settings => settings.DefaultTenantId != Guid.Empty, "Tenant:DefaultTenantId must be configured.")
                 .ValidateOnStart();
+            services.AddOptions<PasskeySettings>()
+                .Bind(configuration.GetSection(PasskeySettings.SectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
             var cacheSettings = configuration.GetSection(CacheSettings.SectionName).Get<CacheSettings>()
                 ?? throw new InvalidOperationException("CacheSettings not found.");
@@ -220,6 +224,15 @@ public static class DependencyInjection
                 : new NoOpBackgroundJobService());
         services.AddScoped<IEncryptionService, EncryptionService>();
         services.AddScoped<IOrgSettingsProvider, CachedOrgSettingsProvider>();
+        
+        services.AddFido2(options =>
+        {
+            options.ServerDomain = "localhost";
+            options.ServerName = "BaseTemplate";
+            options.Origins = new HashSet<string> { "https://localhost:7049", "https://localhost:7129", "http://localhost:5157", "http://localhost:5106" };
+        });
+        
+        services.AddScoped<IPasskeyService, PasskeyService>();
 
         return services;
     }
@@ -282,6 +295,20 @@ public static class DependencyInjection
                 authenticationBuilder.AddOpenIdConnect("EntraId", options =>
                 {
                     ConfigureEntraId(options, entraIdSettings);
+                });
+            }
+
+            var passkeySettings = configuration.GetSection(PasskeySettings.SectionName).Get<PasskeySettings>() 
+                ?? new PasskeySettings();
+
+            if (passkeySettings.Enabled)
+            {
+                services.AddFido2(options =>
+                {
+                    options.ServerDomain = passkeySettings.ServerDomain;
+                    options.ServerName = passkeySettings.ServerName;
+                    options.Origins = new System.Collections.Generic.HashSet<string>(passkeySettings.Origins);
+                    options.TimestampDriftTolerance = 300000;
                 });
             }
 

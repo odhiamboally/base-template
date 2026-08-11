@@ -49,7 +49,7 @@ public sealed class CacheInvalidationBehaviorTests
         public Task<bool> ExistsAsync(string key, CancellationToken ct = default)
             => Task.FromResult(false);
 
-        public Task SetAsync<T>(string key, T value, TimeSpan expiration, CancellationToken ct = default)
+        public Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken ct = default)
         {
             SetKeys.Add(key);
             return Task.CompletedTask;

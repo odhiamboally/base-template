@@ -12,5 +12,5 @@ public record GetOrgSettingsQuery
     public string CacheGroup => "tenant-settings";
     public string Discriminator => "all";
     public string? CacheUserId => null;
-    public bool IsVersioned => false;
+    public bool IsVersioned => true;
 }

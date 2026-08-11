@@ -10,7 +10,7 @@ public class IamPostgreSqlDBContextFactory : IDesignTimeDbContextFactory<IamPost
     {
         var configuration = DesignTimeConfigurationFactory.Create();
         var optionsBuilder = new DbContextOptionsBuilder<IamPostgreSqlDBContext>();
-        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "IamConnection");
+        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "IamConnection", "DefaultPostgreSqlConnection");
 
         optionsBuilder.UseNpgsql(
             connectionString,

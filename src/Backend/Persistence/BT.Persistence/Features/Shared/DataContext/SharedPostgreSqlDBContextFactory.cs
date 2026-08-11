@@ -10,7 +10,7 @@ public class SharedPostgreSqlDBContextFactory : IDesignTimeDbContextFactory<Shar
     {
         var configuration = DesignTimeConfigurationFactory.Create();
         var optionsBuilder = new DbContextOptionsBuilder<SharedPostgreSqlDBContext>();
-        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "SharedConnection");
+        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "SharedConnection", "DefaultPostgreSqlConnection");
 
         optionsBuilder.UseNpgsql(
             connectionString,

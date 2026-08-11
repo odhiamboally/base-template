@@ -2729,6 +2729,86 @@ namespace BT.Persistence.Features.IAM.Migrations.SqlServer
                     b.ToTable("AppUserTotpSecrets", (string)null);
                 });
 
+            modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.Fido2Credential", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AaGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CredType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<byte[]>("CredentialId")
+                        .IsRequired()
+                        .HasColumnType("varbinary(900)");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("PublicKey")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<DateTimeOffset>("RegDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<long>("SignatureCounter")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("UserHandle")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CredentialId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Fido2Credentials", (string)null);
+                });
+
             modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3037,6 +3117,17 @@ namespace BT.Persistence.Features.IAM.Migrations.SqlServer
                     b.Navigation("AppUser");
                 });
 
+            modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.Fido2Credential", b =>
+                {
+                    b.HasOne("BT.Domain.Features.IAM.Users.Entities.AppUser", "User")
+                        .WithMany("Fido2Credentials")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.RefreshToken", b =>
                 {
                     b.HasOne("BT.Domain.Features.IAM.Users.Entities.AppUser", "AppUser")
@@ -3112,6 +3203,8 @@ namespace BT.Persistence.Features.IAM.Migrations.SqlServer
 
             modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.AppUser", b =>
                 {
+                    b.Navigation("Fido2Credentials");
+
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("TrustedDevices");

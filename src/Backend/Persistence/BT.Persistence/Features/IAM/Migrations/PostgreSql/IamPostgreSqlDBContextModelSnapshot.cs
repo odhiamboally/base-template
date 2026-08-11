@@ -2740,6 +2740,87 @@ namespace BT.Persistence.Features.IAM.Migrations.PostgreSql
                     b.ToTable("AppUserTotpSecrets", (string)null);
                 });
 
+            modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.Fido2Credential", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AaGuid")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CredType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<byte[]>("CredentialId")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<byte[]>("PublicKey")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTimeOffset>("RegDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea")
+                        .HasDefaultValue(new byte[0]);
+
+                    b.Property<long>("SignatureCounter")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("UserHandle")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CredentialId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Fido2Credentials", (string)null);
+                });
+
             modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3050,6 +3131,17 @@ namespace BT.Persistence.Features.IAM.Migrations.PostgreSql
                     b.Navigation("AppUser");
                 });
 
+            modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.Fido2Credential", b =>
+                {
+                    b.HasOne("BT.Domain.Features.IAM.Users.Entities.AppUser", "User")
+                        .WithMany("Fido2Credentials")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.RefreshToken", b =>
                 {
                     b.HasOne("BT.Domain.Features.IAM.Users.Entities.AppUser", "AppUser")
@@ -3125,6 +3217,8 @@ namespace BT.Persistence.Features.IAM.Migrations.PostgreSql
 
             modelBuilder.Entity("BT.Domain.Features.IAM.Users.Entities.AppUser", b =>
                 {
+                    b.Navigation("Fido2Credentials");
+
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("TrustedDevices");

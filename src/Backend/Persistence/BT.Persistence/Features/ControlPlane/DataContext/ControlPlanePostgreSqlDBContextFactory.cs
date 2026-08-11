@@ -10,7 +10,7 @@ public class ControlPlanePostgreSqlDBContextFactory : IDesignTimeDbContextFactor
     {
         var configuration = DesignTimeConfigurationFactory.Create();
         var optionsBuilder = new DbContextOptionsBuilder<ControlPlanePostgreSqlDBContext>();
-        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "ControlPlaneConnection");
+        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "ControlPlaneConnection", "DefaultPostgreSqlConnection");
 
         optionsBuilder.UseNpgsql(
             connectionString,

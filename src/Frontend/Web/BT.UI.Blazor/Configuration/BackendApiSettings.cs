@@ -71,6 +71,16 @@ internal sealed class IamAuthEndpointSettings
     public string ProfilePictureContent { get; init; } = "api/v{version}/iam/users/me/profile-picture/content";
 
     public string Logout { get; init; } = "api/v{version}/iam/auth/logout";
+
+    public string PasskeyRegistrationOptions { get; init; } = "api/v{version}/iam/auth/passkey/register/options";
+
+    public string PasskeyRegister { get; init; } = "api/v{version}/iam/auth/passkey/register";
+
+    public string PasskeyLoginOptions { get; init; } = "api/v{version}/iam/auth/passkey/login/options";
+
+    public string PasskeyLogin { get; init; } = "api/v{version}/iam/auth/passkey/login";
+    
+    public string Passkeys { get; init; } = "api/v{version}/iam/auth/passkeys";
 }
 
 internal sealed class IamUserEndpointSettings

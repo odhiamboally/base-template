@@ -18,6 +18,10 @@ namespace BT.Application.Contracts.Interfaces.Common;
 public interface ICacheService
 {
     // ── Write ─────────────────────────────────────────────────────────────────
+    Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken ct = default);
+    
+    // ── Read ──────────────────────────────────────────────────────────────────
+    Task<T?> GetAsync<T>(string key, CancellationToken ct = default);
 
     // ── Invalidate ────────────────────────────────────────────────────────────
 

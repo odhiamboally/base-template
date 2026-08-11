@@ -1,0 +1,123 @@
+using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
+using BT.Domain.Features.Shared.Contracts;
+using BT.Domain.Features.Shared.Payments.Enums;
+using BT.SharedKernel.Extensions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace BT.Api.Features.Shared.Payments.Workers;
+
+/// <summary>
+/// A background service that periodically checks for pending payments 
+/// and queries the payment provider to reconcile their true status.
+/// </summary>
+public sealed class PaymentReconciliationWorker(
+    IServiceProvider serviceProvider,
+    ILogger<PaymentReconciliationWorker> logger) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        logger.LogInformation("Payment Reconciliation Worker started.");
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await ReconcilePendingPaymentsAsync(stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred during payment reconciliation.");
+            }
+
+            // Wait 5 minutes before sweeping again
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        }
+        
+        logger.LogInformation("Payment Reconciliation Worker stopping.");
+    }
+
+    private async Task ReconcilePendingPaymentsAsync(CancellationToken cancellationToken)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var sharedUnitOfWork = scope.ServiceProvider.GetRequiredService<ISharedUnitOfWork>();
+        var paymentGateway = scope.ServiceProvider.GetRequiredService<IPaymentGateway>();
+
+        // Find payments that have been in Initiated status for more than 5 minutes
+        var threshold = DateTimeOffset.UtcNow.AddMinutes(-5);
+
+        // Sweeping pending records
+        var pendingRecords = await sharedUnitOfWork.PaymentRecordRepository.ListAsync(
+            q => q.Where(p => p.Status == PaymentStatus.Initiated && p.CreatedAt <= threshold).Take(50), 
+            cancellationToken);
+
+        if (pendingRecords.Count == 0)
+        {
+            return;
+        }
+
+        logger.LogInformation("Found {Count} pending payments for reconciliation sweep.", pendingRecords.Count);
+
+        foreach (var record in pendingRecords)
+        {
+            if (string.IsNullOrWhiteSpace(record.ProviderReference))
+            {
+                logger.LogWarning("Payment {PaymentId} has no ProviderReference. Skipping reconciliation.", record.Id);
+                continue; 
+            }
+
+            try
+            {
+                var gatewayResponse = await paymentGateway.GetStatusAsync(record.ProviderReference, record.Provider, cancellationToken);
+                
+                if (gatewayResponse.IsSuccess && gatewayResponse.Data != null && !string.IsNullOrWhiteSpace(gatewayResponse.Data.Status))
+                {
+                    // Map provider status to standard enum safely
+                    PaymentStatus parsedStatus;
+                    if (Enum.TryParse<PaymentStatus>(gatewayResponse.Data.Status, true, out var parsed))
+                    {
+                        parsedStatus = parsed;
+                    }
+                    else if (gatewayResponse.Data.Status.Equals("unpaid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        parsedStatus = PaymentStatus.Pending;
+                    }
+                    else if (gatewayResponse.Data.Status.Equals("paid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        parsedStatus = PaymentStatus.Success;
+                    }
+                    else
+                    {
+                        logger.LogWarning("Unknown payment status {Status} from provider {Provider}", gatewayResponse.Data.Status, record.Provider);
+                        continue;
+                    }
+
+                    if (parsedStatus == PaymentStatus.Success)
+                    {
+                        logger.LogInformation("Reconciling payment {PaymentId} to Success.", record.Id);
+                        record.UpdateStatus(PaymentStatus.Success, statusMessage: "Reconciled from background gateway check");
+                    }
+                    else if (parsedStatus == PaymentStatus.Failed)
+                    {
+                        logger.LogInformation("Reconciling payment {PaymentId} to Failed.", record.Id);
+                        record.UpdateStatus(PaymentStatus.Failed, statusMessage: "Reconciled from background gateway check");
+                    }
+                    else if (parsedStatus == PaymentStatus.Cancelled)
+                    {
+                        logger.LogInformation("Reconciling payment {PaymentId} to Cancelled.", record.Id);
+                        record.UpdateStatus(PaymentStatus.Cancelled, statusMessage: "Reconciled from background gateway check");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to reconcile payment {PaymentId} against provider {Provider}", record.Id, record.Provider);
+            }
+        }
+
+        // Commit the transaction to save all state transitions and dispatch domain events
+        await sharedUnitOfWork.CompleteAsync(cancellationToken);
+    }
+}

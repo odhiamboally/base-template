@@ -42,7 +42,12 @@ public sealed class ApiAuthorizationTests
         "ChangePassword",
         "SsoLogin",
         "SsoCallback",
-        "ExchangeSsoCode"
+        "ExchangeSsoCode",
+        "LoginWithPasskey",
+        "RegisterPasskey",
+        "RequestPasskeyLoginOptions",
+        "RequestPasskeyRegistrationOptions",
+        "GetPasskeys"
     ];
 
     [Fact]
