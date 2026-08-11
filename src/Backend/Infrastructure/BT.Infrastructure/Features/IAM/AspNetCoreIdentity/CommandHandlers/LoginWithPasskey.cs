@@ -80,15 +80,22 @@ internal sealed class LoginWithPasskey(
         }
         else
         {
-            // Discoverable credential path: resolve user and credential in a single join query
-            var result = await (
-                from cred in iamUnitOfWork.Fido2CredentialRepository.FindByCondition(c => c.CredentialId == credentialIdBytes)
-                join u in userManager.Users on cred.UserId equals u.Id
-                select new { Credential = cred, User = u }
-            ).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            // Discoverable credential path: find the credential first
+            var untrackedCred = await iamUnitOfWork.Fido2CredentialRepository
+                .FindByCondition(c => c.CredentialId == credentialIdBytes)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
 
-            credential = result?.Credential;
-            user = result?.User;
+            if (untrackedCred != null)
+            {
+                user = await userManager.Users
+                    .Include(u => u.Fido2Credentials)
+                    .FirstOrDefaultAsync(u => u.Id == untrackedCred.UserId, cancellationToken)
+                    .ConfigureAwait(false);
+
+                // Use the tracked credential so EF can detect changes to SignatureCounter
+                credential = user?.Fido2Credentials.FirstOrDefault(c => c.CredentialId.SequenceEqual(credentialIdBytes));
+            }
         }
 
         if (user == null || !user.IsActive || user.IsDeleted || credential == null)
