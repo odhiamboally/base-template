@@ -22,6 +22,8 @@ The rule is not "create custom repository methods for everything." The rule is "
 
 Custom persistence context-related types use the project `DB` acronym. Use names such as `IamDBContext`, `IamDBContextFactory`, `DBContextHelper`, and `ITenantFilteredDBContext`. Keep Microsoft framework API names unchanged, for example `DbContext`, `DbSet<T>`, `AddDbContext`, and `IDesignTimeDbContextFactory`.
 
+When creating `IDesignTimeDbContextFactory<T>` implementations for specific providers, always specify a provider-specific fallback connection string (e.g., `DesignTimeConfigurationFactory.GetConnectionString(..., fallbackConnectionName: "DefaultPostgreSqlConnection")`) so that the factory doesn't crash reading an incompatible global connection string (like `Encrypt=True` for Postgres).
+
 ---
 
 ## 2. Generic Repository Responsibilities

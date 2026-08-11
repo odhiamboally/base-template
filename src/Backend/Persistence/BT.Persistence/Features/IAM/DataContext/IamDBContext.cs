@@ -50,6 +50,7 @@ public class IamDBContext : IdentityDbContext<AppUser, AppRole, string>, ITenant
     public DbSet<AppUserTotpSecret> AppUserTotpSecrets { get; set; }
     public DbSet<AppUserSession> AppUserSessions { get; set; }
     public DbSet<AppUserDevice> AppUserDevices { get; set; }
+    public DbSet<Fido2Credential> Fido2Credentials { get; set; }
     public DbSet<TempTotpSecret> TempTotpSecrets { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Permission> Permissions { get; set; }

@@ -10,7 +10,7 @@ public class BankingPostgreSqlDBContextFactory : IDesignTimeDbContextFactory<Ban
     {
         var configuration = DesignTimeConfigurationFactory.Create();
         var optionsBuilder = new DbContextOptionsBuilder<BankingPostgreSqlDBContext>();
-        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "BankingConnection");
+        var connectionString = DesignTimeConfigurationFactory.GetConnectionString(configuration, "BankingConnection", "DefaultPostgreSqlConnection");
 
         optionsBuilder.UseNpgsql(
             connectionString,

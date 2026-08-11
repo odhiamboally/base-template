@@ -167,6 +167,57 @@ internal sealed class AuthService(IBackendApiClient apiClient, ITokenStorage sto
             Format(_apiSettings.Endpoints.Iam.Users.TotpStatus, ("userId", userId)));
     }
 
+    public Task<AppResponse<System.Text.Json.JsonElement>> RequestPasskeyRegistrationOptionsAsync()
+        => SendWithRefreshAsync<System.Text.Json.JsonElement>(HttpMethod.Post, Format(_apiSettings.Endpoints.Iam.Auth.PasskeyRegistrationOptions));
+
+    public Task<AppResponse<bool>> RegisterPasskeyAsync(RegisterPasskeyRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return SendWithRefreshDataAsync<bool>(
+            HttpMethod.Post,
+            Format(_apiSettings.Endpoints.Iam.Auth.PasskeyRegister),
+            request);
+    }
+
+    public Task<AppResponse<PasskeyLoginOptionsResponse>> RequestPasskeyLoginOptionsAsync(RequestPasskeyLoginOptionsRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return apiClient.SendAsync<PasskeyLoginOptionsResponse>(
+            HttpMethod.Post,
+            Format(_apiSettings.Endpoints.Iam.Auth.PasskeyLoginOptions),
+            request,
+            requiresAuthentication: false,
+            unavailableMessage: "The identity service is unavailable. Please try again.",
+            timeoutMessage: "The identity service timed out. Please try again.");
+    }
+
+    public async Task<AppResponse<LoginResponse>> LoginWithPasskeyAsync(LoginWithPasskeyRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var response = await apiClient.SendAsync<LoginResponse>(
+            HttpMethod.Post,
+            Format(_apiSettings.Endpoints.Iam.Auth.PasskeyLogin),
+            request,
+            requiresAuthentication: false,
+            unavailableMessage: "The identity service is unavailable. Please try again.",
+            timeoutMessage: "The identity service timed out. Please try again.").ConfigureAwait(false);
+
+        if (response.IsSuccess && response.Data is { IsAuthenticated: true, Requires2FA: false } login)
+        {
+            await storage.SaveAsync(login.Token, login.RefreshToken, login.SessionId).ConfigureAwait(false);
+        }
+
+        return response;
+    }
+
+    public Task<AppResponse<IReadOnlyList<PasskeyResponse>>> GetPasskeysAsync()
+        => SendWithRefreshAsync<IReadOnlyList<PasskeyResponse>>(
+            HttpMethod.Get, 
+            Format(_apiSettings.Endpoints.Iam.Auth.Passkeys));
+
     public async Task<AppResponse<bool>> LogoutAsync()
     {
         try

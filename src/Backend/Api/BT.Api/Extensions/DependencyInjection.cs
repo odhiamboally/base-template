@@ -87,6 +87,8 @@ internal static partial class DependencyInjection
 
         services.AddValidatorsFromAssembly(assembly);
 
+        services.AddHostedService<BT.Api.Features.Shared.Payments.Workers.PaymentReconciliationWorker>();
+
         return services;
     }
 

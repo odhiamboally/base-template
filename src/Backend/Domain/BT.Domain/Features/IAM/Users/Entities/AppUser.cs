@@ -77,6 +77,9 @@ public class AppUser : IdentityUser, ISoftDeletable, IHasDomainEvents
     [JsonIgnore]
     public virtual ICollection<AppUserDevice> TrustedDevices { get; } = [];
 
+    [JsonIgnore]
+    public virtual ICollection<Fido2Credential> Fido2Credentials { get; } = [];
+
 
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();

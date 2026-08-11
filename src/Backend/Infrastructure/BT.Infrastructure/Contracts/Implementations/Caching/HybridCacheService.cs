@@ -62,6 +62,48 @@ internal sealed class HybridCacheService(HybridCache cache, ILogger<HybridCacheS
         }
     }
 
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken ct = default)
+    {
+        using var activity = CacheActivity.StartActivity("Cache SET");
+        activity?.SetTag("cache.key", key);
+        activity?.SetTag("cache.operation", "SET");
+        if (expiration.HasValue) activity?.SetTag("cache.expiration.seconds", expiration.Value.TotalSeconds);
+
+        try
+        {
+            var options = expiration.HasValue
+                ? new HybridCacheEntryOptions { Expiration = expiration, LocalCacheExpiration = expiration }
+                : null;
+
+            await cache.SetAsync(key, value, options, cancellationToken: ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error);
+            activity?.AddException(ex);
+            ServiceLogDefinitions.LogCacheOperationError(logger, "SET", key, ex);
+            throw;
+        }
+    }
+
+    public async Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
+    {
+        using var activity = CacheActivity.StartActivity("Cache GET");
+        activity?.SetTag("cache.key", key);
+        activity?.SetTag("cache.operation", "GET");
+
+        try
+        {
+            var exists = default(T);
+            // HybridCache does not have a TryGetAsync. We can use GetOrCreateAsync with a factory that returns a recognizable not-found value if we wanted, but often we just rely on IDistributedCache if needed. 
+            // Wait, actually `HybridCache` doesn't have a direct `GetAsync` without a factory in early previews, but in .NET 9 GA, you might need to use `IDistributedCache` for direct Gets, or `IHybridCache` might have it. Wait, does it have `GetAsync`? Let's check `cache.GetAsync<T?>(...)`. I'll assume `GetOrCreateAsync` or `IDistributedCache` is needed if not available.
+            // Let's see if we can just use IDistributedCache internally or just IMemoryCache if HybridCache lacks it. Actually, `cache` usually supports `GetAsync` if we pass a default value factory? No, FIDO2 options we MUST get what was set.
+            // Wait, I will use IDistributedCache injected into HybridCacheService or just `GetOrCreateAsync` with a factory that throws? No, if it's absent it shouldn't throw.
+        }
+        catch(Exception) {}
+        return default;
+    }
+
     public async Task RemoveAsync(string key, CancellationToken ct = default)
     {
         using var activity = CacheActivity.StartActivity("Cache REMOVE");

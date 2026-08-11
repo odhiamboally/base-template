@@ -5,6 +5,7 @@
 @inject IAuthenticatorQrCodeService QrCodeService
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Security | Base Template</PageTitle>
 
@@ -56,6 +57,46 @@
                 @if (!string.IsNullOrWhiteSpace(_passwordMessage))
                 {
                     <MudAlert Severity="@(_passwordIsError ? Severity.Error : Severity.Success)" Variant="Variant.Outlined" Class="mt-3">@_passwordMessage</MudAlert>
+                }
+            </article>
+
+            <article class="security-card">
+                <div class="card-heading">
+                    <span>Passkeys</span>
+                    @if (_passkeys?.Count > 0)
+                    {
+                        <strong class="status-good">Enabled (@_passkeys.Count)</strong>
+                    }
+                </div>
+                <p>Register a passkey to sign in without a password using your device's biometric authentication.</p>
+
+                @if (!_hasLoadedPasskeys)
+                {
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-3">
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                        Loading passkeys...
+                    </MudAlert>
+                }
+                else if (_passkeys?.Count > 0)
+                {
+                    <dl class="status-list mb-3">
+                        @foreach (var pk in _passkeys)
+                        {
+                            <div>
+                                <dt>@pk.DisplayName</dt>
+                                <dd>Added @pk.CreatedAt.ToString("MMM dd, yyyy")</dd>
+                            </div>
+                        }
+                    </dl>
+                }
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RegisterPasskeyAsync" Disabled="@_isRegisteringPasskey" Class="mt-3">
+                    @(_isRegisteringPasskey ? "Registering..." : "Register New Passkey")
+                </MudButton>
+
+                @if (!string.IsNullOrWhiteSpace(_passkeyMessage))
+                {
+                    <MudAlert Severity="@(_passkeyIsError ? Severity.Error : Severity.Success)" Variant="Variant.Outlined" Class="mt-3">@_passkeyMessage</MudAlert>
                 }
             </article>
 
@@ -176,6 +217,12 @@
     private string? _passwordMessage;
     private readonly ChangePasswordFormModel _passwordModel = new();
 
+    private bool _isRegisteringPasskey;
+    private bool _passkeyIsError;
+    private string? _passkeyMessage;
+    private bool _hasLoadedPasskeys;
+    private IReadOnlyList<BT.SharedKernel.Features.IAM.Users.Dtos.PasskeyResponse>? _passkeys;
+
     private bool IsTotpEnabled => _otpStatus?.IsEnabled == true;
 
     private string SetupButtonText => IsTotpEnabled
@@ -200,7 +247,23 @@
 
         _verification.UserId = AuthSession.CurrentUser.AppUserId;
         await LoadOtpStatusAsync();
+        await LoadPasskeysAsync();
         StateHasChanged();
+    }
+
+    private async Task LoadPasskeysAsync()
+    {
+        _hasLoadedPasskeys = false;
+        var result = await AuthService.GetPasskeysAsync();
+        if (result.IsSuccess)
+        {
+            _passkeys = result.Data;
+        }
+        else
+        {
+            _passkeys = null;
+        }
+        _hasLoadedPasskeys = true;
     }
 
     private async Task LoadOtpStatusAsync()
@@ -372,6 +435,61 @@
 
         await LoadOtpStatusAsync();
         _message = response.Message ?? "Authenticator-app 2FA has been disabled.";
+    }
+
+    private async Task RegisterPasskeyAsync()
+    {
+        _isRegisteringPasskey = true;
+        _passkeyIsError = false;
+        _passkeyMessage = null;
+
+        var optionsResponse = await AuthService.RequestPasskeyRegistrationOptionsAsync();
+        if (!optionsResponse.IsSuccess || optionsResponse.Data.ValueKind == System.Text.Json.JsonValueKind.Undefined)
+        {
+            _isRegisteringPasskey = false;
+            _passkeyIsError = true;
+            _passkeyMessage = UserMessageSanitizer.Normalize(optionsResponse.Message, "Could not start passkey registration.");
+            return;
+        }
+
+        try
+        {
+            var isSupported = await JSRuntime.InvokeAsync<bool>("webauthn.isSupported");
+            if (!isSupported)
+            {
+                _isRegisteringPasskey = false;
+                _passkeyIsError = true;
+                _passkeyMessage = "WebAuthn is not supported on this browser/device.";
+                return;
+            }
+
+            var attestationJson = await JSRuntime.InvokeAsync<string>(
+                "webauthn.registerPasskey", 
+                optionsResponse.Data.GetRawText());
+
+            var attestation = System.Text.Json.JsonDocument.Parse(attestationJson).RootElement;
+            var registerResponse = await AuthService.RegisterPasskeyAsync(new BT.SharedKernel.Features.IAM.Users.Dtos.RegisterPasskeyRequest(attestation));
+
+            _isRegisteringPasskey = false;
+
+            if (registerResponse.IsSuccess)
+            {
+                _passkeyMessage = "Passkey successfully registered.";
+                await LoadPasskeysAsync();
+            }
+            else
+            {
+                _passkeyIsError = true;
+                _passkeyMessage = UserMessageSanitizer.Normalize(registerResponse.Message, "Could not complete passkey registration.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _isRegisteringPasskey = false;
+            _passkeyIsError = true;
+            _passkeyMessage = "Passkey registration was cancelled or failed.";
+            Console.WriteLine(ex);
+        }
     }
 
     private async Task SignOutAsync()

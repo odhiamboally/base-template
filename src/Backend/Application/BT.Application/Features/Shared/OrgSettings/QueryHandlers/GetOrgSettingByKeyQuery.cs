@@ -10,7 +10,7 @@ public record GetOrgSettingByKeyQuery(string Key)
     : IRequest<AppResponse<OrgSettingResponse>>, ICachableRequest
 {
     public string CacheGroup => "tenant-settings";
-    public string Discriminator => CacheKeys.Entity("tenant-settings", Key);
+    public string Discriminator => Key;
     public string? CacheUserId => null;
-    public bool IsVersioned => false;
+    public bool IsVersioned => true;
 }
