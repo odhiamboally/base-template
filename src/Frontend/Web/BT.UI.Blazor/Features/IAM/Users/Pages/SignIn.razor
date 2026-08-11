@@ -337,6 +337,7 @@
             await JSRuntime.InvokeVoidAsync("webauthn.cancelConditionalAssertion");
         }
         catch (Microsoft.JSInterop.JSDisconnectedException) { /* circuit torn down */ }
+        catch (InvalidOperationException) { /* JS not available during static prerendering */ }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error cancelling conditional passkey on dispose.");
