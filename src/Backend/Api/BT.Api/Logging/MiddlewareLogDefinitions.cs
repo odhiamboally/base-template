@@ -24,4 +24,7 @@ internal static partial class MiddlewareLogDefinitions
 
     [LoggerMessage(EventId = 1105, Level = LogLevel.Warning, Message = "Blocked request for user {UserId} because MFA enrollment is required. Path: {Path}")]
     public static partial void LogMfaEnrollmentRequired(ILogger logger, string userId, string path);
+
+    [LoggerMessage(EventId = 1106, Level = LogLevel.Warning, Message = "Removed invalid property '{Key}' from schema for type {TypeName}. Consider adding [JsonIgnore] to the source property.")]
+    public static partial void LogRemovedInvalidSchemaProperty(ILogger logger, string key, string typeName);
 }

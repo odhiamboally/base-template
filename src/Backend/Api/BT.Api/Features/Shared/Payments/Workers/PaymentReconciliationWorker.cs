@@ -1,3 +1,4 @@
+using BT.Api.Logging;
 using BT.Application.Features.Shared.Payments.Contracts.Interfaces;
 using BT.Domain.Features.Shared.Contracts;
 using BT.Domain.Features.Shared.Payments.Enums;
@@ -15,11 +16,12 @@ namespace BT.Api.Features.Shared.Payments.Workers;
 /// </summary>
 public sealed class PaymentReconciliationWorker(
     IServiceProvider serviceProvider,
+    TimeProvider timeProvider,
     ILogger<PaymentReconciliationWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Payment Reconciliation Worker started.");
+        PaymentLogDefinitions.LogPaymentReconciliationWorkerStarted(logger);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -29,14 +31,14 @@ public sealed class PaymentReconciliationWorker(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "An error occurred during payment reconciliation.");
+                PaymentLogDefinitions.LogPaymentReconciliationWorkerError(logger, ex);
             }
 
             // Wait 5 minutes before sweeping again
             await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
         }
         
-        logger.LogInformation("Payment Reconciliation Worker stopping.");
+        PaymentLogDefinitions.LogPaymentReconciliationWorkerStopping(logger);
     }
 
     private async Task ReconcilePendingPaymentsAsync(CancellationToken cancellationToken)
@@ -46,7 +48,7 @@ public sealed class PaymentReconciliationWorker(
         var paymentGateway = scope.ServiceProvider.GetRequiredService<IPaymentGateway>();
 
         // Find payments that have been in Initiated status for more than 5 minutes
-        var threshold = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var threshold = timeProvider.GetUtcNow().AddMinutes(-5);
 
         // Sweeping pending records
         var pendingRecords = await sharedUnitOfWork.PaymentRecordRepository.ListAsync(
@@ -58,13 +60,13 @@ public sealed class PaymentReconciliationWorker(
             return;
         }
 
-        logger.LogInformation("Found {Count} pending payments for reconciliation sweep.", pendingRecords.Count);
+        PaymentLogDefinitions.LogFoundPendingPayments(logger, pendingRecords.Count);
 
         foreach (var record in pendingRecords)
         {
             if (string.IsNullOrWhiteSpace(record.ProviderReference))
             {
-                logger.LogWarning("Payment {PaymentId} has no ProviderReference. Skipping reconciliation.", record.Id);
+                PaymentLogDefinitions.LogPaymentMissingProviderReference(logger, record.Id);
                 continue; 
             }
 
@@ -90,30 +92,30 @@ public sealed class PaymentReconciliationWorker(
                     }
                     else
                     {
-                        logger.LogWarning("Unknown payment status {Status} from provider {Provider}", gatewayResponse.Data.Status, record.Provider);
+                        PaymentLogDefinitions.LogUnknownPaymentStatus(logger, gatewayResponse.Data.Status, record.Provider);
                         continue;
                     }
 
                     if (parsedStatus == PaymentStatus.Success)
                     {
-                        logger.LogInformation("Reconciling payment {PaymentId} to Success.", record.Id);
+                        PaymentLogDefinitions.LogReconcilingPaymentStatus(logger, record.Id, "Success");
                         record.UpdateStatus(PaymentStatus.Success, statusMessage: "Reconciled from background gateway check");
                     }
                     else if (parsedStatus == PaymentStatus.Failed)
                     {
-                        logger.LogInformation("Reconciling payment {PaymentId} to Failed.", record.Id);
+                        PaymentLogDefinitions.LogReconcilingPaymentStatus(logger, record.Id, "Failed");
                         record.UpdateStatus(PaymentStatus.Failed, statusMessage: "Reconciled from background gateway check");
                     }
                     else if (parsedStatus == PaymentStatus.Cancelled)
                     {
-                        logger.LogInformation("Reconciling payment {PaymentId} to Cancelled.", record.Id);
+                        PaymentLogDefinitions.LogReconcilingPaymentStatus(logger, record.Id, "Cancelled");
                         record.UpdateStatus(PaymentStatus.Cancelled, statusMessage: "Reconciled from background gateway check");
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Failed to reconcile payment {PaymentId} against provider {Provider}", record.Id, record.Provider);
+                PaymentLogDefinitions.LogPaymentReconciliationFailed(logger, record.Id, record.Provider, ex);
             }
         }
 

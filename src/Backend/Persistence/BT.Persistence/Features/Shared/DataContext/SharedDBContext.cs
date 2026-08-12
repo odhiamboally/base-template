@@ -4,8 +4,6 @@ using BT.Domain.Features.IAM.Contracts;
 using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
-using BT.Domain.Features.Banking.Customers.Lookups;
-using BT.Domain.Features.Shared.Lookups.Entities;
 using BT.Domain.Features.Shared.Payments.Entities;
 using BT.Domain.Features.Shared.OrgSettings.Entities;
 using BT.Persistence.Common;
@@ -49,16 +47,8 @@ public class SharedDBContext : DbContext, ITenantFilteredDBContext
     public DbSet<FailedMessage> FailedMessages { get; set; }
     public DbSet<PaymentRecord> PaymentRecords { get; set; }
     public DbSet<OrgSetting> OrgSettings { get; set; }
-    public DbSet<LookupCatalogType> LookupCatalogTypes { get; set; }
 
-    public DbSet<CustomerStatusLookup> CustomerStatuses { get; set; }
-    public DbSet<CustomerTypeLookup> CustomerTypes { get; set; }
-    public DbSet<SegmentTypeLookup> SegmentTypes { get; set; }
-    public DbSet<SubSegmentTypeLookup> SubSegmentTypes { get; set; }
-    public DbSet<LineOfBusinessLookup> LinesOfBusiness { get; set; }
-    public DbSet<IdentificationTypeLookup> IdentificationTypes { get; set; }
-    public DbSet<DirectorRelationTypeLookup> DirectorRelationTypes { get; set; }
-    public DbSet<FailedMessageStatusLookup> FailedMessageStatuses { get; set; }
+
     public Guid CurrentTenantId => _tenantProvider?.TenantId ?? Guid.Empty;
 
     private List<IDomainEvent> _collectedDomainEvents = [];

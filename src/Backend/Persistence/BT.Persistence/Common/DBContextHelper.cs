@@ -45,6 +45,19 @@ internal static class DBContextHelper
                 }
             }
 
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType.IsEnum)
+                {
+                    property.SetProviderClrType(typeof(string));
+                    
+                    if (property.GetMaxLength() == null)
+                    {
+                        property.SetMaxLength(100);
+                    }
+                }
+            }
+
             ApplyQueryFilters(modelBuilder, entityType, context);
             ApplyCursorPagination(modelBuilder, entityType);
         }

@@ -1,3 +1,4 @@
+
 using BT.Application.Contracts.Interfaces.Common;
 using BT.Application.Features.IAM.Users.Commands;
 using BT.Application.Features.IAM.Users.Contracts.Interfaces;
@@ -37,6 +38,7 @@ internal sealed class LoginWithPasskey(
     IIamUnitOfWork iamUnitOfWork,
     IPasskeyService passkeyService,
     IDistributedCache cacheService,
+    TimeProvider timeProvider,
     IOptions<JwtSettings> jwtSettings,
     ILogger<LoginWithPasskey> logger) : IRequestHandler<LoginWithPasskeyCommand, AppResponse<LoginResponse>>
 {
@@ -117,7 +119,7 @@ internal sealed class LoginWithPasskey(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Passkey assertion threw an exception for user {Username}", user.UserName);
+            ServiceLogDefinitions.LogPasskeyAssertionException(logger, user.UserName, ex);
             return AppResponses.Failure<LoginResponse>("Passkey validation failed.");
         }
 
@@ -146,7 +148,7 @@ internal sealed class LoginWithPasskey(
         var refreshTokenEntity = BT.Domain.Features.IAM.Users.Entities.RefreshToken.Create(
             user.Id,
             refreshToken,
-            DateTimeOffset.UtcNow.AddHours(_jwtSettings.RefreshTokenExpiryHours),
+            timeProvider.GetUtcNow().AddHours(_jwtSettings.RefreshTokenExpiryHours),
             user.Id,
             httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString());
 
@@ -184,7 +186,7 @@ internal sealed class LoginWithPasskey(
                 user.EmployeeId,
                 user.CustomerId);
 
-        var tokenExpiry = DateTimeOffset.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpiryMinutes);
+        var tokenExpiry = timeProvider.GetUtcNow().AddMinutes(_jwtSettings.AccessTokenExpiryMinutes);
 
         var loginResponse = new LoginResponse(
                 user.Id,

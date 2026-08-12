@@ -3,7 +3,7 @@ global using BT.Domain.Features.Banking.Customers.Contracts.Repositories;
 global using BT.Domain.Features.Banking.Customers.Contracts.Specifications;
 global using BT.Domain.Features.Banking.Customers.Entities;
 global using BT.Domain.Features.Banking.Customers.Enums;
-global using BT.Domain.Features.Banking.Customers.Lookups;
+
 global using BT.Domain.Features.HR.Contracts;
 global using BT.Domain.Features.HR.Employees.Contracts.Repositories;
 global using BT.Domain.Features.HR.Employees.Entities;
@@ -16,7 +16,5 @@ global using BT.Domain.Features.Shared.EmailTemplates.Entities;
 global using BT.Domain.Features.Shared.FailedMessages.Contracts.Repositories;
 global using BT.Domain.Features.Shared.FailedMessages.Entities;
 global using BT.Domain.Features.Shared.FailedMessages.Enums;
-global using BT.Domain.Features.Shared.Lookups.Contracts.Repositories;
-global using BT.Domain.Features.Shared.Lookups.Entities;
-global using BT.Domain.Features.Shared.Lookups.Enums;
+
 

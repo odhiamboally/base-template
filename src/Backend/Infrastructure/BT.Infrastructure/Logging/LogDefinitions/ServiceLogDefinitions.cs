@@ -12,6 +12,9 @@ internal static partial class ServiceLogDefinitions
     [LoggerMessage(EventId = 2502, Level = LogLevel.Error, Message = "Failed to create SSO user for {Email}: {Errors}")]
     public static partial void LogSsoUserCreationError(ILogger logger, string email, string errors);
 
+    [LoggerMessage(EventId = 2506, Level = LogLevel.Error, Message = "Passkey assertion threw an exception for user {Username}")]
+    public static partial void LogPasskeyAssertionException(ILogger logger, string username, Exception ex);
+
     [LoggerMessage(EventId = 2503, Level = LogLevel.Warning, Message = "SendGrid rejected the email payload. Status: {StatusCode}. Response: {Response}")]
     public static partial void LogSendGridRejection(ILogger logger, System.Net.HttpStatusCode statusCode, string response);
 

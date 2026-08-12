@@ -33,4 +33,19 @@ internal static partial class ControlPlaneLogDefinitions
 
     [LoggerMessage(EventId = 2610, Level = LogLevel.Information, Message = "Successfully dispatched isolated stamp provisioning workflow for tenant {TenantId} on stamp {StampId}")]
     public static partial void LogStampProvisioningDispatched(ILogger logger, Guid tenantId, string stampId);
+
+    [LoggerMessage(EventId = 2611, Level = LogLevel.Warning, Message = "Tenant {TenantId} stamp changed. Revoking all active user sessions.")]
+    public static partial void LogTenantStampChangedRevokingSessions(ILogger logger, Guid tenantId);
+
+    [LoggerMessage(EventId = 2612, Level = LogLevel.Warning, Message = "Tenant {TenantId} module {ModuleKey} revoked. Revoking all active user sessions.")]
+    public static partial void LogTenantModuleRevokedRevokingSessions(ILogger logger, Guid tenantId, string moduleKey);
+
+    [LoggerMessage(EventId = 2613, Level = LogLevel.Warning, Message = "GitHub Action credentials are not configured. Provisioning skipped.")]
+    public static partial void LogGitHubActionCredentialsNotConfigured(ILogger logger);
+
+    [LoggerMessage(EventId = 2614, Level = LogLevel.Error, Message = "Failed to trigger GitHub Actions workflow for stamp provisioning. Status: {StatusCode}, Error: {Error}")]
+    public static partial void LogGitHubActionTriggerFailed(ILogger logger, System.Net.HttpStatusCode statusCode, string error);
+
+    [LoggerMessage(EventId = 2615, Level = LogLevel.Information, Message = "Successfully triggered GitHub Actions workflow for stamp {StampId}")]
+    public static partial void LogGitHubActionTriggerSuccess(ILogger logger, string stampId);
 }

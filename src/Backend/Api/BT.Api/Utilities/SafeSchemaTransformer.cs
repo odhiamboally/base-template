@@ -1,3 +1,4 @@
+using BT.Api.Logging;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -23,10 +24,7 @@ internal sealed class SafeSchemaTransformer(ILogger<SafeSchemaTransformer> logge
             {
                 schema.Properties.Remove(key);
 
-                logger.LogWarning(
-                    "Removed invalid property '{Key}' from schema for type {TypeName}. Consider adding [JsonIgnore] to the source property.",
-                    key,
-                    context.JsonTypeInfo?.Type.Name ?? "Unknown");
+                MiddlewareLogDefinitions.LogRemovedInvalidSchemaProperty(logger, key, context.JsonTypeInfo?.Type.Name ?? "Unknown");
             }
         }
 

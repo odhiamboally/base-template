@@ -18,5 +18,3 @@ global using BT.Domain.Features.IAM.Users.Events;
 global using BT.Domain.Features.Shared.Contracts;
 global using BT.Domain.Features.Shared.EmailTemplates.Entities;
 global using BT.Domain.Features.Shared.FailedMessages.Enums;
-global using BT.Domain.Features.Shared.Lookups.Entities;
-global using BT.Domain.Features.Shared.Lookups.Enums;

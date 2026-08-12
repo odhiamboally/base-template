@@ -6,6 +6,7 @@ using BT.Application.Features.ControlPlane.Tenants.Contracts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
+using BT.Infrastructure.Logging;
 
 namespace BT.Infrastructure.Features.ControlPlane.Provisioning;
 
@@ -19,7 +20,7 @@ public class GitHubActionsStampProvisioner(HttpClient httpClient, IConfiguration
 
         if (string.IsNullOrEmpty(githubToken) || string.IsNullOrEmpty(repoOwner) || string.IsNullOrEmpty(repoName))
         {
-            logger.LogWarning("GitHub Action credentials are not configured. Provisioning skipped.");
+            ControlPlaneLogDefinitions.LogGitHubActionCredentialsNotConfigured(logger);
             return;
         }
 
@@ -46,14 +47,12 @@ public class GitHubActionsStampProvisioner(HttpClient httpClient, IConfiguration
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            logger.LogError(
-                "Failed to trigger GitHub Actions workflow for stamp provisioning. Status: {StatusCode}, Error: {Error}",
-                response.StatusCode, error);
+            ControlPlaneLogDefinitions.LogGitHubActionTriggerFailed(logger, response.StatusCode, error);
             throw new InvalidOperationException(
                 $"Stamp provisioning workflow dispatch failed with HTTP {(int)response.StatusCode}. " +
                 "Check GitHub Actions credentials and workflow configuration.");
         }
 
-        logger.LogInformation("Successfully triggered GitHub Actions workflow for stamp {StampId}", stampId);
+        ControlPlaneLogDefinitions.LogGitHubActionTriggerSuccess(logger, stampId);
     }
 }
