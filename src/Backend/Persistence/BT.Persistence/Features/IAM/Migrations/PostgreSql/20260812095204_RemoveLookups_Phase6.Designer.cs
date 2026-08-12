@@ -3,6 +3,7 @@ using System;
 using BT.Persistence.Features.IAM.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BT.Persistence.Features.IAM.Migrations.PostgreSql
 {
     [DbContext(typeof(IamPostgreSqlDBContext))]
-    partial class IamPostgreSqlDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260812095204_RemoveLookups_Phase6")]
+    partial class RemoveLookups_Phase6
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

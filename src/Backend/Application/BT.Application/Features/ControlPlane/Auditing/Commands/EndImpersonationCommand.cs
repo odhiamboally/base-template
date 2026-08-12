@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BT.Application.Utilities;
 
 namespace BT.Application.Features.ControlPlane.Auditing.Commands;
 
@@ -15,6 +16,7 @@ public record EndImpersonationCommand(Guid ImpersonationRecordId) : IRequest<App
 internal sealed class EndImpersonationCommandHandler(
     IControlPlaneUnitOfWork unitOfWork,
     ICurrentActorProvider actorProvider,
+    TimeProvider timeProvider,
     ILogger<EndImpersonationCommandHandler> logger)
     : IRequestHandler<EndImpersonationCommand, AppResponse<bool>>
 {
@@ -38,12 +40,12 @@ internal sealed class EndImpersonationCommandHandler(
         }
 
         record.Status = ImpersonationRecordStatus.Exited;
-        record.ExpiryTime = DateTimeOffset.UtcNow; // Explicitly cap it
+        record.ExpiryTime = timeProvider.GetUtcNow(); // Explicitly cap it
         
         await unitOfWork.ImpersonationRecords.UpdateAsync(record, cancellationToken).ConfigureAwait(false);
         await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
-        logger.LogInformation("User {ActorId} ended impersonation session {RecordId}", actorProvider.ActorId, record.Id);
+        LogDefinitions.LogImpersonationEnded(logger, actorProvider.ActorId, record.Id);
 
         return AppResponses.Success(true);
     }

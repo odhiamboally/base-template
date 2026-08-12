@@ -112,4 +112,10 @@ internal static partial class LogDefinitions
 
     [LoggerMessage(EventId = 2332, Level = LogLevel.Error, Message = "Error processing M-Pesa C2B confirmation.")]
     public static partial void LogMpesaC2bConfirmationError(ILogger logger, Exception ex);
+
+    [LoggerMessage(EventId = 2334, Level = LogLevel.Information, Message = "User {ActorId} started impersonating Tenant {TenantId} until {ExpiryTime}. Reason: {Reason}")]
+    public static partial void LogImpersonationStarted(ILogger logger, string actorId, Guid tenantId, DateTimeOffset expiryTime, string reason);
+
+    [LoggerMessage(EventId = 2335, Level = LogLevel.Information, Message = "User {ActorId} ended impersonation session {RecordId}")]
+    public static partial void LogImpersonationEnded(ILogger logger, string actorId, Guid recordId);
 }

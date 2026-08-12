@@ -14,7 +14,7 @@ using BT.Persistence.Features.Shared;
 using BT.Persistence.Features.Shared.DataContext;
 using BT.Persistence.Features.Shared.EmailTemplates.Repositories;
 using BT.Persistence.Features.Shared.FailedMessages.Repositories;
-using BT.Persistence.Features.Shared.Lookups.Repositories;
+
 using BT.Persistence.Features.Shared.Payments.Repositories;
 using BT.Domain.Features.Shared.OrgSettings.Contracts.Repositories;
 using BT.Persistence.Features.Shared.OrgSettings.Repositories;
@@ -82,7 +82,7 @@ public static class SharedPersistenceDI
             services.AddDbContext<SharedDBContext, SharedSqlServerDBContext>(ConfigureDbContextOptions);
         }
 
-        services.AddScoped<ILookupRepository, SharedLookupRepository>();
+
         services.AddScoped<IEmailTemplateRepository, SharedEmailTemplateRepository>();
         services.AddScoped<IFailedMessageRepository, SharedFailedMessageRepository>();
         services.AddScoped<IPaymentRecordRepository, SharedPaymentRecordRepository>();

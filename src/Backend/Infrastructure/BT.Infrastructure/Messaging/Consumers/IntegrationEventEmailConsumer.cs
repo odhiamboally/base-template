@@ -19,7 +19,7 @@ using BT.Domain.Shared.Contracts;
 using BT.Domain.Shared.Contracts.Common;
 using BT.Domain.Shared.Entities;
 using BT.Domain.Features.Shared.FailedMessages.Enums;
-using BT.Domain.Features.Shared.Lookups.Enums;
+
 using BT.Infrastructure.Logging;
 using BT.SharedKernel.Dtos.Common;
 using BT.SharedKernel.Features.Shared.EmailTemplates.Enums;

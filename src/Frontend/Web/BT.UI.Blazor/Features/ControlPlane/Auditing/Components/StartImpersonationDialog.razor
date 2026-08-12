@@ -59,12 +59,7 @@
     private bool _isValid;
     private bool _isSubmitting;
     
-    private class ImpersonationModel
-    {
-        public string Reason { get; set; } = "";
-        public int DurationHours { get; set; } = 1;
-    }
-    
+
     private ImpersonationModel _command = new();
 
     private void Cancel() => MudDialog.Cancel();

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BT.Application.Utilities;
 
 namespace BT.Application.Features.ControlPlane.Auditing.Commands;
 
@@ -19,6 +20,7 @@ public record StartImpersonationCommand(Guid TargetTenantId, string Reason, int 
 internal sealed class StartImpersonationCommandHandler(
     IControlPlaneUnitOfWork unitOfWork,
     ICurrentActorProvider actorProvider,
+    TimeProvider timeProvider,
     ILogger<StartImpersonationCommandHandler> logger)
     : IRequestHandler<StartImpersonationCommand, AppResponse<ImpersonationRecordResponse>>
 {
@@ -30,7 +32,7 @@ internal sealed class StartImpersonationCommandHandler(
             return AppResponses.Failure<ImpersonationRecordResponse>("Tenant not found");
         }
 
-        var expiryTime = DateTimeOffset.UtcNow.AddHours(request.DurationHours);
+        var expiryTime = timeProvider.GetUtcNow().AddHours(request.DurationHours);
         var actorName = actorProvider.ActorId;
 
         var record = new ImpersonationRecord
@@ -48,8 +50,7 @@ internal sealed class StartImpersonationCommandHandler(
         await unitOfWork.ImpersonationRecords.CreateAsync(record, cancellationToken).ConfigureAwait(false);
         await unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
-        logger.LogInformation("User {ActorId} started impersonating Tenant {TenantId} until {ExpiryTime}. Reason: {Reason}",
-            actorProvider.ActorId, tenant.Id, expiryTime, request.Reason);
+        LogDefinitions.LogImpersonationStarted(logger, actorProvider.ActorId, request.TargetTenantId, expiryTime, request.Reason);
 
         return AppResponses.Success(new ImpersonationRecordResponse(
             record.Id,

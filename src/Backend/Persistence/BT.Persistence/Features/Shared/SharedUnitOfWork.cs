@@ -20,7 +20,6 @@ namespace BT.Persistence.Features.Shared;
 
 public sealed class SharedUnitOfWork(
     SharedDBContext context,
-    ILookupRepository lookupRepository,
     IEmailTemplateRepository emailTemplateRepository,
     IFailedMessageRepository failedMessageRepository,
     IPaymentRecordRepository paymentRecordRepository,
@@ -33,7 +32,6 @@ public sealed class SharedUnitOfWork(
     private readonly IPublisher _publisher = publisher;
     private readonly ILogger<SharedUnitOfWork> _logger = logger;
 
-    public ILookupRepository LookupRepository { get; } = lookupRepository;
     public IEmailTemplateRepository EmailTemplateRepository { get; } = emailTemplateRepository;
     public IFailedMessageRepository FailedMessageRepository { get; } = failedMessageRepository;
     public IPaymentRecordRepository PaymentRecordRepository { get; } = paymentRecordRepository;

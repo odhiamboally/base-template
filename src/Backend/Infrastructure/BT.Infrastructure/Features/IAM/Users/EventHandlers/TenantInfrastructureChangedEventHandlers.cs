@@ -7,6 +7,7 @@ using BT.Domain.Features.IAM.Contracts;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using BT.Infrastructure.Logging;
 
 namespace BT.Infrastructure.Features.IAM.Users.EventHandlers;
 
@@ -30,13 +31,13 @@ internal sealed class TenantInfrastructureChangedEventHandlers :
 
     public async Task Handle(TenantStampChangedDomainEvent notification, CancellationToken cancellationToken)
     {
-        _logger.LogWarning("Tenant {TenantId} stamp changed. Revoking all active user sessions.", notification.TenantId);
+        ControlPlaneLogDefinitions.LogTenantStampChangedRevokingSessions(_logger, notification.TenantId);
         await RevokeAllTenantSessionsAsync(notification.TenantId, cancellationToken);
     }
 
     public async Task Handle(TenantModuleRevokedDomainEvent notification, CancellationToken cancellationToken)
     {
-        _logger.LogWarning("Tenant {TenantId} module {ModuleKey} revoked. Revoking all active user sessions.", notification.TenantId, notification.ModuleKey);
+        ControlPlaneLogDefinitions.LogTenantModuleRevokedRevokingSessions(_logger, notification.TenantId, notification.ModuleKey);
         await RevokeAllTenantSessionsAsync(notification.TenantId, cancellationToken);
     }
 
