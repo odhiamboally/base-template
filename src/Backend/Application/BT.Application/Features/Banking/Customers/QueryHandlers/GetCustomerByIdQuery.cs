@@ -23,20 +23,22 @@ namespace BT.Application.Features.Banking.Customers.QueryHandlers;
 /// Fetches a single customer by ID.
 ///
 /// Cache strategy — NON-VERSIONED entity entry:
-///   Key:  "customers:entity:{id}"
+///   Key:  "customers:entity:tenant:{tenantId}:{id}"  (tenant-scoped)
+///         "customers:entity:{id}"                     (platform admins only)
 ///   TTL:  30 minutes
-///   Scope: global (entity data is not user-specific at the query level)
+///   Scope: per-tenant — customer data must never cross tenant boundaries.
 ///
 /// Invalidation:
 ///   UpdateCustomerCommand and DeleteCustomerCommand must include
 ///   CacheKeys.Entity("customers", id) in their DirectInvalidationKeys.
+///   CacheInvalidationBehavior automatically also removes the tenant-scoped variant.
 /// </summary>
 
 public record GetCustomerByIdQuery(Guid Id) : IRequest<AppResponse<CustomerResponse>>, ICachableRequest
 {
     public string CacheGroup => "customers";
     public string Discriminator => Id.ToString();
-    public string? CacheUserId => null;   // entity cache is shared across users
-    public bool IsVersioned => false;  // invalidated directly by exact key
+    public string? CacheUserId => null;
+    public bool IsVersioned => false;
 }
 

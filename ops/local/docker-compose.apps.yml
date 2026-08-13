@@ -11,6 +11,7 @@ services:
       JwtSettings__SecretKey: ${APP_JWT_SECRET:?Set APP_JWT_SECRET in ops/local/.env}
       IamProvisioning__TemporaryPassword: ${APP_IAM_TEMPORARY_PASSWORD:?Set APP_IAM_TEMPORARY_PASSWORD in ops/local/.env}
       IamProvisioning__SignInUrl: http://localhost:${APP_BLAZOR_HOST_PORT:-8081}/iam/sign-in
+      BackgroundJobs__Enabled: "true"
       Messaging__Enabled: "true"
       Messaging__Transport: RabbitMq
       Messaging__RabbitMq__Host: rabbitmq

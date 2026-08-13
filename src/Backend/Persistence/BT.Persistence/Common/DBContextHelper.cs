@@ -13,7 +13,8 @@ namespace BT.Persistence.Common;
 
 internal static class DBContextHelper
 {
-    public static void ApplyStandardModelConventions(ModelBuilder modelBuilder, ITenantFilteredDBContext context)
+    public static void ApplyStandardModelConventions<TContext>(ModelBuilder modelBuilder, TContext context)
+        where TContext : DbContext, ITenantFilteredDBContext
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
         ArgumentNullException.ThrowIfNull(context);
@@ -131,7 +132,8 @@ internal static class DBContextHelper
         return Expression.Lambda(comparison, parameter);
     }
 
-    private static void ApplyQueryFilters(ModelBuilder modelBuilder, IMutableEntityType entityType, ITenantFilteredDBContext context)
+    private static void ApplyQueryFilters<TContext>(ModelBuilder modelBuilder, IMutableEntityType entityType, TContext context)
+        where TContext : DbContext, ITenantFilteredDBContext
     {
         var entityClrType = entityType.ClrType;
 #pragma warning disable CS0618 // ToDo: EF Core 10 obsoletes unnamed filters; keep composing existing filters until we migrate to named filters solution-wide.
@@ -145,7 +147,12 @@ internal static class DBContextHelper
 
         if (HasTenantId(entityType))
         {
-            queryFilter = CombineFilters(entityClrType, queryFilter, CreateTenantFilter(entityClrType, context));
+            var tenantFilter = (LambdaExpression)typeof(DBContextHelper)
+                .GetMethod(nameof(CreateTenantFilter), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+                .MakeGenericMethod(entityClrType, typeof(TContext))
+                .Invoke(null, [context])!;
+                
+            queryFilter = CombineFilters(entityClrType, queryFilter, tenantFilter);
         }
 
         if (queryFilter is not null)
@@ -167,20 +174,11 @@ internal static class DBContextHelper
             .HasDatabaseName($"IX_{entityType.GetTableName()}_CreatedAt_Id");
     }
 
-    private static LambdaExpression CreateTenantFilter(Type type, ITenantFilteredDBContext context)
+    private static Expression<Func<TEntity, bool>> CreateTenantFilter<TEntity, TContext>(TContext context)
+        where TEntity : class
+        where TContext : DbContext, ITenantFilteredDBContext
     {
-        var parameter = Expression.Parameter(type, "e");
-        var tenantProperty = Expression.Call(
-            typeof(EF),
-            nameof(EF.Property),
-            [typeof(Guid)],
-            parameter,
-            Expression.Constant(nameof(BaseEntity.TenantId)));
-        var currentTenantId = Expression.Property(
-            Expression.Convert(Expression.Constant(context), typeof(ITenantFilteredDBContext)),
-            nameof(ITenantFilteredDBContext.CurrentTenantId));
-        var comparison = Expression.Equal(tenantProperty, currentTenantId);
-        return Expression.Lambda(comparison, parameter);
+        return e => EF.Property<Guid>(e, nameof(BaseEntity.TenantId)) == context.CurrentTenantId;
     }
 
     private static LambdaExpression CombineFilters(Type type, LambdaExpression? left, LambdaExpression right)

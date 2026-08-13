@@ -58,6 +58,20 @@ public sealed class CacheInvalidationBehavior<TRequest, TResponse>(
         foreach (var key in request.DirectInvalidationKeys)
         {
             await cache.RemoveAsync(key, cancellationToken).ConfigureAwait(false);
+
+            // CachingBehavior stores entity keys under a tenant-scoped variant for
+            // tenant requests: "{group}:entity:tenant:{tenantId}:{discriminator}".
+            // We must also remove that variant here so mutations don't leave stale
+            // tenant-scoped entries in the cache.
+            var tenantId = tenantProvider.TenantId;
+            if (tenantId != Guid.Empty && key.Contains(":entity:", StringComparison.OrdinalIgnoreCase))
+            {
+                var tenantScopedKey = key.Replace(
+                    ":entity:",
+                    $":entity:tenant:{tenantId:D}:",
+                    StringComparison.OrdinalIgnoreCase);
+                await cache.RemoveAsync(tenantScopedKey, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         // ── 2. Version token bumps ─────────────────────────────────────────────

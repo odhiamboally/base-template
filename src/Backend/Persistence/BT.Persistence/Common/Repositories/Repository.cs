@@ -134,8 +134,7 @@ public class Repository<T>(DbContext context) : IRepository<T> where T : class
 
     public async Task<T?> FindByIdAsync(Guid Id, CancellationToken ct = default)
     {
-        return await _context.Set<T>().FindAsync([Id], ct).ConfigureAwait(false);
-
+        return await _context.Set<T>().FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == Id, ct).ConfigureAwait(false);
     }
 
     public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> expression, CancellationToken ct = default)

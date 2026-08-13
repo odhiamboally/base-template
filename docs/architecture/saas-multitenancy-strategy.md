@@ -164,13 +164,95 @@ Hostname resolution does not require an authenticated user. The middleware resol
 
 ## Tenant Lifecycle States
 
-| Status | Meaning | Expected Operator Action |
-|---|---|---|
-| `Active` | Fully operational. Tenant traffic is served. | None. |
-| `Provisioning` | Tenant record created; isolated-stamp infrastructure is being deployed via GitHub Actions. | Wait for the provisioning workflow to complete, then call `POST /api/v1/control-plane/tenants/{id}/activate`. |
-| `ProvisioningFailed` | The GitHub Actions workflow dispatch failed. Infrastructure may not exist. | Diagnose the failure via GitHub Actions logs. Fix the configuration, then re-trigger via `POST /api/v1/control-plane/tenants/{id}/activate` (which will retry provisioning). |
-| `Suspended` | Tenant is temporarily blocked. Requests for this tenant will not be served. | Call `POST /api/v1/control-plane/tenants/{id}/activate` to restore access. |
+The tenant lifecycle is modelled as an explicit state machine. **No provisioning occurs unless the KYC gate is explicitly cleared by a Platform Operator.**
+
+| Status | Meaning | Who transitions | Expected Operator Action |
+|---|---|---|---|
+| `PendingKYC` | Default on creation. Identity and compliance checks are outstanding. | System (on create) | Operator reviews client documents and calls `POST /api/v1/control-plane/tenants/{id}/approve-kyc` once satisfied. |
+| `PendingProvisioning` | KYC cleared. Waiting for operator to trigger infrastructure provisioning. | Operator (approve-kyc) | Operator calls `POST /api/v1/control-plane/tenants/{id}/provision` to dispatch the GitHub Actions stamp workflow. |
+| `Provisioning` | Infrastructure is being deployed via GitHub Actions. | System (provision) | Wait for the provisioning workflow to complete, then call `POST /api/v1/control-plane/tenants/{id}/activate`. |
+| `ProvisioningFailed` | The GitHub Actions workflow dispatch failed. Infrastructure may not exist. | System (failed dispatch) | Diagnose the failure via GitHub Actions logs. Fix the configuration, then re-trigger via `POST /api/v1/control-plane/tenants/{id}/provision`. |
+| `Active` | Fully operational. Tenant traffic is served. | Operator (activate) | None. |
+| `Suspended` | Tenant is temporarily blocked. Requests for this tenant will not be served. | Operator | Call `POST /api/v1/control-plane/tenants/{id}/activate` to restore access. |
 
 > [!IMPORTANT]
-> A tenant in `Provisioning` or `ProvisioningFailed` status will **not** be resolved by `TenantResolutionMiddleware`. The middleware filters on `TenantStatus.Active` only. This prevents premature data access before the isolated database is ready.
+> A tenant in any status **other than `Active`** will **not** be resolved by `TenantResolutionMiddleware`. The middleware filters on `TenantStatus.Active` only. This prevents premature data access before KYC clearance and before isolated infrastructure is ready.
 
+> [!CAUTION]
+> **Never skip the KYC gate** — even for manual internal tenants. A tenant in `PendingKYC` is a holding pen. Routing live traffic to an unverified tenant is a compliance and fraud risk.
+
+
+## Future Enhancements & MUST DOs
+
+### Self-Service Onboarding Flow (Downstream Implementation)
+
+**Status: OUT OF SCOPE FOR BASE TEMPLATE.**
+
+While a public-facing onboarding flow (registration -> payment via Stripe -> automated tenant provisioning) is common for SaaS products, it is highly specific to the business domain (e.g., InsurHub vs Sacco System). 
+Therefore, this base template provides the foundational Tenant State Machine (KYC gate, Pending Provisioning, etc.) but leaves the actual public onboarding endpoints, Stripe integrations, and domain-specific readiness checks to the downstream applications.
+
+When implementing this downstream, keep in mind:
+**Auto-provisioning infrastructure immediately upon sign-up is dangerous (fraud, abuse, cost exploitation).** The KYC gate, already built into the Tenant State Machine, is the mechanism that prevents this.
+
+#### Required Flow
+
+```text
+Anonymous User
+  │
+  ▼
+Public Registration Page  ──►  POST /api/v1/onboarding/register
+  │                             - Creates a User + Tenant (status: PendingKYC)
+  │                             - Sends welcome/KYC-pending email
+  ▼
+KYC Document Submission  ──►   POST /api/v1/onboarding/kyc/submit
+  │                             - Stores documents (encrypted, private blob)
+  │                             - Notifies Platform Operator
+  ▼
+Platform Operator Review  ──►  POST /api/v1/control-plane/tenants/{id}/approve-kyc
+  │                             - Transitions: PendingKYC → PendingProvisioning
+  │                             - Notifies user KYC is approved
+  ▼
+Stripe Checkout  ──►           POST /api/v1/onboarding/payment/start
+  │                             - Creates a Stripe Checkout Session
+  │                             - On success webhook: marks payment verified
+  ▼
+Operator Triggers Provision ►  POST /api/v1/control-plane/tenants/{id}/provision
+  │                             - Transitions: PendingProvisioning → Provisioning
+  │                             - Dispatches GitHubActionsStampProvisioner
+  ▼
+Tenant Activated  ──►          POST /api/v1/control-plane/tenants/{id}/activate
+                                - Transitions: Provisioning → Active
+                                - Sends "Your account is ready" email
+```
+
+#### Design Guidance
+
+- **KYC Gate is Mandatory.** Even for internal/test tenants. There is no fast-path that skips `PendingKYC`.
+- **Extensible Readiness Checks.** The `Tenant` entity should expose a `ReadinessChecks` value object (e.g., `KycVerified`, `PaymentVerified`, `ContractSigned`) so that new requirements can be added without schema migrations. Use `JSONB` (PostgreSQL) or a separate `TenantReadinessChecks` table (SQL Server) to store these flags.
+- **Payment is Optional per Plan.** Not all tenants will require Stripe (e.g., internal enterprise contracts with invoicing). Payment verification should be a configurable check that can be bypassed by Platform Operators for specific plans.
+- **Do not provision resources on webhook receipt alone.** Stripe webhooks can be replayed or forged. Provision only after an operator confirms in the Control Panel.
+- **Onboarding endpoints are public (no auth required before registration).** They must be rate-limited, CAPTCHA-protected, and behind a WAF rule. Do not use the same controller or route prefix as tenant-scoped API endpoints.
+
+#### Implementation Scope (For Downstream Applications)
+
+- [ ] `PublicOnboardingController` — registration, KYC submission, payment start endpoints.
+- [ ] `TenantReadinessChecks` value object / shadow table.
+- [ ] Stripe webhook handler (`PaymentVerifiedEventHandler`).
+- [ ] KYC document storage (private blob, access via API, never public URLs).
+- [ ] Email notifications for each state transition.
+- [ ] Blazor public onboarding pages (outside `ControlPlaneLayout`).
+
+---
+
+### PostgreSQL JSONB Usage
+
+When using PostgreSQL as the primary database provider, the `jsonb` column type is available for storing flexible, schema-less data. Use `jsonb` for:
+
+- **Tenant Readiness Checks** — storing extensible verification flags without requiring a migration per new flag.
+- **Feature Flag Payloads** — arbitrary rule payloads for `IFeatureFlagService`.
+- **Integration Event Metadata** — storing provider-specific wire payloads as opaque JSON beside the event record.
+
+Do **not** use `jsonb` as a substitute for well-modelled relational data. Use it only for genuinely variable-shape payloads where a strict schema adds more cost than value. EF Core supports `jsonb` via `.HasColumnType("jsonb")` on `string` or `JsonElement` properties.
+
+> [!NOTE]
+> `jsonb` is a PostgreSQL-specific feature. If a column uses `jsonb`, the entity configuration must use `#if` guards or separate `IEntityTypeConfiguration<T>` implementations for SQL Server (use `nvarchar(max)` + `HasConversion<string>`) to maintain dual-provider support.

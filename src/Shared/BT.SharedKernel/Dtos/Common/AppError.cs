@@ -1,4 +1,4 @@
-﻿
+
 using BT.SharedKernel.Dtos.Utilities;
 using BT.SharedKernel.Features.Shared.Common.Enums;
 
@@ -26,6 +26,12 @@ public sealed record AppError(ErrorType Type, string Code, string Message, IRead
             ErrorType.Unexpected,
             ErrorCodes.Unexpected,
             "An unexpected error occurred.");
+
+    public static AppError NotFound(string message) =>
+        new(
+            ErrorType.NotFound,
+            ErrorCodes.NotFound,
+            message);
 
     public static AppError Forbidden(string message) =>
         new(

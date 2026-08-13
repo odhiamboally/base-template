@@ -59,7 +59,7 @@ internal class TenantService(IBackendApiClient client) : ITenantService
     public async Task<AppResponse<TenantResponse>> SuspendAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await client.SendAsync<TenantResponse>(
-            HttpMethod.Patch,
+            HttpMethod.Post, // Fixed from Patch to Post as per API controller
             $"{BasePath}/{id}/suspend",
             requiresAuthentication: true,
             unavailableMessage: "Unable to suspend tenant.",
@@ -69,10 +69,20 @@ internal class TenantService(IBackendApiClient client) : ITenantService
     public async Task<AppResponse<TenantResponse>> ActivateAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await client.SendAsync<TenantResponse>(
-            HttpMethod.Patch,
+            HttpMethod.Post, // Fixed from Patch to Post as per API controller
             $"{BasePath}/{id}/activate",
             requiresAuthentication: true,
             unavailableMessage: "Unable to activate tenant.",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AppResponse<TenantResponse>> ApproveKYCAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await client.SendAsync<TenantResponse>(
+            HttpMethod.Post,
+            $"{BasePath}/{id}/approve-kyc",
+            requiresAuthentication: true,
+            unavailableMessage: "Unable to approve KYC.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

@@ -249,7 +249,7 @@ namespace BT.Persistence.Features.ControlPlane.Migrations.SqlServer
                             Identifier = "default",
                             MaxUsers = 100,
                             RowVersion = new byte[0],
-                            Status = 0,
+                            Status = 3,
                             SubscriptionTier = 0
                         });
                 });

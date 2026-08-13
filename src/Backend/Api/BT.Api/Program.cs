@@ -410,12 +410,14 @@ catch (Exception ex) when (ex is not HostAbortedException)
     // do not log it as a fatal crash.
     Log.Fatal(ex, "Application terminated unexpectedly");
     Environment.ExitCode = 1;
+    throw;
 }
 finally
 {
     // Flush and close all Serilog sinks before the process exits.
     await Log.CloseAndFlushAsync().ConfigureAwait(false);
 }
+
 
 static void ConfigurePlatformAssignedPort(ConfigureWebHostBuilder webHost)
 {
@@ -434,3 +436,5 @@ static void ConfigurePlatformAssignedPort(ConfigureWebHostBuilder webHost)
 
     webHost.UseUrls($"http://+:{parsedPort}");
 }
+
+public partial class Program { }

@@ -271,7 +271,7 @@ Recommended immediate order:
 2. Certify Phase 1: IAM/Auth and local UI/API smoke testing.
 3. Certify Phase 2: platform storage, cache, exception, validation, and messaging hardening.
 4. Certify Phase 3: health checks, observability, API security/deprecation/throttling, and operational diagnostics.
-5. Certify Phase 4: CI/CD deployment readiness, migration bundles, Docker local platform, and Azure App Service release flow.
+5. Certify Phase 4: CI/CD deployment readiness, migration bundles, Docker local platform, and Azure App Service release flow. (Complete)
 6. Move product-specific work such as SACCO loans, KYC/CRB, AML, payroll, or full HR into downstream solutions cloned from BaseTemplate.
 
 ---
@@ -285,7 +285,7 @@ Use this register as the working execution checklist. A phase is not considered 
 | Phase 1 - IAM/Auth Enterprise Baseline | Implemented, needs final smoke certification | Login, refresh, logout, sessions, lockout, TOTP MFA setup/disable, admin MFA enforcement, grant/revoke system access, current user, profile picture upload, inactivity warning | Browser smoke: login, MFA challenge/setup/disable, grant email, revoke access, refresh, logout, session timeout |
 | Phase 2 - Platform Storage, Cache, Exceptions, Validation, Messaging | In progress | Azure Blob profile storage, Data Protection Blob/Key Vault keys, HybridCache/output cache, ProblemDetails propagation, FluentValidation coverage, MassTransit outbox | Build/test plus targeted smoke for profile upload, error messages, lookup cache, outbox publish |
 | Phase 3 - API Security And Operational Readiness | In progress | security headers, CORS, configurable rate limiting policies, response compression, API version/deprecation headers, deep health checks, PII log masking, correlated tracing, dependency vulnerability hygiene | Health endpoints prove SQL/Redis/storage/Key Vault where enabled; logs are safe; API communicates deprecation/throttling clearly; package advisories are resolved or explicitly risk-accepted |
-| Phase 4 - Deployment And Release Engineering | In progress | OIDC-authenticated efbundle migration pipeline, Docker Compose, GitHub Actions release, Azure App Service deployment slots, Key Vault wiring, rollback notes | CI builds/test/releases, migration bundle generated, Azure deploy smoke passes |
+| Phase 4 - Deployment And Release Engineering | Implemented | OIDC-authenticated efbundle migration pipeline, Docker Compose, GitHub Actions release, Azure App Service deployment slots, Key Vault wiring, rollback notes | CI builds/test/releases, migration bundle generated, Azure deploy smoke passes |
 | Phase 5 - Template Extensibility | In progress | feature flags, permission-aware dynamic menus, SignalR baseline, reporting abstraction, payment gateway abstractions, Entra SSO, passkeys, RCL consolidation | Feature gates and dynamic menus fail closed; reusable examples exist without domain-specific SACCO logic; passkeys have real flows before being marked complete |
 
 ---
