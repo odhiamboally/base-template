@@ -45,9 +45,13 @@ public class BaseTemplateWebApplicationFactory : WebApplicationFactory<Program>,
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development");
 
+        // Force test configuration early so builder.Configuration reads it in Program.cs
+        Environment.SetEnvironmentVariable("CacheSettings__Provider", "Memory");
+        Environment.SetEnvironmentVariable("DevelopmentSeed__Enabled", "false");
+
         _dbContainer = new MsSqlBuilder()
             .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
-            .WithPassword("P@ssword123!")
+            .WithPassword("Strong@Passw0rd!")
             .Build();
     }
 
@@ -62,24 +66,12 @@ public class BaseTemplateWebApplicationFactory : WebApplicationFactory<Program>,
         // "server has not been started". Disabling it here is safe — integration tests
         // set up their own seed data inside each test method.
         //
-        // CacheSettings:Provider → Memory  so tests use an isolated in-memory cache
-        // instead of the dev Redis instance. Without this override, Tenant A's entity
-        // GET populates a shared Redis key that Tenant B's GET returns as a cache hit —
-        // masking tenant isolation failures at the DB layer.
-        //
         // NOTE: We do NOT call UseEnvironment("Testing") here because the application's
         // Program.cs has a !IsDevelopment() guard that enables Azure Key Vault, which
         // would immediately throw "KeyVault:Uri is not configured." We MUST explicitly
         // set the environment to "Development" here to guarantee that guard is bypassed,
         // even if the CI pipeline sets ASPNETCORE_ENVIRONMENT=Production.
         builder.UseEnvironment("Development");
-
-        builder.ConfigureAppConfiguration((_, config) =>
-            config.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["DevelopmentSeed:Enabled"] = "false",
-                ["CacheSettings:Provider"]   = "Memory",
-            }));
 
         builder.ConfigureTestServices(services =>
         {
