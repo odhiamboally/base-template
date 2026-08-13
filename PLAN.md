@@ -106,8 +106,8 @@ Every public top-level type must live in its own file named after that type. Thi
 - **Production Migrations:** Build a pipeline using `efbundle` to execute schema changes safely during deployments instead of using `db.Database.Migrate()` on startup.
 - **Dynamic Navigation Maturity:** Dynamic menu/catalog management exists; continue tightening permission filtering, tenant/department scope rules, and client-facing administration workflows as feature modules grow.
 - **Observability & Health Checks:** Deep health endpoints now cover self, SQL, Redis, profile-image storage, and optional Key Vault probing. Service Bus/RabbitMQ broker health remains transport-smoke dependent.
-- **Production Smoke Testing:** Run the full local smoke cycle against Mailpit/provider email, user-secrets, storage, cache, messaging, and Key Vault settings before promoting to Azure deployment work.
-- **Local Platform Certification:** Docker Compose now defines RabbitMQ, Redis, Mailpit, and Azurite, with optional SQL Server and Seq. Real RabbitMQ outbox delivery is certified; complete Redis cache behavior smoke before certifying the phase.
+- [x] **Production Smoke Testing:** Run the full local smoke cycle against Mailpit/provider email, user-secrets, storage, cache, messaging, and Key Vault settings before promoting to Azure deployment work.
+- [x] **Local Platform Certification:** Docker Compose now defines RabbitMQ, Redis, Mailpit, and Azurite, with optional SQL Server and Seq. Real RabbitMQ outbox delivery is certified; complete Redis cache behavior smoke before certifying the phase.
 
 ---
 
@@ -191,8 +191,8 @@ EventIds are structured by architectural layer to simplify searching in logs:
 
 ### Phase 1 - IAM/Auth Enterprise Baseline
 *Goal: certify identity, authentication, authorization, MFA, sessions, and local UI/API smoke testing.*
-- [~] **IAM/Auth Baseline:** Login, refresh, logout, server-side sessions, lockout, TOTP MFA, admin MFA enforcement, grant/revoke access, current-user, profile picture upload, and inactivity warning are implemented.
-- [ ] **Local Smoke Certification:** Complete browser/email smoke testing for login, MFA challenge/setup/disable, grant access email, revoke access, refresh, logout, and session timeout.
+- [x] **IAM/Auth Baseline:** Login, refresh, logout, server-side sessions, lockout, TOTP MFA, admin MFA enforcement, grant/revoke access, current-user, profile picture upload, and inactivity warning are implemented.
+- [x] **Local Smoke Certification:** Complete browser/email smoke testing for login, MFA challenge/setup/disable, grant access email, revoke access, refresh, logout, and session timeout.
 
 ### Phase 2 - Platform Storage, Cache, Validation, Messaging
 *Goal: harden shared platform services before deployment work.*
