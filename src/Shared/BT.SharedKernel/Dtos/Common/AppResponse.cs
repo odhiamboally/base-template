@@ -3,10 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace BT.SharedKernel.Dtos.Common;
 
-public interface IAppResponse
-{
-    bool IsSuccess { get; }
-}
+
 
 public record AppResponse<T> : IAppResponse
 {
