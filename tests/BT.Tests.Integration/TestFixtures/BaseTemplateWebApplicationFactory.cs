@@ -62,8 +62,11 @@ public class BaseTemplateWebApplicationFactory : WebApplicationFactory<Program>,
         //
         // NOTE: We do NOT call UseEnvironment("Testing") here because the application's
         // Program.cs has a !IsDevelopment() guard that enables Azure Key Vault, which
-        // would immediately throw "KeyVault:Uri is not configured." The environment must
-        // remain "Development" so that guard is bypassed.
+        // would immediately throw "KeyVault:Uri is not configured." We MUST explicitly
+        // set the environment to "Development" here to guarantee that guard is bypassed,
+        // even if the CI pipeline sets ASPNETCORE_ENVIRONMENT=Production.
+        builder.UseEnvironment("Development");
+
         builder.ConfigureAppConfiguration((_, config) =>
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
