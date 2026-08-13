@@ -40,56 +40,100 @@ public sealed class CreateTenantCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WithIsolatedStamp_SetsStatusToProvisioning_AndCallsProvisioner()
+    public async Task Handle_WhenTenantAlreadyExists_ReturnsFailure()
     {
         // Arrange
-        var stampId = Guid.NewGuid();
         var request = new CreateTenantRequest
         {
-            DisplayName = "Test Tenant",
+            DisplayName = "Test",
             Identifier = "test-tenant",
-            DeploymentStampId = stampId,
+            DeploymentStampId = Guid.NewGuid(),
             SubscriptionTier = "Enterprise",
-            ContactEmail = "test@example.com",
-            DatabaseProvider = "SqlServer",
             HostName = "test.example.com"
         };
         var command = new CreateTenantCommand(request);
 
-        var stamp = new DeploymentStamp
-        {
-            Id = stampId,
-            Name = "Isolated Stamp",
-            IsolationTier = IsolationTier.Isolated,
-            TargetResourceGroup = "test-rg",
-            CreatedBy = "test-user"
-        };
-
-        _unitOfWork.DeploymentStamps.FirstOrDefaultAsync(
-            Arg.Any<Expression<Func<DeploymentStamp, bool>>>(), 
-            Arg.Any<CancellationToken>())
-            .Returns(stamp);
-
         _unitOfWork.Tenants.AnyAsync(
-            Arg.Any<Expression<Func<Tenant, bool>>>(), 
+            Arg.Any<Expression<Func<Tenant, bool>>>(),
             Arg.Any<CancellationToken>())
-            .Returns(false);
+            .Returns(true);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(TenantStatus.Provisioning.ToDisplayString(), result.Data!.Status);
-
-        await _unitOfWork.Tenants.Received(1).CreateAsync(Arg.Is<Tenant>(t => t.Status == TenantStatus.Provisioning), Arg.Any<CancellationToken>());
-        await _unitOfWork.Received(1).CompleteAsync(Arg.Any<CancellationToken>());
-        await _provisioner.Received(1).ProvisionIsolatedStampAsync(
-            Arg.Any<string>(), stamp.Name, "test-rg", "SqlServer", Arg.Any<CancellationToken>());
+        Assert.False(result.IsSuccess);
+        Assert.Contains("already exists", result.Message, StringComparison.OrdinalIgnoreCase);
+        await _unitOfWork.Tenants.DidNotReceiveWithAnyArgs().CreateAsync(default!, default);
+        await _unitOfWork.DidNotReceiveWithAnyArgs().CompleteAsync(default);
     }
 
     [Fact]
-    public async Task Handle_WithPooledStamp_SetsStatusToActive_AndDoesNotCallProvisioner()
+    public async Task Handle_WhenStampDoesNotExist_ReturnsFailure()
+    {
+        // Arrange
+        var request = new CreateTenantRequest
+        {
+            DisplayName = "Test",
+            Identifier = "test-tenant",
+            DeploymentStampId = Guid.NewGuid(),
+            SubscriptionTier = "Enterprise",
+            HostName = "test.example.com"
+        };
+        var command = new CreateTenantCommand(request);
+
+        _unitOfWork.Tenants.AnyAsync(
+            Arg.Any<Expression<Func<Tenant, bool>>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        _unitOfWork.DeploymentStamps.FirstOrDefaultAsync(
+            Arg.Any<Expression<Func<DeploymentStamp, bool>>>(),
+            Arg.Any<CancellationToken>())
+            .Returns((DeploymentStamp)null!);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Contains("does not exist", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Handle_WhenSubscriptionTierIsInvalid_ReturnsFailure()
+    {
+        // Arrange
+        var request = new CreateTenantRequest
+        {
+            DisplayName = "Test",
+            Identifier = "test-tenant",
+            DeploymentStampId = Guid.NewGuid(),
+            SubscriptionTier = "InvalidTier123",
+            HostName = "test.example.com"
+        };
+        var command = new CreateTenantCommand(request);
+
+        _unitOfWork.Tenants.AnyAsync(
+            Arg.Any<Expression<Func<Tenant, bool>>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        _unitOfWork.DeploymentStamps.FirstOrDefaultAsync(
+            Arg.Any<Expression<Func<DeploymentStamp, bool>>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new DeploymentStamp { Id = request.DeploymentStampId, Name = "Stamp", TargetResourceGroup = "test-rg", CreatedBy = "test" });
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Invalid Subscription Tier", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Handle_WithValidRequest_CreatesTenantWithPendingKYCStatus()
     {
         // Arrange
         var stampId = Guid.NewGuid();
@@ -101,14 +145,15 @@ public sealed class CreateTenantCommandHandlerTests
             SubscriptionTier = "Enterprise",
             ContactEmail = "test@example.com",
             DatabaseProvider = "SqlServer",
-            HostName = "test.example.com"
+            HostName = "test.example.com",
+            DatabaseConnectionString = "Server=localhost;Database=db;"
         };
         var command = new CreateTenantCommand(request);
 
         var stamp = new DeploymentStamp
         {
             Id = stampId,
-            Name = "Pooled Stamp",
+            Name = "Stamp",
             IsolationTier = IsolationTier.Pooled,
             TargetResourceGroup = "test-rg",
             CreatedBy = "test-user"
@@ -124,75 +169,25 @@ public sealed class CreateTenantCommandHandlerTests
             Arg.Any<CancellationToken>())
             .Returns(false);
 
+        _encryptionService.Encrypt(Arg.Any<string>()).Returns("encrypted-string");
+
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(TenantStatus.Active.ToDisplayString(), result.Data!.Status);
+        Assert.Equal(TenantStatus.PendingKYC.ToDisplayString(), result.Data!.Status);
 
-        await _unitOfWork.Tenants.Received(1).CreateAsync(Arg.Is<Tenant>(t => t.Status == TenantStatus.Active), Arg.Any<CancellationToken>());
+        await _unitOfWork.Tenants.Received(1).CreateAsync(
+            Arg.Is<Tenant>(t => 
+                t.Status == TenantStatus.PendingKYC && 
+                t.Identifier == "test-tenant" &&
+                t.DatabaseConnectionString == "encrypted-string"), 
+            Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).CompleteAsync(Arg.Any<CancellationToken>());
+        
+        // Ensure provisioner is NOT called directly from this handler anymore
         await _provisioner.DidNotReceiveWithAnyArgs().ProvisionIsolatedStampAsync(
             default!, default!, default!, default!, default);
-    }
-
-    [Fact]
-    public async Task Handle_WithIsolatedStamp_WhenProvisionerThrows_SetsStatusToProvisioningFailed_AndReturnsFailure()
-    {
-        // Arrange
-        var stampId = Guid.NewGuid();
-        var request = new CreateTenantRequest
-        {
-            DisplayName = "Test Tenant",
-            Identifier = "test-tenant",
-            DeploymentStampId = stampId,
-            SubscriptionTier = "Enterprise",
-            ContactEmail = "test@example.com",
-            DatabaseProvider = "PostgreSql",
-            HostName = "test.example.com"
-        };
-        var command = new CreateTenantCommand(request);
-
-        var stamp = new DeploymentStamp
-        {
-            Id = stampId,
-            Name = "Isolated Stamp",
-            IsolationTier = IsolationTier.Isolated,
-            TargetResourceGroup = "test-rg",
-            CreatedBy = "test-user"
-        };
-
-        _unitOfWork.DeploymentStamps.FirstOrDefaultAsync(
-            Arg.Any<Expression<Func<DeploymentStamp, bool>>>(),
-            Arg.Any<CancellationToken>())
-            .Returns(stamp);
-
-        _unitOfWork.Tenants.AnyAsync(
-            Arg.Any<Expression<Func<Tenant, bool>>>(),
-            Arg.Any<CancellationToken>())
-            .Returns(false);
-
-        _provisioner.ProvisionIsolatedStampAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("GitHub API returned 401"));
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert — failure returned, tenant status set to ProvisioningFailed, and CompleteAsync called twice
-        Assert.False(result.IsSuccess);
-        Assert.Contains("provisioning could not be started", result.Message, StringComparison.OrdinalIgnoreCase);
-
-        // CreateAsync was called once (tenant initially saved as Provisioning, but later mutated)
-        await _unitOfWork.Tenants.Received(1).CreateAsync(
-            Arg.Is<Tenant>(t => t.Status == TenantStatus.ProvisioningFailed), Arg.Any<CancellationToken>());
-
-        // UpdateAsync was called once to flip to ProvisioningFailed
-        await _unitOfWork.Tenants.Received(1).UpdateAsync(
-            Arg.Is<Tenant>(t => t.Status == TenantStatus.ProvisioningFailed), Arg.Any<CancellationToken>());
-
-        // CompleteAsync must have been called twice: once after create, once after failure update
-        await _unitOfWork.Received(2).CompleteAsync(Arg.Any<CancellationToken>());
     }
 }
