@@ -65,13 +65,21 @@ public sealed class CachingBehavior<TRequest, TResponse>(
         }
         else
         {
-            cacheKey = CacheKeys.Entity(request.CacheGroup, request.Discriminator);
+            // Entity (non-versioned) lookups are scoped per-tenant to prevent cross-tenant
+            // cache leakage.  Platform admins (empty TenantId) get the bare global key.
+            //
+            // Key format for tenant requests: "{group}:entity:tenant:{tenantId}:{discriminator}"
+            // Key format for platform admins:  "{group}:entity:{discriminator}"
+            var tenantId = tenantProvider.TenantId;
+            cacheKey = tenantId == Guid.Empty
+                ? CacheKeys.Entity(request.CacheGroup, request.Discriminator)
+                : CacheKeys.Entity(request.CacheGroup, $"tenant:{tenantId:D}:{request.Discriminator}");
         }
 
         // ── 3. Stampede-Protected Cache Lookup & Execution ─────────────────────
         var ttl = request.Expiration ?? TimeSpan.FromMinutes(30);
 
-        return await cache.GetOrCreateAsync(
+        var response = await cache.GetOrCreateAsync(
             cacheKey,
             async ct =>
             {
@@ -80,6 +88,14 @@ public sealed class CachingBehavior<TRequest, TResponse>(
             },
             ttl,
             cancellationToken).ConfigureAwait(false);
+
+        if (response is BT.SharedKernel.Dtos.Common.IAppResponse appResponse && !appResponse.IsSuccess)
+        {
+            // Do not cache failed responses (especially since errors don't serialize well).
+            await cache.RemoveAsync(cacheKey, cancellationToken).ConfigureAwait(false);
+        }
+
+        return response;
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────

@@ -156,6 +156,10 @@
         {
             await OpenImpersonateDialogAsync(tenant);
         }
+        else if (action == "Verify KYC")
+        {
+            await ConfirmVerifyKYCAsync(tenant);
+        }
     }
 
     private IReadOnlyList<string> GetExtraActions(TenantResponse tenant)
@@ -164,10 +168,19 @@
         if (AuthSession.HasPermission("controlplane.manage"))
         {
             actions.Add("Manage modules");
-            actions.Add(tenant.Status == "Active" ? "Suspend tenant" : "Activate tenant");
-            if (tenant.Status == "Active")
+            
+            if (tenant.Status == "PendingKYC")
             {
+                actions.Add("Verify KYC");
+            }
+            else if (tenant.Status == "Active")
+            {
+                actions.Add("Suspend tenant");
                 actions.Add("Impersonate tenant");
+            }
+            else if (tenant.Status == "Suspended")
+            {
+                actions.Add("Activate tenant");
             }
         }
         return actions;
@@ -243,6 +256,33 @@
         }
 
         Snackbar.Add($"{tenant.DisplayName} activated.", Severity.Success);
+        await LoadTenantsAsync();
+    }
+
+    private async Task ConfirmVerifyKYCAsync(TenantResponse tenant)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDialog.Message), $"Verify KYC for tenant {tenant.DisplayName}? This will approve them for infrastructure provisioning." },
+            { nameof(ConfirmDialog.ConfirmText), "Verify" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(
+            "Confirm KYC Verification",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true });
+
+        var result = await dialog.Result;
+        if (result is not { Canceled: false }) return;
+
+        var response = await TenantService.ApproveKYCAsync(tenant.Id);
+        if (!response.IsSuccess)
+        {
+            Snackbar.Add(response.Message ?? "Tenant KYC verification failed.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add($"KYC verified for {tenant.DisplayName}. Provisioning started.", Severity.Success);
         await LoadTenantsAsync();
     }
 

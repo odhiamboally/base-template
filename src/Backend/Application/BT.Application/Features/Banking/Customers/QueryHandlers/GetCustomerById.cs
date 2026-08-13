@@ -45,7 +45,7 @@ internal sealed class GetCustomerByIdQueryHandler(
             var customer = await _bankingUnitOfWork.CustomerRepository.FindByIdAsync(query.Id, ct).ConfigureAwait(false);
 
             if (customer is null)
-                return AppResponses.Failure<CustomerResponse>($"Customer with ID {query.Id} was not found.");
+                return AppResponses.NotFound<CustomerResponse>($"Customer with ID {query.Id} was not found.");
 
             return AppResponses.Success(customer.ToCustomerResponse());
         }

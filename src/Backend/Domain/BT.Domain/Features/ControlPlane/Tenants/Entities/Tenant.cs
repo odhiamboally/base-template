@@ -16,8 +16,40 @@ public class Tenant : IAuditable, IHasDomainEvents
     public string? ContactEmail { get; set; }
     public int MaxUsers { get; set; }
     public SubscriptionTier SubscriptionTier { get; set; }
-    public TenantStatus Status { get; set; }
+    public TenantStatus Status { get; set; } = TenantStatus.PendingKYC;
 
+    public void ApproveKYC(string actorId)
+    {
+        if (Status != TenantStatus.PendingKYC)
+            throw new InvalidOperationException($"Cannot approve KYC from status {Status}");
+
+        Status = TenantStatus.PendingProvisioning;
+        UpdatedBy = actorId;
+        UpdatedAt = DateTimeOffset.UtcNow; // We will use TimeProvider in application layer, but here standard fallback
+    }
+
+    public void MarkAsProvisioning()
+    {
+        if (Status != TenantStatus.PendingProvisioning)
+            throw new InvalidOperationException($"Cannot start provisioning from status {Status}");
+            
+        Status = TenantStatus.Provisioning;
+    }
+
+    public void MarkAsActive()
+    {
+        Status = TenantStatus.Active;
+    }
+    
+    public void Suspend()
+    {
+        Status = TenantStatus.Suspended;
+    }
+
+    public void MarkAsProvisioningFailed()
+    {
+        Status = TenantStatus.ProvisioningFailed;
+    }
     private readonly System.Collections.Generic.List<IDomainEvent> _domainEvents = [];
     public System.Collections.Generic.IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 

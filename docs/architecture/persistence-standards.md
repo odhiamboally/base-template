@@ -175,3 +175,6 @@ When adding or reviewing a repository, check:
 - Is the repository placed under the correct feature folder?
 
 If the answer is unclear, start with the generic repository and add a concrete method only when the use case proves it needs one.
+
+### PostgreSQL JSONB
+When using PostgreSQL as the primary database provider, you can safely utilize jsonb columns for unstructured or highly dynamic data (e.g., audit trails, untyped webhook payloads, or form submissions) when appropriate. PostgreSQL handles jsonb extremely efficiently and allows GIN indexing on these columns, providing excellent performance for complex queries. Ensure that business-critical relational data remains strongly typed.

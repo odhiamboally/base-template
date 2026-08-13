@@ -78,7 +78,6 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
             ContactEmail = req.ContactEmail,
             MaxUsers = req.MaxUsers,
             SubscriptionTier = parsedTier,
-            Status = stamp.IsolationTier == IsolationTier.Isolated ? TenantStatus.Provisioning : TenantStatus.Active,
             DeploymentStampId = req.DeploymentStampId,
             DatabaseProvider = req.DatabaseProvider,
             DatabaseConnectionString = !string.IsNullOrWhiteSpace(req.DatabaseConnectionString) 
@@ -91,33 +90,6 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, A
         await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
 
         ControlPlaneLogDefinitions.LogTenantCreated(_logger, tenant.Id, tenant.Identifier);
-
-        if (stamp.IsolationTier == IsolationTier.Isolated)
-        {
-            try
-            {
-                await _stampProvisioner.ProvisionIsolatedStampAsync(
-                    tenant.Id.ToString(),
-                    stamp.Name,
-                    stamp.TargetResourceGroup,
-                    req.DatabaseProvider ?? stamp.DatabaseProvider ?? "PostgreSql",
-                    cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                ControlPlaneLogDefinitions.LogStampProvisioningFailed(_logger, tenant.Id, ex);
-
-                tenant.Status = TenantStatus.ProvisioningFailed;
-                await _unitOfWork.Tenants.UpdateAsync(tenant, cancellationToken).ConfigureAwait(false);
-                await _unitOfWork.CompleteAsync(cancellationToken).ConfigureAwait(false);
-
-                return AppResponses.Failure<TenantResponse>(
-                    "Tenant record was created but infrastructure provisioning could not be started. " +
-                    "Check platform configuration and retry via POST /{id}/activate once resolved.");
-            }
-
-            ControlPlaneLogDefinitions.LogStampProvisioningDispatched(_logger, tenant.Id, stamp.Name);
-        }
 
         var dto = new TenantResponse
         {

@@ -3,8 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace BT.SharedKernel.Dtos.Common;
 
+public interface IAppResponse
+{
+    bool IsSuccess { get; }
+}
 
-public record AppResponse<T>
+public record AppResponse<T> : IAppResponse
 {
     public bool IsSuccess { get; init; }
     public string? Message { get; init; }
@@ -12,8 +16,8 @@ public record AppResponse<T>
     public T? Data { get; init; }
 
     // Failures are converted to ProblemDetails by BaseController.
-    [JsonIgnore]
-    public AppError? Error { get; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public AppError? Error { get; init; }
 
     public AppResponse() { }
 
@@ -25,11 +29,12 @@ public record AppResponse<T>
     }
 
     [JsonConstructor]
-    internal AppResponse(bool isSuccess, string? message, T? data)
+    internal AppResponse(bool isSuccess, string? message, T? data, AppError? error)
     {
         IsSuccess = isSuccess;
-        Message = message ?? "Operation Successful";
+        Message = message ?? (isSuccess ? "Operation Successful" : null);
         Data = data;
+        Error = error;
     }
 
 

@@ -2,8 +2,10 @@ namespace BT.Domain.Features.ControlPlane.Tenants.Enums;
 
 public enum TenantStatus
 {
-    Active = 0,
-    Suspended = 1,
+    PendingKYC = 0,
+    PendingProvisioning = 1,
     Provisioning = 2,
-    ProvisioningFailed = 3
+    Active = 3,
+    Suspended = 4,
+    ProvisioningFailed = 5
 }

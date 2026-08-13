@@ -21,7 +21,7 @@ public sealed class CustomerController(ISender sender) : BaseController
 {
     [HttpGet]
     [RequirePermission("customers.view")]
-    public async Task<ActionResult<AppResponse<PagedResponse<CustomerResponse, Guid>>>> List([FromQuery] CustomerSearchRequest request)
+    public async Task<IActionResult> List([FromQuery] CustomerSearchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
 
@@ -29,20 +29,20 @@ public sealed class CustomerController(ISender sender) : BaseController
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new SearchCustomerListQuery(request, userId)).ConfigureAwait(false);
-        return !response.IsSuccess ? BadRequest(response) : Ok(response);
+        return HandleResponse(response);
     }
 
     [HttpGet("{id:guid}")]
     [RequirePermission("customers.view")]
-    public async Task<ActionResult<AppResponse<CustomerResponse>>> GetById(Guid id)
+    public async Task<IActionResult> GetById(Guid id)
     {
         var response = await sender.Send(new GetCustomerByIdQuery(id)).ConfigureAwait(false);
-        return !response.IsSuccess ? NotFound(response) : Ok(response);
+        return HandleResponse(response);
     }
 
     [HttpPost]
     [RequirePermission("customers.create")]
-    public async Task<ActionResult<AppResponse<CustomerResponse>>> Create(CreateCustomerRequest request)
+    public async Task<IActionResult> Create(CreateCustomerRequest request)
     {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
 
@@ -52,12 +52,12 @@ public sealed class CustomerController(ISender sender) : BaseController
         var command = new CreateCustomerCommand(request, userId);
 
         var response = await sender.Send(command).ConfigureAwait(false);
-        return !response.IsSuccess ? BadRequest(response) : Ok(response);
+        return HandleResponse(response);
     }
 
     [HttpPut("{id:guid}")]
     [RequirePermission("customers.edit")]
-    public async Task<ActionResult<AppResponse<CustomerResponse>>> Update(Guid id, UpdateCustomerRequest request)
+    public async Task<IActionResult> Update(Guid id, UpdateCustomerRequest request)
     {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
 
@@ -66,17 +66,17 @@ public sealed class CustomerController(ISender sender) : BaseController
 
         var command = new UpdateCustomerCommand(id, request with { Id = id }, userId);
         var response = await sender.Send(command).ConfigureAwait(false);
-        return !response.IsSuccess ? BadRequest(response) : Ok(response);
+        return HandleResponse(response);
     }
 
     [HttpDelete("{id:guid}")]
     [RequirePermission("customers.delete")]
-    public async Task<ActionResult<AppResponse<bool>>> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         ArgumentNullException.ThrowIfNull(userId, nameof(userId));
 
         var response = await sender.Send(new DeleteCustomerCommand(id, userId)).ConfigureAwait(false);
-        return !response.IsSuccess ? BadRequest(response) : Ok(response);
+        return HandleResponse(response);
     }
 }

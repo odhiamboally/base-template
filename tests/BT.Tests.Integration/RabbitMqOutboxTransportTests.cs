@@ -24,6 +24,8 @@ public sealed class RabbitMqOutboxTransportTests
         var messageId = Guid.CreateVersion7();
 
         var builder = Host.CreateApplicationBuilder();
+        builder.Services.AddSingleton<BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider, TestTenantProvider>();
+        builder.Services.AddSingleton<BT.Domain.Shared.Contracts.Common.ICurrentActorProvider, TestActorProvider>();
         builder.Services.AddSingleton<RabbitMqDeliveryProbe>();
         builder.Services.AddDbContext<SharedDBContext>(options => options.UseSqlite(connectionString));
         builder.Services.AddMassTransit(configurator =>
@@ -159,5 +161,15 @@ internal sealed class RabbitMqFactAttribute : FactAttribute
             Skip = "Run scripts/test-local-messaging.ps1 to execute the real RabbitMQ transport certification.";
         }
     }
+}
+
+internal sealed class TestTenantProvider : BT.Domain.Shared.Contracts.Common.ICurrentTenantProvider
+{
+    public Guid TenantId => Guid.Empty;
+}
+
+internal sealed class TestActorProvider : BT.Domain.Shared.Contracts.Common.ICurrentActorProvider
+{
+    public string ActorId => "System";
 }
 
