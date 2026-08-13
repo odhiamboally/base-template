@@ -38,6 +38,12 @@ public class BaseTemplateWebApplicationFactory : WebApplicationFactory<Program>,
 
     public BaseTemplateWebApplicationFactory()
     {
+        // ── Force the environment to Development BEFORE WebApplication.CreateBuilder runs ──
+        // Program.cs uses WebApplication.CreateBuilder(args), which reads environment variables
+        // *before* ConfigureWebHost gets called. If the CI runs with ASPNETCORE_ENVIRONMENT=Production,
+        // Program.cs will attempt to wire up Azure Key Vault and crash with an empty URI.
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+
         _dbContainer = new MsSqlBuilder()
             .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
             .WithPassword("P@ssword123!")
