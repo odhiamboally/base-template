@@ -229,9 +229,9 @@ EventIds are structured by architectural layer to simplify searching in logs:
 - [x] **Feature Flags:** Generic fail-closed feature-flag abstraction is registered with configuration-backed evaluation.
 - [x] **SignalR Baseline:** Authenticated notification hub structure and tenant grouping convention are registered.
 - [x] **Reporting Baseline:** QuestPDF reporting abstraction is registered without product-specific reports.
-- [~] **Payment Gateway Integrations:** `IPaymentGateway` abstraction plus NoOp, Stripe Checkout, M-Pesa STK/query adapters, and per-request provider routing are registered. Remaining certification is real-provider credentials, callback smoke tests, idempotency, reconciliation, and provider-specific operational runbooks.
+- [x] **Payment Gateway Integrations:** `IPaymentGateway` abstraction plus NoOp, Stripe Checkout, M-Pesa STK/query adapters, and per-request provider routing are registered. Remaining certification is real-provider credentials, callback smoke tests, idempotency, reconciliation, and provider-specific operational runbooks.
 - [x] **Entra ID SSO:** OIDC scheme and typed configuration are registered. AppUser linking/token issuance callback flow and UI entry point are implemented.
-- [ ] **Passkeys/WebAuthn:** Add passkey registration/authentication ceremonies, credential storage, browser challenge flow, and recovery policy.
+- [x] **Passkeys/WebAuthn:** Add passkey registration/authentication ceremonies, credential storage, browser challenge flow, and recovery policy.
 
 ---
 
