@@ -37,7 +37,7 @@ function Test-IsExcludedPath([string]$path) {
         return $true
     }
 
-    $relativePath = [System.IO.Path]::GetRelativePath($repoRoot, $path)
+    $relativePath = $path.Substring($repoRoot.Length).TrimStart('\', '/')
     $segments = $relativePath -split '[\\/]'
     return $segments | Where-Object { $excludedDirectoryNames -contains $_ } | Select-Object -First 1
 }
