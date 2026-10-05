@@ -303,3 +303,7 @@ Before we move from one phase to another:
 - Update `PLAN.md` and this strategy file.
 - Create a concise commit message and PR.
 - Tell the user explicitly that the phase is ready to move forward.
+
+## StarterTemplate direction approved 2026-10-06
+
+The user selected a new StarterTemplate repository, preserving BaseTemplate as the business-domain reference. The implementation inventory and phase gates are in [domain-neutral-refactor-plan.md](docs/architecture/domain-neutral-refactor-plan.md). Customer-reference gates below describe the existing reference application; they must not require Banking/HR retention in StarterTemplate. Preserve the current architecture and platform infrastructure. Create the new repository from a reviewed baseline before performing business removal.

@@ -426,3 +426,6 @@ src/Backend/Api/BT.Api/temp-keys/
 # Azure Container App and CLI outputs
 containerapp.yaml
 api_logs.txt
+
+# Local environment diagnostics may contain credentials
+ef_env.txt

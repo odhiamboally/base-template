@@ -255,3 +255,7 @@ EventIds are structured by architectural layer to simplify searching in logs:
 1. Update this roadmap to check off completed capabilities.
 2. Run architecture tests to confirm no structural boundaries were broken.
 3. Commit using descriptive, outcome-focused messages.
+
+## StarterTemplate direction approved 2026-10-06
+
+The user selected a new StarterTemplate repository, preserving BaseTemplate as the business-domain reference. The implementation inventory and phase gates are in [domain-neutral-refactor-plan.md](docs/architecture/domain-neutral-refactor-plan.md). Customer-reference gates below describe the existing reference application; they must not require Banking/HR retention in StarterTemplate. Preserve the current architecture and platform infrastructure. Create the new repository from a reviewed baseline before performing business removal.
