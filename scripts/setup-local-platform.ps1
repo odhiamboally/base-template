@@ -62,6 +62,10 @@ if (-not (Test-Path -LiteralPath $envFile)) {
 }
 
 $environment = Read-EnvironmentFile $envFile
+if (-not $environment.ContainsKey('SEQ_PASSWORD')) {
+    Add-Content -LiteralPath $envFile -Value "SEQ_PASSWORD=$(New-LocalSecret)"
+    $environment = Read-EnvironmentFile $envFile
+}
 if (-not $environment.ContainsKey('REDIS_HOST_PORT')) {
     Add-Content -LiteralPath $envFile -Value 'REDIS_HOST_PORT=6380'
     $environment = Read-EnvironmentFile $envFile

@@ -32,15 +32,19 @@ public class PasskeyService : IPasskeyService
         var excludeCredentials = existingCredentials?.Select(c => new PublicKeyCredentialDescriptor(c.CredentialId)).ToList() ?? new System.Collections.Generic.List<PublicKeyCredentialDescriptor>();
 
         var options = _fido2.RequestNewCredential(
-            fidoUser,
-            excludeCredentials,
-            AuthenticatorSelection.Default,
-            AttestationConveyancePreference.None,
-            new AuthenticationExtensionsClientInputs()
+            new RequestNewCredentialParams
+            {
+                User = fidoUser,
+                ExcludeCredentials = excludeCredentials,
+                AuthenticatorSelection = AuthenticatorSelection.Default,
+                AttestationPreference = AttestationConveyancePreference.None,
+                Extensions = new AuthenticationExtensionsClientInputs()
+            }
         );
 
         var jsonString = options.ToJson();
-        return Task.FromResult(JsonDocument.Parse(jsonString).RootElement);
+        using var document = JsonDocument.Parse(jsonString);
+        return Task.FromResult(document.RootElement.Clone());
     }
 
     public async Task<Fido2Credential> MakeNewCredentialAsync(AppUser user, JsonElement attestationResponse, JsonElement originalOptions, CancellationToken cancellationToken = default)
@@ -60,21 +64,24 @@ public class PasskeyService : IPasskeyService
         };
 
         var success = await _fido2.MakeNewCredentialAsync(
-            response, 
-            options, 
-            callback,
+            new MakeNewCredentialParams
+            {
+                AttestationResponse = response,
+                OriginalOptions = options,
+                IsCredentialIdUniqueToUserCallback = callback
+            },
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var credential = new Fido2Credential
         {
             UserId = user.Id,
-            CredentialId = success.Result?.CredentialId ?? Array.Empty<byte>(),
-            PublicKey = success.Result?.PublicKey ?? Array.Empty<byte>(),
+            CredentialId = success.Id,
+            PublicKey = success.PublicKey,
             UserHandle = System.Text.Encoding.UTF8.GetBytes(user.Id),
-            SignatureCounter = success.Result?.Counter ?? 0,
-            CredType = success.Result?.CredType ?? "public-key",
+            SignatureCounter = success.SignCount,
+            CredType = success.Type.ToString(),
             RegDate = DateTimeOffset.UtcNow,
-            AaGuid = success.Result?.Aaguid ?? Guid.Empty,
+            AaGuid = success.AaGuid,
             CreatedBy = user.Id,
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -85,12 +92,16 @@ public class PasskeyService : IPasskeyService
     public Task<JsonElement> RequestAssertionAsync(string username, CancellationToken cancellationToken = default)
     {
         var options = _fido2.GetAssertionOptions(
-            new System.Collections.Generic.List<PublicKeyCredentialDescriptor>(), // Could restrict to known credentials
-            UserVerificationRequirement.Preferred
+            new GetAssertionOptionsParams
+            {
+                AllowedCredentials = [],
+                UserVerification = UserVerificationRequirement.Preferred
+            }
         );
 
         var jsonString = options.ToJson();
-        return Task.FromResult(JsonDocument.Parse(jsonString).RootElement);
+        using var document = JsonDocument.Parse(jsonString);
+        return Task.FromResult(document.RootElement.Clone());
     }
 
     public async Task<uint?> MakeAssertionAsync(AppUser user, JsonElement assertionResponse, JsonElement originalOptions, byte[] storedPublicKey, uint storedSignCount, CancellationToken cancellationToken = default)
@@ -108,13 +119,16 @@ public class PasskeyService : IPasskeyService
         };
 
         var res = await _fido2.MakeAssertionAsync(
-            response, 
-            options, 
-            storedPublicKey, 
-            storedSignCount, 
-            callback,
+            new MakeAssertionParams
+            {
+                AssertionResponse = response,
+                OriginalOptions = options,
+                StoredPublicKey = storedPublicKey,
+                StoredSignatureCounter = storedSignCount,
+                IsUserHandleOwnerOfCredentialIdCallback = callback
+            },
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        return res.Status == "ok" ? (uint?)res.Counter : null;
+        return res.SignCount;
     }
 }
