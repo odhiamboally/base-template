@@ -204,3 +204,9 @@ Development explicitly disables external Data Protection key storage and selects
 BaseTemplate pins MassTransit `8.5.10`, which targets .NET 10 and is published under Apache-2.0. MassTransit v9 is a commercial release and is not used by the reusable template. Revisit this decision deliberately if a future application purchases MassTransit v9 support and features.
 
 Seq first-run administrator credentials use `SEQ_PASSWORD` from the ignored local `.env`. The setup script generates this value when missing. Changing it does not reset credentials in an existing Seq data volume.
+
+## Concurrent applications
+
+The setup script runs scripts/check-local-endpoints.ps1 before Compose startup. The checker resolves all profiles of discovered Compose groups and checks host port allocations, launch profiles, user-secret IDs and stale container bindings. Supply -ComposeFiles for new groups with no containers yet. Resolve reported conflicts before startup; native services still require a separate listener check. See [workstation endpoint allocations](workstation-endpoints.md).
+
+Azurite user-secrets are generated from the account name and key in the ignored local .env; the generic UseDevelopmentStorage shortcut does not match a custom account. Each application has independent user-secret IDs and must provision its own values.

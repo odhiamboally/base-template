@@ -42,6 +42,23 @@ function Test-IsExcludedPath([string]$path) {
     return $segments | Where-Object { $excludedDirectoryNames -contains $_ } | Select-Object -First 1
 }
 
+function New-UserSecretsIdentity {
+    if ([Guid].GetMethod('CreateVersion7', [Type[]]@())) {
+        return [Guid]::CreateVersion7().ToString()
+    }
+
+    # UserSecretsId accepts any unique string; older PowerShell runtimes have no UUIDv7 API.
+    $bytes = New-Object byte[] 32
+    $generator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $generator.GetBytes($bytes)
+        return [BitConverter]::ToString($bytes).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $generator.Dispose()
+    }
+}
+
 # Every cloned host must have an independent user-secrets identity.
 $userSecretsReplacements = @{}
 foreach ($project in Get-ChildItem -LiteralPath $repoRoot -Recurse -Filter '*.csproj') {
@@ -49,7 +66,7 @@ foreach ($project in Get-ChildItem -LiteralPath $repoRoot -Recurse -Filter '*.cs
     [xml]$projectXml = Get-Content -Raw -LiteralPath $project.FullName
     foreach ($identifier in $projectXml.SelectNodes('//UserSecretsId')) {
         if (-not $userSecretsReplacements.ContainsKey($identifier.InnerText)) {
-            $userSecretsReplacements[$identifier.InnerText] = [Guid]::CreateVersion7().ToString()
+            $userSecretsReplacements[$identifier.InnerText] = New-UserSecretsIdentity
         }
     }
 }

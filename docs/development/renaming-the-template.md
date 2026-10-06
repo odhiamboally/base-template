@@ -25,3 +25,9 @@ After the script runs:
 ## Azure Resources
 
 The script updates repository configuration tokens; it does not rename live Azure resources. Supply actual Key Vault, Storage, App Service, SQL, and Service Bus names through deployment variables and environment configuration.
+
+## Independent local configuration
+
+Renaming assigns fresh UserSecretsId values to host projects and updates design-time references. Provision local secrets for the renamed clone; secret contents are not copied. Modern PowerShell uses UUIDv7; Windows PowerShell 5.1 uses a cryptographically random identifier because its runtime lacks that API.
+
+Allocate distinct host ports and Compose project/volume names before starting a clone alongside another application. Run scripts/check-local-endpoints.ps1 with -ComposeFiles pointing to its Compose file; see [workstation endpoint allocations](workstation-endpoints.md).
