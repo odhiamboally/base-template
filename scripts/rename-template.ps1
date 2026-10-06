@@ -42,6 +42,35 @@ function Test-IsExcludedPath([string]$path) {
     return $segments | Where-Object { $excludedDirectoryNames -contains $_ } | Select-Object -First 1
 }
 
+function New-UserSecretsIdentity {
+    if ([Guid].GetMethod('CreateVersion7', [Type[]]@())) {
+        return [Guid]::CreateVersion7().ToString()
+    }
+
+    # UserSecretsId accepts any unique string; older PowerShell runtimes have no UUIDv7 API.
+    $bytes = New-Object byte[] 32
+    $generator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $generator.GetBytes($bytes)
+        return [BitConverter]::ToString($bytes).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $generator.Dispose()
+    }
+}
+
+# Every cloned host must have an independent user-secrets identity.
+$userSecretsReplacements = @{}
+foreach ($project in Get-ChildItem -LiteralPath $repoRoot -Recurse -Filter '*.csproj') {
+    if (Test-IsExcludedPath $project.FullName) { continue }
+    [xml]$projectXml = Get-Content -Raw -LiteralPath $project.FullName
+    foreach ($identifier in $projectXml.SelectNodes('//UserSecretsId')) {
+        if (-not $userSecretsReplacements.ContainsKey($identifier.InnerText)) {
+            $userSecretsReplacements[$identifier.InnerText] = New-UserSecretsIdentity
+        }
+    }
+}
+
 function Get-ReplacedText([string]$value) {
     $updated = $value.Replace('Base Template', $displayName)
     $updated = $updated.Replace('BaseTemplate', $compactName)
@@ -53,6 +82,9 @@ function Get-ReplacedText([string]$value) {
     $updated = $updated -creplace '(?<![A-Za-z0-9_])BT(?=\.)', $NamespacePrefix
     $updated = $updated.Replace('BTApi', "${NamespacePrefix}Api")
 
+    foreach ($oldId in $userSecretsReplacements.Keys) {
+        $updated = $updated.Replace($oldId, $userSecretsReplacements[$oldId])
+    }
     return $updated
 }
 

@@ -114,6 +114,7 @@ foreach ($volumeName in $volumeNames) {
 dotnet user-secrets set 'Messaging:Enabled' 'true' --project $apiProject
 dotnet user-secrets set 'Messaging:Transport' 'RabbitMq' --project $apiProject
 dotnet user-secrets set 'Messaging:RabbitMq:Host' 'localhost' --project $apiProject
+dotnet user-secrets set 'Messaging:RabbitMq:Port' '5672' --project $apiProject
 dotnet user-secrets set 'Messaging:RabbitMq:VirtualHost' '/' --project $apiProject
 dotnet user-secrets set 'Messaging:RabbitMq:Username' $environment.RABBITMQ_USER --project $apiProject
 dotnet user-secrets set 'Messaging:RabbitMq:Password' $environment.RABBITMQ_PASSWORD --project $apiProject
@@ -130,7 +131,8 @@ dotnet user-secrets remove 'EmailSettings:EnableSsl' --project $apiProject *> $n
 dotnet user-secrets remove 'EmailSettings:UseAuthentication' --project $apiProject *> $null
 dotnet user-secrets remove 'SmtpSettings:Password' --project $apiProject *> $null
 dotnet user-secrets set 'ProfileImageStorage:Provider' 'Azurite' --project $apiProject
-dotnet user-secrets set 'ProfileImageStorage:Azurite:ConnectionString' 'UseDevelopmentStorage=true' --project $apiProject
+$storageConnection = "DefaultEndpointsProtocol=http;AccountName=$($environment.AZURITE_ACCOUNT_NAME);AccountKey=$($environment.AZURITE_ACCOUNT_KEY);BlobEndpoint=http://127.0.0.1:10000/$($environment.AZURITE_ACCOUNT_NAME);QueueEndpoint=http://127.0.0.1:10001/$($environment.AZURITE_ACCOUNT_NAME);TableEndpoint=http://127.0.0.1:10002/$($environment.AZURITE_ACCOUNT_NAME);"
+dotnet user-secrets set 'ProfileImageStorage:Azurite:ConnectionString' $storageConnection --project $apiProject
 dotnet user-secrets set 'ProfileImageStorage:Azurite:ContainerName' 'profile-images' --project $apiProject
 
 $profiles = @()
@@ -151,6 +153,8 @@ if (-not $SkipPull) {
         throw "Docker Compose pull failed with exit code $LASTEXITCODE."
     }
 }
+
+& (Join-Path $PSScriptRoot 'check-local-endpoints.ps1') -ComposeFiles $composeFile
 
 & docker @composeArguments up -d --wait
 if ($LASTEXITCODE -ne 0) {
