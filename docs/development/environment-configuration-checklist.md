@@ -163,7 +163,7 @@ dotnet user-secrets set "ProfileImageStorage:Provider" "Local" --project src\Bac
 ./scripts/setup-local-platform.ps1
 ```
 
-Azure deployment is intentionally manual-only. After completing the production Azure checklist, use **Actions > Deploy to Azure > Run workflow** and explicitly select `app-service`, `aca-acr`, or `aca-ghcr`. Pushes and pull-request merges run CI only.
+Azure migrations/deployments are paused unless the repository variable AZURE_DEPLOYMENT_ENABLED is exactly true. Builds/tests and GHCR publishing continue while paused. Once subscription access and the production checklist are ready, enable the flag and dispatch Deploy to Azure with app-service, aca-acr, or aca-ghcr; main merges also deploy when enabled.
 
 ## Recommended Azure-Backed Local Setup
 
@@ -207,7 +207,7 @@ Payments__Stripe__SecretKey=<key-vault-reference>
 Payments__Stripe__WebhookSigningSecret=<key-vault-reference>
 Payments__Stripe__SuccessUrl=https://your-app/payments/success
 Payments__Stripe__CancelUrl=https://your-app/payments/cancel
-Payments__Mpesa__ConsumerKey=<key-vault-reference>
+Payments__Mpesa__ConsumerKey=<key-vault-reference>
 Payments__Mpesa__ConsumerSecret=<key-vault-reference>
 Payments__Mpesa__ShortCode=<paybill-or-till>
 Payments__Mpesa__PassKey=<key-vault-reference>
@@ -329,11 +329,11 @@ When checking screenshots or app settings, verify:
 
 ## CI/CD Pipeline and Deployments
 
-BaseTemplate includes a manually dispatched CI/CD pipeline in `.github/workflows/deploy-azure.yml` that handles compiling, testing, migrating Azure SQL, and deploying the backend API and frontend Blazor UI to the explicitly selected target. Pushes and pull-request merges run CI only; they do not migrate or deploy Azure resources.
+BaseTemplate deploy-azure.yml runs on main pushes and manual dispatch. AZURE_DEPLOYMENT_ENABLED=true permits migration execution, App Service/Container Apps deployment and ACR publishing. False or missing skips these jobs before Azure sign-in, firewall writes or database connections. Builds/tests, artifact and migration-bundle generation and GHCR publishing remain available. Manual dispatch respects the same flag.
 
 ### Deployment Prerequisites
 
-1. Configure the `production` GitHub environment and Microsoft Entra OIDC federation.
+1. Configure the `azure-prod` GitHub environment and Microsoft Entra OIDC federation.
 2. Create the GitHub deployment identity as an Azure SQL contained user with migration permissions.
 3. Add the required Azure resource-name variables and passwordless SQL connection-string secret.
 4. Keep the App Service managed identities configured separately for runtime Azure access.

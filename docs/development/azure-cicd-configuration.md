@@ -24,9 +24,9 @@ In the Azure portal:
 7. Choose **GitHub Actions deploying Azure resources**.
 8. Select the repository owner and repository.
 9. Set **Entity type** to `Environment`.
-10. Set the environment name to `production`.
+10. Set the environment name to `azure-prod`.
 
-The environment name must match `environment: production` in `.github/workflows/deploy-azure.yml`.
+The environment name must match `environment: azure-prod` in `.github/workflows/deploy-azure.yml`.
 
 ## 2. Assign Azure RBAC Roles
 
@@ -55,7 +55,7 @@ The user name normally matches the app registration display name. If duplicate d
 
 ## 4. Configure The GitHub Environment
 
-In GitHub, open **Settings** -> **Environments** -> **production**.
+In GitHub, open **Settings** -> **Environments** -> **azure-prod**.
 
 Add these environment variables:
 
@@ -69,7 +69,7 @@ Add these environment variables:
 | `AZURE_SQL_NETWORK_MODE` | `PublicRunner` | `PublicRunner` or `PrivateRunner` migration networking strategy |
 | `AZURE_API_APP_NAME` | `base-template-api-dev` | Exact API App Service resource name (for app-service) |
 | `AZURE_UI_APP_NAME` | `base-template-web-dev` | Exact UI App Service resource name (for app-service) |
-| `AZURE_DEPLOYMENT_TARGET` | Deprecated | Not read by `deploy-azure.yml`; select `app-service`, `aca-acr`, or `aca-ghcr` in the manual **Run workflow** dialog. Remove this GitHub environment variable to avoid confusion. |
+| `AZURE_DEPLOYMENT_TARGET` | `aca-ghcr` | Target on main pushes; manual dispatch selects app-service, aca-acr, or aca-ghcr. |
 | `AZURE_CONTAINER_REGISTRY_NAME` | `acrbasetemplate` | ACR Name for container deployments (for aca-acr) |
 | `AZURE_ACA_API_NAME` | `ca-base-template-api` | Exact API Container App resource name (for ACA flows) |
 | `AZURE_ACA_UI_NAME` | `ca-base-template-blazor` | Exact UI Container App resource name (for ACA flows) |
@@ -89,7 +89,7 @@ Server=tcp:<sql-server>.database.windows.net,1433;Initial Catalog=<database>;Enc
 
 The connection string contains no password. `azure/login@v2` establishes the GitHub identity, and `DefaultAzureCredential` resolves the Azure CLI credential created by that login.
 
-Add required reviewers to the `production` environment if deployment approval is required.
+Add required reviewers to the `azure-prod` environment if deployment approval is required.
 
 ## 5. Azure SQL Networking
 
@@ -139,11 +139,27 @@ Remove them after the first successful OIDC deployment.
 
 ## Troubleshooting
 
-- `DefaultAzureCredential failed`: confirm `azure/login@v2` succeeded and the federated credential subject targets the `production` GitHub environment.
+- `DefaultAzureCredential failed`: confirm `azure/login@v2` succeeded and the federated credential subject targets the `azure-prod` GitHub environment.
 - `Login failed for user <token-identified principal>`: create the deployment identity as a contained user in the target Azure SQL database and grant migration roles.
 - SQL error `40613`: the database is unavailable or resuming. The workflow retries; inspect Azure SQL status if all retries fail.
 - Azure SQL Free Limit databases enforce auto-pause and do not allow `AutoPauseDelay=-1`. Keep migration retries for this tier. Move a real production workload to a paid always-on/serverless configuration when cold-start latency is unacceptable.
 - SQL firewall denial: confirm public network access is enabled for this workflow model and that the deployment identity has `SQL Server Contributor`.
 - `A valid connection string was not found`: confirm the migration step maps `AZURE_SQL_CONNECTION_STRING` to `ConnectionStrings__IamConnection`, `ConnectionStrings__HrConnection`, `ConnectionStrings__SharedConnection`, `ConnectionStrings__BankingConnection`, and `ConnectionStrings__DefaultConnection`. The explicit `--connection` argument alone is not available early enough for design-time context construction.
 - `Resource ... not found` during deployment: verify `AZURE_API_APP_NAME`, `AZURE_UI_APP_NAME`, subscription, and tenant values.
-- OIDC subject mismatch: the federated credential must target environment `production`, not a branch subject, because the workflow jobs use a GitHub environment.
+- OIDC subject mismatch: the federated credential must target environment `azure-prod`, not a branch subject, because the workflow jobs use a GitHub environment.
+
+## Pause and resume Azure operations
+
+Use the repository variable AZURE_DEPLOYMENT_ENABLED as the reversible switch. It must be exactly true to permit migrations, firewall changes, Azure deployment and ACR publishing. False, missing or any other value pauses those jobs for both main pushes and manual dispatch. Keep this switch at repository scope; an azure-prod environment variable of the same name takes precedence and must not silently override it.
+
+The subscription is currently disabled, so the repository switch is false. Build/test, artifact generation, migration-bundle generation and GHCR publishing continue. No Azure login is attempted by paused jobs. GHCR publishing still requires selecting aca-ghcr; when aca-acr is selected, the entire Azure-backed publishing job is skipped.
+
+Pause:
+
+    gh variable set AZURE_DEPLOYMENT_ENABLED --body false
+
+After subscription access and target configuration are verified, resume:
+
+    gh variable set AZURE_DEPLOYMENT_ENABLED --body true
+
+Then run the workflow manually with the intended target or merge the next change to main. Existing failed runs remain in history; changing the variable does not retroactively alter them or cancel already-running jobs. The workflow summary reports the resolved pause/enabled state.

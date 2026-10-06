@@ -35,15 +35,26 @@ jobs:
     environment: azure-prod
     outputs:
       target: ${{ steps.resolve.outputs.target }}
+      deployment_enabled: ${{ steps.resolve.outputs.deployment_enabled }}
       image_tag: latest
     steps:
       - id: resolve
+        env:
+          AZURE_DEPLOYMENT_ENABLED: ${{ vars.AZURE_DEPLOYMENT_ENABLED }}
         run: |
           TARGET="${{ inputs.deployment_target }}"
           if [ -z "$TARGET" ]; then
             TARGET="${{ vars.AZURE_DEPLOYMENT_TARGET || 'app-service' }}"
           fi
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          if [ "$AZURE_DEPLOYMENT_ENABLED" = "true" ]; then
+            echo "deployment_enabled=true" >> "$GITHUB_OUTPUT"
+            echo "### Azure deployment enabled" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "deployment_enabled=false" >> "$GITHUB_OUTPUT"
+            echo "### Azure deployment paused" >> "$GITHUB_STEP_SUMMARY"
+            echo "Builds/tests and GHCR publishing continue. Azure migrations, deployment and ACR publishing are skipped. Set the repository variable AZURE_DEPLOYMENT_ENABLED=true to resume." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   build-and-test:
     name: Build & Test
@@ -146,7 +157,8 @@ jobs:
 
   run-migrations:
     name: Run DB Migrations
-    needs: build-and-test
+    needs: [setup, build-and-test]
+    if: needs.setup.outputs.deployment_enabled == 'true'
     runs-on: ubuntu-latest
     environment: azure-prod
     permissions:
@@ -342,7 +354,7 @@ jobs:
   deploy-app-service-api:
     name: Deploy API to Azure App Service
     needs: [setup, build-and-test, run-migrations]
-    if: needs.setup.outputs.target == 'app-service'
+    if: needs.setup.outputs.deployment_enabled == 'true' && needs.setup.outputs.target == 'app-service'
     runs-on: ubuntu-latest
     environment: azure-prod
     permissions:
@@ -380,7 +392,7 @@ jobs:
   deploy-app-service-ui:
     name: Deploy UI to Azure App Service
     needs: [setup, build-and-test, run-migrations]
-    if: needs.setup.outputs.target == 'app-service'
+    if: needs.setup.outputs.deployment_enabled == 'true' && needs.setup.outputs.target == 'app-service'
     runs-on: ubuntu-latest
     environment: azure-prod
     permissions:
@@ -417,7 +429,7 @@ jobs:
   build-push-containers:
     name: Build & Push Containers
     needs: setup
-    if: needs.setup.outputs.target == 'aca-acr' || needs.setup.outputs.target == 'aca-ghcr'
+    if: needs.setup.outputs.target == 'aca-ghcr' || (needs.setup.outputs.deployment_enabled == 'true' && needs.setup.outputs.target == 'aca-acr')
     runs-on: ubuntu-latest
     environment: azure-prod
     env:
@@ -489,7 +501,7 @@ jobs:
   deploy-aca:
     name: Deploy to Azure Container Apps
     needs: [setup, run-migrations, build-push-containers]
-    if: needs.setup.outputs.target == 'aca-acr' || needs.setup.outputs.target == 'aca-ghcr'
+    if: needs.setup.outputs.deployment_enabled == 'true' && (needs.setup.outputs.target == 'aca-acr' || needs.setup.outputs.target == 'aca-ghcr')
     runs-on: ubuntu-latest
     environment: azure-prod
     permissions:

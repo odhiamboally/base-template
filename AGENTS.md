@@ -125,7 +125,8 @@ This file is the canonical source of truth and working contract for AI coding to
 - Before opening or updating a PR, run:
   - `dotnet build src\Backend\Api\BT.Api\BT.Api.csproj --no-restore -p:UseSharedCompilation=false`
   - `dotnet test tests\BT.Tests.Architecture\BT.Tests.Architecture.csproj --no-restore -p:UseSharedCompilation=false`
-- Azure deployments trigger automatically on merges to `main`. You can also manually invoke `deploy-azure.yml` for controlled deployments, selecting `app-service`, `aca-acr`, or `aca-ghcr` in its manual dispatch input.
+- Azure migrations/deployments run only when the GitHub repository variable AZURE_DEPLOYMENT_ENABLED is exactly true; false or missing pauses them for both main pushes and manual dispatch. Builds/tests and GHCR publishing remain available; ACR publishing is also paused. Avoid an environment variable of the same name overriding this repository switch.
+- deploy-azure.yml triggers on main merges and manual dispatch; select app-service, aca-acr, or aca-ghcr in its manual dispatch input. Pushes use AZURE_DEPLOYMENT_TARGET.
 - PRs should explain what changed, why, impact, and checks.
 - If a review comment is valid and small, update the same PR branch.
 - If a review comment changes scope materially, discuss before expanding the PR.
