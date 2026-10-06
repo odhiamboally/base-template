@@ -141,3 +141,8 @@ The following files exist only to point other AI tools back to this canonical fi
 - `.windsurfrules`
 
 Keep these files short and aligned with this file. Do not let them become independent rulebooks.
+
+## Local application isolation
+
+- Each application host must have its own UserSecretsId; clones must regenerate identities and allocate distinct host ports and Compose project/volume names.
+- Run scripts/check-local-endpoints.ps1 before starting local infrastructure; supply new Compose files explicitly. See docs/development/workstation-endpoints.md.

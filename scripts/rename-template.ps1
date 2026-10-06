@@ -42,6 +42,18 @@ function Test-IsExcludedPath([string]$path) {
     return $segments | Where-Object { $excludedDirectoryNames -contains $_ } | Select-Object -First 1
 }
 
+# Every cloned host must have an independent user-secrets identity.
+$userSecretsReplacements = @{}
+foreach ($project in Get-ChildItem -LiteralPath $repoRoot -Recurse -Filter '*.csproj') {
+    if (Test-IsExcludedPath $project.FullName) { continue }
+    [xml]$projectXml = Get-Content -Raw -LiteralPath $project.FullName
+    foreach ($identifier in $projectXml.SelectNodes('//UserSecretsId')) {
+        if (-not $userSecretsReplacements.ContainsKey($identifier.InnerText)) {
+            $userSecretsReplacements[$identifier.InnerText] = [Guid]::CreateVersion7().ToString()
+        }
+    }
+}
+
 function Get-ReplacedText([string]$value) {
     $updated = $value.Replace('Base Template', $displayName)
     $updated = $updated.Replace('BaseTemplate', $compactName)
@@ -53,6 +65,9 @@ function Get-ReplacedText([string]$value) {
     $updated = $updated -creplace '(?<![A-Za-z0-9_])BT(?=\.)', $NamespacePrefix
     $updated = $updated.Replace('BTApi', "${NamespacePrefix}Api")
 
+    foreach ($oldId in $userSecretsReplacements.Keys) {
+        $updated = $updated.Replace($oldId, $userSecretsReplacements[$oldId])
+    }
     return $updated
 }
 
